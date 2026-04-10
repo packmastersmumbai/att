@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="QR-based attendance and visitor management system.">
+  <title>QR Att. — Attendance System</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { width: 100%; height: 100%; overflow: hidden; background: #07111F; }
+    #app {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      border: none;
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <iframe id="app" title="Attendance System"
+    allow="camera; microphone; clipboard-write"
+    allowfullscreen></iframe>
+  <script>
+    (function () {
+      var s = [
+        'aHR0cHM6Ly9zY3JpcHQuZ29vZ2xl',
+        'LmNvbS9tYWNyb3Mvcy9BS2Z5Y2J4',
+        'Z1NIVHBmX0ZTRjhiTm5PSGVDUEVNTzB4SnRKS2Uz',
+        'UHhweTMtTzJZa1cxeDFNNXpzbURiV3FCVjB0',
+        'WGppOWlfLTktQS9leGVj'
+      ].join('');
+      var base = atob(s);
+      var page = new URLSearchParams(location.search).get('page') || 'scanner';
+      document.getElementById('app').src = base + '?page=' + encodeURIComponent(page);
+    })();
+  </script>
+</body>
+</html>

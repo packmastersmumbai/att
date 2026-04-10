@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <script>
+    // Redirect all 404s back to index.html preserving ?page= param
+    var q = window.location.search;
+    window.location.replace('/' + 'att' + (q ? q : ''));
+  </script>
+</head>
+<body></body>
+</html>
