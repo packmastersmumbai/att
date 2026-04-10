@@ -8,22 +8,21 @@
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html, body { width: 100%; height: 100%; overflow: hidden; background: #07111F; }
-    #app {
+    iframe {
       position: fixed;
       inset: 0;
       width: 100%;
       height: 100%;
       border: none;
-      display: block;
+      display: none;
     }
+    iframe.active { display: block; }
   </style>
 </head>
 <body>
-  <iframe id="app" title="Attendance System"
-    allow="camera; microphone; clipboard-write"
-    allowfullscreen></iframe>
   <script>
     (function () {
+      var PAGES = ['scanner','dashboard','reports','visitors','kiosk','admin'];
       var s = [
         'aHR0cHM6Ly9zY3JpcHQuZ29vZ2xl',
         'LmNvbS9tYWNyb3Mvcy9BS2Z5Y2J4',
@@ -32,8 +31,40 @@
         'WGppOWlfLTktQS9leGVj'
       ].join('');
       var base = atob(s);
-      var page = new URLSearchParams(location.search).get('page') || 'scanner';
-      document.getElementById('app').src = base + '?page=' + encodeURIComponent(page);
+      var cur  = new URLSearchParams(location.search).get('page') || 'scanner';
+      if (PAGES.indexOf(cur) === -1) cur = 'scanner';
+
+      // Pre-load all 6 iframes at startup — only the active one is visible.
+      // Hidden iframes still load fully; their GAS banner is never seen by the user.
+      // Navigation via postMessage shows/hides frames without any reload.
+      PAGES.forEach(function (p) {
+        var f = document.createElement('iframe');
+        f.id  = 'f-' + p;
+        f.src = base + '?page=' + p;
+        f.allow = 'camera; microphone; clipboard-write';
+        f.setAttribute('allowfullscreen', '');
+        if (p === cur) f.classList.add('active');
+        document.body.appendChild(f);
+      });
+
+      // Listen for navigation signals from any GAS iframe
+      window.addEventListener('message', function (e) {
+        var pg = e.data && e.data.qratt_nav;
+        if (!pg || PAGES.indexOf(pg) === -1) return;
+        PAGES.forEach(function (p) {
+          document.getElementById('f-' + p).classList.toggle('active', p === pg);
+        });
+        history.pushState({}, '', location.pathname + '?page=' + pg);
+      });
+
+      // Handle browser back/forward
+      window.addEventListener('popstate', function () {
+        var pg = new URLSearchParams(location.search).get('page') || 'scanner';
+        if (PAGES.indexOf(pg) === -1) pg = 'scanner';
+        PAGES.forEach(function (p) {
+          document.getElementById('f-' + p).classList.toggle('active', p === pg);
+        });
+      });
     })();
   </script>
 </body>
