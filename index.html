@@ -7,120 +7,34 @@
   <title>QR Att. — Attendance System</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html, body { width: 100%; height: 100%; overflow: hidden; background: #07111F; }
+    html, body { width: 100%; height: 100%; overflow: hidden; background: #07111F; font-family: system-ui, -apple-system, sans-serif; }
 
-    /* ── Iframes ── */
-    iframe {
-      position: fixed;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      border: none;
-      display: none;
-    }
-    iframe.active { display: block; }
-
-    /* ── Loading screen ── */
     #loader {
-      position: fixed;
-      inset: 0;
-      background: #07111F;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 28px;
-      z-index: 999;
-      transition: opacity 0.5s ease;
+      position: fixed; inset: 0; background: #07111F;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 28px;
     }
-    #loader.fade-out {
-      opacity: 0;
-      pointer-events: none;
-    }
-
-    .loader-logo {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-    }
+    .loader-logo { display: flex; align-items: center; gap: 14px; }
     .loader-mark {
-      width: 44px;
-      height: 44px;
-      background: #000666;
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 900;
-      font-size: 14px;
-      color: #fff;
-      letter-spacing: 1px;
-      font-family: system-ui, sans-serif;
+      width: 44px; height: 44px; background: #000666; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 900; font-size: 14px; color: #fff; letter-spacing: 1px;
     }
-    .loader-name {
-      font-family: system-ui, -apple-system, sans-serif;
-      font-weight: 800;
-      font-size: 22px;
-      color: #f1f5f9;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-    }
-    .loader-sub {
-      font-family: system-ui, sans-serif;
-      font-size: 11px;
-      color: #475569;
-      text-transform: uppercase;
-      letter-spacing: 3px;
-      margin-top: -22px;
-      padding-left: 58px;
-    }
-
-    /* Animated bar */
-    .loader-bar {
-      width: 180px;
-      height: 2px;
-      background: #1e293b;
-      border-radius: 2px;
-      overflow: hidden;
-    }
+    .loader-name { font-weight: 800; font-size: 22px; color: #f1f5f9; letter-spacing: 2px; text-transform: uppercase; }
+    .loader-sub { font-size: 11px; color: #475569; text-transform: uppercase; letter-spacing: 3px; margin-top: -22px; padding-left: 58px; }
+    .loader-bar { width: 180px; height: 2px; background: #1e293b; border-radius: 2px; overflow: hidden; }
     .loader-bar-fill {
-      height: 100%;
-      width: 0%;
-      background: linear-gradient(90deg, #000666, #2563eb, #06b6d4);
-      border-radius: 2px;
-      animation: load 1.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+      height: 100%; width: 0%; background: linear-gradient(90deg, #000666, #2563eb, #06b6d4);
+      border-radius: 2px; animation: load 1.8s cubic-bezier(0.4,0,0.2,1) forwards;
     }
-    @keyframes load {
-      0%   { width: 0%; opacity: 1; }
-      60%  { width: 75%; }
-      85%  { width: 92%; }
-      100% { width: 100%; }
-    }
-
-    /* Three dots pulse */
-    .loader-dots {
-      display: flex;
-      gap: 6px;
-      margin-top: -12px;
-    }
-    .loader-dots span {
-      width: 5px;
-      height: 5px;
-      border-radius: 50%;
-      background: #334155;
-      animation: pulse 1.2s ease-in-out infinite;
-    }
+    @keyframes load { 0%{width:0%;opacity:1} 60%{width:75%} 85%{width:92%} 100%{width:100%} }
+    .loader-dots { display: flex; gap: 6px; margin-top: -12px; }
+    .loader-dots span { width: 5px; height: 5px; border-radius: 50%; background: #334155; animation: pulse 1.2s ease-in-out infinite; }
     .loader-dots span:nth-child(2) { animation-delay: 0.2s; }
     .loader-dots span:nth-child(3) { animation-delay: 0.4s; }
-    @keyframes pulse {
-      0%, 100% { background: #334155; transform: scale(1); }
-      50%       { background: #2563eb; transform: scale(1.4); }
-    }
+    @keyframes pulse { 0%,100%{background:#334155;transform:scale(1)} 50%{background:#2563eb;transform:scale(1.4)} }
   </style>
 </head>
 <body>
-
-  <!-- Loading screen — shown until first iframe fires onload -->
   <div id="loader">
     <div class="loader-logo">
       <div class="loader-mark">QR</div>
@@ -130,10 +44,8 @@
     <div class="loader-bar"><div class="loader-bar-fill"></div></div>
     <div class="loader-dots"><span></span><span></span><span></span></div>
   </div>
-
   <script>
-    (function () {
-      var PAGES = ['scanner','dashboard','reports','visitors','kiosk','admin'];
+    (function() {
       var s = [
         'aHR0cHM6Ly9zY3JpcHQuZ29vZ2xl',
         'LmNvbS9tYWNyb3Mvcy9BS2Z5Y2J4',
@@ -142,53 +54,13 @@
         'WGppOWlfLTktQS9leGVj'
       ].join('');
       var base = atob(s);
-      var cur  = new URLSearchParams(location.search).get('page') || 'scanner';
-      if (PAGES.indexOf(cur) === -1) cur = 'scanner';
-
-      var loader   = document.getElementById('loader');
-      var revealed = false;
-
-      function reveal() {
-        if (revealed) return;
-        revealed = true;
-        loader.classList.add('fade-out');
-        setTimeout(function () { loader.style.display = 'none'; }, 520);
-      }
-
-      // Pre-load all 6 iframes. Active one triggers reveal on load.
-      PAGES.forEach(function (p) {
-        var f = document.createElement('iframe');
-        f.id  = 'f-' + p;
-        f.src = base + '?page=' + p;
-        f.allow = 'camera; microphone; clipboard-write';
-        f.setAttribute('allowfullscreen', '');
-        if (p === cur) {
-          f.classList.add('active');
-          f.onload = reveal;
-          // Safety fallback — never leave loader up forever
-          setTimeout(reveal, 8000);
-        }
-        document.body.appendChild(f);
-      });
-
-      // Navigation from any GAS iframe via postMessage
-      window.addEventListener('message', function (e) {
-        var pg = e.data && e.data.qratt_nav;
-        if (!pg || PAGES.indexOf(pg) === -1) return;
-        PAGES.forEach(function (p) {
-          document.getElementById('f-' + p).classList.toggle('active', p === pg);
-        });
-        history.pushState({}, '', location.pathname + '?page=' + pg);
-      });
-
-      // Browser back / forward
-      window.addEventListener('popstate', function () {
-        var pg = new URLSearchParams(location.search).get('page') || 'scanner';
-        if (PAGES.indexOf(pg) === -1) pg = 'scanner';
-        PAGES.forEach(function (p) {
-          document.getElementById('f-' + p).classList.toggle('active', p === pg);
-        });
-      });
+      var page = new URLSearchParams(location.search).get('page') || 'scanner';
+      var valid = ['scanner','dashboard','reports','visitors','kiosk','admin','idcards'];
+      if (valid.indexOf(page) === -1) page = 'scanner';
+      // Redirect directly — no iframe, works on all mobile browsers
+      setTimeout(function() {
+        window.location.replace(base + '?page=' + page);
+      }, 1200);
     })();
   </script>
 </body>
