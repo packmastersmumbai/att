@@ -65,7 +65,7 @@
 
   <script>
     (function() {
-      var base = 'https://script.google.com/macros/s/AKfycbx7g4aIM0LCZZ5a0hRjj1vKDLrOUg0gLHz3CMjRJd9Q41SdxGILhDVdUFuvN3puhMbxhg/exec';
+      var base = 'https://script.google.com/macros/s/AKfycbyCOuEXP7MCIECb5RPdA0QB2i0l2kZBynmKom8W8yd4HPP3dJtRcMWZvl6PtM4fWDDKzQ/exec';
       var valid = ['scanner','dashboard','reports','visitors','kiosk','admin','idcards'];
       var page = new URLSearchParams(location.search).get('page') || 'kiosk';
       if (valid.indexOf(page) === -1) page = 'kiosk';
@@ -77,7 +77,7 @@
         loader.style.display = 'flex';
         loader.style.opacity = '1';
         app.classList.remove('ready');
-        app.src = base + '?page=' + pg;
+        app.src = base + '?page=' + pg + '&v=99';
         history.replaceState(null, '', '?page=' + pg);
       }
 

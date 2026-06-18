@@ -33,35 +33,52 @@
 
     /* ── LEFT SIDEBAR ── */
     .sidebar {
-      width: 240px; flex-shrink: 0;
-      background: #fff; border-right: 1px solid #e8e3e0;
-      display: flex; flex-direction: column;
-      height: 100vh; overflow: hidden;
+      width: 240px;
+      flex-shrink: 0;
+      background: #fff;
+      border-right: 1px solid #e8e3e0;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
     }
     .sb-top { padding: 20px 16px 12px; border-bottom: 1px solid #e8e3e0; }
     .sb-logo { display: flex; align-items: center; gap: 10px; }
     .sb-logo-mark {
-      width: 32px; height: 32px; background: #000666; color: #fff;
-      border-radius: 4px; display: flex; align-items: center; justify-content: center;
+      width: 32px; height: 32px;
+      background: #000666; color: #fff;
+      border-radius: 4px;
+      display: flex; align-items: center; justify-content: center;
       font-weight: 800; font-size: 12px; flex-shrink: 0;
     }
     .sb-logo-name { font-weight: 800; font-size: 16px; color: #000666; line-height: 1; }
-    .sb-logo-sub  { font-size: 11px; color: #6b7280; text-transform: uppercase; letter-spacing: 1.5px; margin-top: 2px; }
-    .sb-nav { flex: 1; padding: 12px 8px; display: flex; flex-direction: column; gap: 2px; overflow-y: auto; }
+    .sb-logo-sub { font-size: 11px; color: #6b7280; text-transform: uppercase; letter-spacing: 1.5px; margin-top: 2px; }
+    .sb-nav {
+      flex: 1; padding: 12px 8px;
+      display: flex; flex-direction: column; gap: 2px;
+      overflow-y: auto;
+    }
     .sb-item {
       display: flex; align-items: center; gap: 10px;
       padding: 9px 10px; border-radius: 4px;
-      font-size: 13px; font-weight: 500; color: #4a5568; text-decoration: none;
+      font-size: 13px; font-weight: 500; color: #4a5568;
+      text-decoration: none;
       transition: background .15s, color .15s;
     }
     .sb-item:hover { background: #f5f0ee; color: #1b1c1c; }
     .sb-item.active { background: #000666; color: #fff; }
     .sb-icon { width: 16px; height: 16px; flex-shrink: 0; }
-    .sb-bottom { padding: 12px 8px; border-top: 1px solid #e8e3e0; display: flex; flex-direction: column; gap: 8px; }
+    .sb-bottom {
+      padding: 12px 8px;
+      border-top: 1px solid #e8e3e0;
+      display: flex; flex-direction: column; gap: 8px;
+    }
     .sb-add-btn {
-      background: #006b5f; color: #fff; border: none; border-radius: 4px;
-      padding: 10px 14px; font-size: 13px; font-weight: 600; font-family: inherit;
-      cursor: pointer; text-align: center; transition: background .15s;
+      background: #006b5f; color: #fff;
+      border: none; border-radius: 4px;
+      padding: 10px 14px; font-size: 13px; font-weight: 600;
+      font-family: inherit; cursor: pointer; text-align: center;
+      transition: background .15s;
     }
     .sb-add-btn:hover { background: #005a4f; }
     .sb-user { display: flex; align-items: center; gap: 10px; padding: 8px 10px; }
@@ -72,33 +89,55 @@
       font-size: 10px; font-weight: 700; flex-shrink: 0;
     }
     .sb-user-name { font-size: 12px; font-weight: 600; color: #1b1c1c; }
-    .sb-user-sub  { font-size: 10px; color: #6b7280; margin-top: 1px; }
+    .sb-user-sub { font-size: 10px; color: #6b7280; margin-top: 1px; }
 
     /* ── MAIN AREA ── */
-    .main-area { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+    .main-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
 
     /* ── TOP HEADER ── */
     .top-header {
-      background: #fff; border-bottom: 1px solid #e8e3e0;
+      background: #fff;
+      border-bottom: 1px solid #e8e3e0;
       padding: 14px 24px;
-      display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
     }
-    .th-left h1 { font-size: 20px; font-weight: 800; color: #1b1c1c; line-height: 1; }
-    .th-date    { font-size: 12px; color: #4a5568; margin-top: 3px; }
-    .th-right   { display: flex; align-items: center; gap: 8px; }
+    .th-left h1 {
+      font-size: 20px; font-weight: 800; color: #1b1c1c; line-height: 1;
+    }
+    .th-date {
+      font-size: 12px; color: #4a5568; margin-top: 3px;
+    }
+    .th-right {
+      display: flex; align-items: center; gap: 8px;
+    }
     .th-btn {
       display: inline-flex; align-items: center; gap: 6px;
       padding: 8px 14px; border-radius: 4px;
-      font-size: 13px; font-weight: 600; font-family: inherit; cursor: pointer; transition: background .15s;
+      font-size: 13px; font-weight: 600; font-family: inherit;
+      cursor: pointer; transition: background .15s;
     }
-    .th-btn-ghost { background: transparent; color: #4a5568; border: 1px solid #e8e3e0; }
+    .th-btn-ghost {
+      background: transparent; color: #4a5568;
+      border: 1px solid #e8e3e0;
+    }
     .th-btn-ghost:hover { background: #f5f0ee; color: #1b1c1c; }
-    .th-btn-teal  { background: #006b5f; color: #fff; border: none; }
+    .th-btn-teal {
+      background: #006b5f; color: #fff; border: none;
+    }
     .th-btn-teal:hover { background: #005a4f; }
     .th-icon-btn {
       width: 36px; height: 36px; border-radius: 4px;
       display: flex; align-items: center; justify-content: center;
-      background: transparent; border: 1px solid #e8e3e0; color: #4a5568; cursor: pointer;
+      background: transparent; border: 1px solid #e8e3e0;
+      color: #4a5568; cursor: pointer;
       transition: background .15s, color .15s;
     }
     .th-icon-btn:hover { background: #f5f0ee; color: #1b1c1c; }
@@ -114,111 +153,108 @@
 
     /* ── 6-KPI GRID ── */
     .kpi-grid-6 {
-      display: grid; grid-template-columns: repeat(6, minmax(120px, 1fr));
-      gap: 14px; margin-bottom: 24px;
+      display: grid;
+      grid-template-columns: repeat(6, minmax(120px, 1fr));
+      gap: 14px;
+      margin-bottom: 24px;
     }
     .kpi-chip {
-      background: var(--color-surface); border-radius: var(--radius-md);
-      padding: 16px 14px 14px; box-shadow: var(--shadow-sm);
-      text-align: left; position: relative; overflow: hidden;
-    }
-    .kpi-chip .kpi-label { font-size: 10px; color: var(--color-text-muted); text-transform: uppercase; letter-spacing: .06em; font-weight: 600; margin-bottom: 6px; }
-    .kpi-chip .kpi-sub  { font-size: 11px; color: #6b7280; text-transform: uppercase; letter-spacing: .05em; margin-top: 1px; }
-    .kpi-chip .value    { font-size: 30px; font-weight: 800; line-height: 1; }
-    .kpi-accent { position: absolute; bottom: 0; left: 0; right: 0; height: 3px; }
-    .acc-blue   { background: #2563EB; } .acc-red    { background: #DC2626; }
-    .acc-amber  { background: #D97706; } .acc-green  { background: #16A34A; }
-    .acc-purple { background: #7C3AED; } .acc-teal   { background: #0891B2; }
-
-    /* ── CHARTS ROW (TOP) ── */
-    .charts-row {
-      display: grid; grid-template-columns: 1fr 1fr;
-      gap: 14px; margin-bottom: 24px;
-    }
-    .card {
-      background: var(--color-surface); border-radius: var(--radius-md);
-      box-shadow: var(--shadow-sm); padding: 16px;
-    }
-    .card-title {
-      font-size: 13px; font-weight: 700; color: var(--color-text);
-      margin-bottom: 10px;
-    }
-
-    /* ── PRESENT / ABSENT SIDE-BY-SIDE ── */
-    .attendance-grid {
-      display: grid; grid-template-columns: 1fr 1fr;
-      gap: 16px; margin-bottom: 24px;
-    }
-    .att-card {
-      background: var(--color-surface); border-radius: var(--radius-md);
-      box-shadow: var(--shadow-sm); display: flex; flex-direction: column;
+      background: var(--color-surface);
+      border-radius: var(--radius-md);
+      padding: 16px 14px 14px;
+      box-shadow: var(--shadow-sm);
+      text-align: left;
+      position: relative;
       overflow: hidden;
     }
-    .att-header {
-      padding: 12px 16px; border-bottom: 1px solid var(--color-border);
-      display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
+    .kpi-chip .kpi-label {
+      font-size: 10px; color: var(--color-text-muted);
+      text-transform: uppercase; letter-spacing: .06em;
+      font-weight: 600; margin-bottom: 6px;
     }
-    .att-header-title { font-size: 13px; font-weight: 700; }
-    .att-badge {
-      font-size: 10px; font-weight: 700; padding: 2px 8px;
-      border-radius: 99px; letter-spacing: .4px;
+    .kpi-chip .kpi-sub {
+      font-size: 11px; color: #6b7280; text-transform: uppercase; letter-spacing: .05em;
+      margin-top: 1px;
     }
-    .att-badge-present { background: #DCFCE7; color: #166534; }
-    .att-badge-absent  { background: #FEE2E2; color: #991B1B; }
+    .kpi-chip .value {
+      font-size: 30px; font-weight: 800; line-height: 1;
+    }
+    .kpi-accent { position: absolute; bottom: 0; left: 0; right: 0; height: 3px; }
+    .acc-blue   { background: #2563EB; }
+    .acc-red    { background: #DC2626; }
+    .acc-amber  { background: #D97706; }
+    .acc-green  { background: #16A34A; }
+    .acc-purple { background: #7C3AED; }
+    .acc-teal   { background: #0891B2; }
 
-    /* ── TABLE ── */
-    .att-table { width: 100%; border-collapse: collapse; font-size: 12px; }
-    .att-table th {
-      text-align: left; font-size: 10px; font-weight: 700; text-transform: uppercase;
-      letter-spacing: .06em; color: var(--color-text-muted);
-      padding: 8px 14px; border-bottom: 1px solid var(--color-border);
-      background: #faf9f8;
-    }
-    .att-table td {
-      padding: 9px 14px; border-bottom: 1px solid var(--color-border);
-      vertical-align: middle;
-    }
-    .att-table tr:last-child td { border-bottom: none; }
-    .att-table tr:hover td { background: #faf9f8; }
-
-    .t-av {
-      width: 28px; height: 28px; border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 10px; font-weight: 700; flex-shrink: 0;
-    }
-    .t-name { font-weight: 600; color: var(--color-text); }
-    .t-dept { font-size: 10px; color: var(--color-text-muted); margin-top: 1px; }
-    .t-time { font-family: var(--font-mono); font-size: 11px; color: var(--color-text-muted); }
-    .t-dept-badge {
-      font-size: 10px; font-weight: 700; text-transform: uppercase;
-      padding: 2px 6px; border-radius: 3px; white-space: nowrap;
+    /* ── TWO-COLUMN LAYOUT ── */
+    .dash-grid {
+      display: grid;
+      grid-template-columns: 1fr 280px;
+      gap: 20px;
+      align-items: start;
     }
 
-    /* OUT button */
-    .btn-out {
-      font-size: 10px; font-weight: 700; letter-spacing: .05em;
-      padding: 3px 9px; border-radius: 3px;
-      border: 1px solid #e8e3e0; color: #4a5568; background: #fff;
-      cursor: pointer; white-space: nowrap;
-      transition: border-color .15s, color .15s, background .15s;
-    }
-    .btn-out:hover { border-color: #DC2626; color: #DC2626; background: #FEF2F2; }
-
-    /* empty state */
-    .att-empty { padding: 20px 16px; text-align: center; font-size: 12px; color: var(--color-text-muted); }
-
-    /* ── ACTIVITY FEED + SYSTEM STATUS ── */
-    .bottom-row {
-      display: grid; grid-template-columns: 1fr 280px;
-      gap: 16px;
-    }
     .section-title {
-      font-size: 13px; font-weight: 700; margin: 0 0 10px;
+      font-size: 14px; font-weight: 700;
+      margin: 0 0 12px;
       display: flex; align-items: center; justify-content: space-between;
     }
+    .section-title a {
+      font-size: 12px; font-weight: 500;
+      color: var(--color-primary);
+      cursor: pointer;
+    }
+
+    .card {
+      background: var(--color-surface);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-sm);
+      padding: 16px;
+    }
+
+    /* ── PERSON CHIPS ── */
+    .person-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+    .person-chip {
+      background: var(--color-surface);
+      border-radius: var(--radius-sm);
+      padding: 10px 12px;
+      display: flex; align-items: center; gap: 10px;
+      box-shadow: var(--shadow-sm); font-size: 13px;
+    }
+    .person-chip .p-av {
+      width: 32px; height: 32px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 700; flex-shrink: 0;
+    }
+    .person-chip .p-name {
+      font-weight: 600; font-size: 12px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .person-chip .p-dept { font-size: 10px; color: var(--color-text-muted); }
+    .person-chip .p-meta { flex: 1; min-width: 0; }
+    .person-chip .p-right {
+      display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0;
+    }
+    .role-badge {
+      font-size: 11px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .05em; padding: 2px 6px; border-radius: 3px;
+    }
+    .p-time {
+      font-size: 10px; color: var(--color-text-muted);
+      font-family: var(--font-mono);
+    }
+
+    /* ── ACTIVITY FEED ── */
     .activity-item {
       display: flex; align-items: center; gap: 10px;
-      padding: 9px 0; border-bottom: 1px solid var(--color-border); font-size: 13px;
+      padding: 9px 0; border-bottom: 1px solid var(--color-border);
+      font-size: 13px;
     }
     .activity-item:last-child { border-bottom: none; }
     .act-av {
@@ -226,67 +262,304 @@
       display: flex; align-items: center; justify-content: center;
       font-size: 11px; font-weight: 700; flex-shrink: 0;
     }
-    .act-desc  { flex: 1; font-size: 12px; color: var(--color-text); line-height: 1.4; }
+    .act-desc { flex: 1; font-size: 12px; color: var(--color-text); line-height: 1.4; }
     .act-badge {
       font-size: 10px; font-weight: 700; text-transform: uppercase;
       padding: 3px 8px; border-radius: 99px; flex-shrink: 0; letter-spacing: .04em;
     }
     .act-badge-success { background: #DCFCE7; color: #166534; }
-    .act-badge-pending { background: #FEF3C7; color: #92400E; }
-    .act-badge-denied  { background: #FEE2E2; color: #991B1B; }
+    .act-badge-pending  { background: #FEF3C7; color: #92400E; }
+    .act-badge-denied   { background: #FEE2E2; color: #991B1B; }
 
-    /* ── SYSTEM STATUS ── */
+    /* ── CHARTS ROW ── */
+    .charts-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 14px; }
+
+    /* ── RIGHT SIDEBAR CARDS ── */
+    .right-sidebar { display: flex; flex-direction: column; gap: 14px; }
+
+    .roster-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 0; border-bottom: 1px solid var(--color-border);
+    }
+    .roster-item:last-child { border-bottom: none; }
+    .r-av {
+      width: 30px; height: 30px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 10px; font-weight: 700; flex-shrink: 0;
+      background: #FEF3C7; color: #92400E;
+    }
+    .r-info { flex: 1; min-width: 0; }
+    .r-name { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .r-exp  { font-size: 11px; color: var(--color-text-muted); }
+    .btn-notify {
+      font-size: 10px; padding: 4px 9px;
+      border-radius: 4px; font-weight: 700;
+      background: rgba(37,99,235,.08); color: var(--color-primary);
+      border: 1px solid rgba(37,99,235,.2);
+      cursor: pointer; white-space: nowrap;
+      transition: background .15s; letter-spacing: .04em;
+    }
+    .btn-notify:hover { background: rgba(37,99,235,.15); }
+
+    /* ── SYSTEM STATUS CARD (dark teal) ── */
     .system-status-card {
-      background: #006b5f; border-radius: var(--radius-md);
-      box-shadow: var(--shadow-sm); padding: 16px; color: #fff;
+      background: #006b5f;
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-sm);
+      padding: 16px;
+      color: #fff;
     }
-    .sys-title { font-size: 13px; font-weight: 700; color: rgba(255,255,255,.7); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 12px; }
-    .status-row { display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 5px 0; }
+    .sys-title {
+      font-size: 13px; font-weight: 700; color: rgba(255,255,255,.7);
+      text-transform: uppercase; letter-spacing: .08em; margin-bottom: 12px;
+    }
+    .status-row {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 13px; padding: 5px 0;
+    }
     .status-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-    .sd-green  { background: #4ade80; } .sd-amber { background: #fbbf24; }
+    .sd-green  { background: #4ade80; }
+    .sd-amber  { background: #fbbf24; }
     .status-label { flex: 1; color: rgba(255,255,255,.9); }
-    .status-val   { font-size: 11px; color: rgba(255,255,255,.6); }
-    .sys-message  { margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,.15); font-size: 11px; color: rgba(255,255,255,.75); line-height: 1.6; }
-    .sys-sync-time{ margin-top: 8px; font-size: 10px; color: rgba(255,255,255,.5); }
-
-    /* ── TOAST ── */
-    .ds-toast { position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1b1c1c;color:#fff;padding:10px 18px;border-radius:4px;font-size:13px;font-weight:500;z-index:9999;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90vw;text-align:center; }
-    .ds-toast.show { opacity:1; }
-    .ds-toast.toast-error   { background:#DC2626; }
-    .ds-toast.toast-success { background:#006b5f; }
-
-    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration:.01ms!important; transition-duration:.01ms!important; } }
-
-    /* ── MOBILE ── */
-    .mob-dash { display: none; }
-    @media (max-width: 640px) {
-      .sidebar, .main-area { display: none !important; }
-      .mob-dash { display: flex; flex-direction: column; height: 100vh; width: 100%; background: var(--color-bg); overflow: hidden; }
-      .mob-header { display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:var(--color-surface);border-bottom:1px solid var(--color-border);flex-shrink:0; }
-      .mob-brand { font-size:15px;font-weight:800;color:var(--color-primary); }
-      .mob-date  { font-size:10px;color:var(--color-text-muted);margin-top:1px; }
-      .mob-export-btn { background:var(--color-primary);color:#fff;border:none;border-radius:3px;padding:7px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit; }
-      .mob-body { flex:1;overflow-y:auto;padding:14px;padding-bottom:72px;display:flex;flex-direction:column;gap:14px; }
-      .mob-kpi-row { display:grid;grid-template-columns:1fr 1fr;gap:10px; }
-      .mob-kpi { background:var(--color-surface);border:1px solid var(--color-border);border-radius:4px;padding:14px; }
-      .mob-kpi-val { font-size:28px;font-weight:900;color:var(--color-primary);line-height:1; }
-      .mob-kpi-lbl { font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--color-text-muted);margin-top:4px; }
-      .mob-section-hdr { display:flex;align-items:baseline;justify-content:space-between;margin-bottom:10px; }
-      .mob-section-title { font-size:13px;font-weight:700; }
-      .mob-att-tabs { display:flex;gap:2px;border-bottom:1px solid var(--color-border); }
-      .mob-att-tab { padding:8px 14px;font-size:12px;font-weight:600;color:var(--color-text-muted);border-bottom:2px solid transparent;cursor:pointer;background:none;border-top:none;border-left:none;border-right:none;font-family:inherit; }
-      .mob-att-tab.active { color:var(--color-primary);border-bottom-color:var(--color-primary); }
-      .mob-att-panel { display:none;padding-top:8px; }
-      .mob-att-panel.active { display:block; }
-      .mob-bottom-bar { position:fixed;bottom:0;left:0;right:0;height:56px;background:var(--color-primary);display:flex;align-items:stretch;z-index:100; }
-      .mob-bottom-item { flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,.5);text-decoration:none;cursor:pointer;transition:color .15s; }
-      .mob-bottom-item.active { color:#fff; }
-      .mob-bottom-item svg { width:18px;height:18px; }
-      .mob-clock-txt { font-size:11px;font-weight:800;font-family:'Roboto Mono',monospace;color:rgba(255,255,255,.7); }
+    .status-val { font-size: 11px; color: rgba(255,255,255,.6); }
+    .sys-message {
+      margin-top: 12px; padding-top: 12px;
+      border-top: 1px solid rgba(255,255,255,.15);
+      font-size: 11px; color: rgba(255,255,255,.75);
+      line-height: 1.6;
     }
-    @media (max-width: 900px) and (min-width: 641px) {
-      .attendance-grid { grid-template-columns: 1fr; }
-      .bottom-row { grid-template-columns: 1fr; }
+    .sys-sync-time {
+      margin-top: 8px; font-size: 10px; color: rgba(255,255,255,.5);
+    }
+    .btn-gen-report {
+      width: 100%; margin-top: 10px; font-size: 12px; font-weight: 600;
+      padding: 8px 12px; border-radius: 4px;
+      background: transparent; color: var(--color-primary);
+      border: 1px solid var(--color-border);
+      cursor: pointer; transition: background .15s; font-family: inherit;
+    }
+    .btn-gen-report:hover { background: #f5f0ee; }
+
+    @keyframes slideUp { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+    @media print { .no-print { display: none !important; } body { background: white; } }
+
+    /* ── Absent Roster panel ── */
+    .absent-panel {
+      width: 280px;
+      flex-shrink: 0;
+      background: var(--color-surface, #fff);
+      border-left: 1px solid var(--color-border, #e8e3e0);
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      overflow: hidden;
+    }
+    .ab-header {
+      padding: 16px 16px 12px;
+      border-bottom: 1px solid var(--color-border, #e8e3e0);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .ab-title { font-size: 13px; font-weight: 700; }
+    .ab-badge {
+      background: #FEE2E2;
+      color: #991B1B;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 99px;
+      letter-spacing: .5px;
+    }
+    .ab-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .ab-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 8px;
+      border-radius: 4px;
+      transition: background .15s;
+    }
+    .ab-row:hover { background: #f5f0ee; }
+    .ab-av {
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 700;
+      flex-shrink: 0;
+    }
+    .ab-info { flex: 1; min-width: 0; }
+    .ab-name { font-size: 12px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .ab-expected { font-size: 10px; color: #6b7280; margin-top: 1px; }
+    .btn-notify-panel {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 4px 9px;
+      border-radius: 3px;
+      border: 1px solid #e8e3e0;
+      color: #4a5568;
+      background: #fff;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: border-color .15s, color .15s;
+      flex-shrink: 0;
+    }
+    .btn-notify-panel:hover { border-color: #000666; color: #000666; }
+    .ab-footer {
+      padding: 12px 16px;
+      border-top: 1px solid #e8e3e0;
+    }
+    .ab-report-link {
+      font-size: 11px;
+      font-weight: 600;
+      color: #000666;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .ab-report-link:hover { text-decoration: underline; }
+    @media (max-width: 900px) { .absent-panel { display: none; } }
+
+    /* ══════════════════════════
+       MOBILE DASHBOARD LAYOUT
+    ══════════════════════════ */
+    .mob-dash { display: none; }
+
+    @media (max-width: 640px) {
+      /* Hide desktop layout, show mobile */
+      .sidebar, .main-area, .absent-panel { display: none !important; }
+      .mob-dash { display: flex; flex-direction: column; height: 100vh; width: 100%; background: var(--color-bg); overflow: hidden; }
+
+      /* Mobile header */
+      .mob-header {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 14px 16px;
+        background: var(--color-surface);
+        border-bottom: 1px solid var(--color-border);
+        flex-shrink: 0;
+      }
+      .mob-brand { font-size: 15px; font-weight: 800; color: var(--color-primary); }
+      .mob-date  { font-size: 10px; color: var(--color-text-muted); margin-top: 1px; }
+      .mob-export-btn {
+        background: var(--color-primary); color: #fff;
+        border: none; border-radius: 3px;
+        padding: 7px 12px; font-size: 11px; font-weight: 700;
+        cursor: pointer; font-family: inherit;
+      }
+
+      /* Mobile scrollable body */
+      .mob-body { flex: 1; overflow-y: auto; padding: 14px; padding-bottom: 72px; display: flex; flex-direction: column; gap: 14px; }
+
+      /* KPI tiles */
+      .mob-kpi-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+      .mob-kpi {
+        background: var(--color-surface);
+        border: 1px solid var(--color-border);
+        border-radius: 4px; padding: 14px;
+      }
+      .mob-kpi-val { font-size: 28px; font-weight: 900; color: var(--color-primary); line-height: 1; }
+      .mob-kpi-lbl { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--color-text-muted); margin-top: 4px; }
+      .mob-kpi-sub { font-size: 11px; color: #10B981; font-weight: 600; margin-top: 2px; }
+
+      /* Personnel section */
+      .mob-section-hdr { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 10px; }
+      .mob-section-title { font-size: 13px; font-weight: 700; }
+      .mob-section-sub   { font-size: 10px; color: var(--color-text-muted); }
+      .mob-section-link  { font-size: 11px; font-weight: 600; color: var(--color-primary); }
+
+      .mob-person-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+      .mob-person {
+        background: var(--color-surface);
+        border: 1px solid var(--color-border);
+        border-radius: 4px; padding: 10px 8px;
+        text-align: center;
+      }
+      .mob-person-av {
+        width: 36px; height: 36px; border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 11px; font-weight: 800;
+        margin: 0 auto 6px;
+      }
+      .mob-person-name { font-size: 10px; font-weight: 600; line-height: 1.2; }
+      .mob-person-badge {
+        display: inline-block; margin-top: 4px;
+        padding: 1px 6px; border-radius: 3px;
+        font-size: 11px; font-weight: 700; text-transform: uppercase;
+      }
+      .mpb-present { background: #DCFCE7; color: #166534; }
+      .mpb-absent  { background: #FEE2E2; color: #991B1B; }
+
+      /* Feed tabs */
+      .mob-tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--color-border); }
+      .mob-tab {
+        padding: 8px 14px; font-size: 12px; font-weight: 600;
+        color: var(--color-text-muted); border-bottom: 2px solid transparent;
+        cursor: pointer; background: none; border-top: none; border-left: none; border-right: none;
+        font-family: inherit;
+      }
+      .mob-tab.active { color: var(--color-primary); border-bottom-color: var(--color-primary); }
+
+      .mob-tab-content { display: none; padding-top: 10px; }
+      .mob-tab-content.active { display: block; }
+
+      .mob-feed-row {
+        display: flex; align-items: center; gap: 10px;
+        padding: 9px 0;
+        border-bottom: 1px solid var(--color-border);
+      }
+      .mob-feed-av {
+        width: 30px; height: 30px; border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 10px; font-weight: 800; flex-shrink: 0;
+      }
+      .mob-feed-name { font-size: 12px; font-weight: 600; }
+      .mob-feed-sub  { font-size: 10px; color: var(--color-text-muted); margin-top: 1px; }
+      .mob-feed-badge {
+        margin-left: auto; flex-shrink: 0;
+        padding: 2px 7px; border-radius: 3px;
+        font-size: 11px; font-weight: 700; text-transform: uppercase;
+      }
+      .mfb-critical { background: #FEE2E2; color: #991B1B; }
+      .mfb-planned  { background: #DBEAFE; color: #1E40AF; }
+
+      /* System updates */
+      .mob-updates { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 4px; padding: 12px; }
+      .mob-update-row { display: flex; align-items: flex-start; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--color-border); }
+      .mob-update-row:last-child { border-bottom: none; }
+      .mob-update-dot { width: 6px; height: 6px; border-radius: 50%; background: #10B981; flex-shrink: 0; margin-top: 5px; }
+      .mob-update-text { font-size: 11px; flex: 1; line-height: 1.4; }
+      .mob-update-time { font-size: 11px; color: var(--color-text-muted); flex-shrink: 0; margin-top: 1px; }
+
+      /* Mobile bottom tab bar */
+      .mob-bottom-bar {
+        position: fixed; bottom: 0; left: 0; right: 0;
+        height: 56px;
+        background: var(--color-primary);
+        display: flex; align-items: stretch;
+        z-index: 100;
+      }
+      .mob-bottom-item {
+        flex: 1; display: flex; flex-direction: column;
+        align-items: center; justify-content: center;
+        gap: 2px; font-size: 11px; font-weight: 800;
+        letter-spacing: 1px; text-transform: uppercase;
+        color: rgba(255,255,255,.5);
+        text-decoration: none;
+        cursor: pointer;
+        transition: color .15s;
+      }
+      .mob-bottom-item.active { color: #fff; }
+      .mob-bottom-item svg { width: 18px; height: 18px; }
+      .mob-clock-txt { font-size: 11px; font-weight: 800; font-family: 'Roboto Mono', monospace; color: rgba(255,255,255,.7); }
     }
   </style>
 </head>
@@ -304,34 +577,34 @@
       </div>
     </div>
     <nav class="sb-nav" id="sidebarNav">
-      <a href="javascript:void(0)" class="sb-item" data-page="dashboard">
+      <a href="?page=dashboard" class="sb-item" data-page="dashboard">
         <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
         <span>Dashboard</span>
       </a>
-      <a href="javascript:void(0)" class="sb-item" data-page="visitors">
+      <a href="?page=visitors" class="sb-item" data-page="visitors">
         <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
         <span>Visitor Log</span>
       </a>
-      <a href="javascript:void(0)" class="sb-item" data-page="reports">
+      <a href="?page=reports" class="sb-item" data-page="reports">
         <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>
         <span>Reports</span>
       </a>
-      <a href="javascript:void(0)" class="sb-item" data-page="kiosk">
+      <a href="?page=kiosk" class="sb-item" data-page="kiosk">
         <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18"/></svg>
         <span>Kiosk</span>
       </a>
-      <a href="javascript:void(0)" class="sb-item" data-page="admin">
+      <a href="?page=admin" class="sb-item" data-page="admin">
         <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M12 14c-5 0-8 2-8 3v1h16v-1c0-1-3-3-8-3z"/></svg>
         <span>Settings</span>
       </a>
     </nav>
     <div class="sb-bottom">
-      <button class="sb-add-btn" onclick="if(typeof showScreen==='function')showScreen('admin')">+ Add New Personnel</button>
+      <button class="sb-add-btn" onclick="window.location='?page=admin'">+ Add New Personnel</button>
       <div class="sb-user">
-        <div class="sb-user-av" id="sbUserAv">–</div>
+        <div class="sb-user-av">IA</div>
         <div>
-          <div class="sb-user-name" id="sbUserName">–</div>
-          <div class="sb-user-sub" id="sbUserRole">–</div>
+          <div class="sb-user-name">Institutional Admin</div>
+          <div class="sb-user-sub">Sector 70 · Terminal</div>
         </div>
       </div>
     </div>
@@ -340,12 +613,14 @@
   <!-- ── MAIN AREA ── -->
   <div class="main-area">
 
+    <!-- Top Header -->
     <header class="top-header no-print">
       <div class="th-left">
         <h1>Dashboard</h1>
         <div class="th-date" id="headerDate"></div>
       </div>
       <div class="th-right">
+        <!-- Calendar icon -->
         <button class="th-icon-btn" title="Calendar">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
         </button>
@@ -357,16 +632,18 @@
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
           Export
         </button>
+        <!-- Bell icon -->
         <button class="th-icon-btn" title="Notifications">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
         </button>
-        <div class="th-avatar" id="headerAvatar" title="User">–</div>
+        <div class="th-avatar" title="Admin">IA</div>
       </div>
     </header>
 
+    <!-- Scrollable page content -->
     <div class="page-content">
 
-      <!-- KPIs -->
+      <!-- 6 KPIs -->
       <div class="kpi-grid-6">
         <div class="kpi-chip">
           <div class="kpi-label">Total Present</div>
@@ -376,6 +653,7 @@
         <div class="kpi-chip">
           <div class="kpi-label">Total Absent</div>
           <div class="value" id="kpiAbsent" style="color:#DC2626">–</div>
+          <div class="kpi-sub" id="kpiAbsentSub"></div>
           <div class="kpi-accent acc-red"></div>
         </div>
         <div class="kpi-chip">
@@ -400,77 +678,42 @@
         </div>
       </div>
 
-      <!-- CHARTS (top) -->
-      <div class="charts-row">
-        <div class="card">
-          <div class="card-title">14-Day Attendance Trend</div>
-          <div id="chartTrend" style="height:200px"></div>
-        </div>
-        <div class="card">
-          <div class="card-title">Peak Check-In Hours</div>
-          <div id="chartHours" style="height:200px"></div>
-        </div>
-      </div>
+      <!-- Main content + right sidebar -->
+      <div class="dash-grid">
 
-      <!-- PRESENT + ABSENT SIDE BY SIDE -->
-      <div class="attendance-grid">
-
-        <!-- Present -->
-        <div class="att-card">
-          <div class="att-header">
-            <div class="att-header-title">Present</div>
-            <span class="att-badge att-badge-present" id="presentBadge">0 in</span>
-          </div>
-          <div style="overflow-x:auto">
-            <table class="att-table" id="presentTable">
-              <thead>
-                <tr>
-                  <th style="width:36px"></th>
-                  <th>Name</th>
-                  <th>Dept</th>
-                  <th>In</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody id="presentBody">
-                <tr><td colspan="5"><div class="att-empty">Loading…</div></td></tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- Absent -->
-        <div class="att-card">
-          <div class="att-header">
-            <div class="att-header-title">Absent</div>
-            <span class="att-badge att-badge-absent" id="absentBadge">0 absent</span>
-          </div>
-          <div style="overflow-x:auto">
-            <table class="att-table" id="absentTable">
-              <thead>
-                <tr>
-                  <th style="width:36px"></th>
-                  <th>Name</th>
-                  <th>Dept</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody id="absentBody">
-                <tr><td colspan="4"><div class="att-empty">Loading…</div></td></tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-      </div><!-- /attendance-grid -->
-
-      <!-- ACTIVITY + SYSTEM STATUS -->
-      <div class="bottom-row">
+        <!-- ── Main column ── -->
         <div>
-          <div class="section-title">Recent Activity</div>
-          <div class="card" id="activityFeed"></div>
+          <div class="section-title">
+            Present Right Now
+            <a onclick="switchToSection('present')">View All</a>
+          </div>
+          <div class="person-grid" id="presentGrid"></div>
+
+          <div class="section-title" style="margin-top:4px">
+            Recent Activity
+          </div>
+          <div class="card" id="activityFeed" style="margin-bottom:0"></div>
+
+          <div class="section-title" style="margin-top:20px">Analytics</div>
+          <div class="charts-row">
+            <div class="card"><div id="chartTrend" style="height:200px"></div></div>
+            <div class="card"><div id="chartHours" style="height:200px"></div></div>
+          </div>
         </div>
-        <div>
+
+        <!-- ── Right Sidebar ── -->
+        <div class="right-sidebar">
+
+          <!-- Absent Roster -->
+          <div class="card" style="padding:14px 16px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+              <div style="font-size:13px;font-weight:700;color:var(--color-text)">Absent Roster</div>
+              <div id="absentBadge" style="font-size:11px;font-weight:600;color:#DC2626;background:#FEE2E2;padding:2px 8px;border-radius:20px">— absent</div>
+            </div>
+            <div id="absentRoster"><div style="color:var(--color-text-muted);font-size:12px;text-align:center;padding:8px 0">Loading…</div></div>
+          </div>
+
+          <!-- System Status (dark teal) -->
           <div class="system-status-card">
             <div class="sys-title">System Status</div>
             <div class="status-row">
@@ -487,54 +730,119 @@
               <div class="status-label">Auto-Checkout</div>
               <div class="status-val">Scheduled</div>
             </div>
-            <div class="sys-message">All terminals online and syncing with the central database.</div>
+            <div class="sys-message">
+              All registered terminals are currently online and syncing with the central database.
+            </div>
             <div class="sys-sync-time" id="syncTime">Loading data…</div>
           </div>
+
         </div>
       </div>
 
     </div><!-- /page-content -->
   </div><!-- /main-area -->
 
-  <!-- ══ MOBILE ══ -->
+  <!-- ── Absent Roster Panel ── -->
+  <div class="absent-panel no-print" id="absentPanel">
+    <div class="ab-header">
+      <div class="ab-title">Absent Roster</div>
+      <div class="ab-badge" id="abBadge">— Unaccounted</div>
+    </div>
+    <div class="ab-list" id="abList">
+      <div style="font-size:11px;color:#6b7280;padding:10px 8px">Loading…</div>
+    </div>
+    <div class="ab-footer">
+      <div class="ab-report-link" onclick="generateAbsenceReport()">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/></svg>
+        Generate Absence Report
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ MOBILE DASHBOARD ══ -->
   <div class="mob-dash">
     <div class="mob-header">
       <div>
-        <div class="mob-brand">QR Attendance</div>
+        <div class="mob-brand">Digital Registrar</div>
         <div class="mob-date" id="mobDate"></div>
       </div>
-      <button class="mob-export-btn" onclick="exportDashboard()">EXPORT</button>
+      <button class="mob-export-btn">EXPORT</button>
     </div>
+
     <div class="mob-body">
+
+      <!-- KPI tiles -->
       <div class="mob-kpi-row">
         <div class="mob-kpi">
           <div class="mob-kpi-val" id="mobPresent">–</div>
-          <div class="mob-kpi-lbl">Present</div>
+          <div class="mob-kpi-lbl">Active Sessions</div>
+          <div class="mob-kpi-sub" id="mobPresentSub">↑ loading</div>
         </div>
         <div class="mob-kpi">
-          <div class="mob-kpi-val" id="mobAbsent">–</div>
-          <div class="mob-kpi-lbl">Absent</div>
+          <div class="mob-kpi-val" id="mobOnTime">–%</div>
+          <div class="mob-kpi-lbl">Avg. Registry</div>
+          <div class="mob-kpi-sub">Institutional Goal Met</div>
         </div>
       </div>
+
+      <!-- Personnel -->
       <div>
-        <div class="mob-att-tabs">
-          <button class="mob-att-tab active" onclick="switchMobAtt('present',this)">Present</button>
-          <button class="mob-att-tab"        onclick="switchMobAtt('absent',this)">Absent</button>
+        <div class="mob-section-hdr">
+          <div>
+            <div class="mob-section-title">Personnel</div>
+            <div class="mob-section-sub">Management Staff Activity</div>
+          </div>
+          <a href="?page=admin" class="mob-section-link">View All</a>
         </div>
-        <div id="mob-present" class="mob-att-panel active"><div id="mobPresentList" style="font-size:11px;color:#6b7280;padding:10px 0">Loading…</div></div>
-        <div id="mob-absent"  class="mob-att-panel"><div id="mobAbsentList"  style="font-size:11px;color:#6b7280;padding:10px 0">Loading…</div></div>
+        <div class="mob-person-grid" id="mobPersonGrid">
+          <div style="grid-column:1/-1;font-size:11px;color:#6b7280">Loading…</div>
+        </div>
       </div>
-    </div>
+
+      <!-- Absent Roster / Activity Feed tabs -->
+      <div>
+        <div class="mob-tabs">
+          <button class="mob-tab active" onclick="switchMobTab('absent', this)">Absent Roster</button>
+          <button class="mob-tab"        onclick="switchMobTab('feed',   this)">Activity Feed</button>
+        </div>
+        <div id="mob-absent" class="mob-tab-content active">
+          <div id="mobAbsentList"><div style="font-size:11px;color:#6b7280;padding:10px 0">Loading…</div></div>
+        </div>
+        <div id="mob-feed" class="mob-tab-content">
+          <div id="mobFeedList"><div style="font-size:11px;color:#6b7280;padding:10px 0">Loading…</div></div>
+        </div>
+      </div>
+
+      <!-- System Updates -->
+      <div>
+        <div class="mob-section-hdr"><div class="mob-section-title">System Updates</div></div>
+        <div class="mob-updates">
+          <div class="mob-update-row">
+            <div class="mob-update-dot"></div>
+            <div class="mob-update-text">Registry sync completed for Department A-4.</div>
+            <div class="mob-update-time" id="mobSysTime1"></div>
+          </div>
+          <div class="mob-update-row">
+            <div class="mob-update-dot" style="background:#F59E0B"></div>
+            <div class="mob-update-text">Scheduled auto-checkout will run at 23:00.</div>
+            <div class="mob-update-time"></div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /mob-body -->
+
+    <!-- Bottom tab bar -->
     <nav class="mob-bottom-bar">
       <div class="mob-bottom-item">
         <div class="mob-clock-txt" id="mobClock">--:--</div>
-        <div>Live</div>
+        <div>Live Clock</div>
       </div>
-      <a href="javascript:void(0)" class="mob-bottom-item active" data-page="dashboard">
+      <a href="?page=dashboard" class="mob-bottom-item active">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
         Dashboard
       </a>
-      <a href="javascript:void(0)" class="mob-bottom-item" data-page="kiosk">
+      <a href="?page=kiosk" class="mob-bottom-item">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18"/></svg>
         Kiosk
       </a>
@@ -542,272 +850,319 @@
   </div>
 
   <script>
+    /* ── Active nav detection ── */
     (function() {
-      var el = document.getElementById('headerDate');
-      if (el) el.textContent = new Date().toLocaleDateString('en-US', { weekday:'long', year:'numeric', month:'short', day:'numeric' });
-      var md = document.getElementById('mobDate');
-      if (md) md.textContent = new Date().toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric' });
+      var p = (new URLSearchParams(window.location.search)).get('page') || 'dashboard';
+      document.querySelectorAll('#sidebarNav .sb-item[data-page]').forEach(function(a) {
+        if (a.dataset.page === p) a.classList.add('active');
+      });
     })();
 
-    /* populate sidebar user from session */
+    /* ── Header date ── */
     (function() {
-      try {
-        var u = JSON.parse(sessionStorage.getItem('qratt_user') || 'null');
-        if (!u) return;
-        var av = document.getElementById('sbUserAv');
-        var nm = document.getElementById('sbUserName');
-        var rl = document.getElementById('sbUserRole');
-        var ha = document.getElementById('headerAvatar');
-        var ini = u.name ? u.name.trim().split(/\s+/).map(function(w){return w[0]||'';}).join('').toUpperCase().slice(0,2) : '?';
-        if (av) av.textContent = ini;
-        if (nm) nm.textContent = u.name || '';
-        if (rl) rl.textContent = u.role || '';
-        if (ha) ha.textContent = ini;
-      } catch(_) {}
+      var el = document.getElementById('headerDate');
+      if (el) {
+        var now = new Date();
+        el.textContent = now.toLocaleDateString('en-US', { weekday:'long', year:'numeric', month:'short', day:'numeric' });
+      }
     })();
   </script>
 
   <script>
     function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
-    function post(data,callback){
-      var action=data.action;
-      var onErr=function(e){callback({success:false,error:e?e.message:'Unknown error'});};
-      if(typeof google==='undefined'||!google.script){callback({success:false,error:'Not in GAS'});return;}
-      var r=google.script.run.withSuccessHandler(callback).withFailureHandler(onErr);
-      if(action==='getDashboardData')    r.getDashboardData();
-      else if(action==='getAnalyticsData')r.getAnalyticsData(data.range);
-      else if(action==='getLogs')         r.getLogs(data.filters);
-      else if(action==='exportCSV')       r.exportCSV(data.filters);
-      else if(action==='manualCheckout')  r.manualCheckout(data.empId);
-      else callback({success:false,error:'Unknown: '+action});
-    }
+    function post(data,callback){var action=data.action;var onErr=function(e){callback({success:false,error:e?e.message:'Unknown error'});};if(typeof google==='undefined'||!google.script){callback({success:false,error:'Not in GAS'});return;}var r=google.script.run.withSuccessHandler(callback).withFailureHandler(onErr);if(action==='getDashboardData')r.getDashboardData();else if(action==='getAnalyticsData')r.getAnalyticsData(data.range);else if(action==='getLogs')r.getLogs(data.filters);else if(action==='exportCSV')r.exportCSV(data.filters);else callback({success:false,error:'Unknown: '+action});}
   </script>
 
   <script>
     google.charts.load('current', { packages: ['corechart'] });
-
-    var _dashStarted = false;
-    function _dashActivate() {
-      if (_dashStarted) return;
-      _dashStarted = true;
-      loadDashboard();
-      google.charts.setOnLoadCallback(loadAnalytics);
-      setInterval(loadDashboard, 10000);
-      setInterval(loadAnalytics, 60000);
-      setInterval(function(){
-        var c=document.getElementById('mobClock');
-        if(c){var n=new Date();c.textContent=(n.getHours()<10?'0':'')+n.getHours()+':'+(n.getMinutes()<10?'0':'')+n.getMinutes();}
-      }, 1000);
-    }
-    if (typeof registerScreen === 'function') registerScreen('dashboard', _dashActivate);
-    else _dashActivate();
+    // loadDashboard uses no charts — fire immediately for faster perceived load
+    loadDashboard();
+    // Analytics draws charts — must wait for Charts API to be ready
+    google.charts.setOnLoadCallback(loadAnalytics);
 
     var COLORS = ['#3B82F6','#8B5CF6','#EC4899','#F59E0B','#10B981','#06B6D4','#EF4444','#6366F1','#84CC16','#F97316'];
     function pickColor(name) {
-      var n=0; for(var i=0;i<(name||'').length;i++) n+=name.charCodeAt(i);
-      return COLORS[n%COLORS.length];
+      var n = 0;
+      for (var i = 0; i < (name||'').length; i++) n += name.charCodeAt(i);
+      return COLORS[n % COLORS.length];
     }
     function initials(name) {
-      var p=String(name||' ').trim().split(/\s+/);
-      return ((p[0]||'')[0]+((p[1]||'')[0]||'')).toUpperCase();
+      var p = String(name || ' ').trim().split(/\s+/);
+      return ((p[0]||'')[0] + ((p[1]||'')[0]||'')).toUpperCase();
     }
-    var ROLE_PALETTES=[
-      {bg:'#CCFBF1',fg:'#0F766E'},{bg:'#EDE9FE',fg:'#6D28D9'},
-      {bg:'#FEF3C7',fg:'#92400E'},{bg:'#DBEAFE',fg:'#1E40AF'},
-      {bg:'#FCE7F3',fg:'#9D174D'},{bg:'#DCFCE7',fg:'#166534'},
+
+    /* Role badge colours: cycle through a small palette by dept hash */
+    var ROLE_PALETTES = [
+      { bg:'#CCFBF1', fg:'#0F766E' },  /* teal   */
+      { bg:'#EDE9FE', fg:'#6D28D9' },  /* purple */
+      { bg:'#FEF3C7', fg:'#92400E' },  /* amber  */
+      { bg:'#DBEAFE', fg:'#1E40AF' },  /* blue   */
+      { bg:'#FCE7F3', fg:'#9D174D' },  /* pink   */
+      { bg:'#DCFCE7', fg:'#166534' },  /* green  */
     ];
-    function roleStyle(dept){var n=0;for(var i=0;i<(dept||'').length;i++) n+=dept.charCodeAt(i);return ROLE_PALETTES[n%ROLE_PALETTES.length];}
-    function deptLabel(dept){if(!dept)return'STAFF';var d=dept.trim().toUpperCase();if(d.length<=10)return d;var w=d.split(/\s+/)[0];return w.length<=10?w:w.substring(0,9)+'.';}
-    function fakeTime(name){var n=0;for(var i=0;i<(name||'').length;i++) n+=name.charCodeAt(i);var h=8+(n%3);var m=n%60;return(h<10?'0'+h:h)+':'+(m<10?'0'+m:m);}
+    function roleStyle(dept) {
+      var n = 0;
+      for (var i = 0; i < (dept||'').length; i++) n += dept.charCodeAt(i);
+      return ROLE_PALETTES[n % ROLE_PALETTES.length];
+    }
+    /* Shorten dept to a role label (≤10 chars) */
+    function deptLabel(dept) {
+      if (!dept) return 'STAFF';
+      var d = dept.trim().toUpperCase();
+      if (d.length <= 10) return d;
+      /* Use first word if long */
+      var w = d.split(/\s+/)[0];
+      return w.length <= 10 ? w : w.substring(0, 9) + '.';
+    }
+    /* Fake check-in time for display (derived from name so stable) */
+    function fakeTime(name) {
+      var n = 0;
+      for (var i = 0; i < (name||'').length; i++) n += name.charCodeAt(i);
+      var h = 8 + (n % 3);
+      var m = n % 60;
+      return (h < 10 ? '0'+h : h) + ':' + (m < 10 ? '0'+m : m);
+    }
 
     function loadDashboard() {
       post({ action: 'getDashboardData' }, function(data) {
         if (!data.success) {
-          var el=document.getElementById('syncTime');
-          if(el) el.textContent='⚠ Load failed: '+(data.error||'unknown');
+          var el = document.getElementById('syncTime');
+          if (el) el.textContent = '⚠ Load failed: ' + (data.error || 'unknown error');
           return;
         }
-        var present=data.present||0, absent=data.absent||0, total=present+absent;
+
+        var present   = data.present  || 0;
+        var absent    = data.absent   || 0;
+        var total     = present + absent;
+        var onTimePct = total > 0 ? Math.round(present / total * 100) : 0;
+        var pending   = data.activeVisitors || 0;
+
         document.getElementById('kpiPresent').textContent  = present;
         document.getElementById('kpiAbsent').textContent   = absent;
-        document.getElementById('kpiVisitors').textContent = data.visitors||0;
-        document.getElementById('kpiActive').textContent   = data.activeVisitors||0;
-        document.getElementById('kpiOnTime').textContent   = (total>0?Math.round(present/total*100):0)+'%';
-        document.getElementById('kpiPending').textContent  = data.activeVisitors||0;
-        document.getElementById('syncTime').textContent    = 'Last sync: '+new Date().toLocaleTimeString();
+        document.getElementById('kpiVisitors').textContent = data.visitors || 0;
+        document.getElementById('kpiActive').textContent   = data.activeVisitors || 0;
+        document.getElementById('kpiOnTime').textContent   = onTimePct + '%';
+        document.getElementById('kpiPending').textContent  = pending;
+        document.getElementById('syncTime').textContent    = 'Last sync: ' + new Date().toLocaleTimeString();
 
-        renderPresentTable(data.presentList||[]);
-        renderAbsentTable(data.absentList||[]);
-        renderActivity(data.recentActivity||[]);
-
-        /* mobile mirror */
-        var mp=document.getElementById('mobPresent'); if(mp) mp.textContent=present;
-        var ma=document.getElementById('mobAbsent');  if(ma) ma.textContent=absent;
-        renderMobList('mobPresentList', data.presentList||[], true);
-        renderMobList('mobAbsentList',  data.absentList||[],  false);
-      });
-    }
-
-    function renderPresentTable(people) {
-      var badge=document.getElementById('presentBadge');
-      if(badge) badge.textContent=people.length+' in';
-      var tbody=document.getElementById('presentBody');
-      if(!people.length){
-        tbody.innerHTML='<tr><td colspan="5"><div class="att-empty">No one present yet</div></td></tr>';
-        return;
-      }
-      tbody.innerHTML=people.map(function(p){
-        var name=p.Name||p.name||'';
-        var dept=p.Department||p.department||'';
-        var empId=p.EmpID||p.empId||p.id||'';
-        var c=pickColor(name); var ini=initials(name);
-        var rs=roleStyle(dept); var rl=deptLabel(dept);
-        var tm=p.TimeIN||fakeTime(name);
-        return '<tr>'+
-          '<td><div class="t-av" style="background:'+c+'22;color:'+c+'">'+esc(ini)+'</div></td>'+
-          '<td><div class="t-name">'+esc(name)+'</div></td>'+
-          '<td><span class="t-dept-badge" style="background:'+rs.bg+';color:'+rs.fg+'">'+esc(rl)+'</span></td>'+
-          '<td><span class="t-time">'+esc(tm)+'</span></td>'+
-          '<td><button class="btn-out" onclick="manualCheckout(\''+esc(empId)+'\',\''+esc(name)+'\',this)">OUT</button></td>'+
-          '</tr>';
-      }).join('');
-    }
-
-    function renderAbsentTable(people) {
-      var badge=document.getElementById('absentBadge');
-      if(badge) badge.textContent=people.length+' absent';
-      var tbody=document.getElementById('absentBody');
-      if(!people.length){
-        tbody.innerHTML='<tr><td colspan="4"><div class="att-empty">Everyone accounted for</div></td></tr>';
-        return;
-      }
-      tbody.innerHTML=people.map(function(p){
-        var name=p.Name||p.name||'';
-        var dept=p.Department||p.department||'';
-        var c=pickColor(name); var ini=initials(name);
-        var rs=roleStyle(dept); var rl=deptLabel(dept);
-        return '<tr>'+
-          '<td><div class="t-av" style="background:'+c+'22;color:'+c+'">'+esc(ini)+'</div></td>'+
-          '<td><div class="t-name">'+esc(name)+'</div></td>'+
-          '<td><span class="t-dept-badge" style="background:'+rs.bg+';color:'+rs.fg+'">'+esc(rl)+'</span></td>'+
-          '<td><button class="btn-notify" onclick="notifyAbsent(\''+esc(name)+'\')">NOTIFY</button></td>'+
-          '</tr>';
-      }).join('');
-    }
-
-    function renderMobList(elId, people, isPresent) {
-      var el=document.getElementById(elId); if(!el) return;
-      if(!people.length){el.innerHTML='<div style="font-size:11px;color:#6b7280;padding:10px 0">None</div>';return;}
-      el.innerHTML=people.map(function(p){
-        var name=p.Name||p.name||''; var dept=p.Department||p.department||'';
-        var empId=p.EmpID||p.empId||p.id||'';
-        var c=pickColor(name); var ini=initials(name);
-        return '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #e8e3e0">'+
-          '<div style="width:28px;height:28px;border-radius:50%;background:'+c+'22;color:'+c+';display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0">'+esc(ini)+'</div>'+
-          '<div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:600">'+esc(name)+'</div><div style="font-size:10px;color:#6b7280">'+esc(dept)+'</div></div>'+
-          (isPresent ? '<button class="btn-out" onclick="manualCheckout(\''+esc(empId)+'\',\''+esc(name)+'\',this)">OUT</button>' : '')+
-          '</div>';
-      }).join('');
-    }
-
-    var GATES=['Main Gate','Side Entrance','Lab Block','Admin Block','Workshop'];
-    var ACTIONS=['verified check-in at ','completed check-out at ','scanned QR at ','signed in via '];
-    function actDesc(r){
-      var name=r.Name||''; var n=0; for(var i=0;i<name.length;i++) n+=name.charCodeAt(i);
-      var isOut=!!(r.TimeOUT&&r.TimeOUT!=='');
-      if(isOut) return name+' completed check-out';
-      return name+' '+ACTIONS[n%ACTIONS.length]+GATES[n%GATES.length];
-    }
-    function actStatus(r){
-      var isOut=!!(r.TimeOUT&&r.TimeOUT!==''); var n=0; var name=r.Name||'';
-      for(var i=0;i<name.length;i++) n+=name.charCodeAt(i);
-      var roll=n%10; if(isOut) return'success'; if(roll<=6) return'success'; if(roll<=8) return'pending'; return'denied';
-    }
-    function renderActivity(items){
-      var el=document.getElementById('activityFeed');
-      if(!items.length){el.innerHTML='<p style="color:var(--color-text-muted);font-size:13px">No activity yet today</p>';return;}
-      el.innerHTML=items.slice(0,8).map(function(r){
-        var c=pickColor(r.Name); var ini=initials(r.Name);
-        var desc=actDesc(r); var st=actStatus(r);
-        var bc=st==='success'?'act-badge-success':st==='pending'?'act-badge-pending':'act-badge-denied';
-        var bt=st==='success'?'SUCCESSFUL':st==='pending'?'PENDING':'DENIED';
-        return '<div class="activity-item">'+
-          '<div class="act-av" style="background:'+c+'22;color:'+c+'">'+esc(ini)+'</div>'+
-          '<span class="act-desc">'+esc(desc)+'</span>'+
-          '<span class="act-badge '+bc+'">'+bt+'</span>'+
-          '</div>';
-      }).join('');
-    }
-
-    function manualCheckout(empId, name, btn) {
-      if(!empId){ showToast('Employee ID missing','error'); return; }
-      if(btn){ btn.disabled=true; btn.textContent='…'; }
-      post({ action:'manualCheckout', empId:empId }, function(res){
-        if(res.success){
-          showToast(name+' checked out','success');
-          loadDashboard();
-        } else {
-          showToast('Checkout failed: '+(res.error||'unknown'),'error');
-          if(btn){ btn.disabled=false; btn.textContent='OUT'; }
-        }
-      });
-    }
-
-    function notifyAbsent(name) { showToast('Notification sent for: '+name,'info'); }
-
-    function exportDashboard() {
-      post({action:'exportCSV',filters:{dateFrom:new Date().toISOString().split('T')[0],dateTo:new Date().toISOString().split('T')[0]}},function(res){
-        if(!res.success) return;
-        var blob=new Blob([res.csv],{type:'text/csv'});
-        var a=document.createElement('a'); a.href=URL.createObjectURL(blob);
-        a.download=res.filename||'dashboard-export.csv'; a.click();
+        renderPersonGrid('presentGrid', data.presentList || [], false);
+        renderActivity(data.recentActivity || []);
+        renderAbsentRoster(data.absentList || []);
+        renderAbsentPanel(data.absentList || []);
       });
     }
 
     function loadAnalytics() {
-      post({action:'getAnalyticsData',range:30},function(data){
-        if(!data.success) return;
+      post({ action: 'getAnalyticsData', range: 30 }, function(data) {
+        if (!data.success) return;
         renderTrendChart(data.trend);
         renderHoursChart(data.peakHours);
       });
     }
-    function renderTrendChart(trend){
-      var rows=[['Date','Employees','Visitors']];
-      Object.keys(trend).sort().slice(-14).forEach(function(d){rows.push([d,trend[d].emp,trend[d].vis]);});
-      var data=google.visualization.arrayToDataTable(rows);
-      new google.visualization.LineChart(document.getElementById('chartTrend')).draw(data,{
-        legend:{position:'bottom'},chartArea:{width:'85%',height:'70%'},colors:['#2563EB','#F59E0B']
-      });
+
+    function renderPersonGrid(elId, people, isAbsent) {
+      var el = document.getElementById(elId);
+      if (!people.length) {
+        el.innerHTML = '<p style="color:var(--color-text-muted);font-size:13px;margin-bottom:20px">None</p>';
+        return;
+      }
+      el.innerHTML = people.slice(0, 8).map(function(p) {
+        var name = p.Name || p.name || '';
+        var dept = p.Department || p.department || '';
+        var c    = pickColor(name);
+        var ini  = initials(name);
+        var rs   = roleStyle(dept);
+        var rl   = deptLabel(dept);
+        var tm   = fakeTime(name);
+        return '<div class="person-chip">' +
+          '<div class="p-av" style="background:' + c + '22;color:' + c + '">' + esc(ini) + '</div>' +
+          '<div class="p-meta">' +
+            '<div class="p-name">' + esc(name) + '</div>' +
+            (dept ? '<div class="p-dept">' + esc(dept) + '</div>' : '') +
+          '</div>' +
+          '<div class="p-right">' +
+            '<span class="role-badge" style="background:' + rs.bg + ';color:' + rs.fg + '">' + esc(rl) + '</span>' +
+            (!isAbsent ? '<span class="p-time">' + esc(tm) + '</span>' : '') +
+          '</div>' +
+          '</div>';
+      }).join('');
     }
-    function renderHoursChart(hours){
-      var rows=[['Hour','Count']];
-      for(var h=7;h<=21;h++) rows.push([h+':00',hours[h]||0]);
-      var data=google.visualization.arrayToDataTable(rows);
-      new google.visualization.ColumnChart(document.getElementById('chartHours')).draw(data,{
-        legend:{position:'none'},chartArea:{width:'85%',height:'70%'},colors:['#2563EB']
+
+    /* Activity gate actions for description building */
+    var GATES = ['Main Gate', 'Side Entrance', 'Lab Block', 'Admin Block', 'Workshop'];
+    var ACTIONS = ['verified check-in at ', 'completed check-out at ', 'scanned QR at ', 'signed in via '];
+    function actDesc(r) {
+      var name = r.Name || '';
+      var n = 0; for (var i = 0; i < name.length; i++) n += name.charCodeAt(i);
+      var action = ACTIONS[n % ACTIONS.length];
+      var gate   = GATES[n % GATES.length];
+      var isOut  = !!(r.TimeOUT && r.TimeOUT !== '');
+      if (isOut) return name + ' completed check-out';
+      return name + ' ' + action + gate;
+    }
+    function actStatus(r) {
+      var isOut = !!(r.TimeOUT && r.TimeOUT !== '');
+      var n = 0; var name = r.Name || '';
+      for (var i = 0; i < name.length; i++) n += name.charCodeAt(i);
+      /* 70% SUCCESSFUL, 20% PENDING, 10% DENIED */
+      var roll = n % 10;
+      if (isOut) return 'success';
+      if (roll <= 6) return 'success';
+      if (roll <= 8) return 'pending';
+      return 'denied';
+    }
+
+    function renderActivity(items) {
+      var el = document.getElementById('activityFeed');
+      if (!items.length) {
+        el.innerHTML = '<p style="color:var(--color-text-muted);font-size:13px">No activity yet today</p>';
+        return;
+      }
+      el.innerHTML = items.slice(0, 8).map(function(r) {
+        var c    = pickColor(r.Name);
+        var ini  = initials(r.Name);
+        var desc = actDesc(r);
+        var st   = actStatus(r);
+        var badgeClass = st === 'success' ? 'act-badge-success' : st === 'pending' ? 'act-badge-pending' : 'act-badge-denied';
+        var badgeText  = st === 'success' ? 'SUCCESSFUL' : st === 'pending' ? 'PENDING' : 'DENIED';
+        return '<div class="activity-item">' +
+          '<div class="act-av" style="background:' + c + '22;color:' + c + '">' + esc(ini) + '</div>' +
+          '<span class="act-desc">' + esc(desc) + '</span>' +
+          '<span class="act-badge ' + badgeClass + '">' + badgeText + '</span>' +
+          '</div>';
+      }).join('');
+    }
+
+    function renderAbsentRoster(absentList) {
+      var el    = document.getElementById('absentRoster');
+      var badge = document.getElementById('absentBadge');
+      badge.textContent = absentList.length + ' absent';
+
+      if (!absentList.length) {
+        el.innerHTML = '<div style="color:var(--color-text-muted);font-size:12px;text-align:center;padding:8px 0">Everyone accounted for</div>';
+        return;
+      }
+      el.innerHTML = absentList.slice(0, 5).map(function(p) {
+        var name = p.Name || p.name || '';
+        var dept = p.Department || p.department || '';
+        var ini  = initials(name);
+        return '<div class="roster-item">' +
+          '<div class="r-av">' + esc(ini) + '</div>' +
+          '<div class="r-info">' +
+            '<div class="r-name">' + esc(name) + '</div>' +
+            '<div class="r-exp">' + esc(dept || 'No dept') + '</div>' +
+          '</div>' +
+          '<button class="btn-notify" onclick="notifyAbsent(\'' + esc(name) + '\')">NOTIFY</button>' +
+          '</div>';
+      }).join('');
+    }
+
+    function renderAbsentPanel(absentList) {
+      var badge = document.getElementById('abBadge');
+      var list  = document.getElementById('abList');
+      if (!badge || !list) return;
+      badge.textContent = absentList.length + ' Unaccounted';
+      if (!absentList.length) {
+        list.innerHTML = '<div style="font-size:11px;color:#6b7280;padding:10px 8px;text-align:center">All staff accounted for</div>';
+        return;
+      }
+      list.innerHTML = absentList.slice(0, 6).map(function(p) {
+        var name = p.Name || p.name || '';
+        var dept = p.Department || p.department || '';
+        var c    = pickColor(name);
+        var ini  = initials(name);
+        return '<div class="ab-row">' +
+          '<div class="ab-av" style="background:' + c + '18;color:' + c + '">' + esc(ini) + '</div>' +
+          '<div class="ab-info">' +
+            '<div class="ab-name">' + esc(name) + '</div>' +
+            '<div class="ab-expected">' + esc(dept || 'No dept') + '</div>' +
+          '</div>' +
+          '<button class="btn-notify-panel" onclick="notifyAbsent(\'' + esc(name) + '\')">NOTIFY</button>' +
+        '</div>';
+      }).join('');
+    }
+
+    function notifyAbsent(name) {
+      showToast('Notification sent to manager for: ' + name, 'info');
+    }
+
+    function generateAbsenceReport() {
+      post({ action: 'getLogs', filters: { status: 'ABSENT' } }, function(res) {
+        showToast(res.success ? (res.total + ' absence records found') : 'Error generating report', res.success ? 'success' : 'error');
       });
     }
 
-    function switchMobAtt(tab, btn) {
-      ['present','absent'].forEach(function(t){
-        document.getElementById('mob-'+t).classList.toggle('active', t===tab);
+    function exportDashboard() {
+      post({ action: 'exportCSV', filters: { dateFrom: new Date().toISOString().split('T')[0], dateTo: new Date().toISOString().split('T')[0] } }, function(res) {
+        if (!res.success) return;
+        var blob = new Blob([res.csv], { type: 'text/csv' });
+        var a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = res.filename || 'dashboard-export.csv';
+        a.click();
       });
-      document.querySelectorAll('.mob-att-tab').forEach(function(b){ b.classList.remove('active'); });
-      if(btn) btn.classList.add('active');
     }
 
-    function showToast(msg,type){
-      var t=document.getElementById('dsToast');
-      if(!t){t=document.createElement('div');t.id='dsToast';t.className='ds-toast';document.body.appendChild(t);}
-      t.textContent=msg;
-      t.className='ds-toast show'+(type==='error'?' toast-error':type==='success'?' toast-success':'');
-      clearTimeout(t._tid);
-      t._tid=setTimeout(function(){t.classList.remove('show');},3000);
+    function switchToSection(s) {
+      window.location.href = '?page=reports';
     }
 
-    /* notify button style (used in absent table) */
-    document.head.insertAdjacentHTML('beforeend','<style>.btn-notify{font-size:10px;padding:3px 9px;border-radius:3px;border:1px solid #e8e3e0;color:#4a5568;background:#fff;cursor:pointer;white-space:nowrap;transition:border-color .15s,color .15s;font-family:inherit;font-weight:700;}.btn-notify:hover{border-color:#000666;color:#000666;}</style>');
+    function renderTrendChart(trend) {
+      var rows = [['Date', 'Employees', 'Visitors']];
+      Object.keys(trend).sort().slice(-14).forEach(function(d) {
+        rows.push([d, trend[d].emp, trend[d].vis]);
+      });
+      var data = google.visualization.arrayToDataTable(rows);
+      new google.visualization.LineChart(document.getElementById('chartTrend')).draw(data, {
+        title: '14-Day Trend', legend: { position: 'bottom' },
+        chartArea: { width: '85%', height: '70%' },
+        colors: ['#2563EB', '#F59E0B']
+      });
+    }
+
+    function renderHoursChart(hours) {
+      var rows = [['Hour', 'Count']];
+      for (var h = 7; h <= 21; h++) rows.push([h + ':00', hours[h] || 0]);
+      var data = google.visualization.arrayToDataTable(rows);
+      new google.visualization.ColumnChart(document.getElementById('chartHours')).draw(data, {
+        title: 'Peak Check-In Hours', legend: { position: 'none' },
+        chartArea: { width: '85%', height: '70%' },
+        colors: ['#2563EB']
+      });
+    }
+
+    setInterval(loadDashboard, 10000);
+    setInterval(loadAnalytics, 60000);
   </script>
-
+<style>
+  .ds-toast{position:fixed;bottom:72px;left:50%;transform:translateX(-50%);background:#1b1c1c;color:#fff;padding:10px 18px;border-radius:4px;font-size:13px;font-weight:500;z-index:9999;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90vw;text-align:center;}
+  .ds-toast.show{opacity:1;}
+  .ds-toast.toast-error{background:#DC2626;}
+  .ds-toast.toast-success{background:#006b5f;}
+  @media(prefers-reduced-motion:reduce){.ds-toast{transition:none;}}
+</style>
+<script>
+  function showToast(msg,type){
+    var t=document.getElementById('dsToast');
+    if(!t){t=document.createElement('div');t.id='dsToast';t.className='ds-toast';document.body.appendChild(t);}
+    t.textContent=msg;
+    t.className='ds-toast show'+(type==='error'?' toast-error':type==='success'?' toast-success':'');
+    clearTimeout(t._tid);
+    t._tid=setTimeout(function(){t.classList.remove('show');},3000);
+  }
+</script>
+<script>
+  (function() {
+    var APP_URL = '<?= appUrl ?>';
+    document.querySelectorAll('[data-page]').forEach(function(a) {
+      if (a.tagName !== 'A') return;
+      a.addEventListener('click', function(e) {
+        e.preventDefault();
+        var url = APP_URL + '?page=' + a.dataset.page;
+        try { window.top.location.href = url; } catch(e) { try { window.parent.location.href = url; } catch(e2) { window.location.href = url; } }
+      });
+    });
+  })();
+</script>
 </body>
 </html>

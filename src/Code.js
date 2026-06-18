@@ -25,53 +25,32 @@ function doGet(e) {
     return ContentService.createTextOutput('OK').setMimeType(ContentService.MimeType.TEXT);
   }
 
-  var page = (e && e.parameter && e.parameter.page) ? e.parameter.page : '';
+  var page = (e && e.parameter && e.parameter.page) ? e.parameter.page : 'scanner';
+  var validPages = ['scanner', 'scanner_popup', 'dashboard', 'reports', 'visitors', 'kiosk', 'admin', 'idcards', 'e2e'];
+  if (validPages.indexOf(page) === -1) page = 'scanner';
 
-  // Standalone pages served as full documents (not part of the SPA shell)
-  if (page === 'scanner_popup') {
-    var tmpl = HtmlService.createTemplateFromFile('pages/scanner_popup');
-    tmpl.appUrl = ScriptApp.getService().getUrl();
-    return tmpl.evaluate()
-      .setTitle('QR Scanner')
-      .addMetaTag('viewport', 'width=device-width, initial-scale=1')
-      .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
-  }
-
+  var template = HtmlService.createTemplateFromFile('pages/' + page);
+  template.page = page;
+  template.appUrl = ScriptApp.getService().getUrl();
+  // For ID cards page inject employee data server-side (no extra round-trip)
   if (page === 'idcards') {
-    var tmpl2 = HtmlService.createTemplateFromFile('pages/idcards');
-    tmpl2.appUrl = ScriptApp.getService().getUrl();
     var emps = [], orgName = 'My Organisation', idcardsError = '';
-    try { emps = getSheetAsObjects(SHEETS.EMPLOYEES); } catch(ex) { idcardsError += 'Employees sheet error: ' + ex.message + '. '; }
+    try {
+      emps = getSheetAsObjects(SHEETS.EMPLOYEES);
+    } catch(ex) { idcardsError += 'Employees sheet error: ' + ex.message + '. '; }
     try {
       var cfg = getSheetAsObjects(SHEETS.CONFIG);
       cfg.forEach(function(c) { if (String(c.Key).trim() === 'OrgName') orgName = String(c.Value || 'My Organisation').trim(); });
     } catch(ex) { idcardsError += 'Config sheet error: ' + ex.message + '. '; }
-    tmpl2.employeesJson = JSON.stringify(emps);
-    tmpl2.orgName = orgName;
-    tmpl2.idcardsError = idcardsError;
-    return tmpl2.evaluate()
-      .setTitle('ID Cards')
-      .addMetaTag('viewport', 'width=device-width, initial-scale=1')
-      .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+    template.employeesJson = JSON.stringify(emps);
+    template.orgName = orgName;
+    template.idcardsError = idcardsError;
+  } else {
+    template.employeesJson = '[]';
+    template.orgName = '';
+    template.idcardsError = '';
   }
-
-  if (page === 'e2e') {
-    var tmpl3 = HtmlService.createTemplateFromFile('pages/e2e');
-    tmpl3.appUrl = ScriptApp.getService().getUrl();
-    return tmpl3.evaluate()
-      .setTitle('E2E Tests')
-      .addMetaTag('viewport', 'width=device-width, initial-scale=1')
-      .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
-  }
-
-  // SPA shell — all main screens included server-side, routed client-side
-  var validScreens = ['scanner', 'dashboard', 'reports', 'visitors', 'kiosk', 'admin'];
-  var initialScreen = (validScreens.indexOf(page) !== -1) ? page : 'scanner';
-
-  var shell = HtmlService.createTemplateFromFile('pages/shell');
-  shell.appUrl = ScriptApp.getService().getUrl();
-  shell.initialScreen = initialScreen;
-  return shell.evaluate()
+  return template.evaluate()
     .setTitle('QR Attendance System')
     .addMetaTag('viewport', 'width=device-width, initial-scale=1')
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
@@ -164,11 +143,8 @@ function doPost(e) {
   if (action === 'saveEmployee')     return jsonResponse(saveEmployee(params.employee));
   if (action === 'deleteEmployee')   return jsonResponse(deleteEmployee(params.empId));
   if (action === 'setEmployeeStatus') return jsonResponse(setEmployeeStatus(params.empId, params.status));
-  if (action === 'verifyPIN')           return jsonResponse(verifyPIN(params.pin));
-  if (action === 'getUsersForLogin')    return jsonResponse(getUsersForLogin());
-  if (action === 'validateUserPin')     return jsonResponse(validateUserPin(params.userId, params.pin));
-  if (action === 'manualCheckout')      return jsonResponse(manualCheckout(params.empId));
-  if (action === 'getConfig')           return jsonResponse(getConfig());
+  if (action === 'verifyPIN')        return jsonResponse(verifyPIN(params.pin));
+  if (action === 'getConfig')        return jsonResponse(getConfig());
   if (action === 'saveConfig')       return jsonResponse(saveConfig(params.config));
   if (action === 'getBlacklist')     return jsonResponse(getBlacklist());
   if (action === 'addBlacklist')     return jsonResponse(addToBlacklist(params.entry));

@@ -1041,18 +1041,11 @@
       });
     }
 
-    /* ── Polling (deferred to screen activate in SPA) ── */
-    var _kioskStarted = false;
-    function _kioskActivate() {
-      if (_kioskStarted) return;
-      _kioskStarted = true;
-      updateClock();
-      loadData();
-      setInterval(updateClock, 1000);
-      setInterval(loadData, 8000);
-    }
-    if (typeof registerScreen === 'function') registerScreen('kiosk', _kioskActivate);
-    else _kioskActivate(); // standalone fallback
+    /* ── Polling ── */
+    setInterval(updateClock, 1000);
+    setInterval(loadData, 8000);
+    updateClock();
+    loadData();
 
     /* ════════════════════════════════════════
        SETTINGS
@@ -1101,6 +1094,19 @@
       }
     } catch(e) {}
   </script>
+<script>
+  (function() {
+    var APP_URL = '<?= appUrl ?>';
+    document.querySelectorAll('[data-page]').forEach(function(a) {
+      if (a.tagName !== 'A') return;
+      a.addEventListener('click', function(e) {
+        e.preventDefault();
+        var url = APP_URL + '?page=' + a.dataset.page;
+        try { window.top.location.href = url; } catch(e) { try { window.parent.location.href = url; } catch(e2) { window.location.href = url; } }
+      });
+    });
+  })();
+</script>
 <script>
   /* ── Kiosk embedded scanner ── */
   var SCANNER_URL = 'https://packmastersmumbai.github.io/att/scanner_popup.html';
