@@ -65,12 +65,7 @@
 
   <script>
     (function() {
-      var s = [
-        'aHR0cHM6Ly9zY3JpcHQuZ29vZ2xlLmNvbS9tYWNyb3Mvcy9BS2Z5Y2J4WE5VZERlYXZy',
-        'Y21uOXM4aVZJYWdkbzgwemdkUmtlZmxuUkVGVkhRYnlFM3JQZU8tQ09BeHJnZWIwQThk',
-        'Ykk5Rnp4Zy9leGVj'
-      ].join('');
-      var base = atob(s);
+      var base = 'https://script.google.com/macros/s/AKfycbx7g4aIM0LCZZ5a0hRjj1vKDLrOUg0gLHz3CMjRJd9Q41SdxGILhDVdUFuvN3puhMbxhg/exec';
       var valid = ['scanner','dashboard','reports','visitors','kiosk','admin','idcards'];
       var page = new URLSearchParams(location.search).get('page') || 'kiosk';
       if (valid.indexOf(page) === -1) page = 'kiosk';

@@ -1,0 +1,1223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700;800;900&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    /* ── Reset ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* ── Design Tokens ── */
+    :root {
+      --bg:        #07111F;
+      --bg2:       #0D1B2A;
+      --surface:   rgba(255,255,255,.04);
+      --surface2:  rgba(255,255,255,.025);
+      --border:    rgba(255,255,255,.07);
+      --border-md: rgba(255,255,255,.10);
+      --text:      #F1F5F9;
+      --text-dim:  #CBD5E1;
+      --muted:     #475569;
+      --muted-dk:  #334155;
+      --teal:      #38BDF8;
+      --teal-dim:  rgba(56,189,248,.15);
+      --green:     #10B981;
+      --green-dim: rgba(16,185,129,.10);
+      --amber:     #F59E0B;
+      --pink:      #F472B6;
+      --blue:      #3B82F6;
+      --purple:    #8B5CF6;
+      --font:      'Public Sans', system-ui, sans-serif;
+      --mono:      'Roboto Mono', monospace;
+    }
+
+    /* ── Body shell ── */
+    body {
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      font-family: var(--font);
+    }
+
+    /* ════════════════════════════════════════
+       TOP BAR
+    ════════════════════════════════════════ */
+    .k-top {
+      height: 52px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      border-bottom: 1px solid rgba(255,255,255,.06);
+      background: rgba(7,17,31,.8);
+    }
+    /* Logo mark */
+    .k-logo-wrap { display: flex; align-items: center; gap: 10px; }
+    .k-logo-mark {
+      width: 28px; height: 28px;
+      background: linear-gradient(135deg, #38BDF8 0%, #2563EB 100%);
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 900; color: #fff; letter-spacing: -1px;
+      flex-shrink: 0;
+    }
+    .k-brand-text { display: flex; flex-direction: column; }
+    .k-brand {
+      font-size: 14px; font-weight: 800;
+      letter-spacing: 3px; color: #38BDF8; line-height: 1;
+    }
+    .k-brand-sub {
+      font-size: 11px; color: var(--muted-dk);
+      letter-spacing: 3px; text-transform: uppercase;
+      margin-top: 2px;
+    }
+    /* Clock */
+    .k-clock-wrap { text-align: right; }
+    .k-time {
+      font-size: 24px; font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      color: var(--text); line-height: 1;
+      font-family: var(--mono);
+    }
+    .k-date { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+    /* ── Top nav links ── */
+    .k-nav { display: flex; align-items: center; gap: 2px; }
+    .k-nav-link {
+      padding: 5px 11px; border-radius: 6px;
+      font-size: 11px; font-weight: 500; letter-spacing: .3px;
+      color: var(--muted); text-decoration: none; cursor: pointer;
+      border: 1px solid transparent; transition: color .15s, background .15s, border-color .15s;
+      white-space: nowrap;
+    }
+    .k-nav-link:hover { color: var(--text); background: var(--surface); border-color: var(--border-md); }
+
+    /* ════════════════════════════════════════
+       MAIN 3-COLUMN
+    ════════════════════════════════════════ */
+    .k-main {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 210px 1fr;
+      overflow: hidden;
+      min-height: 0;
+    }
+
+    /* ── LEFT COLUMN: Stats ── */
+    .k-stats {
+      padding: 22px 18px;
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      overflow: hidden;
+    }
+
+    /* Big hero number */
+    .s-hero { margin-bottom: 6px; }
+    .s-hero .num {
+      font-size: 60px; font-weight: 900;
+      color: var(--teal); line-height: 1;
+      font-variant-numeric: tabular-nums;
+    }
+    .s-hero .lbl {
+      font-size: 10px; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 2px;
+      margin-top: 4px;
+    }
+
+    /* Small stat row */
+    .s-row { display: flex; gap: 16px; margin-top: 16px; margin-bottom: 4px; }
+    .s-sm .num {
+      font-size: 26px; font-weight: 700;
+      color: var(--text-dim); line-height: 1;
+    }
+    .s-sm .lbl {
+      font-size: 11px; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 1px; margin-top: 3px;
+    }
+
+    /* Divider */
+    .s-divider {
+      height: 1px;
+      background: var(--border);
+      margin: 18px 0;
+    }
+
+    /* Efficiency block */
+    .s-eff { margin-bottom: 2px; }
+    .s-eff .num {
+      font-size: 36px; font-weight: 800;
+      color: var(--green); line-height: 1;
+    }
+    .s-eff .lbl {
+      font-size: 10px; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 2px;
+      margin-top: 4px;
+    }
+    .pct-bar { height: 3px; background: var(--surface); border-radius: 2px; margin-top: 8px; }
+    .pct-fill { height: 100%; background: var(--green); border-radius: 2px; transition: width .6s ease; }
+
+    /* Terminals pill */
+    .terminals-online {
+      display: flex; align-items: center; gap: 6px;
+      margin-top: auto; padding-top: 16px;
+      padding: 8px 11px;
+      border-radius: 8px;
+      background: var(--green-dim);
+      border: 1px solid rgba(16,185,129,.2);
+    }
+    .to-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--green);
+      animation: blink 3s infinite; flex-shrink: 0;
+    }
+    @keyframes blink { 0%,88%,100%{opacity:1} 94%{opacity:.15} }
+    .to-lbl { font-size: 10px; color: var(--green); font-weight: 600; letter-spacing: .5px; }
+
+    /* ── CENTER COLUMN: Arrivals Grid ── */
+    .k-center {
+      padding: 20px 22px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .sec-label {
+      font-size: 10px; color: var(--muted-dk);
+      letter-spacing: 4px; text-transform: uppercase;
+      margin-bottom: 14px; flex-shrink: 0;
+    }
+    .arrivals-grid {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 7px;
+      align-content: start;
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+
+    /* Arrival card */
+    .a-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 6px 8px;
+      text-align: center;
+      transition: border-color .25s, background .25s;
+    }
+    .a-card.newest {
+      border-color: rgba(56,189,248,.45);
+      background: rgba(56,189,248,.07);
+    }
+    .a-av {
+      width: 40px; height: 40px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; font-weight: 700;
+      margin: 0 auto 6px; flex-shrink: 0;
+    }
+    .a-name {
+      font-size: 10px; font-weight: 600; color: var(--text-dim);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .a-time { font-size: 9px; color: var(--muted); margin-top: 2px; }
+    .a-badge {
+      font-size: 9px; font-weight: 700; letter-spacing: .4px;
+      padding: 1px 5px; border-radius: 999px;
+      display: inline-block; margin-top: 4px;
+    }
+    .b-emp  { background: rgba(56,189,248,.14);  color: #7DD3FC; }
+    .b-vis  { background: rgba(251,191,36,.14);   color: #FCD34D; }
+    .b-cont { background: rgba(167,139,250,.14);  color: #C4B5FD; }
+    .b-blk  { background: rgba(239,68,68,.14);   color: #F87171; }
+    .b-unk  { background: rgba(245,158,11,.14);  color: #F59E0B; }
+
+    /* ── RIGHT COLUMN: Scanner Logs ── */
+    .k-logs {
+      padding: 20px 14px 18px 16px;
+      border-left: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .log-list {
+      display: flex; flex-direction: column; gap: 4px;
+      overflow: hidden; flex: 1;
+    }
+    .log-item {
+      display: flex; align-items: center; gap: 8px;
+      padding: 7px 9px;
+      border-radius: 7px;
+      transition: background .15s;
+    }
+    .log-item:nth-child(odd)  { background: rgba(255,255,255,.03); }
+    .log-item:nth-child(even) { background: rgba(255,255,255,.015); }
+
+    /* Log avatar circle */
+    .log-av {
+      width: 26px; height: 26px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 10px; font-weight: 700; flex-shrink: 0;
+    }
+    .log-body { flex: 1; min-width: 0; }
+    .log-name {
+      font-size: 12px; color: #94A3B8;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .log-action { font-size: 10px; color: var(--muted); margin-top: 1px; }
+    .log-t { font-size: 10px; color: var(--muted-dk); flex-shrink: 0; font-family: var(--mono); }
+
+    /* Arrow directions */
+    .arr-in  { color: var(--green); font-weight: 700; font-size: 13px; }
+    .arr-out { color: var(--pink);  font-weight: 700; font-size: 13px; }
+
+    /* Logs status */
+    .logs-status {
+      display: flex; align-items: center; gap: 6px;
+      margin-top: 12px; padding-top: 10px;
+      border-top: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .ls-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--green); animation: blink 3s infinite .5s; flex-shrink: 0;
+    }
+    .ls-lbl { font-size: 10px; color: var(--muted); }
+
+    /* ════════════════════════════════════════
+       BOTTOM BAR
+    ════════════════════════════════════════ */
+    .k-bottom {
+      height: 36px; flex-shrink: 0;
+      border-top: 1px solid rgba(255,255,255,.05);
+      display: flex; align-items: center;
+      padding: 0 24px;
+      justify-content: space-between;
+      background: rgba(7,17,31,.6);
+    }
+    .kb-left { display: flex; align-items: center; gap: 7px; }
+    .kb-sys-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--green); animation: blink 3s infinite 1s;
+    }
+    .kb-sys-txt { font-size: 10px; color: var(--green); font-weight: 600; letter-spacing: 1px; text-transform: uppercase; }
+    .kb-center { font-size: 11px; color: var(--muted-dk); letter-spacing: 1px; text-transform: uppercase; display: flex; align-items: center; }
+    .kb-scan-txt {
+      animation: kb-pulse 2s ease-in-out infinite;
+      letter-spacing: 1.5px;
+      font-size: 10px;
+      font-weight: 700;
+    }
+    .kb-scan-icon {
+      opacity: .6;
+      animation: kb-pulse 2s ease-in-out infinite;
+      display: inline-flex;
+      align-items: center;
+      margin-right: 6px;
+    }
+    @keyframes kb-pulse {
+      0%, 100% { opacity: .5; }
+      50% { opacity: 1; }
+    }
+    .kb-right { display: flex; align-items: center; gap: 14px; }
+    .kb-stat { font-size: 10px; color: var(--muted); }
+    .kb-stat span { color: var(--text-dim); }
+
+    /* ════════════════════════════════════════
+       SETTINGS GEAR BUTTON
+    ════════════════════════════════════════ */
+    .k-settings-btn {
+      position: fixed; bottom: 52px; right: 18px; z-index: 50;
+      width: 34px; height: 34px; border-radius: 50%;
+      background: rgba(255,255,255,.05);
+      border: 1px solid rgba(255,255,255,.10);
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; font-size: 15px;
+      transition: background .2s, border-color .2s;
+      color: var(--muted); user-select: none;
+    }
+    .k-settings-btn:hover { background: rgba(255,255,255,.10); border-color: rgba(255,255,255,.18); color: var(--text-dim); }
+
+    /* ════════════════════════════════════════
+       SETTINGS OVERLAY
+    ════════════════════════════════════════ */
+    .settings-overlay {
+      position: fixed; inset: 0;
+      background: rgba(4,10,20,.88);
+      z-index: 100; display: none;
+      align-items: stretch; justify-content: stretch;
+      animation: fadeIn .2s ease;
+    }
+    .settings-overlay.open { display: flex; }
+    @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+    .settings-panel {
+      display: flex;
+      width: 100%;
+      height: 100%;
+      background: #0D1C30;
+      animation: slideUp .22s ease;
+    }
+    @keyframes slideUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+    /* Left config sidebar */
+    .sp-sidebar {
+      width: 200px;
+      flex-shrink: 0;
+      background: #07111F;
+      border-right: 1px solid rgba(255,255,255,.06);
+      display: flex;
+      flex-direction: column;
+      padding: 20px 0;
+    }
+    .sp-sidebar-title {
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: #475569;
+      padding: 0 16px 14px;
+      border-bottom: 1px solid rgba(255,255,255,.05);
+      margin-bottom: 8px;
+    }
+    .sp-nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 16px;
+      font-size: 12px;
+      font-weight: 500;
+      color: #475569;
+      cursor: pointer;
+      transition: background .15s, color .15s;
+      border-left: 2px solid transparent;
+    }
+    .sp-nav-item:hover { background: rgba(255,255,255,.03); color: #94A3B8; }
+    .sp-nav-item.active { background: rgba(37,99,235,.1); color: #60A5FA; border-left-color: #2563EB; }
+    .sp-nav-item svg { width: 13px; height: 13px; flex-shrink: 0; }
+    .sp-sidebar-spacer { flex: 1; }
+    .sp-admin-warning {
+      margin: 12px 10px;
+      background: rgba(220,38,38,.08);
+      border: 1px solid rgba(220,38,38,.18);
+      border-radius: 6px;
+      padding: 10px 12px;
+    }
+    .sp-admin-label { font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: #F87171; margin-bottom: 3px; }
+    .sp-admin-sub { font-size: 11px; color: #7F1D1D; }
+    .btn-sp-save {
+      margin: 0 10px 8px;
+      background: #2563EB; color: #fff;
+      border: none; border-radius: 6px;
+      padding: 10px 14px; font-size: 12px;
+      font-weight: 700; font-family: inherit;
+      cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;
+      transition: background .15s;
+    }
+    .btn-sp-save:hover { background: #1D4ED8; }
+    .sp-exit-link {
+      margin: 0 10px 16px;
+      text-align: center;
+      font-size: 10px;
+      color: #334155;
+      cursor: pointer;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      font-weight: 600;
+      transition: color .15s;
+    }
+    .sp-exit-link:hover { color: #94A3B8; }
+    /* Right main area */
+    .sp-main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .sp-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 20px 28px;
+      border-bottom: 1px solid rgba(255,255,255,.06);
+      flex-shrink: 0;
+    }
+    .sp-title { font-size: 20px; font-weight: 800; color: var(--text); }
+    .sp-sub { font-size: 12px; color: var(--muted); margin-top: 3px; }
+    .sp-close { color: var(--muted-dk); font-size: 24px; cursor: pointer; line-height: 1; transition: color .15s; }
+    .sp-close:hover { color: #94A3B8; }
+    .sp-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+    .sp-section { display: none; }
+    .sp-section.active { display: flex; flex-direction: column; gap: 20px; }
+    .sp-section-label {
+      font-size: 10px; letter-spacing: 2px; text-transform: uppercase;
+      color: var(--muted-dk); font-weight: 700; margin-bottom: 10px;
+    }
+
+    /* Toggle grid */
+    .toggle-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .toggle-row {
+      display: flex; align-items: center; justify-content: space-between;
+      background: rgba(255,255,255,.03);
+      border: 1px solid rgba(255,255,255,.05);
+      border-radius: 9px; padding: 10px 14px; gap: 10px;
+    }
+    .tr-info { flex: 1; }
+    .tr-name { font-size: 13px; font-weight: 500; color: var(--text-dim); }
+    .tr-desc { font-size: 10px; color: var(--muted-dk); margin-top: 2px; }
+    /* iOS-style toggle */
+    .tog { position: relative; width: 38px; height: 22px; flex-shrink: 0; }
+    .tog input { opacity: 0; width: 0; height: 0; position: absolute; }
+    .tog-slider { position: absolute; inset: 0; background: #1E293B; border-radius: 999px; cursor: pointer; transition: background .2s; }
+    .tog-slider::before { content:''; position: absolute; width: 16px; height: 16px; left: 3px; top: 3px; background: #475569; border-radius: 50%; transition: transform .2s, background .2s; }
+    .tog input:checked + .tog-slider { background: #2563EB; }
+    .tog input:checked + .tog-slider::before { transform: translateX(16px); background: #fff; }
+
+    /* Threshold slider */
+    .thresh-row { display: flex; align-items: center; gap: 12px; }
+    .thresh-slider { flex: 1; accent-color: #2563EB; }
+    .thresh-val { font-size: 13px; font-weight: 700; color: var(--teal); min-width: 36px; text-align: right; }
+
+    /* Dept select */
+    .sp-select {
+      width: 100%; background: rgba(255,255,255,.05);
+      border: 1px solid rgba(255,255,255,.10);
+      color: var(--text-dim); border-radius: 8px;
+      padding: 9px 12px; font-size: 13px;
+      font-family: inherit; outline: none;
+    }
+    .sp-select:focus { border-color: var(--teal); }
+
+    /* Live visitor row */
+    .live-vis-row {
+      display: flex; align-items: center;
+      justify-content: space-between;
+      background: rgba(56,189,248,.05);
+      border: 1px solid rgba(56,189,248,.12);
+      border-radius: 10px; padding: 12px 16px;
+    }
+    .lv-icon {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: rgba(56,189,248,.10);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; flex-shrink: 0;
+    }
+    .lv-info { flex: 1; margin: 0 12px; }
+    .lv-title { font-size: 13px; font-weight: 600; color: var(--text-dim); }
+    .lv-desc { font-size: 11px; color: var(--muted-dk); margin-top: 2px; }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+
+    /* ════════════════════════════════════════
+       KIOSK SCAN PANEL
+    ════════════════════════════════════════ */
+    .k-scan-panel {
+      background: var(--surface);
+      border: 1px solid var(--border-md);
+      border-radius: 12px;
+      padding: 14px 16px 12px;
+      flex-shrink: 0;
+    }
+    .k-scan-top {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .k-scan-status {
+      display: flex; align-items: center; gap: 7px;
+      font-size: 11px; font-weight: 600; color: var(--green);
+      letter-spacing: .5px;
+    }
+    .pulse-dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--green); flex-shrink: 0;
+      animation: blink 3s infinite;
+    }
+    .k-gate-row { display: flex; align-items: center; gap: 8px; }
+    .k-gate-select {
+      background: rgba(255,255,255,.06);
+      border: 1px solid var(--border-md);
+      color: var(--text-dim);
+      border-radius: 6px;
+      padding: 4px 8px;
+      font-size: 11px;
+      font-family: var(--font);
+      outline: none;
+      cursor: pointer;
+    }
+    .k-gate-select:focus { border-color: var(--teal); }
+
+    .k-cam-area {
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center;
+      padding: 10px 12px 8px;
+      min-height: 100px;
+    }
+    #kioskScanLauncher {
+      display: flex; flex-direction: column; align-items: center;
+    }
+    .k-scan-btn {
+      display: flex; align-items: center; gap: 8px;
+      background: var(--blue); color: #fff;
+      border: none; border-radius: 9px;
+      padding: 11px 26px;
+      font-size: 13px; font-weight: 700;
+      font-family: var(--font);
+      cursor: pointer;
+      transition: background .15s;
+    }
+    .k-scan-btn:hover { background: #2563EB; }
+
+    /* Result card rendered in kiosk */
+    #kioskResult .krc {
+      background: rgba(255,255,255,.04);
+      border-radius: 10px;
+      padding: 14px 16px 12px;
+      text-align: center;
+    }
+    #kioskResult .krc.k-check-in  { border: 1px solid rgba(16,185,129,.45); }
+    #kioskResult .krc.k-check-out { border: 1px solid rgba(56,189,248,.45); }
+    #kioskResult .krc.k-blocked   { border: 1px solid rgba(239,68,68,.45); }
+    #kioskResult .krc.k-unknown   { border: 1px solid rgba(245,158,11,.45); }
+    #kioskResult .krc-name { font-size: 16px; font-weight: 700; color: var(--text); }
+    #kioskResult .krc-dept { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    #kioskResult .krc-badge {
+      display: inline-block; padding: 3px 10px; border-radius: 999px;
+      font-size: 10px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    #kioskResult .krc-av {
+      width: 56px; height: 56px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; font-weight: 800;
+      margin: 0 auto 10px;
+    }
+    #kioskResult .krc-meta {
+      display: flex; gap: 14px; justify-content: center;
+      background: rgba(255,255,255,.03); border-radius: 8px; padding: 10px 14px;
+      margin: 10px 0 0;
+    }
+    #kioskResult .krc-meta-lbl { font-size: 9px; color: var(--muted-dk); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 2px; }
+    #kioskResult .krc-meta-val { font-size: 12px; font-weight: 700; }
+    .krc-spinner {
+      width: 30px; height: 30px;
+      border: 3px solid rgba(56,189,248,.15);
+      border-top-color: #38BDF8;
+      border-radius: 50%;
+      animation: spin .65s linear infinite;
+      margin: 10px auto;
+    }
+    @keyframes spin { to{transform:rotate(360deg)} }
+
+    .k-manual-row {
+      display: flex; gap: 8px; margin-top: 12px;
+    }
+    .k-manual-input {
+      flex: 1;
+      background: rgba(255,255,255,.06);
+      border: 1px solid var(--border-md);
+      color: var(--text);
+      border-radius: 8px;
+      padding: 9px 12px;
+      font-size: 12px;
+      font-family: var(--font);
+      outline: none;
+      transition: border-color .15s;
+    }
+    .k-manual-input::placeholder { color: var(--muted-dk); }
+    .k-manual-input:focus { border-color: var(--teal); }
+    .k-manual-btn {
+      background: var(--blue); color: #fff;
+      border: none; border-radius: 8px;
+      padding: 9px 18px;
+      font-size: 12px; font-weight: 700;
+      font-family: var(--font);
+      cursor: pointer;
+      transition: background .15s;
+      white-space: nowrap;
+    }
+    .k-manual-btn:hover { background: #2563EB; }
+  </style>
+</head>
+<body>
+
+  <!-- ══════════════ TOP BAR ══════════════ -->
+  <div class="k-top">
+    <div class="k-logo-wrap">
+      <div class="k-logo-mark">QR</div>
+      <div class="k-brand-text">
+        <div class="k-brand">QR ATT.</div>
+        <div class="k-brand-sub">Attendance Live</div>
+      </div>
+    </div>
+    <nav class="k-nav">
+      <a class="k-nav-link" data-page="dashboard">&#9776; Dashboard</a>
+      <a class="k-nav-link" data-page="reports">&#9741; Reports</a>
+      <a class="k-nav-link" data-page="visitors">&#9786; Visitors</a>
+      <a class="k-nav-link" data-page="admin">&#9881; Admin</a>
+    </nav>
+    <div class="k-clock-wrap">
+      <div class="k-time" id="kClock">--:--:--</div>
+      <div class="k-date" id="kDate"></div>
+    </div>
+  </div>
+
+  <!-- ══════════════ MAIN 3-COL ══════════════ -->
+  <div class="k-main">
+
+    <!-- ── LEFT: Stats ── -->
+    <div class="k-stats">
+
+      <div class="s-hero">
+        <div class="num" id="kpiPresent">–</div>
+        <div class="lbl">Total Present</div>
+      </div>
+
+      <div class="s-row">
+        <div class="s-sm">
+          <div class="num" id="kpiAbsent">–</div>
+          <div class="lbl">Absent</div>
+        </div>
+        <div class="s-sm">
+          <div class="num" id="kpiLate" style="color:var(--amber)">–</div>
+          <div class="lbl">Late</div>
+        </div>
+      </div>
+
+      <div class="s-divider"></div>
+
+      <div class="s-eff">
+        <div class="num" id="kpiOnTime">–%</div>
+        <div class="lbl">Attendance</div>
+        <div class="pct-bar"><div class="pct-fill" id="pctBar" style="width:0%"></div></div>
+      </div>
+
+      <div style="margin-top:10px;font-size:10px;color:var(--muted);letter-spacing:.5px">
+        Late after <span id="kLateAfter" style="color:var(--amber);font-weight:700">09:30</span>
+      </div>
+
+      <div class="terminals-online" style="margin-top:18px;">
+        <div class="to-dot"></div>
+        <div class="to-lbl">All Terminals Online</div>
+      </div>
+
+    </div>
+
+    <!-- ── CENTER: Scanner + Arrivals ── -->
+    <div class="k-center">
+
+      <!-- Scan panel -->
+      <div class="k-scan-panel">
+        <div class="k-scan-top">
+          <div class="k-scan-status"><span class="pulse-dot"></span>Ready to Scan</div>
+          <div class="k-gate-row">
+            <label style="font-size:10px;color:var(--muted);letter-spacing:1px;text-transform:uppercase">Gate</label>
+            <select id="kioskGate" class="k-gate-select">
+              <option value="Main Gate">Main Gate</option>
+              <option value="Side Gate">Side Gate</option>
+              <option value="Reception">Reception</option>
+              <option value="Rear Gate">Rear Gate</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Camera / scanner launcher -->
+        <div class="k-cam-area">
+          <div id="kioskScanLauncher">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="1.5"><rect x="3" y="3" width="5" height="5"/><rect x="16" y="3" width="5" height="5"/><rect x="3" y="16" width="5" height="5"/><path d="M21 16h-3v3m0-3v3h-3"/></svg>
+            <div style="text-align:center;margin:6px 0 8px">
+              <div style="font-size:12px;font-weight:700;color:var(--text-dim)">QR Camera Scanner</div>
+              <div style="font-size:10px;color:var(--muted);margin-top:2px">Opens a popup · scan → result continues here</div>
+            </div>
+            <button id="kioskBtnOpen" onclick="kioskOpenScanner()" class="k-scan-btn">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+              Open Scanner
+            </button>
+            <div id="kioskScanWaiting" style="display:none;font-size:11px;color:var(--muted);text-align:center;margin-top:8px;line-height:1.7">
+              <span style="color:var(--green);font-weight:700">● Scanner active</span> · waiting for scan…<br>
+              <a href="#" onclick="kioskOpenScanner();return false;" style="color:var(--teal);font-weight:600">Reopen window</a>
+            </div>
+          </div>
+
+          <!-- Result card (shown inside kiosk after scan) -->
+          <div id="kioskResult" style="display:none;width:100%;padding:12px 0"></div>
+        </div>
+
+        <!-- Manual input -->
+        <div class="k-manual-row">
+          <input type="text" id="kioskManualCode" class="k-manual-input" placeholder="Or type QR code manually…"
+            onkeydown="if(event.key==='Enter')kioskSubmitManual()">
+          <button class="k-manual-btn" onclick="kioskSubmitManual()">Submit</button>
+        </div>
+      </div>
+
+      <!-- Arrivals grid below -->
+      <div class="sec-label" style="margin-top:16px">Recent Arrivals</div>
+      <div class="arrivals-grid" id="arrivalsGrid">
+        <div style="color:var(--muted-dk);font-size:12px;grid-column:1/-1;text-align:center;padding:24px 0">Loading…</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ══════════════ BOTTOM BAR ══════════════ -->
+  <div class="k-bottom">
+    <div class="kb-left">
+      <div class="kb-sys-dot"></div>
+      <div class="kb-sys-txt">System Active</div>
+    </div>
+    <div class="kb-center" id="orgLabel">
+      <span class="kb-scan-icon">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="5" height="5"/><rect x="16" y="3" width="5" height="5"/><rect x="3" y="16" width="5" height="5"/><path d="M21 16h-3v3m0-3v3h-3"/></svg>
+      </span>
+      <span class="kb-scan-txt">SCAN YOUR QR CODE AT THE TERMINAL</span>
+    </div>
+    <div class="kb-right">
+      <div class="kb-stat">Last updated: <span id="kLastUpdated">—</span></div>
+      <div class="kb-stat">Auto-refresh: <span>8s</span></div>
+    </div>
+  </div>
+
+  <!-- ══════════════ SETTINGS GEAR ══════════════ -->
+  <div class="k-settings-btn" onclick="openSettings()" title="Kiosk Settings">⚙</div>
+
+  <!-- ══════════════ SETTINGS OVERLAY ══════════════ -->
+  <div class="settings-overlay" id="settingsOverlay">
+    <div class="settings-panel">
+
+      <!-- Left sidebar -->
+      <div class="sp-sidebar">
+        <div class="sp-sidebar-title">Kiosk Config</div>
+
+        <div class="sp-nav-item active" id="spNav-kpi" onclick="switchSpSection('kpi')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+          KPI Management
+        </div>
+        <div class="sp-nav-item" id="spNav-filters" onclick="switchSpSection('filters')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/></svg>
+          Display Filters
+        </div>
+        <div class="sp-nav-item" id="spNav-alerts" onclick="switchSpSection('alerts')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          Alert Thresholds
+        </div>
+
+        <div class="sp-sidebar-spacer"></div>
+
+        <div class="sp-admin-warning">
+          <div class="sp-admin-label">&#9903; Admin Security</div>
+          <div class="sp-admin-sub">PIN Protected Session</div>
+        </div>
+
+        <button class="btn-sp-save" onclick="saveSettings()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="12" height="12"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17,21 17,13 7,13 7,21"/><polyline points="7,3 7,8 15,8"/></svg>
+          Save Changes
+        </button>
+        <div class="sp-exit-link" onclick="closeSettings()">&#8617; Exit Settings</div>
+      </div>
+
+      <!-- Right main area -->
+      <div class="sp-main">
+        <div class="sp-header">
+          <div>
+            <div class="sp-title">Kiosk Layout Editor</div>
+            <div class="sp-sub">Modify data visualisation parameters for the active Registrar terminal. Changes apply in real-time to the peripheral displays.</div>
+          </div>
+          <span class="sp-close" onclick="closeSettings()">&#215;</span>
+        </div>
+        <div class="sp-body">
+
+          <!-- Section: KPI Management -->
+          <div class="sp-section active" id="sp-section-kpi">
+            <div>
+              <div class="sp-section-label">KPI Visibility &amp; Order</div>
+              <div class="toggle-grid">
+                <div class="toggle-row">
+                  <div class="tr-info"><div class="tr-name">Active Personnel</div><div class="tr-desc">Current head count</div></div>
+                  <label class="tog"><input type="checkbox" id="togPersonnel" checked><span class="tog-slider"></span></label>
+                </div>
+                <div class="toggle-row">
+                  <div class="tr-info"><div class="tr-name">Scan Throughput</div><div class="tr-desc">Scans / minute</div></div>
+                  <label class="tog"><input type="checkbox" id="togThroughput" checked><span class="tog-slider"></span></label>
+                </div>
+                <div class="toggle-row">
+                  <div class="tr-info"><div class="tr-name">Wait Metrics</div><div class="tr-desc">Avg delay time</div></div>
+                  <label class="tog"><input type="checkbox" id="togWait"><span class="tog-slider"></span></label>
+                </div>
+                <div class="toggle-row">
+                  <div class="tr-info"><div class="tr-name">Visitor Logs</div><div class="tr-desc">Total daily visitors</div></div>
+                  <label class="tog"><input type="checkbox" id="togVisLogs" checked><span class="tog-slider"></span></label>
+                </div>
+                <div class="toggle-row">
+                  <div class="tr-info"><div class="tr-name">Device Health</div><div class="tr-desc">Scanner hardware status</div></div>
+                  <label class="tog"><input type="checkbox" id="togDevice"><span class="tog-slider"></span></label>
+                </div>
+                <div class="toggle-row">
+                  <div class="tr-info"><div class="tr-name">Alert Count</div><div class="tr-desc">Unresolved issues</div></div>
+                  <label class="tog"><input type="checkbox" id="togAlerts"><span class="tog-slider"></span></label>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section: Display Filters -->
+          <div class="sp-section" id="sp-section-filters">
+            <div>
+              <div class="sp-section-label">Department Filter</div>
+              <select class="sp-select" id="spDeptFilter">
+                <option value="">All Institutional Departments</option>
+                <option value="Engineering">Engineering</option>
+                <option value="Operations">Operations</option>
+                <option value="Administration">Administration</option>
+                <option value="Sales">Sales</option>
+                <option value="HR">HR</option>
+              </select>
+              <div style="font-size:11px;color:var(--muted-dk);margin-top:6px">Limits data aggregation to a specific sector for global institutional visibility</div>
+            </div>
+            <div>
+              <div class="sp-section-label">Live Visitor Display</div>
+              <div class="live-vis-row">
+                <div class="lv-icon">&#128101;</div>
+                <div class="lv-info">
+                  <div class="lv-title">Show visitor silhouettes on main entry screen</div>
+                  <div class="lv-desc">Displays anonymous visitor badges on the main display</div>
+                </div>
+                <label class="tog"><input type="checkbox" id="togLiveVis" checked><span class="tog-slider"></span></label>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section: Alert Thresholds -->
+          <div class="sp-section" id="sp-section-alerts">
+            <div>
+              <div class="sp-section-label">Alert Threshold</div>
+              <div class="thresh-row">
+                <span style="font-size:11px;color:var(--muted-dk)">0%</span>
+                <input type="range" class="thresh-slider" id="spThreshold" min="0" max="100" value="85"
+                  oninput="document.getElementById('threshVal').textContent=this.value+'%'">
+                <span style="font-size:11px;color:var(--muted-dk)">100%</span>
+                <span class="thresh-val" id="threshVal">85%</span>
+              </div>
+              <div style="font-size:11px;color:var(--muted-dk);margin-top:4px">System triggers a visual override alert when occupancy or scanning latency exceeds this percentage</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══════════════ SCRIPTS ══════════════ -->
+  <script>
+    function esc(s) {
+      return String(s == null ? '' : s)
+        .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+        .replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+    }
+    function post(data, callback) {
+      var onErr = function(e) { callback({ success: false, error: e ? e.message : 'Unknown error' }); };
+      if (typeof google === 'undefined' || !google.script) { callback({ success: false, error: 'Not in GAS' }); return; }
+      var r = google.script.run.withSuccessHandler(callback).withFailureHandler(onErr);
+      if (data.action === 'getDashboardData') r.getDashboardData();
+      else if (data.action === 'processQRScan') r.processQRScan(data.qrCode, data.gate);
+      else callback({ success: false, error: 'Unknown: ' + data.action });
+    }
+  </script>
+  <script>
+    /* ── Avatar colours ── */
+    var COLORS = ['#3B82F6','#8B5CF6','#EC4899','#F59E0B','#10B981','#06B6D4','#EF4444','#6366F1','#84CC16','#F97316'];
+
+    function initials(name) {
+      var p = String(name || ' ').trim().split(/\s+/);
+      return ((p[0] || '')[0] + ((p[1] || '')[0] || '')).toUpperCase();
+    }
+
+    function pickColor(name) {
+      var n = 0;
+      for (var i = 0; i < (name || '').length; i++) n += name.charCodeAt(i);
+      return COLORS[n % COLORS.length];
+    }
+
+    /* ── Clock ── */
+    function updateClock() {
+      var now = new Date();
+      document.getElementById('kClock').textContent =
+        now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      document.getElementById('kDate').textContent =
+        now.toLocaleDateString([], { weekday: 'long', month: 'short', day: 'numeric' });
+    }
+
+    /* ── Badge class by type ── */
+    function badgeClass(type) {
+      if (!type) return 'b-emp';
+      var t = String(type).toUpperCase();
+      if (t === 'VIS' || t === 'VISITOR') return 'b-vis';
+      if (t === 'CONT' || t === 'CONTRACTOR') return 'b-cont';
+      return 'b-emp';
+    }
+    function badgeLabel(type) {
+      if (!type) return 'STAFF';
+      var t = String(type).toUpperCase();
+      if (t === 'VIS' || t === 'VISITOR') return 'VISITOR';
+      if (t === 'CONT' || t === 'CONTRACTOR') return 'CONTRACT';
+      return 'EMPLOYEE';
+    }
+
+    /* ── Load data ── */
+    function loadData() {
+      post({ action: 'getDashboardData' }, function(d) {
+        if (!d.success) return;
+
+        /* KPIs */
+        document.getElementById('kpiPresent').textContent = d.present || 0;
+        document.getElementById('kpiAbsent').textContent  = d.absent || 0;
+        document.getElementById('kpiLate').textContent    = d.lateCount || 0;
+        if (d.lateAfter) document.getElementById('kLateAfter').textContent = d.lateAfter;
+
+        /* Org name (bottom center) — only update on first load to avoid overwriting icon */
+        if (!document._orgSet) {
+          document._orgSet = true;
+          var orgRaw = ('<?= getConfigValue("OrgName") || "My Organisation" ?>');
+          var orgSpan = document.createElement('span');
+          orgSpan.style.cssText = 'margin-left:12px;opacity:0.5;font-size:10px;letter-spacing:1px;';
+          orgSpan.textContent = orgRaw.toUpperCase();
+          document.getElementById('orgLabel').appendChild(orgSpan);
+        }
+
+        /* Efficiency % */
+        var pct = d.totalEmployees > 0 ? Math.round(d.present / d.totalEmployees * 100) : 0;
+        document.getElementById('kpiOnTime').textContent   = pct + '%';
+        document.getElementById('pctBar').style.width      = pct + '%';
+
+        /* Last updated */
+        var now = new Date();
+        document.getElementById('kLastUpdated').textContent =
+          now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+        /* ── Arrivals grid — up to 12 unique recent check-ins ── */
+        var seen = {}, arrivals = [];
+        (d.recentActivity || []).forEach(function(r) {
+          if (arrivals.length >= 20) return;
+          if (!r.Name || seen[r.Name]) return;
+          seen[r.Name] = true;
+          arrivals.push(r);
+        });
+
+        var grid = document.getElementById('arrivalsGrid');
+        if (!arrivals.length) {
+          grid.innerHTML = '<div style="color:var(--muted-dk);font-size:12px;grid-column:1/-1;text-align:center;padding:28px 0">No arrivals yet today</div>';
+        } else {
+          grid.innerHTML = arrivals.map(function(r, i) {
+            var c      = pickColor(r.Name);
+            var ini    = initials(r.Name);
+            var late   = !!r.isLate;
+            var hasOut = r.TimeOUT && String(r.TimeOUT).trim() !== '';
+            var borderStyle = late
+              ? 'border-color:rgba(245,158,11,.6);background:rgba(245,158,11,.06)'
+              : (i === 0 ? 'border-color:rgba(56,189,248,.45);background:rgba(56,189,248,.07)' : '');
+            var avRing = late ? ';box-shadow:0 0 0 2px rgba(245,158,11,.5)' : '';
+            var timeRow = '<div class="a-time" style="color:' + (late ? 'var(--amber)' : 'var(--muted)') + '">' +
+              esc(r.TimeIN || '–') + '</div>';
+            if (hasOut) {
+              timeRow += '<div class="a-time" style="color:var(--pink);margin-top:1px">↗ ' + esc(r.TimeOUT) + '</div>';
+            }
+            return '<div class="a-card" style="' + borderStyle + '">' +
+              '<div class="a-av" style="background:' + c + '22;color:' + c + avRing + '">' + esc(ini) + '</div>' +
+              '<div class="a-name">' + esc((r.Name || '').split(' ')[0]) + '</div>' +
+              timeRow +
+              (late ? '<span class="a-badge" style="background:rgba(245,158,11,.15);color:var(--amber)">LATE</span>' : '') +
+              '</div>';
+          }).join('');
+        }
+      });
+    }
+
+    /* ── Polling (deferred to screen activate in SPA) ── */
+    var _kioskStarted = false;
+    function _kioskActivate() {
+      if (_kioskStarted) return;
+      _kioskStarted = true;
+      updateClock();
+      loadData();
+      setInterval(updateClock, 1000);
+      setInterval(loadData, 8000);
+    }
+    if (typeof registerScreen === 'function') registerScreen('kiosk', _kioskActivate);
+    else _kioskActivate(); // standalone fallback
+
+    /* ════════════════════════════════════════
+       SETTINGS
+    ════════════════════════════════════════ */
+    function openSettings()  { document.getElementById('settingsOverlay').classList.add('open'); }
+    function closeSettings() { document.getElementById('settingsOverlay').classList.remove('open'); }
+
+    function switchSpSection(name) {
+      ['kpi','filters','alerts'].forEach(function(s) {
+        document.getElementById('spNav-' + s).classList.toggle('active', s === name);
+        document.getElementById('sp-section-' + s).classList.toggle('active', s === name);
+      });
+    }
+
+    function saveSettings() {
+      var cfg = {
+        personnel:  document.getElementById('togPersonnel').checked,
+        throughput: document.getElementById('togThroughput').checked,
+        visLogs:    document.getElementById('togVisLogs').checked,
+        threshold:  document.getElementById('spThreshold').value,
+        dept:       document.getElementById('spDeptFilter').value,
+        liveVis:    document.getElementById('togLiveVis').checked
+      };
+      try { localStorage.setItem('kioskConfig', JSON.stringify(cfg)); } catch(e) {}
+      closeSettings();
+    }
+
+    /* Click outside to close */
+    document.getElementById('settingsOverlay').addEventListener('click', function(e) {
+      if (e.target === this) closeSettings();
+    });
+
+    /* Load saved config */
+    try {
+      var saved = JSON.parse(localStorage.getItem('kioskConfig') || 'null');
+      if (saved) {
+        if (saved.personnel  !== undefined) document.getElementById('togPersonnel').checked  = saved.personnel;
+        if (saved.throughput !== undefined) document.getElementById('togThroughput').checked = saved.throughput;
+        if (saved.visLogs    !== undefined) document.getElementById('togVisLogs').checked    = saved.visLogs;
+        if (saved.threshold  !== undefined) {
+          document.getElementById('spThreshold').value = saved.threshold;
+          document.getElementById('threshVal').textContent = saved.threshold + '%';
+        }
+        if (saved.dept) document.getElementById('spDeptFilter').value = saved.dept;
+        if (saved.liveVis !== undefined) document.getElementById('togLiveVis').checked = saved.liveVis;
+      }
+    } catch(e) {}
+  </script>
+<script>
+  /* ── Kiosk embedded scanner ── */
+  var SCANNER_URL = 'https://packmastersmumbai.github.io/att/scanner_popup.html';
+  var kioskScanWin = null;
+  var kioskDismissTimer = null;
+
+  window.addEventListener('message', function(e) {
+    if (!e.data) return;
+    if (e.data.qratt_code) kioskOnScan(e.data.qratt_code, e.source);
+    if (e.data.qratt_closed) kioskOnScannerClosed();
+  });
+
+  function kioskOpenScanner() {
+    if (kioskScanWin && !kioskScanWin.closed) { kioskScanWin.focus(); return; }
+    var w = 420, h = 720;
+    var left = Math.max(0, (screen.width - w) / 2);
+    var top  = Math.max(0, (screen.height - h) / 2);
+    kioskScanWin = window.open(SCANNER_URL, 'qrkiosk',
+      'width=' + w + ',height=' + h + ',left=' + left + ',top=' + top + ',resizable=yes');
+    var wt = document.getElementById('kioskScanWaiting');
+    if (wt) wt.style.display = 'block';
+    var btn = document.getElementById('kioskBtnOpen');
+    if (btn) btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg> Scanner Open';
+  }
+
+  function kioskOnScannerClosed() {
+    kioskScanWin = null;
+    var wt = document.getElementById('kioskScanWaiting');
+    if (wt) wt.style.display = 'none';
+    var btn = document.getElementById('kioskBtnOpen');
+    if (btn) btn.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg> Open Scanner';
+  }
+
+  function kioskOnScan(qrCode, sourceWin) {
+    var gate = document.getElementById('kioskGate').value;
+    kioskShowLoading();
+    post({ action: 'processQRScan', qrCode: qrCode, gate: gate }, function(res) {
+      if (sourceWin) { try { sourceWin.postMessage({ qratt_result: res }, '*'); } catch(ex) {} }
+      else if (kioskScanWin && !kioskScanWin.closed) { try { kioskScanWin.postMessage({ qratt_result: res }, '*'); } catch(ex) {} }
+      kioskShowResult(res);
+      clearTimeout(kioskDismissTimer);
+      kioskDismissTimer = setTimeout(kioskDismissResult, 8000);
+    });
+  }
+
+  function kioskSubmitManual() {
+    var code = (document.getElementById('kioskManualCode').value || '').trim();
+    if (!code) return;
+    kioskShowLoading();
+    var gate = document.getElementById('kioskGate').value;
+    post({ action: 'processQRScan', qrCode: code, gate: gate }, function(res) {
+      kioskShowResult(res);
+      document.getElementById('kioskManualCode').value = '';
+      clearTimeout(kioskDismissTimer);
+      kioskDismissTimer = setTimeout(kioskDismissResult, 8000);
+    });
+  }
+
+  function kioskShowLoading() {
+    document.getElementById('kioskScanLauncher').style.display = 'none';
+    var r = document.getElementById('kioskResult');
+    r.style.display = 'block';
+    r.innerHTML = '<div class="krc" style="border:1px solid rgba(255,255,255,.08)">' +
+      '<div class="krc-spinner"></div>' +
+      '<div style="font-size:11px;color:var(--muted);margin-top:4px">Processing…</div>' +
+      '</div>';
+  }
+
+  function kioskShowResult(res) {
+    var r = document.getElementById('kioskResult');
+    r.style.display = 'block';
+    document.getElementById('kioskScanLauncher').style.display = 'none';
+
+    var type = res.action === 'CHECK_IN'  ? 'k-check-in'  :
+               res.action === 'CHECK_OUT' ? 'k-check-out' :
+               res.action === 'BLOCKED'   ? 'k-blocked'   : 'k-unknown';
+    var c   = pickColor(res.name || '?');
+    var ini = initials(res.name || '?');
+    var bCls = res.action === 'BLOCKED' ? 'b-blk' :
+               (res.success === false && !res.action) ? 'b-unk' :
+               (res.type === 'VIS' ? 'b-vis' : 'b-emp');
+    var bLbl = res.action === 'BLOCKED' ? 'BLOCKED' :
+               (res.success === false && !res.action) ? 'ERROR' :
+               (res.type === 'VIS' ? 'VISITOR' : 'EMPLOYEE');
+
+    var metaHtml = '';
+    if (res.action === 'CHECK_IN') {
+      metaHtml = '<div class="krc-meta">' +
+        '<div><div class="krc-meta-lbl">Action</div><div class="krc-meta-val" style="color:var(--green)">CHECK IN</div></div>' +
+        '<div><div class="krc-meta-lbl">Time</div><div class="krc-meta-val" style="color:var(--text-dim)">' + esc(res.time || '') + '</div></div>' +
+        '</div>';
+    } else if (res.action === 'CHECK_OUT') {
+      metaHtml = '<div class="krc-meta">' +
+        '<div><div class="krc-meta-lbl">Action</div><div class="krc-meta-val" style="color:var(--teal)">CHECK OUT</div></div>' +
+        '<div><div class="krc-meta-lbl">Duration</div><div class="krc-meta-val" style="color:var(--text-dim)">' + esc(res.duration || '–') + '</div></div>' +
+        '</div>';
+    } else {
+      metaHtml = '<div style="font-size:11px;color:var(--muted);margin-top:10px">' +
+        esc(res.message || res.error || 'QR code not recognised.') + '</div>';
+    }
+
+    r.innerHTML = '<div class="krc ' + type + '">' +
+      '<div class="krc-av" style="background:' + c + '22;color:' + c + '">' + esc(ini) + '</div>' +
+      '<span class="krc-badge ' + bCls + '">' + bLbl + '</span>' +
+      '<div class="krc-name">' + esc(res.name || 'Unknown') + '</div>' +
+      '<div class="krc-dept">' + esc(res.department || '') + '</div>' +
+      metaHtml +
+      '<button onclick="kioskDismissResult()" style="margin-top:12px;background:rgba(255,255,255,.06);border:1px solid var(--border-md);color:var(--muted);border-radius:6px;padding:6px 18px;font-size:11px;font-weight:600;font-family:var(--font);cursor:pointer;">Dismiss</button>' +
+      '</div>';
+  }
+
+  function kioskDismissResult() {
+    clearTimeout(kioskDismissTimer);
+    document.getElementById('kioskResult').style.display = 'none';
+    document.getElementById('kioskResult').innerHTML = '';
+    document.getElementById('kioskScanLauncher').style.display = 'flex';
+  }
+</script>
+</body>
+</html>

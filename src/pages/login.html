@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800;900&family=Roboto+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --color-primary: #000666;
+      --color-success: #006b5f;
+      --color-danger:  #DC2626;
+      --color-bg:      #fcf9f8;
+      --color-surface: #ffffff;
+      --color-border:  #e8e3e0;
+      --color-text:    #1b1c1c;
+      --color-muted:   #6b7280;
+      --font-sans: 'Public Sans', system-ui, sans-serif;
+      --font-mono: 'Roboto Mono', monospace;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body {
+      font-family: var(--font-sans);
+      background: var(--color-bg);
+      color: var(--color-text);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+
+    /* ── CONTAINER ── */
+    .login-wrap {
+      width: 100%;
+      max-width: 440px;
+      padding: 24px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    /* ── BRAND ── */
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      justify-content: center;
+    }
+    .brand-mark {
+      width: 40px; height: 40px;
+      background: var(--color-primary); color: #fff;
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 900; font-size: 14px;
+    }
+    .brand-name { font-weight: 800; font-size: 20px; color: var(--color-primary); }
+    .brand-sub  { font-size: 11px; color: var(--color-muted); text-transform: uppercase; letter-spacing: 1.5px; margin-top: 1px; }
+
+    /* ── SECTION LABEL ── */
+    .section-label {
+      font-size: 11px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .08em; color: var(--color-muted); margin-bottom: 10px;
+      text-align: center;
+    }
+
+    /* ── USER TILES ── */
+    .user-grid {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+    }
+    .user-tile {
+      flex: 1;
+      max-width: 130px;
+      border: 2px solid var(--color-border);
+      border-radius: 8px;
+      padding: 16px 10px 12px;
+      cursor: pointer;
+      background: var(--color-surface);
+      transition: border-color .15s, box-shadow .15s, background .15s;
+      text-align: center;
+      user-select: none;
+    }
+    .user-tile:hover { border-color: #a5b4fc; background: #f8f8ff; }
+    .user-tile.selected {
+      border-color: var(--color-primary);
+      background: #f0f0ff;
+      box-shadow: 0 0 0 3px rgba(0,6,102,.1);
+    }
+    .user-av {
+      width: 44px; height: 44px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; font-weight: 800;
+      margin: 0 auto 8px;
+      transition: transform .15s;
+    }
+    .user-tile.selected .user-av { transform: scale(1.08); }
+    .user-name  { font-size: 13px; font-weight: 700; color: var(--color-text); }
+    .user-role  { font-size: 10px; font-weight: 600; color: var(--color-muted); text-transform: uppercase; letter-spacing: .06em; margin-top: 3px; }
+
+    /* ── PIN CARD ── */
+    .pin-card {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: 10px;
+      padding: 24px 20px 20px;
+    }
+
+    /* PIN dots */
+    .pin-dots {
+      display: flex;
+      gap: 14px;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+    .pin-dot {
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      border: 2px solid var(--color-border);
+      background: transparent;
+      transition: background .1s, border-color .1s;
+    }
+    .pin-dot.filled {
+      background: var(--color-primary);
+      border-color: var(--color-primary);
+    }
+
+    /* PIN pad */
+    .pin-pad {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+    .pin-key {
+      background: #f5f0ee;
+      border: none;
+      border-radius: 6px;
+      height: 52px;
+      font-family: var(--font-mono);
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--color-text);
+      cursor: pointer;
+      transition: background .1s, transform .08s;
+      user-select: none;
+    }
+    .pin-key:hover  { background: #ebe5e2; }
+    .pin-key:active { transform: scale(.94); background: #ddd7d4; }
+    .pin-key.del    { font-size: 14px; color: var(--color-muted); }
+    .pin-key.zero   { grid-column: 2; }
+
+    /* Error / hint text */
+    .pin-msg {
+      min-height: 20px;
+      text-align: center;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--color-danger);
+      margin-bottom: 12px;
+      transition: opacity .2s;
+    }
+    .pin-msg.hidden { opacity: 0; }
+
+    @keyframes shake {
+      0%,100%{transform:translateX(0)} 20%,60%{transform:translateX(-6px)} 40%,80%{transform:translateX(6px)}
+    }
+    .pin-dots.shake { animation: shake .3s ease; }
+
+    /* Submit button (shown when all digits filled, mainly for screen-readers; auto-submits) */
+    .pin-submit {
+      width: 100%; margin-top: 8px;
+      padding: 12px; border-radius: 6px;
+      background: var(--color-primary); color: #fff;
+      border: none; font-size: 14px; font-weight: 700;
+      font-family: var(--font-sans); cursor: pointer;
+      transition: background .15s, opacity .15s;
+    }
+    .pin-submit:disabled { opacity: .5; cursor: not-allowed; }
+    .pin-submit:not(:disabled):hover { background: #000444; }
+
+    /* loading state */
+    .spinner {
+      display: inline-block; width: 14px; height: 14px;
+      border: 2px solid rgba(255,255,255,.4);
+      border-top-color: #fff; border-radius: 50%;
+      animation: spin .6s linear infinite; margin-right: 6px; vertical-align: middle;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    @media (max-width: 480px) {
+      .login-wrap { padding: 20px 14px; gap: 18px; }
+      .pin-key { height: 46px; font-size: 16px; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="login-wrap">
+
+    <!-- Brand -->
+    <div class="brand">
+      <div class="brand-mark">QR</div>
+      <div>
+        <div class="brand-name">Att.</div>
+        <div class="brand-sub">Attendance Management</div>
+      </div>
+    </div>
+
+    <!-- User selector -->
+    <div>
+      <div class="section-label">Who's logging in?</div>
+      <div class="user-grid" id="userGrid">
+        <div style="font-size:12px;color:#6b7280;text-align:center;padding:12px">Loading users…</div>
+      </div>
+    </div>
+
+    <!-- PIN entry -->
+    <div class="pin-card" id="pinCard">
+      <div class="pin-msg hidden" id="pinMsg">Select a user above</div>
+      <div class="pin-dots" id="pinDots">
+        <div class="pin-dot" id="pd0"></div>
+        <div class="pin-dot" id="pd1"></div>
+        <div class="pin-dot" id="pd2"></div>
+        <div class="pin-dot" id="pd3"></div>
+      </div>
+      <div class="pin-pad">
+        <button class="pin-key" onclick="addDigit('1')">1</button>
+        <button class="pin-key" onclick="addDigit('2')">2</button>
+        <button class="pin-key" onclick="addDigit('3')">3</button>
+        <button class="pin-key" onclick="addDigit('4')">4</button>
+        <button class="pin-key" onclick="addDigit('5')">5</button>
+        <button class="pin-key" onclick="addDigit('6')">6</button>
+        <button class="pin-key" onclick="addDigit('7')">7</button>
+        <button class="pin-key" onclick="addDigit('8')">8</button>
+        <button class="pin-key" onclick="addDigit('9')">9</button>
+        <button class="pin-key del" onclick="delDigit()">⌫</button>
+        <button class="pin-key zero" onclick="addDigit('0')">0</button>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    var _selectedUser = null;
+    var _pin = [];
+    var _busy = false;
+    var PIN_LEN = 4;
+
+    /* Users are defined here — edit to add/change users.
+       PINs are verified server-side; this list is display-only. */
+    var LOGIN_USERS = [
+      { id:'u1', name:'Owner',  role:'Owner', avatar:'OW', color:'#3B82F6' },
+      { id:'u2', name:'Khushi', role:'Admin', avatar:'KH', color:'#8B5CF6' },
+    ];
+
+    function validatePin(userId, pin, callback) {
+      if (typeof google === 'undefined' || !google.script) {
+        /* dev fallback */
+        var ok = (userId==='u1'&&pin==='1111')||(userId==='u2'&&pin==='2222');
+        if (ok) callback({ success:true, user:{ id:userId, name:userId==='u1'?'Owner':'Khushi', role:userId==='u1'?'Owner':'Admin' } });
+        else    callback({ success:false, error:'Incorrect PIN' });
+        return;
+      }
+      google.script.run
+        .withSuccessHandler(callback)
+        .withFailureHandler(function(e){ callback({ success:false, error:e?e.message:'Server error' }); })
+        .validateUserPin(userId, pin);
+    }
+
+    function loadUsers() {
+      var grid = document.getElementById('userGrid');
+      grid.innerHTML = LOGIN_USERS.map(function(u) {
+        var c = u.color;
+        return '<div class="user-tile" id="tile_'+u.id+'" onclick="selectUser('+JSON.stringify(u)+')">'
+          + '<div class="user-av" style="background:'+c+'22;color:'+c+'">'+esc(u.avatar)+'</div>'
+          + '<div class="user-name">'+esc(u.name)+'</div>'
+          + '<div class="user-role">'+esc(u.role)+'</div>'
+          + '</div>';
+      }).join('');
+    }
+
+    function selectUser(user) {
+      _selectedUser = user;
+      _pin = [];
+      _busy = false;
+      updateDots();
+      setMsg('', true);
+      /* highlight tile */
+      document.querySelectorAll('.user-tile').forEach(function(t){ t.classList.remove('selected'); });
+      var tile = document.getElementById('tile_'+user.id);
+      if (tile) tile.classList.add('selected');
+    }
+
+    function addDigit(d) {
+      if (_busy) return;
+      if (!_selectedUser) { setMsg('Select a user first'); shakeDots(); return; }
+      if (_pin.length >= PIN_LEN) return;
+      _pin.push(d);
+      updateDots();
+      if (_pin.length === PIN_LEN) submitPin();
+    }
+
+    function delDigit() {
+      if (_busy) return;
+      _pin.pop();
+      updateDots();
+      setMsg('', true);
+    }
+
+    function updateDots() {
+      for (var i = 0; i < PIN_LEN; i++) {
+        var dot = document.getElementById('pd'+i);
+        if (dot) dot.classList.toggle('filled', i < _pin.length);
+      }
+    }
+
+    function submitPin() {
+      _busy = true;
+      setMsg('', true);
+      validatePin(_selectedUser.id, _pin.join(''), function(res) {
+        if (res.success) {
+          sessionStorage.setItem('qratt_user', JSON.stringify(res.user));
+          /* navigate to dashboard */
+          if (typeof showScreen === 'function') showScreen('dashboard');
+          else window.location.reload();
+        } else {
+          _pin = [];
+          _busy = false;
+          updateDots();
+          setMsg(res.error || 'Incorrect PIN');
+          shakeDots();
+        }
+      });
+    }
+
+    function setMsg(text, hide) {
+      var el = document.getElementById('pinMsg');
+      if (!el) return;
+      el.textContent = text || '';
+      el.classList.toggle('hidden', !!hide || !text);
+    }
+
+    function shakeDots() {
+      var el = document.getElementById('pinDots');
+      if (!el) return;
+      el.classList.remove('shake');
+      void el.offsetWidth; /* reflow */
+      el.classList.add('shake');
+      el.addEventListener('animationend', function(){ el.classList.remove('shake'); }, { once:true });
+    }
+
+    function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+
+    /* keyboard support */
+    document.addEventListener('keydown', function(e) {
+      if (e.key >= '0' && e.key <= '9') addDigit(e.key);
+      else if (e.key === 'Backspace') delDigit();
+    });
+
+    loadUsers();
+  </script>
+
+  <script>
+    /* SPA: register as first screen; if already logged in skip straight to dashboard */
+    function _loginActivate() {
+      try {
+        var u = JSON.parse(sessionStorage.getItem('qratt_user') || 'null');
+        if (u && u.id) {
+          if (typeof showScreen === 'function') { showScreen('dashboard'); return; }
+        }
+      } catch(_) {}
+      loadUsers();
+    }
+    if (typeof registerScreen === 'function') registerScreen('login', _loginActivate);
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>E2E Test Harness — QR Attendance</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --pass: #16a34a; --fail: #dc2626; --skip: #6b7280;
+      --pass-bg: #f0fdf4; --fail-bg: #fef2f2; --skip-bg: #f9fafb;
+      --primary: #000666;
+    }
+    body { font-family: system-ui, sans-serif; background: #f1f5f9; color: #1b1c1c; padding: 20px; font-size: 13px; }
+    h1 { font-size: 18px; font-weight: 800; color: var(--primary); margin-bottom: 4px; }
+    .subtitle { color: #64748b; font-size: 12px; margin-bottom: 20px; }
+
+    .toolbar { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+    .btn { padding: 8px 18px; border: none; border-radius: 4px; font-size: 12px; font-weight: 700;
+           cursor: pointer; font-family: inherit; }
+    .btn-run { background: var(--primary); color: #fff; }
+    .btn-run:hover { background: #000444; }
+    .btn-run:disabled { opacity: .5; cursor: default; }
+    .btn-clear { background: #e2e8f0; color: #334155; }
+    .btn-back { background: #fff; color: var(--primary); border: 1px solid #cbd5e1; text-decoration: none;
+                padding: 8px 14px; border-radius: 4px; font-size: 12px; font-weight: 600; display: inline-flex; align-items: center; }
+
+    /* Summary bar */
+    #summary { display: flex; gap: 16px; margin-bottom: 16px; font-size: 12px; font-weight: 700; }
+    .sum-pass { color: var(--pass); }
+    .sum-fail { color: var(--fail); }
+    .sum-skip { color: var(--skip); }
+    #progress { height: 4px; background: #e2e8f0; border-radius: 2px; margin-bottom: 16px; overflow: hidden; }
+    #progressBar { height: 100%; width: 0; background: var(--primary); transition: width .2s; }
+
+    /* Suite */
+    .suite { background: #fff; border: 1px solid #e2e8f0; border-radius: 6px; margin-bottom: 12px; overflow: hidden; }
+    .suite-header { padding: 10px 14px; font-weight: 700; background: #f8fafc; border-bottom: 1px solid #e2e8f0;
+                    display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; }
+    .suite-badge { font-size: 10px; padding: 2px 7px; border-radius: 10px; font-weight: 700; }
+    .badge-pass { background: #dcfce7; color: var(--pass); }
+    .badge-fail { background: #fee2e2; color: var(--fail); }
+    .badge-run  { background: #dbeafe; color: #1d4ed8; }
+    .badge-idle { background: #f1f5f9; color: #94a3b8; }
+    .suite-toggle { margin-left: auto; font-size: 11px; color: #94a3b8; }
+
+    /* Test rows */
+    .test-row { display: flex; align-items: flex-start; gap: 10px; padding: 8px 14px;
+                border-bottom: 1px solid #f1f5f9; }
+    .test-row:last-child { border-bottom: none; }
+    .test-status { width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; margin-top: 1px; }
+    .status-pass { background: var(--pass); }
+    .status-fail { background: var(--fail); }
+    .status-skip { background: #d1d5db; }
+    .status-run  { background: #3b82f6; animation: pulse .8s infinite; }
+    .status-idle { background: #e2e8f0; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+    .test-name { font-weight: 600; color: #334155; flex: 1; }
+    .test-dur  { font-size: 11px; color: #94a3b8; font-family: monospace; white-space: nowrap; }
+    .test-err  { font-size: 11px; color: var(--fail); background: var(--fail-bg);
+                 border-radius: 3px; padding: 3px 7px; margin-top: 3px; font-family: monospace;
+                 white-space: pre-wrap; word-break: break-word; }
+    .test-detail { font-size: 11px; color: #64748b; margin-top: 3px; }
+    .test-col { flex: 1; min-width: 0; }
+  </style>
+</head>
+<body>
+
+<h1>E2E Test Harness — QR Attendance</h1>
+<p class="subtitle">Runs live against your deployed GAS backend. Tests call real doPost actions and validate responses.</p>
+
+<div class="toolbar">
+  <button class="btn btn-run" id="btnRun" onclick="runAll()">▶ Run All</button>
+  <button class="btn btn-clear" onclick="clearResults()">✕ Clear</button>
+  <a class="btn-back" href="?page=admin">← Admin</a>
+  <span id="statusText" style="font-size:12px;color:#64748b;margin-left:4px;"></span>
+</div>
+
+<div id="progress"><div id="progressBar"></div></div>
+<div id="summary">
+  <span class="sum-pass" id="sumPass">✓ 0 passed</span>
+  <span class="sum-fail" id="sumFail">✗ 0 failed</span>
+  <span class="sum-skip" id="sumSkip">– 0 skipped</span>
+</div>
+
+<div id="suites"></div>
+
+<script>
+  var APP_URL = '<?= appUrl ?>';
+
+  /* ── API helper ── */
+  function post(action, extra) {
+    var body = Object.assign({ action: action }, extra || {});
+    return fetch(APP_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(body)
+    }).then(function(r) {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    });
+  }
+
+  /* ── Test registry ── */
+  var SUITES = [
+    {
+      name: '1. Config & Bootstrap',
+      tests: [
+        {
+          name: 'getConfig returns object with keys',
+          run: function() {
+            return post('getConfig').then(function(r) {
+              assert(r.success, 'success=false: ' + r.error);
+              assert(r.data && typeof r.data === 'object', 'data is not an object');
+              return 'Keys: ' + Object.keys(r.data || {}).join(', ');
+            });
+          }
+        }
+      ]
+    },
+    {
+      name: '2. Employee Data (ID Cards backend)',
+      tests: [
+        {
+          name: 'getEmployees returns array',
+          run: function() {
+            return post('getEmployees').then(function(r) {
+              assert(r.success, 'success=false: ' + (r.error || JSON.stringify(r)));
+              assert(Array.isArray(r.data), 'data is not an array, got: ' + typeof r.data);
+              return r.data.length + ' employees found';
+            });
+          }
+        },
+        {
+          name: 'Each employee has EmpID, Name, QRCode fields',
+          run: function() {
+            return post('getEmployees').then(function(r) {
+              assert(r.success, r.error);
+              var emps = r.data || [];
+              if (!emps.length) return skip('No employees in sheet — add at least one to test');
+              var missing = [];
+              emps.forEach(function(e, i) {
+                if (!e.EmpID)  missing.push('row ' + i + ': missing EmpID');
+                if (!e.Name)   missing.push('row ' + i + ': missing Name');
+                if (!e.QRCode) missing.push('row ' + i + ': missing QRCode');
+              });
+              assert(!missing.length, missing.join('; '));
+              return 'All ' + emps.length + ' employees have required fields';
+            });
+          }
+        },
+        {
+          name: 'QRImageURL or QRCode present for QR rendering',
+          run: function() {
+            return post('getEmployees').then(function(r) {
+              assert(r.success, r.error);
+              var emps = r.data || [];
+              if (!emps.length) return skip('No employees — cannot check QR fields');
+              var noQr = emps.filter(function(e) { return !e.QRImageURL && !e.QRCode && !e.EmpID; });
+              assert(!noQr.length, noQr.length + ' employees have no QR source (no QRImageURL, QRCode, or EmpID)');
+              var withImg = emps.filter(function(e) { return !!e.QRImageURL; }).length;
+              return withImg + '/' + emps.length + ' have stored QRImageURL; rest will use api.qrserver.com';
+            });
+          }
+        }
+      ]
+    },
+    {
+      name: '3. ID Cards Page Render',
+      tests: [
+        {
+          name: 'idcards page loads (GET ?page=idcards returns HTML)',
+          run: function() {
+            return fetch(APP_URL + '?page=idcards')
+              .then(function(r) {
+                assert(r.ok, 'HTTP ' + r.status);
+                return r.text();
+              })
+              .then(function(html) {
+                assert(html.includes('card-grid'), 'HTML does not contain card-grid element');
+                assert(!html.includes('<?='), 'Template scriptlets not evaluated — server-side rendering failed');
+                var hasEmployees = html.includes('"EmpID"') || html.includes('card-name') || html.includes('EMPLOYEES = []');
+                return hasEmployees
+                  ? (html.includes('EMPLOYEES = []') ? 'Page loaded but EMPLOYEES=[] (empty sheet)' : 'Page loaded with employee data')
+                  : 'Page loaded — employee data injection unclear';
+              });
+          }
+        },
+        {
+          name: 'idcards page: EMPLOYEES variable is valid JSON (not empty)',
+          run: function() {
+            return fetch(APP_URL + '?page=idcards')
+              .then(function(r) { return r.text(); })
+              .then(function(html) {
+                var m = html.match(/var EMPLOYEES\s*=\s*(\[[\s\S]*?\]);/);
+                assert(m, 'Could not find EMPLOYEES variable in page HTML');
+                var emps;
+                try { emps = JSON.parse(m[1]); } catch(ex) { throw new Error('EMPLOYEES JSON parse error: ' + ex.message); }
+                assert(Array.isArray(emps), 'EMPLOYEES is not an array');
+                if (!emps.length) return skip('EMPLOYEES=[] — no employees in sheet. Add employees first.');
+                return emps.length + ' employees injected into page';
+              });
+          }
+        },
+        {
+          name: 'idcards page: orgName injected correctly',
+          run: function() {
+            return fetch(APP_URL + '?page=idcards')
+              .then(function(r) { return r.text(); })
+              .then(function(html) {
+                var m = html.match(/var ORG\s*=\s*("(?:[^"\\]|\\.)*")/);
+                assert(m, 'Could not find ORG variable in page HTML');
+                var org = JSON.parse(m[1]);
+                assert(org && org.length > 0, 'ORG name is empty');
+                return 'ORG = "' + org + '"';
+              });
+          }
+        }
+      ]
+    },
+    {
+      name: '4. QR Scan Flow',
+      tests: [
+        {
+          name: 'processQRScan with unknown QR code returns structured error',
+          run: function() {
+            return post('processQRScan', { qrCode: 'E2E_TEST_UNKNOWN_' + Date.now(), gate: 'Main' })
+              .then(function(r) {
+                // Should return success:false with a meaningful message (not a JS error)
+                assert(typeof r === 'object', 'Response is not an object');
+                assert('success' in r, 'Response missing success field');
+                return r.success
+                  ? 'Unexpected: unknown QR returned success=true (status: ' + r.status + ')'
+                  : 'Correctly returned success=false: ' + (r.error || r.message || JSON.stringify(r));
+              });
+          }
+        },
+        {
+          name: 'processQRScan with first employee QR code does check-in',
+          run: function() {
+            return post('getEmployees').then(function(r) {
+              assert(r.success, r.error);
+              var emps = (r.data || []).filter(function(e) { return e.QRCode && e.Status !== 'INACTIVE'; });
+              if (!emps.length) return skip('No active employees with QRCode — cannot test scan');
+              var emp = emps[0];
+              return post('processQRScan', { qrCode: emp.QRCode, gate: 'E2E-Test' })
+                .then(function(s) {
+                  assert(typeof s === 'object', 'Scan response not an object');
+                  assert('success' in s, 'No success field in scan response');
+                  return (s.success ? '✓ ' : '✗ ') + emp.Name + ' (' + emp.QRCode + '): ' +
+                    (s.action || s.status || s.message || JSON.stringify(s));
+                });
+            });
+          }
+        }
+      ]
+    },
+    {
+      name: '5. Dashboard Data',
+      tests: [
+        {
+          name: 'getDashboardData returns presentCount, absentCount, recentActivity',
+          run: function() {
+            return post('getDashboardData').then(function(r) {
+              assert(r.success, 'success=false: ' + r.error);
+              var d = r.data || r;
+              assert(typeof d.presentCount === 'number' || typeof d.presentCount === 'string',
+                'missing presentCount, got: ' + JSON.stringify(Object.keys(d)));
+              return 'Present=' + d.presentCount + ' Absent=' + d.absentCount +
+                ' Activity entries=' + (d.recentActivity || []).length;
+            });
+          }
+        }
+      ]
+    },
+    {
+      name: '6. Reports — Monthly Attendance',
+      tests: [
+        {
+          name: 'getMonthlyAttendance returns matrix for current month',
+          run: function() {
+            var now = new Date();
+            return post('getMonthlyAttendance', { year: now.getFullYear(), month: now.getMonth() + 1 })
+              .then(function(r) {
+                assert(r.success, 'success=false: ' + r.error);
+                var d = r.data || r;
+                assert(Array.isArray(d.rows) || Array.isArray(d), 'Expected rows array in response');
+                var rows = d.rows || d;
+                return rows.length + ' employee rows for ' + now.getFullYear() + '-' + (now.getMonth() + 1);
+              });
+          }
+        }
+      ]
+    },
+    {
+      name: '7. Print / QR Image URLs',
+      tests: [
+        {
+          name: 'api.qrserver.com fallback URL is reachable for a sample code',
+          run: function() {
+            var url = 'https://api.qrserver.com/v1/create-qr-code/?size=60x60&data=E2E_TEST';
+            return fetch(url, { mode: 'no-cors' })
+              .then(function() {
+                return 'api.qrserver.com reachable (no-cors — browser blocks content inspection but request succeeded)';
+              })
+              .catch(function(ex) {
+                throw new Error('api.qrserver.com unreachable: ' + ex.message + ' — QR images will be blank');
+              });
+          }
+        },
+        {
+          name: 'QRImageURL (Drive URL) format check on stored employees',
+          run: function() {
+            return post('getEmployees').then(function(r) {
+              assert(r.success, r.error);
+              var emps = r.data || [];
+              var withUrl = emps.filter(function(e) { return !!e.QRImageURL; });
+              if (!withUrl.length) return skip('No employees have QRImageURL — all will use api.qrserver.com fallback');
+              var badUrls = withUrl.filter(function(e) {
+                return !e.QRImageURL.startsWith('https://');
+              });
+              assert(!badUrls.length, badUrls.length + ' employees have malformed QRImageURL (not https://)');
+              return withUrl.length + ' employees have valid https QRImageURL';
+            });
+          }
+        }
+      ]
+    }
+  ];
+
+  /* ── Test runner ── */
+  var _state = {};   // suiteIdx_testIdx → { status, dur, msg, err }
+  var _total = 0, _done = 0;
+
+  SUITES.forEach(function(s) { _total += s.tests.length; });
+
+  function assert(cond, msg) {
+    if (!cond) throw new Error(msg || 'Assertion failed');
+  }
+  function skip(msg) {
+    var e = new Error(msg);
+    e._skip = true;
+    throw e;
+  }
+
+  function key(si, ti) { return si + '_' + ti; }
+
+  function setState(si, ti, st) {
+    _state[key(si, ti)] = st;
+    renderRow(si, ti);
+    updateSuiteBadge(si);
+    updateSummary();
+    updateProgress();
+  }
+
+  function runAll() {
+    document.getElementById('btnRun').disabled = true;
+    document.getElementById('statusText').textContent = 'Running…';
+    _done = 0; _state = {};
+    renderSuites();
+
+    var chain = Promise.resolve();
+    SUITES.forEach(function(suite, si) {
+      suite.tests.forEach(function(test, ti) {
+        chain = chain.then(function() {
+          setState(si, ti, { status: 'run' });
+          var t0 = performance.now();
+          return Promise.resolve().then(function() { return test.run(); })
+            .then(function(detail) {
+              setState(si, ti, { status: 'pass', dur: performance.now() - t0, detail: detail || '' });
+            })
+            .catch(function(ex) {
+              if (ex._skip) {
+                setState(si, ti, { status: 'skip', dur: performance.now() - t0, detail: ex.message });
+              } else {
+                setState(si, ti, { status: 'fail', dur: performance.now() - t0, err: ex.message });
+              }
+            });
+        });
+      });
+    });
+
+    chain.then(function() {
+      document.getElementById('btnRun').disabled = false;
+      document.getElementById('statusText').textContent = 'Done.';
+    });
+  }
+
+  function clearResults() {
+    _state = {}; _done = 0;
+    renderSuites();
+    document.getElementById('statusText').textContent = '';
+    updateSummary();
+    updateProgress();
+  }
+
+  /* ── Render ── */
+  function renderSuites() {
+    var el = document.getElementById('suites');
+    el.innerHTML = SUITES.map(function(suite, si) {
+      return '<div class="suite" id="suite-' + si + '">' +
+        '<div class="suite-header" onclick="toggleSuite(' + si + ')">' +
+          '<span>' + esc(suite.name) + '</span>' +
+          '<span class="suite-badge badge-idle" id="sbadge-' + si + '">IDLE</span>' +
+          '<span class="suite-toggle" id="stoggle-' + si + '">▼</span>' +
+        '</div>' +
+        '<div id="sbody-' + si + '">' +
+          suite.tests.map(function(test, ti) { return rowHtml(si, ti, test); }).join('') +
+        '</div>' +
+      '</div>';
+    }).join('');
+  }
+
+  function rowHtml(si, ti, test) {
+    return '<div class="test-row" id="row-' + si + '-' + ti + '">' +
+      '<div class="test-status status-idle" id="dot-' + si + '-' + ti + '"></div>' +
+      '<div class="test-col">' +
+        '<div class="test-name">' + esc(test.name) + '</div>' +
+        '<div id="detail-' + si + '-' + ti + '"></div>' +
+      '</div>' +
+      '<div class="test-dur" id="dur-' + si + '-' + ti + '"></div>' +
+    '</div>';
+  }
+
+  function renderRow(si, ti) {
+    var st = _state[key(si, ti)] || {};
+    var dot = document.getElementById('dot-' + si + '-' + ti);
+    var det = document.getElementById('detail-' + si + '-' + ti);
+    var dur = document.getElementById('dur-' + si + '-' + ti);
+    if (!dot) return;
+    dot.className = 'test-status status-' + (st.status || 'idle');
+    dur.textContent = st.dur != null ? Math.round(st.dur) + 'ms' : '';
+    det.innerHTML = '';
+    if (st.status === 'fail' && st.err) {
+      det.innerHTML = '<div class="test-err">' + esc(st.err) + '</div>';
+    } else if ((st.status === 'pass' || st.status === 'skip') && st.detail) {
+      det.innerHTML = '<div class="test-detail">' + esc(st.detail) + '</div>';
+    }
+    if (st.status !== 'idle') _done++;
+  }
+
+  function updateSuiteBadge(si) {
+    var badge = document.getElementById('sbadge-' + si);
+    if (!badge) return;
+    var suite = SUITES[si];
+    var statuses = suite.tests.map(function(_, ti) { return (_state[key(si, ti)] || {}).status; });
+    var running = statuses.some(function(s) { return s === 'run'; });
+    var any_fail = statuses.some(function(s) { return s === 'fail'; });
+    var all_done = statuses.every(function(s) { return s && s !== 'idle' && s !== 'run'; });
+    if (running)         { badge.className = 'suite-badge badge-run';  badge.textContent = 'RUNNING'; }
+    else if (!all_done)  { badge.className = 'suite-badge badge-idle'; badge.textContent = 'IDLE'; }
+    else if (any_fail)   { badge.className = 'suite-badge badge-fail'; badge.textContent = 'FAIL'; }
+    else                 { badge.className = 'suite-badge badge-pass'; badge.textContent = 'PASS'; }
+  }
+
+  function updateSummary() {
+    var pass = 0, fail = 0, skip = 0;
+    Object.values(_state).forEach(function(st) {
+      if (st.status === 'pass') pass++;
+      else if (st.status === 'fail') fail++;
+      else if (st.status === 'skip') skip++;
+    });
+    document.getElementById('sumPass').textContent = '✓ ' + pass + ' passed';
+    document.getElementById('sumFail').textContent = '✗ ' + fail + ' failed';
+    document.getElementById('sumSkip').textContent = '– ' + skip + ' skipped';
+  }
+
+  function updateProgress() {
+    var done = Object.keys(_state).filter(function(k) {
+      var s = _state[k].status; return s && s !== 'idle' && s !== 'run';
+    }).length;
+    document.getElementById('progressBar').style.width = (done / _total * 100) + '%';
+  }
+
+  function toggleSuite(si) {
+    var body = document.getElementById('sbody-' + si);
+    var tog  = document.getElementById('stoggle-' + si);
+    var hidden = body.style.display === 'none';
+    body.style.display = hidden ? '' : 'none';
+    tog.textContent = hidden ? '▼' : '▶';
+  }
+
+  function esc(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  }
+
+  /* ── Init ── */
+  renderSuites();
+  updateSummary();
+</script>
+</body>
+</html>

@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>QR Attendance System</title>
+  <style>
+    /* Each screen fills the viewport; only the active one is shown */
+    .qr-screen { display: none; width: 100%; height: 100vh; overflow: hidden; }
+    .qr-screen.active { display: block; }
+  </style>
+  <script>
+    /* ── SPA Router ─────────────────────────────────────────────────────── */
+    window.APP_URL = '<?= appUrl ?>';
+
+    var _currentScreen = null;
+    var _screenInits   = {};   // screen-name → init function, registered by each page
+
+    /* Pages register their activate function here before DOM is ready */
+    function registerScreen(name, activateFn) {
+      _screenInits[name] = activateFn;
+    }
+
+    function showScreen(name) {
+      if (_currentScreen === name) return;
+      _currentScreen = name;
+
+      /* Hide all, show target */
+      document.querySelectorAll('.qr-screen').forEach(function(el) {
+        el.classList.remove('active');
+      });
+      var target = document.getElementById('screen-' + name);
+      if (target) target.classList.add('active');
+
+      /* Update all sidebar / mobile nav active states */
+      document.querySelectorAll('[data-page]').forEach(function(el) {
+        el.classList.toggle('active', el.dataset.page === name);
+      });
+
+      /* Call the screen's own activate fn if registered */
+      if (_screenInits[name]) {
+        try { _screenInits[name](); } catch(ex) { console.error('screen activate error', ex); }
+      }
+    }
+
+    /* Wire all data-page links once DOM is ready */
+    document.addEventListener('DOMContentLoaded', function() {
+      document.querySelectorAll('[data-page]').forEach(function(el) {
+        el.addEventListener('click', function(e) {
+          e.preventDefault();
+          var target = el.dataset.page;
+          /* guard: non-login screens require auth */
+          if (target !== 'login' && !_isLoggedIn()) {
+            showScreen('login');
+            return;
+          }
+          showScreen(target);
+        });
+      });
+
+      /* Boot: go to login unless already authenticated */
+      if (_isLoggedIn()) {
+        showScreen('dashboard');
+      } else {
+        showScreen('login');
+      }
+    });
+
+    function _isLoggedIn() {
+      try {
+        var u = JSON.parse(sessionStorage.getItem('qratt_user') || 'null');
+        return !!(u && u.id);
+      } catch(_) { return false; }
+    }
+
+    /* Allow any screen's JS to trigger logout */
+    function appLogout() {
+      sessionStorage.removeItem('qratt_user');
+      showScreen('login');
+    }
+  </script>
+</head>
+<body style="margin:0;padding:0;background:#0f1117;">
+
+  <div id="screen-login"     class="qr-screen"><?!= include('pages/login')     ?></div>
+  <div id="screen-scanner"   class="qr-screen"><?!= include('pages/scanner')   ?></div>
+  <div id="screen-dashboard" class="qr-screen"><?!= include('pages/dashboard') ?></div>
+  <div id="screen-kiosk"     class="qr-screen"><?!= include('pages/kiosk')     ?></div>
+  <div id="screen-visitors"  class="qr-screen"><?!= include('pages/visitors')  ?></div>
+  <div id="screen-reports"   class="qr-screen"><?!= include('pages/reports')   ?></div>
+  <div id="screen-admin"     class="qr-screen"><?!= include('pages/admin')     ?></div>
+
+</body>
+</html>

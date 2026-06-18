@@ -1,0 +1,49 @@
+<script>
+  /**
+   * Escapes a value for safe insertion into HTML to prevent XSS.
+   * Use esc() on every user-sourced value before injecting into innerHTML.
+   */
+  function esc(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  /**
+   * Shared post() shim — replaces fetch() with google.script.run.
+   * All pages use post({action, ...params}, callback) identically.
+   * google.script.run calls the GAS function directly; no CORS issues.
+   */
+  function post(data, callback) {
+    var action = data.action;
+    var onError = function(err) {
+      callback({ success: false, error: err ? err.message : 'Unknown error' });
+    };
+    var runner = google.script.run
+      .withSuccessHandler(callback)
+      .withFailureHandler(onError);
+
+    if      (action === 'verifyPIN')         runner.verifyPIN(data.pin);
+    else if (action === 'getDashboardData')  runner.getDashboardData();
+    else if (action === 'getAnalyticsData')  runner.getAnalyticsData(data.range);
+    else if (action === 'processQRScan')     runner.processQRScan(data.qrCode, data.gate);
+    else if (action === 'getLogs')           runner.getLogs(data.filters);
+    else if (action === 'getEmployees')      runner.getEmployees();
+    else if (action === 'saveEmployee')      runner.saveEmployee(data.employee);
+    else if (action === 'deleteEmployee')    runner.deleteEmployee(data.empId);
+    else if (action === 'getConfig')         runner.getConfig();
+    else if (action === 'saveConfig')        runner.saveConfig(data.config);
+    else if (action === 'registerVisitor')   runner.registerVisitor(data.visitor);
+    else if (action === 'checkoutVisitor')   runner.checkoutVisitor(data.visitorId);
+    else if (action === 'exportCSV')         runner.exportCSV(data.filters);
+    else if (action === 'getBlacklist')      runner.getBlacklist();
+    else if (action === 'addBlacklist')      runner.addToBlacklist(data.entry);
+    else if (action === 'removeBlacklist')       runner.removeFromBlacklist(data.qrCode);
+    else if (action === 'processAndStoreScan')   runner.processAndStoreScan(data.qrCode, data.gate, data.sid);
+    else if (action === 'getPendingResult')      runner.getPendingResult(data.sid);
+    else callback({ success: false, error: 'Unknown action: ' + action });
+  }
+</script>

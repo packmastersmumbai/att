@@ -1,0 +1,1278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700;800;900&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <title>Visitor Management</title>
+  <style>
+    /* ── Design Tokens ─────────────────────────────────────── */
+    :root {
+      --color-primary: #000666; --color-primary-dk: #000444;
+      --color-success: #006b5f; --color-danger: #DC2626; --color-warning: #D97706;
+      --color-bg: #fcf9f8; --color-surface: #ffffff; --color-border: #e8e3e0;
+      --color-text: #1b1c1c; --color-text-muted: #4a5568;
+      --radius-sm: 2px; --radius-md: 4px; --radius-lg: 8px;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,.08); --shadow-md: 0 4px 16px rgba(0,0,0,.12);
+      --font-sans: 'Public Sans', system-ui, sans-serif; --font-mono: 'Roboto Mono', monospace;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body {
+      display: flex; height: 100vh; overflow: hidden; margin: 0;
+      font-family: var(--font-sans); background: var(--color-bg);
+      color: var(--color-text); font-size: 15px;
+    }
+    a { color: inherit; text-decoration: none; }
+    button { cursor: pointer; border: none; background: none; font-family: inherit; font-size: inherit; }
+
+    /* ── Left Sidebar ──────────────────────────────────────── */
+    .sidebar {
+      width: 240px; flex-shrink: 0; background: #fff;
+      border-right: 1px solid var(--color-border);
+      display: flex; flex-direction: column; height: 100vh; overflow: hidden;
+    }
+    .sb-top { padding: 20px 16px 12px; border-bottom: 1px solid var(--color-border); }
+    .sb-logo { display: flex; align-items: center; gap: 10px; }
+    .sb-logo-mark {
+      width: 32px; height: 32px; background: var(--color-primary); color: #fff;
+      border-radius: var(--radius-md); display: flex; align-items: center;
+      justify-content: center; font-weight: 800; font-size: 12px; flex-shrink: 0;
+    }
+    .sb-logo-name { font-weight: 800; font-size: 16px; color: var(--color-primary); line-height: 1; }
+    .sb-logo-sub { font-size: 9px; color: #6b7280; text-transform: uppercase; letter-spacing: 1.5px; margin-top: 2px; }
+    .sb-nav {
+      flex: 1; padding: 12px 8px; display: flex; flex-direction: column;
+      gap: 2px; overflow-y: auto;
+    }
+    .sb-section-label {
+      font-size: 9px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;
+      color: #6b7280; padding: 10px 10px 4px;
+    }
+    .sb-item {
+      display: flex; align-items: center; gap: 10px; padding: 9px 10px;
+      border-radius: var(--radius-md); font-size: 13px; font-weight: 500;
+      color: var(--color-text-muted); text-decoration: none;
+      transition: background .15s, color .15s;
+    }
+    .sb-item:hover { background: #f5f0ee; color: var(--color-text); }
+    .sb-item.active { background: var(--color-primary); color: #fff; }
+    .sb-icon { width: 16px; height: 16px; flex-shrink: 0; }
+    .sb-bottom {
+      padding: 12px 8px; border-top: 1px solid var(--color-border);
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    .sb-user { display: flex; align-items: center; gap: 10px; padding: 8px 10px; }
+    .sb-user-av {
+      width: 30px; height: 30px; border-radius: 50%; background: var(--color-primary);
+      color: #fff; display: flex; align-items: center; justify-content: center;
+      font-size: 10px; font-weight: 700; flex-shrink: 0;
+    }
+    .sb-user-name { font-size: 12px; font-weight: 600; color: var(--color-text); }
+    .sb-user-sub { font-size: 10px; color: #6b7280; margin-top: 1px; }
+
+    /* ── Main Content Area ─────────────────────────────────── */
+    .main-area { flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
+    .page-header {
+      padding: 24px 28px 0; background: var(--color-bg);
+      border-bottom: 1px solid var(--color-border);
+      position: sticky; top: 0; z-index: 10;
+    }
+    .page-eyebrow {
+      font-size: 10px; font-weight: 700; letter-spacing: 2px;
+      text-transform: uppercase; color: var(--color-success); margin-bottom: 4px;
+    }
+    .page-title { font-size: 22px; font-weight: 800; color: var(--color-text); margin-bottom: 16px; }
+    .page-tabs { display: flex; gap: 0; }
+    .page-tab {
+      padding: 10px 20px; font-size: 13px; font-weight: 600;
+      color: var(--color-text-muted); cursor: pointer; border: none;
+      background: none; font-family: inherit;
+      border-bottom: 2px solid transparent;
+      transition: color .15s, border-color .15s;
+    }
+    .page-tab:hover { color: var(--color-text); }
+    .page-tab.active { color: var(--color-primary); border-bottom-color: var(--color-primary); }
+
+    .page-body { flex: 1; padding: 24px 28px; }
+    .panel { display: none; }
+    .panel.active { display: block; }
+
+    /* ── Shared Components ─────────────────────────────────── */
+    .card {
+      background: var(--color-surface); border-radius: var(--radius-md);
+      box-shadow: var(--shadow-sm); padding: 24px;
+    }
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      gap: 8px; padding: 10px 20px; border-radius: var(--radius-sm);
+      font-weight: 600; font-size: 13px; font-family: inherit;
+      transition: background .15s, opacity .15s; cursor: pointer; border: none;
+    }
+    .btn-primary { background: var(--color-primary); color: #fff; }
+    .btn-primary:hover { background: var(--color-primary-dk); }
+    .btn-success { background: var(--color-success); color: #fff; }
+    .btn-success:hover { background: #005a50; }
+    .btn-danger { background: var(--color-danger); color: #fff; }
+    .btn-ghost {
+      background: transparent; color: var(--color-primary);
+      border: 1px solid var(--color-border);
+    }
+    .btn-ghost:hover { background: #f5f0ee; }
+    .btn-dark { background: #0f172a; color: #fff; }
+    .btn-dark:hover { background: #1e293b; }
+    .btn-wa { background: #128C4A; color: #fff; }
+    .btn-wa:hover { background: #0f7340; }
+    .btn-sms { background: #3B82F6; color: #fff; }
+    .btn-sms:hover { background: #2563EB; }
+    .input {
+      width: 100%; padding: 10px 14px; border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm); font-size: 14px; font-family: inherit;
+      outline: none; transition: border-color .15s; background: #fff; color: var(--color-text);
+    }
+    .input:focus { border-color: var(--color-primary); }
+    label { display: block; font-size: 12px; font-weight: 500; margin-bottom: 6px; color: var(--color-text-muted); }
+    .form-group { margin-bottom: 14px; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    @media (max-width: 480px) { .form-row { grid-template-columns: 1fr; } }
+    .badge {
+      display: inline-block; padding: 3px 10px; border-radius: 99px;
+      font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px;
+    }
+    .badge-green { background: #DCFCE7; color: #166534; }
+    .badge-red   { background: #FEE2E2; color: #991B1B; }
+    .badge-teal  { background: #ccfbf1; color: #065f46; }
+    .badge-blue  { background: #DBEAFE; color: #1E40AF; }
+    .badge-gray  { background: #F1F5F9; color: #475569; }
+    .badge-amber { background: #FEF3C7; color: #92400E; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 11px 14px; text-align: left; border-bottom: 1px solid var(--color-border); font-size: 13px; }
+    th { font-weight: 700; color: var(--color-text-muted); font-size: 10px; text-transform: uppercase; letter-spacing: .08em; background: var(--color-bg); }
+    tr:hover td { background: #f9f6f5; }
+
+    /* ── Form Section Labels ───────────────────────────────── */
+    .form-section-label {
+      font-size: 10px; font-weight: 700; letter-spacing: 2px;
+      text-transform: uppercase; color: #6b7280;
+      padding: 16px 0 8px; border-bottom: 1px solid var(--color-border);
+      margin-bottom: 16px;
+    }
+    .form-section-label:first-child { padding-top: 0; }
+
+    /* ── Register Tab: Two-column layout ───────────────────── */
+    .reg-split {
+      display: grid; grid-template-columns: 3fr 2fr;
+      gap: 20px; align-items: start;
+    }
+    @media (max-width: 800px) { .reg-split { grid-template-columns: 1fr; } }
+
+    /* Photo capture widget */
+    .photo-capture-wrap {
+      border: 2px dashed var(--color-border); border-radius: var(--radius-md);
+      padding: 20px; text-align: center; cursor: pointer;
+      transition: border-color .15s; position: relative; overflow: hidden;
+      margin-bottom: 16px;
+    }
+    .photo-capture-wrap:hover { border-color: var(--color-primary); }
+    .photo-capture-wrap input[type=file] {
+      position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+    }
+    .photo-preview {
+      width: 72px; height: 72px; border-radius: 50%; object-fit: cover;
+      margin: 0 auto 10px; display: none; border: 3px solid var(--color-border);
+    }
+    .photo-placeholder-icon { font-size: 40px; margin-bottom: 8px; }
+    .photo-label-text { font-size: 13px; font-weight: 600; color: var(--color-text-muted); }
+    .photo-sublabel-text { font-size: 11px; color: #6b7280; margin-top: 3px; }
+
+    /* Security doc items */
+    .sec-doc-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 12px; background: var(--color-bg);
+      border-radius: var(--radius-sm); border: 1px solid var(--color-border);
+      margin-bottom: 8px;
+    }
+    .sec-doc-icon {
+      width: 28px; height: 28px; border-radius: var(--radius-sm);
+      background: rgba(0,6,102,.08); display: flex; align-items: center;
+      justify-content: center; flex-shrink: 0;
+    }
+    .sec-doc-label { font-size: 9px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: #6b7280; }
+    .sec-doc-value { font-size: 13px; font-weight: 600; color: var(--color-text); }
+
+    /* Purpose chip */
+    .purpose-chip {
+      display: inline-block; padding: 4px 14px; border-radius: 99px;
+      background: var(--color-success); color: #fff;
+      font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;
+    }
+
+    /* ── Visitor Pass Card ─────────────────────────────────── */
+    .pass-card {
+      background: #fff; border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-md); border: 1px solid var(--color-border);
+      padding: 24px; position: sticky; top: 90px;
+    }
+    .pass-card-header { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 20px; }
+    .pass-shield-icon {
+      width: 40px; height: 40px; background: #f0fdf4;
+      border-radius: var(--radius-md); display: flex; align-items: center;
+      justify-content: center; flex-shrink: 0;
+    }
+    .pass-card-title { font-size: 15px; font-weight: 700; color: var(--color-text); }
+    .pass-card-subtitle { font-size: 12px; color: var(--color-text-muted); margin-top: 3px; line-height: 1.4; }
+    .pass-qr-box {
+      background: #fff; border: 1px solid var(--color-border);
+      border-radius: var(--radius-md); padding: 16px;
+      display: flex; justify-content: center; align-items: center;
+      margin-bottom: 16px; min-height: 200px;
+    }
+    .pass-qr-placeholder {
+      text-align: center; color: var(--color-text-muted);
+    }
+    .pass-qr-placeholder-icon { font-size: 48px; margin-bottom: 8px; }
+    .pass-qr-placeholder-text { font-size: 12px; }
+    .pass-trace {
+      font-family: var(--font-mono); font-size: 10px;
+      color: var(--color-text-muted); text-align: center;
+      margin-bottom: 16px; letter-spacing: .5px;
+    }
+    .pass-btn-row { display: flex; gap: 8px; margin-top: 8px; }
+
+    /* ── Active Tab ────────────────────────────────────────── */
+    .active-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 16px;
+    }
+    .active-header-left .eyebrow {
+      font-size: 10px; font-weight: 700; letter-spacing: 2px;
+      text-transform: uppercase; color: var(--color-text-muted);
+    }
+    .active-header-left h2 { font-size: 20px; font-weight: 800; color: var(--color-text); margin-top: 2px; }
+    .active-total-badge {
+      font-size: 11px; font-weight: 700; letter-spacing: 1px;
+      color: var(--color-text-muted); text-transform: uppercase;
+    }
+
+    /* Stat tiles */
+    .stat-tiles { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+    .stat-tile {
+      flex: 1; min-width: 140px; padding: 16px 18px;
+      border-radius: var(--radius-md); font-weight: 700;
+    }
+    .stat-tile-num { font-size: 28px; font-weight: 900; line-height: 1; }
+    .stat-tile-label { font-size: 11px; font-weight: 600; letter-spacing: .5px; margin-top: 4px; opacity: .85; }
+    .tile-teal { background: var(--color-success); color: #fff; }
+    .tile-red  { background: var(--color-danger); color: #fff; }
+    .tile-gray { background: #334155; color: #fff; }
+
+    /* Active table checkout button */
+    .btn-checkout {
+      padding: 6px 14px; border-radius: var(--radius-sm);
+      background: var(--color-success); color: #fff;
+      font-size: 11px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .5px; cursor: pointer; border: none; font-family: inherit;
+      transition: background .15s;
+    }
+    .btn-checkout:hover { background: #005a50; }
+
+    /* ── Active Tab: Stitch Status Badges & Purpose Pills ──── */
+    .status-overdue  { background: #FEE2E2; color: #991B1B; padding: 3px 9px; border-radius: 3px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; display: inline-block; }
+    .status-inside   { background: #CCFBF1; color: #0D9488; padding: 3px 9px; border-radius: 3px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; display: inline-block; }
+    .status-checked  { background: #F1F5F9; color: #475569; padding: 3px 9px; border-radius: 3px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; display: inline-block; }
+    .btn-checkout-teal {
+      background: #0D9488;
+      color: #fff;
+      border: none;
+      border-radius: 3px;
+      padding: 5px 12px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      letter-spacing: .5px;
+      font-family: inherit;
+      transition: background .15s;
+    }
+    .btn-checkout-teal:hover { background: #0F766E; }
+    .purpose-pill {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 3px;
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+    }
+    .pp-meeting  { background: #CCFBF1; color: #0D9488; }
+    .pp-delivery { background: #FEF3C7; color: #92400E; }
+    .pp-audit    { background: #EDE9FE; color: #5B21B6; }
+    .pp-interview{ background: #DBEAFE; color: #1E40AF; }
+    .pp-other    { background: #F1F5F9; color: #475569; }
+
+    /* ── History Analytics ─────────────────────────────────── */
+    .hist-top {
+      display: grid; grid-template-columns: 1fr 1fr 1fr;
+      gap: 16px; margin-bottom: 20px;
+    }
+    @media (max-width: 700px) { .hist-top { grid-template-columns: 1fr; } }
+    .hist-card {
+      background: var(--color-surface); border-radius: var(--radius-md);
+      box-shadow: var(--shadow-sm); padding: 18px;
+    }
+    .hist-card-title {
+      font-size: 10px; font-weight: 700; letter-spacing: 1.5px;
+      text-transform: uppercase; color: var(--color-text-muted); margin-bottom: 14px;
+    }
+    .company-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+    .company-name { font-size: 13px; font-weight: 500; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .company-bar-wrap { width: 80px; height: 5px; background: var(--color-border); border-radius: 3px; flex-shrink: 0; }
+    .company-bar { height: 100%; background: var(--color-primary); border-radius: 3px; }
+    .company-count { font-size: 12px; color: var(--color-text-muted); flex-shrink: 0; width: 36px; text-align: right; }
+    .fv-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 0; border-bottom: 1px solid var(--color-border);
+    }
+    .fv-item:last-child { border-bottom: none; }
+    .fv-av {
+      width: 32px; height: 32px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 700; flex-shrink: 0;
+    }
+    .fv-name { flex: 1; font-size: 13px; font-weight: 500; }
+    .fv-count {
+      font-size: 11px; font-weight: 700;
+      background: rgba(37,99,235,.1); color: var(--color-primary);
+      padding: 2px 8px; border-radius: 99px;
+    }
+    .peak-card {
+      background: linear-gradient(135deg, #1E3A5F 0%, #0F2744 100%);
+      border-radius: var(--radius-md); padding: 18px; color: #F0F9FF;
+    }
+    .peak-day { font-size: 28px; font-weight: 900; color: #BAE6FD; line-height: 1.1; }
+    .peak-time { font-size: 13px; color: #7DD3FC; margin-top: 4px; }
+    .peak-bars { display: flex; gap: 3px; align-items: flex-end; margin-top: 14px; height: 36px; }
+    .peak-bar { flex: 1; background: rgba(56,189,248,.2); border-radius: 2px; }
+    .peak-bar.active { background: #38BDF8; }
+    .hist-filters { display: flex; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; align-items: flex-end; }
+    .hist-filters .form-group { margin-bottom: 0; flex: 1; min-width: 140px; }
+
+    /* ── Responsive / Mobile ───────────────────────────────── */
+    @media (max-width: 640px) {
+      .sidebar { display: none; }
+      .page-header { padding: 16px 16px 0; }
+      .page-body { padding: 16px; }
+    }
+    @media print {
+      .sidebar, .page-header { display: none !important; }
+      .main-area { overflow: visible; }
+      .panel { display: block !important; }
+    }
+
+    /* ── Mobile bottom tab bar ── */
+    .mobile-tab-bar {
+      display: none;
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      height: 56px;
+      background: #fff;
+      border-top: 1px solid var(--color-border);
+      z-index: 100;
+      align-items: stretch;
+    }
+    .mobile-tab-bar a {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: .5px;
+      text-transform: uppercase;
+      color: var(--color-text-muted);
+      text-decoration: none;
+      transition: color .15s;
+    }
+    .mobile-tab-bar a.active { color: var(--color-primary); }
+    .mobile-tab-bar svg { width: 18px; height: 18px; }
+    @media (max-width: 768px) {
+      .mobile-tab-bar { display: flex; }
+      body { padding-bottom: 56px; }
+      .stat-tiles { gap: 8px; }
+      .stat-tile { min-width: 100px; padding: 12px 14px; }
+      .hist-top { grid-template-columns: 1fr; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ═══ LEFT SIDEBAR ═══ -->
+  <aside class="sidebar">
+    <div class="sb-top">
+      <div class="sb-logo">
+        <div class="sb-logo-mark">QR</div>
+        <div>
+          <div class="sb-logo-name">QR Att.</div>
+          <div class="sb-logo-sub">Attendance System</div>
+        </div>
+      </div>
+    </div>
+    <nav class="sb-nav">
+      <div class="sb-section-label">Main</div>
+      <a href="javascript:void(0)" data-page="kiosk" class="sb-item">
+        <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18"/>
+        </svg>
+        Kiosk
+      </a>
+      <a href="javascript:void(0)" data-page="dashboard" class="sb-item">
+        <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+          <rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>
+        </svg>
+        Dashboard
+      </a>
+      <a href="javascript:void(0)" data-page="reports" class="sb-item">
+        <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14,2 14,8 20,8"/><line x1="8" y1="13" x2="16" y2="13"/>
+          <line x1="8" y1="17" x2="16" y2="17"/>
+        </svg>
+        Reports
+      </a>
+      <div class="sb-section-label" style="margin-top:8px">Lobby</div>
+      <a href="javascript:void(0)" data-page="visitors" class="sb-item active">
+        <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+          <circle cx="9" cy="7" r="4"/>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87m-4-12a4 4 0 0 1 0 7.75"/>
+        </svg>
+        Visitor Log
+      </a>
+      <a href="javascript:void(0)" data-page="kiosk" class="sb-item">
+        <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+          <line x1="8" y1="21" x2="16" y2="21"/>
+          <line x1="12" y1="17" x2="12" y2="21"/>
+        </svg>
+        Kiosk
+      </a>
+      <div class="sb-section-label" style="margin-top:8px">Settings</div>
+      <a href="javascript:void(0)" data-page="admin" class="sb-item">
+        <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="8" r="4"/>
+          <path d="M12 14c-5 0-8 2-8 3v1h16v-1c0-1-3-3-8-3z"/>
+        </svg>
+        Admin
+      </a>
+    </nav>
+    <div class="sb-bottom">
+      <div class="sb-user">
+        <div class="sb-user-av">GA</div>
+        <div>
+          <div class="sb-user-name">Gate Admin</div>
+          <div class="sb-user-sub">Security Officer</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ═══ MAIN AREA ═══ -->
+  <div class="main-area">
+
+    <!-- Page Header + Tabs -->
+    <div class="page-header no-print">
+      <div class="page-eyebrow">Lobby Management</div>
+      <div class="page-title">Visitor Management</div>
+      <div class="page-tabs">
+        <button class="page-tab active" onclick="switchTab('register')">Register</button>
+        <button class="page-tab" onclick="switchTab('active')">Active</button>
+        <button class="page-tab" onclick="switchTab('history')">History</button>
+      </div>
+    </div>
+
+    <div class="page-body">
+
+      <!-- ═══ REGISTER TAB ═══ -->
+      <div id="panel-register" class="panel active">
+
+        <!-- Initial registration form (two-column) -->
+        <div id="regForm" class="reg-split">
+
+          <!-- LEFT COL: Form -->
+          <div class="card">
+
+            <!-- Photo capture -->
+            <div class="photo-capture-wrap" onclick="triggerPhoto()">
+              <input type="file" id="vPhotoFile" accept="image/*" capture="user"
+                     onchange="previewPhoto(this)" style="display:none">
+              <img id="vPhotoPreview" class="photo-preview" alt="Photo preview">
+              <div id="photoPlaceholder">
+                <div class="photo-placeholder-icon">📷</div>
+                <div class="photo-label-text">Tap to capture visitor photo</div>
+                <div class="photo-sublabel-text">Optional · for identification</div>
+              </div>
+            </div>
+
+            <!-- PRIMARY IDENTITY -->
+            <div class="form-section-label">Primary Identity</div>
+            <div class="form-group">
+              <label>Visitor Full Name *</label>
+              <input type="text" id="vName" class="input" placeholder="e.g. Rahul Sharma">
+            </div>
+            <div class="form-group">
+              <label>Mobile Number *</label>
+              <input type="tel" id="vPhone" class="input" placeholder="+91 98765 43210">
+            </div>
+
+            <!-- ORGANIZATIONAL CONTEXT -->
+            <div class="form-section-label">Organizational Context</div>
+            <div class="form-group">
+              <label>Representing (Company / Organisation)</label>
+              <input type="text" id="vCompany" class="input" placeholder="Company Name">
+            </div>
+            <div class="form-group">
+              <label>Purpose of Visit</label>
+              <select id="vPurpose" class="input">
+                <option value="">Select Purpose…</option>
+                <option value="Meeting">Meeting</option>
+                <option value="Delivery">Delivery</option>
+                <option value="Interview">Interview</option>
+                <option value="Audit">Audit</option>
+                <option value="Maintenance">Maintenance</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+
+            <!-- HOST INFORMATION -->
+            <div class="form-section-label">Host Information</div>
+            <div class="form-group">
+              <label>Host Official (Employee ID)</label>
+              <input type="text" id="vHost" class="input" placeholder="EMP-000001">
+            </div>
+            <div class="form-group">
+              <label>Scheduled Arrival / Expected Out (time)</label>
+              <input type="time" id="vExpOut" class="input">
+            </div>
+
+            <!-- SECURITY DOCUMENTATION & LOGISTICS -->
+            <div class="form-section-label">Security Documentation &amp; Logistics</div>
+            <div class="form-row" style="margin-bottom:14px">
+              <div class="form-group" style="margin-bottom:0">
+                <label>ID Type</label>
+                <select id="vIDType" class="input">
+                  <option value="">Select…</option>
+                  <option value="Aadhaar">Aadhaar</option>
+                  <option value="Passport">Passport</option>
+                  <option value="PAN Card">PAN Card</option>
+                  <option value="Driving Licence">Driving Licence</option>
+                  <option value="Voter ID">Voter ID</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+              <div class="form-group" style="margin-bottom:0">
+                <label>ID Number / Reference</label>
+                <input type="text" id="vIDNumber" class="input" placeholder="XXXX-XXXX-XXXX">
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Vehicle Number / Floor</label>
+              <input type="text" id="vVehicle" class="input" placeholder="KA-01-AB-1234">
+            </div>
+
+            <button class="btn btn-primary" onclick="registerVisitor()"
+                    style="width:100%;margin-top:8px;padding:13px 20px;font-size:14px"
+                    id="regBtn">
+              Register &amp; Generate Pass
+            </button>
+          </div>
+
+          <!-- RIGHT COL: Pass placeholder (pre-registration) -->
+          <div id="passPlaceholder">
+            <div class="pass-card">
+              <div class="pass-card-header">
+                <div class="pass-shield-icon">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#006b5f" stroke-width="2">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                  </svg>
+                </div>
+                <div>
+                  <div class="pass-card-title">Visitor Pass</div>
+                  <div class="pass-card-subtitle">Complete registration to generate access credentials for the visitor terminal.</div>
+                </div>
+              </div>
+              <div class="pass-qr-box">
+                <div class="pass-qr-placeholder">
+                  <div class="pass-qr-placeholder-icon">🪪</div>
+                  <div class="pass-qr-placeholder-text">QR code will appear here<br>after registration</div>
+                </div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:8px">
+                <button class="btn btn-dark" style="width:100%;opacity:.4" disabled>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="6,9 6,2 18,2 18,9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
+                    <rect x="6" y="14" width="12" height="8"/>
+                  </svg>
+                  Print Physical Pass
+                </button>
+                <div class="pass-btn-row">
+                  <button class="btn btn-sms" style="flex:1;opacity:.4" disabled>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                    </svg>
+                    Send SMS
+                  </button>
+                  <button class="btn btn-wa" style="flex:1;opacity:.4" disabled>
+                    💬 WhatsApp
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Post-registration: Pass revealed -->
+        <div id="passPanel" style="display:none">
+          <div class="reg-split">
+
+            <!-- LEFT: Summary card -->
+            <div class="card">
+              <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
+                <div style="width:48px;height:48px;border-radius:50%;background:#006b5f18;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#006b5f" stroke-width="2.5">
+                    <polyline points="20,6 9,17 4,12"/>
+                  </svg>
+                </div>
+                <div>
+                  <div style="font-weight:800;font-size:17px" id="passSummaryName"></div>
+                  <div style="font-size:13px;color:var(--color-text-muted)">Visitor registered successfully</div>
+                </div>
+              </div>
+
+              <!-- PRIMARY IDENTITY section -->
+              <div class="form-section-label">Primary Identity</div>
+              <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px">
+                <div style="display:flex;justify-content:space-between;font-size:13px">
+                  <span style="color:var(--color-text-muted)">Phone</span>
+                  <span style="font-weight:500" id="passSummaryPhone"></span>
+                </div>
+              </div>
+
+              <!-- ORGANIZATIONAL CONTEXT section -->
+              <div class="form-section-label">Organizational Context</div>
+              <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px">
+                <div style="display:flex;justify-content:space-between;font-size:13px">
+                  <span style="color:var(--color-text-muted)">Representing</span>
+                  <span style="font-weight:500" id="passSummaryCompany"></span>
+                </div>
+                <div style="display:flex;justify-content:space-between;font-size:13px;align-items:center">
+                  <span style="color:var(--color-text-muted)">Purpose of Visit</span>
+                  <span id="passSummaryPurposeChip"></span>
+                </div>
+              </div>
+
+              <!-- HOST INFORMATION section -->
+              <div class="form-section-label">Host Information</div>
+              <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px">
+                <div style="display:flex;justify-content:space-between;font-size:13px">
+                  <span style="color:var(--color-text-muted)">Host Official</span>
+                  <span style="font-weight:500" id="passSummaryHost"></span>
+                </div>
+                <div style="display:flex;justify-content:space-between;font-size:13px">
+                  <span style="color:var(--color-text-muted)">Scheduled Arrival</span>
+                  <span style="font-weight:500" id="passSummaryExpOut"></span>
+                </div>
+              </div>
+
+              <!-- SECURITY DOCUMENTATION section -->
+              <div class="form-section-label">Security Documentation &amp; Logistics</div>
+              <div style="display:flex;flex-direction:column;gap:8px">
+                <div id="secDocID" style="display:none">
+                  <div class="sec-doc-item">
+                    <div class="sec-doc-icon">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#000666" stroke-width="2">
+                        <rect x="2" y="5" width="20" height="14" rx="2"/>
+                        <line x1="2" y1="10" x2="22" y2="10"/>
+                      </svg>
+                    </div>
+                    <div>
+                      <div class="sec-doc-label">ID Type</div>
+                      <div class="sec-doc-value" id="passSummaryIDType"></div>
+                    </div>
+                    <div style="margin-left:auto;text-align:right">
+                      <div class="sec-doc-label">Reference</div>
+                      <div class="sec-doc-value" id="passSummaryIDVal"></div>
+                    </div>
+                  </div>
+                </div>
+                <div id="secDocVeh" style="display:none">
+                  <div class="sec-doc-item">
+                    <div class="sec-doc-icon">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#000666" stroke-width="2">
+                        <rect x="1" y="3" width="15" height="13" rx="2"/>
+                        <polygon points="16,8 20,8 23,11 23,16 16,16 16,8"/>
+                        <circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>
+                      </svg>
+                    </div>
+                    <div>
+                      <div class="sec-doc-label">Vehicle / Floor</div>
+                      <div class="sec-doc-value" id="passSummaryVehVal"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <button class="btn btn-ghost" onclick="resetForm()" style="width:100%;margin-top:20px">
+                + Register Another Visitor
+              </button>
+            </div>
+
+            <!-- RIGHT: Generated pass -->
+            <div>
+              <div class="pass-card">
+                <div class="pass-card-header">
+                  <div class="pass-shield-icon">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#006b5f" stroke-width="2">
+                      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <div class="pass-card-title">Visitor Pass Generated</div>
+                    <div class="pass-card-subtitle">Access credentials ready for dispatch to visitor terminal.</div>
+                  </div>
+                </div>
+                <div class="pass-qr-box">
+                  <img id="passQRImg" width="180" height="180" alt="Visitor QR Code" style="display:block">
+                </div>
+                <div class="pass-trace" id="passQRCode"></div>
+                <button class="btn btn-dark" onclick="window.print()" style="width:100%;margin-bottom:8px">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="6,9 6,2 18,2 18,9"/>
+                    <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
+                    <rect x="6" y="14" width="12" height="8"/>
+                  </svg>
+                  Print Physical Pass
+                </button>
+                <div class="pass-btn-row">
+                  <a id="smsShareBtn" class="btn btn-sms" style="flex:1;text-decoration:none" target="_blank" rel="noopener">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                    </svg>
+                    Send SMS
+                  </a>
+                  <a id="waShareBtn" class="btn btn-wa" style="flex:1;text-decoration:none;text-align:center" target="_blank" rel="noopener">
+                    💬 WhatsApp
+                  </a>
+                </div>
+                <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--color-border)">
+                  <div style="font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#6b7280;margin-bottom:4px">System Trace ID</div>
+                  <div style="font-family:var(--font-mono);font-size:10px;color:var(--color-text-muted)" id="passTraceID"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ ACTIVE TAB ═══ -->
+      <div id="panel-active" class="panel">
+
+        <!-- Header row -->
+        <div class="active-header">
+          <div class="active-header-left">
+            <div class="eyebrow">Lobby Management</div>
+            <h2>Active Visitors</h2>
+          </div>
+          <div class="active-total-badge" id="activeTotalBadge"></div>
+        </div>
+
+        <!-- Stat tiles -->
+        <div class="stat-tiles" id="statTiles" style="display:none">
+          <div class="stat-tile tile-teal">
+            <div class="stat-tile-num" id="tileExpected">0</div>
+            <div class="stat-tile-label">Expected Today</div>
+          </div>
+          <div class="stat-tile" id="tileOverdueTile" style="display:none;background:#FFF7ED;border:1px solid #FED7AA">
+            <div class="stat-tile-num" id="tileOverdue" style="color:#C2410C">0</div>
+            <div class="stat-tile-label" style="color:#92400E">Overdue Checkout</div>
+          </div>
+          <div class="stat-tile" id="tileCheckedOutTile" style="display:none;background:#F8FAFC;border:1px solid #E2E8F0">
+            <div class="stat-tile-num" id="tileCheckedOut" style="color:#64748B">0</div>
+            <div class="stat-tile-label" style="color:#64748B">Checked Out Today</div>
+          </div>
+        </div>
+
+        <!-- Active table -->
+        <div class="card" style="padding:0;overflow:hidden">
+          <div id="activeTable" style="padding:16px;color:var(--color-text-muted)">Loading…</div>
+        </div>
+      </div>
+
+      <!-- ═══ HISTORY TAB ═══ -->
+      <div id="panel-history" class="panel">
+
+        <!-- Analytics row -->
+        <div class="hist-top" id="histAnalytics">
+          <div class="hist-card">
+            <div class="hist-card-title">Top Visiting Companies</div>
+            <div id="topCompanies"><div style="color:var(--color-text-muted);font-size:12px">Loading…</div></div>
+          </div>
+          <div class="hist-card">
+            <div class="hist-card-title">Frequent Visitors</div>
+            <div id="freqVisitors"><div style="color:var(--color-text-muted);font-size:12px">Loading…</div></div>
+          </div>
+          <div class="peak-card">
+            <div class="hist-card-title" style="color:rgba(186,230,253,.6)">Peak Visit Window</div>
+            <div id="peakDay" class="peak-day">–</div>
+            <div id="peakTime" class="peak-time">–</div>
+            <div class="peak-bars" id="peakBars">
+              <div class="peak-bar" style="height:30%"></div>
+              <div class="peak-bar active" style="height:100%"></div>
+              <div class="peak-bar" style="height:60%"></div>
+              <div class="peak-bar" style="height:40%"></div>
+              <div class="peak-bar" style="height:20%"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Filters + export -->
+        <div class="hist-filters" style="margin-bottom:14px">
+          <div class="form-group">
+            <label>Visitor Name</label>
+            <input type="text" id="hFilterName" class="input" placeholder="Search name…">
+          </div>
+          <div class="form-group">
+            <label>Company</label>
+            <input type="text" id="hFilterCompany" class="input" placeholder="All companies">
+          </div>
+          <div class="form-group">
+            <label>Purpose</label>
+            <select id="hFilterPurpose" class="input">
+              <option value="">All</option>
+              <option value="Meeting">Meeting</option>
+              <option value="Delivery">Delivery</option>
+              <option value="Interview">Interview</option>
+              <option value="Audit">Audit</option>
+              <option value="Maintenance">Maintenance</option>
+            </select>
+          </div>
+          <div style="display:flex;gap:8px;align-self:flex-end;padding-bottom:16px">
+            <button class="btn btn-primary" onclick="loadHistory()">Apply</button>
+            <button class="btn btn-ghost" onclick="exportHistoryCSV()">&#8595; CSV</button>
+            <button class="btn btn-ghost no-print" onclick="window.print()">&#128424; Print</button>
+          </div>
+        </div>
+
+        <div class="card" style="padding:0;overflow:hidden">
+          <div id="historyTable" style="padding:16px;color:var(--color-text-muted)">Loading…</div>
+        </div>
+      </div>
+
+    </div><!-- /page-body -->
+  </div><!-- /main-area -->
+
+  <!-- ═══ SCRIPTS ═══ -->
+  <style>
+    .vis-toast {
+      position: fixed; top: 16px; left: 50%; transform: translateX(-50%);
+      padding: 10px 20px; border-radius: 6px; font-size: 13px; font-weight: 600;
+      z-index: 9999; pointer-events: none; white-space: nowrap;
+      box-shadow: 0 4px 16px rgba(0,0,0,.18);
+      transition: opacity .3s;
+    }
+    .vis-toast.error { background: #DC2626; color: #fff; }
+    .vis-toast.success { background: #006b5f; color: #fff; }
+    .vis-toast.info { background: #000666; color: #fff; }
+  </style>
+  <script>
+    function showToast(msg, type) {
+      var el = document.createElement('div');
+      el.className = 'vis-toast ' + (type || 'info');
+      el.textContent = msg;
+      document.body.appendChild(el);
+      setTimeout(function() { el.style.opacity = '0'; }, 2800);
+      setTimeout(function() { if (el.parentNode) el.parentNode.removeChild(el); }, 3200);
+    }
+    function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+    function post(data,callback){var action=data.action;var onErr=function(e){callback({success:false,error:e?e.message:'Unknown error'});};if(typeof google==='undefined'||!google.script){callback({success:false,error:'Not in GAS'});return;}var r=google.script.run.withSuccessHandler(callback).withFailureHandler(onErr);if(action==='registerVisitor')r.registerVisitor(data.visitor);else if(action==='checkoutVisitor')r.checkoutVisitor(data.visitorId);else if(action==='getLogs')r.getLogs(data.filters);else if(action==='getDashboardData')r.getDashboardData();else if(action==='exportCSV')r.exportCSV(data.filters);else callback({success:false,error:'Unknown: '+action});}
+  </script>
+  <script>
+    var COLORS = ['#3B82F6','#8B5CF6','#EC4899','#F59E0B','#10B981','#06B6D4','#EF4444','#6366F1','#84CC16','#F97316'];
+    function pickColor(name) {
+      var n = 0;
+      for (var i = 0; i < (name||'').length; i++) n += name.charCodeAt(i);
+      return COLORS[n % COLORS.length];
+    }
+    function initials(name) {
+      var p = String(name || ' ').trim().split(/\s+/);
+      return ((p[0]||'')[0] + ((p[1]||'')[0]||'')).toUpperCase();
+    }
+
+    function switchTab(name) {
+      document.querySelectorAll('.page-tab').forEach(function(t, i) {
+        t.classList.toggle('active', ['register','active','history'][i] === name);
+      });
+      document.querySelectorAll('.panel').forEach(function(p) { p.classList.remove('active'); });
+      document.getElementById('panel-' + name).classList.add('active');
+      if (name === 'active')  loadActive();
+      if (name === 'history') { loadHistory(); loadHistoryAnalytics(); }
+    }
+
+    // ── Photo capture ─────────────────────────────────────
+    function triggerPhoto() {
+      document.getElementById('vPhotoFile').click();
+    }
+    function previewPhoto(input) {
+      if (!input.files || !input.files[0]) return;
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        var prev = document.getElementById('vPhotoPreview');
+        prev.src = e.target.result;
+        prev.style.display = 'block';
+        document.getElementById('photoPlaceholder').style.display = 'none';
+      };
+      reader.readAsDataURL(input.files[0]);
+    }
+
+    // ── Register ──────────────────────────────────────────
+    function registerVisitor() {
+      var v = {
+        Name:        document.getElementById('vName').value.trim(),
+        Phone:       document.getElementById('vPhone').value.trim(),
+        Company:     document.getElementById('vCompany').value.trim(),
+        Purpose:     document.getElementById('vPurpose').value,
+        HostEmpID:   document.getElementById('vHost').value.trim(),
+        ExpectedOut: document.getElementById('vExpOut').value,
+        IDType:      document.getElementById('vIDType').value,
+        IDNumber:    document.getElementById('vIDNumber').value.trim(),
+        Vehicle:     document.getElementById('vVehicle').value.trim()
+      };
+      if (!v.Name || !v.Phone) { showToast('Name and Phone are required', 'error'); return; }
+      var btn = document.getElementById('regBtn');
+      btn.textContent = 'Registering…'; btn.disabled = true;
+      post({ action: 'registerVisitor', visitor: v }, function(res) {
+        btn.textContent = 'Register & Generate Pass'; btn.disabled = false;
+        if (!res.success) { showToast('Error: ' + res.error, 'error'); return; }
+        showPass(v, res.qrCode);
+      });
+    }
+
+    function showPass(v, qrCode) {
+      document.getElementById('regForm').style.display = 'none';
+      document.getElementById('passPanel').style.display = 'block';
+
+      document.getElementById('passSummaryName').textContent    = v.Name;
+      document.getElementById('passSummaryPhone').textContent   = v.Phone;
+      document.getElementById('passSummaryCompany').textContent = v.Company || '–';
+      document.getElementById('passSummaryHost').textContent    = v.HostEmpID || '–';
+      document.getElementById('passSummaryExpOut').textContent  = v.ExpectedOut || '–';
+
+      // Purpose chip
+      var chipEl = document.getElementById('passSummaryPurposeChip');
+      if (v.Purpose) {
+        chipEl.innerHTML = '<span class="purpose-chip">' + esc(v.Purpose) + '</span>';
+      } else {
+        chipEl.textContent = '–';
+      }
+
+      // Security docs
+      if (v.IDType || v.IDNumber) {
+        document.getElementById('secDocID').style.display = '';
+        document.getElementById('passSummaryIDType').textContent = v.IDType || '–';
+        document.getElementById('passSummaryIDVal').textContent  = v.IDNumber || '–';
+      }
+      if (v.Vehicle) {
+        document.getElementById('secDocVeh').style.display = '';
+        document.getElementById('passSummaryVehVal').textContent = v.Vehicle;
+      }
+
+      var qrSrc = 'https://api.qrserver.com/v1/create-qr-code/?data=' + encodeURIComponent(qrCode) + '&size=180x180&margin=10';
+      document.getElementById('passQRImg').src          = qrSrc;
+      document.getElementById('passQRCode').textContent = 'PASS ID: ' + qrCode;
+
+      // Generate trace ID
+      var traceID = 'TR-' + qrCode.replace(/[^A-Z0-9]/g,'').substring(0,8) + '-' + new Date().getFullYear() + '-VNC';
+      document.getElementById('passTraceID').textContent = traceID;
+
+      var msg = 'Your visitor pass for ' + (v.Purpose || 'visit') + ' has been generated.\nPass ID: ' + qrCode + '\nExpected Out: ' + (v.ExpectedOut || 'N/A');
+      var phone = v.Phone.replace(/\D/g, '');
+      document.getElementById('waShareBtn').href  = 'https://wa.me/' + phone + '?text=' + encodeURIComponent(msg);
+      document.getElementById('smsShareBtn').href = 'sms:' + phone + '?body=' + encodeURIComponent(msg);
+    }
+
+    function resetForm() {
+      document.getElementById('regForm').style.display = '';
+      document.getElementById('passPanel').style.display = 'none';
+      document.getElementById('secDocID').style.display = 'none';
+      document.getElementById('secDocVeh').style.display = 'none';
+      ['vName','vPhone','vCompany','vIDNumber','vHost','vVehicle'].forEach(function(id) {
+        document.getElementById(id).value = '';
+      });
+      document.getElementById('vPurpose').value = '';
+      document.getElementById('vIDType').value  = '';
+      document.getElementById('vExpOut').value  = '';
+      document.getElementById('vPhotoPreview').style.display = 'none';
+      document.getElementById('photoPlaceholder').style.display = '';
+    }
+
+    // ── Active visitors ───────────────────────────────────
+    function purposeClass(p) {
+      var m = { 'Meeting': 'pp-meeting', 'Delivery': 'pp-delivery', 'Audit': 'pp-audit', 'Interview': 'pp-interview' };
+      return m[p] || 'pp-other';
+    }
+
+    function activeStatusBadge(v) {
+      if (v.TimeOUT) return '<span class="status-checked">Checked Out</span>';
+      if (v.ExpectedOut) {
+        var exp = new Date();
+        var parts = v.ExpectedOut.split(':');
+        if (parts.length === 2) {
+          exp.setHours(parseInt(parts[0], 10), parseInt(parts[1], 10), 0, 0);
+          if (new Date() > exp) return '<span class="status-overdue">Overdue</span>';
+        }
+      }
+      if (v.overdue) return '<span class="status-overdue">Overdue</span>';
+      return '<span class="status-inside">Inside</span>';
+    }
+
+    function loadActive() {
+      var el = document.getElementById('activeTable');
+      el.innerHTML = '<p style="padding:16px;color:var(--color-text-muted)">Loading…</p>';
+      post({ action: 'getDashboardData' }, function(d) {
+        var list = (d && d.activeVisitorList) || [];
+
+        // Count overdue and checked-out
+        var overdueCount    = 0;
+        var checkedOutCount = 0;
+        var insideCount     = 0;
+        list.forEach(function(v) {
+          if (v.TimeOUT) {
+            checkedOutCount++;
+          } else {
+            var isOD = v.overdue;
+            if (!isOD && v.ExpectedOut) {
+              var exp = new Date();
+              var parts = v.ExpectedOut.split(':');
+              if (parts.length === 2) {
+                exp.setHours(parseInt(parts[0], 10), parseInt(parts[1], 10), 0, 0);
+                if (new Date() > exp) isOD = true;
+              }
+            }
+            if (isOD) overdueCount++; else insideCount++;
+          }
+        });
+
+        // Update stat tiles
+        document.getElementById('tileExpected').textContent    = list.length;
+        document.getElementById('tileOverdue').textContent     = overdueCount;
+        document.getElementById('tileCheckedOut').textContent  = checkedOutCount;
+        document.getElementById('activeTotalBadge').textContent = insideCount + ' TOTAL INSIDE';
+        document.getElementById('statTiles').style.display         = list.length ? 'flex' : 'none';
+        document.getElementById('tileOverdueTile').style.display   = overdueCount > 0 ? 'flex' : 'none';
+        document.getElementById('tileCheckedOutTile').style.display = checkedOutCount > 0 ? 'flex' : 'none';
+
+        if (!list.length) {
+          el.innerHTML = '<p style="padding:20px;color:var(--color-text-muted)">No active visitors</p>';
+          return;
+        }
+
+        el.innerHTML = '<div style="overflow-x:auto"><table>' +
+          '<thead><tr>' +
+            '<th>Visitor</th>' +
+            '<th>Company &amp; Host</th>' +
+            '<th>Purpose</th>' +
+            '<th>Timeline</th>' +
+            '<th>Status</th>' +
+            '<th>Actions</th>' +
+          '</tr></thead><tbody>' +
+          list.map(function(v) {
+            var c   = pickColor(v.Name);
+            var ini = initials(v.Name);
+            return '<tr>' +
+              '<td>' +
+                '<div style="display:flex;align-items:center;gap:8px">' +
+                  '<div style="width:30px;height:30px;border-radius:50%;background:' + c + '18;color:' + c + ';display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0">' + esc(ini) + '</div>' +
+                  '<div>' +
+                    '<div style="font-size:12px;font-weight:600">' + esc(v.Name || '') + '</div>' +
+                    '<div style="font-size:10px;color:#6b7280">ID: ' + esc(v.VisitorID || v.ID || '') + '</div>' +
+                  '</div>' +
+                '</div>' +
+              '</td>' +
+              '<td>' +
+                '<div style="font-size:12px;font-weight:500">' + esc(v.Company || '—') + '</div>' +
+                '<div style="font-size:10px;color:#6b7280">&#8627; ' + esc(v.HostEmpID || '—') + '</div>' +
+              '</td>' +
+              '<td><span class="purpose-pill ' + purposeClass(v.Purpose) + '">' + esc(v.Purpose || '—') + '</span></td>' +
+              '<td>' +
+                '<div style="font-size:11px;font-family:monospace">IN: ' + esc(v.TimeIN || '—') + '</div>' +
+                (v.ExpectedOut ? '<div style="font-size:10px;color:#6b7280">OUT: ' + esc(v.ExpectedOut) + '</div>' : '') +
+              '</td>' +
+              '<td>' + activeStatusBadge(v) + '</td>' +
+              '<td>' +
+                (v.TimeOUT
+                  ? '<span style="color:#6b7280;font-size:11px">Done</span>'
+                  : '<button class="btn-checkout-teal" data-vid="' + esc(v.VisitorID || v.ID || '') + '" onclick="checkoutClick(this)">CHECKOUT</button>') +
+              '</td>' +
+              '</tr>';
+          }).join('') +
+          '</tbody></table></div>';
+      });
+    }
+
+    function checkoutClick(btn) { checkout(btn.getAttribute('data-vid')); }
+    function checkout(visitorId) {
+      post({ action: 'checkoutVisitor', visitorId: visitorId }, function(res) {
+        showToast(res.success ? 'Checked out successfully' : 'Error: ' + res.error, res.success ? 'success' : 'error');
+        loadActive();
+      });
+    }
+
+    function checkoutVisitor(visitorId) { checkout(visitorId); }
+
+    // ── History analytics ─────────────────────────────────
+    function loadHistoryAnalytics() {
+      post({ action: 'getLogs', filters: { type: 'VIS' } }, function(res) {
+        if (!res.success || !res.data) return;
+        var data = res.data;
+
+        // Top 5 companies
+        var companyMap = {};
+        data.forEach(function(r) {
+          if (r.Company) companyMap[r.Company] = (companyMap[r.Company] || 0) + 1;
+        });
+        var companies = Object.keys(companyMap).map(function(k) { return { name: k, count: companyMap[k] }; });
+        companies.sort(function(a, b) { return b.count - a.count; });
+        var topCos = companies.slice(0, 5);
+        var maxCount = topCos.length ? topCos[0].count : 1;
+        document.getElementById('topCompanies').innerHTML = topCos.length
+          ? topCos.map(function(c) {
+              var pct = Math.round(c.count / maxCount * 100);
+              return '<div class="company-row">' +
+                '<div class="company-name">' + esc(c.name) + '</div>' +
+                '<div class="company-bar-wrap"><div class="company-bar" style="width:' + pct + '%"></div></div>' +
+                '<div class="company-count">' + c.count + '</div>' +
+              '</div>';
+            }).join('')
+          : '<div style="color:var(--color-text-muted);font-size:12px">No data yet</div>';
+
+        // Frequent visitors
+        var nameMap = {};
+        data.forEach(function(r) {
+          if (r.Name) nameMap[r.Name] = (nameMap[r.Name] || 0) + 1;
+        });
+        var freqVis = Object.keys(nameMap).map(function(k) { return { name: k, count: nameMap[k] }; });
+        freqVis.sort(function(a, b) { return b.count - a.count; });
+        document.getElementById('freqVisitors').innerHTML = freqVis.slice(0, 4).length
+          ? freqVis.slice(0, 4).map(function(v) {
+              var c = pickColor(v.name), ini = initials(v.name);
+              return '<div class="fv-item">' +
+                '<div class="fv-av" style="background:' + c + '18;color:' + c + '">' + esc(ini) + '</div>' +
+                '<div class="fv-name">' + esc(v.name) + '</div>' +
+                '<div class="fv-count">' + v.count + 'x</div>' +
+              '</div>';
+            }).join('')
+          : '<div style="color:var(--color-text-muted);font-size:12px">No data yet</div>';
+
+        // Peak visit window
+        var dayMap = { Monday:0, Tuesday:0, Wednesday:0, Thursday:0, Friday:0, Saturday:0, Sunday:0 };
+        data.forEach(function(r) {
+          if (r.Date) {
+            var d = new Date(r.Date);
+            var day = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][d.getDay()];
+            if (day) dayMap[day]++;
+          }
+        });
+        var peakDay = Object.keys(dayMap).reduce(function(a, b) { return dayMap[a] >= dayMap[b] ? a : b; }, 'Tuesday');
+        document.getElementById('peakDay').textContent  = peakDay;
+        document.getElementById('peakTime').textContent = '10:00 AM – 02:00 PM';
+      });
+    }
+
+    // ── History table ─────────────────────────────────────
+    function loadHistory() {
+      var filters = { type: 'VIS' };
+      var name    = document.getElementById('hFilterName').value.trim();
+      var company = document.getElementById('hFilterCompany').value.trim();
+      var purpose = document.getElementById('hFilterPurpose').value;
+      if (name)    filters.name   = name;
+      if (purpose) filters.status = purpose;
+
+      post({ action: 'getLogs', filters: filters }, function(res) {
+        var el = document.getElementById('historyTable');
+        if (!res.success || !res.data || !res.data.length) {
+          el.innerHTML = '<p style="padding:20px;color:var(--color-text-muted)">No visitor history found</p>';
+          return;
+        }
+        var rows = res.data.filter(function(r) {
+          if (company && r.Company && r.Company.toLowerCase().indexOf(company.toLowerCase()) === -1) return false;
+          return true;
+        });
+        el.innerHTML =
+          '<div style="padding:14px 16px;border-bottom:1px solid var(--color-border);display:flex;justify-content:space-between;align-items:center">' +
+            '<span style="font-size:12px;color:var(--color-text-muted)">' + rows.length + ' records</span>' +
+          '</div>' +
+          '<div style="overflow-x:auto"><table>' +
+          '<thead><tr><th>Visitor</th><th>Company</th><th>Host</th><th>Purpose</th><th>Date</th><th>Time IN</th><th>Time OUT</th><th>Duration</th></tr></thead><tbody>' +
+          rows.map(function(r) {
+            var c = pickColor(r.Name), ini = initials(r.Name);
+            return '<tr>' +
+              '<td><div style="display:flex;align-items:center;gap:8px">' +
+                '<div style="width:28px;height:28px;border-radius:50%;background:' + c + '18;color:' + c + ';display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0">' + esc(ini) + '</div>' +
+                '<div style="font-weight:500">' + esc(r.Name) + '</div>' +
+              '</div></td>' +
+              '<td>' + esc(r.Company || '–') + '</td>' +
+              '<td>' + esc(r.HostEmpID || '–') + '</td>' +
+              '<td>' + (r.Purpose ? '<span class="badge badge-blue">' + esc(r.Purpose) + '</span>' : '–') + '</td>' +
+              '<td>' + esc(r.Date) + '</td>' +
+              '<td>' + esc(r.TimeIN) + '</td>' +
+              '<td>' + esc(r.TimeOUT || '–') + '</td>' +
+              '<td>' + esc(r.Duration || '–') + '</td>' +
+              '</tr>';
+          }).join('') +
+          '</tbody></table></div>';
+      });
+    }
+
+    function exportHistoryCSV() {
+      post({ action: 'exportCSV', filters: { type: 'VIS' } }, function(res) {
+        if (!res.success) return;
+        var blob = new Blob([res.csv], { type: 'text/csv' });
+        var a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = res.filename;
+        a.click();
+      });
+    }
+  </script>
+  <!-- Mobile bottom tab bar -->
+  <nav class="mobile-tab-bar">
+    <a href="javascript:void(0)" data-page="kiosk">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18"/></svg>
+      Kiosk
+    </a>
+    <a href="javascript:void(0)" data-page="dashboard">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      Dashboard
+    </a>
+    <a href="javascript:void(0)" data-page="visitors" class="active">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      Visitors
+    </a>
+    <a href="javascript:void(0)" data-page="reports">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>
+      Reports
+    </a>
+  </nav>
+
+</body>
+</html>

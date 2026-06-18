@@ -1,0 +1,1256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700;800;900&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --color-primary:     #000666;
+      --color-primary-dk:  #000444;
+      --color-success:     #006b5f;
+      --color-danger:      #DC2626;
+      --color-warning:     #D97706;
+      --color-bg:          #fcf9f8;
+      --color-surface:     #ffffff;
+      --color-border:      #e8e3e0;
+      --color-text:        #1b1c1c;
+      --color-text-muted:  #4a5568;
+      --color-blocked:     #7C3AED;
+      --radius-sm: 2px; --radius-md: 4px; --radius-lg: 8px;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,.08);
+      --font-sans: 'Public Sans', system-ui, sans-serif;
+      --font-mono: 'Roboto Mono', monospace;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { height: 100%; }
+    body {
+      font-family: var(--font-sans);
+      background: var(--color-bg);
+      color: var(--color-text);
+      font-size: 15px;
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+    }
+    a { color: inherit; text-decoration: none; }
+    button { cursor: pointer; border: none; background: none; font-family: inherit; font-size: inherit; }
+
+    /* ── Left Sidebar ── */
+    .sidebar {
+      width: 240px;
+      flex-shrink: 0;
+      background: #fff;
+      border-right: 1px solid #e8e3e0;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      position: relative;
+      z-index: 10;
+    }
+    .sb-top {
+      padding: 20px 16px 12px;
+      border-bottom: 1px solid #e8e3e0;
+    }
+    .sb-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .sb-logo-mark {
+      width: 32px;
+      height: 32px;
+      background: #000666;
+      color: #fff;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 12px;
+      flex-shrink: 0;
+    }
+    .sb-logo-name {
+      font-weight: 800;
+      font-size: 16px;
+      color: #000666;
+      line-height: 1;
+    }
+    .sb-logo-sub {
+      font-size: 9px;
+      color: #6b7280;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      margin-top: 2px;
+    }
+    .sb-nav {
+      flex: 1;
+      padding: 12px 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      overflow-y: auto;
+    }
+    .sb-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 10px;
+      border-radius: 4px;
+      font-size: 13px;
+      font-weight: 500;
+      color: #64748B;
+      text-decoration: none;
+      transition: background .15s, color .15s;
+      cursor: pointer;
+    }
+    .sb-item:hover { background: #f5f0ee; color: #1b1c1c; }
+    .sb-item.active { background: #000666; color: #fff; }
+    .sb-icon { width: 16px; height: 16px; flex-shrink: 0; }
+    .sb-bottom {
+      padding: 12px 8px;
+      border-top: 1px solid #e8e3e0;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .sb-user {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 10px;
+    }
+    .sb-user-av {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background: #000666;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+    .sb-user-name { font-size: 12px; font-weight: 600; color: #1b1c1c; }
+    .sb-user-sub { font-size: 10px; color: #94a3b8; margin-top: 1px; }
+
+    /* ── Main area ── */
+    .main-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+      background: #07111F;
+    }
+
+    /* ── Full-height dark scanner layout ── */
+    .scan-layout {
+      display: flex;
+      flex: 1;
+      background: #07111F;
+      color: #F1F5F9;
+      overflow: hidden;
+    }
+
+    /* ── Left: camera panel ── */
+    .scan-left {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 18px 22px;
+      gap: 12px;
+      min-width: 0;
+      overflow-y: auto;
+    }
+
+    .scan-topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .scan-status {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      color: #10B981;
+      text-transform: uppercase;
+    }
+    .scan-status .pulse {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: #10B981;
+      animation: blink 2s infinite;
+    }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.25} }
+
+    .gate-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .gate-row label {
+      font-size: 11px;
+      color: #8892a4;
+      white-space: nowrap;
+      margin: 0;
+      font-weight: 500;
+    }
+    .gate-row select {
+      background: rgba(255,255,255,.05);
+      border: 1px solid rgba(255,255,255,.1);
+      color: #CBD5E1;
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-size: 12px;
+      font-family: inherit;
+      cursor: pointer;
+    }
+    .gate-row select:focus { outline: none; border-color: #38BDF8; }
+
+    /* Camera viewport */
+    .cam-wrap {
+      position: relative;
+      background: rgba(255,255,255,.02);
+      border-radius: 14px;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,.07);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 240px;
+    }
+
+    /* Teal corner-frame overlay */
+    .scan-frame {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 210px; height: 210px;
+      pointer-events: none;
+      z-index: 10;
+    }
+    .sf { position: absolute; width: 30px; height: 30px; }
+    .sf-tl { top:0; left:0;  border-top:3px solid #38BDF8; border-left:3px solid #38BDF8; }
+    .sf-tr { top:0; right:0; border-top:3px solid #38BDF8; border-right:3px solid #38BDF8; }
+    .sf-bl { bottom:0; left:0;  border-bottom:3px solid #38BDF8; border-left:3px solid #38BDF8; }
+    .sf-br { bottom:0; right:0; border-bottom:3px solid #38BDF8; border-right:3px solid #38BDF8; }
+
+    .scan-hint {
+      position: absolute;
+      bottom: 16px;
+      left: 50%; transform: translateX(-50%);
+      font-size: 12px;
+      color: #6b7893;
+      white-space: nowrap;
+      z-index: 10;
+      letter-spacing: .2px;
+    }
+
+    /* Manual input */
+    .manual-row {
+      display: flex;
+      gap: 8px;
+    }
+    .manual-row input {
+      flex: 1;
+      background: rgba(255,255,255,.04);
+      border: 1px solid rgba(255,255,255,.09);
+      border-radius: 8px;
+      padding: 9px 14px;
+      color: #CBD5E1;
+      font-size: 13px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color .15s;
+    }
+    .manual-row input::placeholder { color: #2D3F53; }
+    .manual-row input:focus { border-color: #38BDF8; }
+    .btn-submit {
+      background: #2563EB;
+      color: #fff;
+      border-radius: 8px;
+      padding: 9px 20px;
+      font-size: 13px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      border: none;
+      white-space: nowrap;
+      transition: background .15s;
+    }
+    .btn-submit:hover { background: #1D4ED8; }
+
+    /* ── Divider ── */
+    .scan-divider { width: 1px; background: rgba(255,255,255,.05); flex-shrink: 0; }
+
+    /* ── Right: Activity Log ── */
+    .scan-right {
+      width: 320px;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      padding: 18px 16px;
+      gap: 10px;
+      overflow: hidden;
+      border-left: 1px solid rgba(255,255,255,.05);
+    }
+    .log-hdr-row {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .log-hdr-left { display: flex; flex-direction: column; gap: 2px; }
+    .log-hdr {
+      font-size: 13px;
+      font-weight: 700;
+      color: #CBD5E1;
+      letter-spacing: .3px;
+    }
+    .log-session { font-size: 10px; color: #475569; }
+    .log-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: rgba(16,185,129,.12);
+      color: #10B981;
+      border: 1px solid rgba(16,185,129,.2);
+      border-radius: 999px;
+      padding: 3px 8px;
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .log-chip-dot {
+      width: 5px; height: 5px;
+      border-radius: 50%;
+      background: #10B981;
+      animation: blink 2s infinite;
+    }
+
+    .al-list {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      overflow-y: auto;
+    }
+    .al-list::-webkit-scrollbar { width: 3px; }
+    .al-list::-webkit-scrollbar-thumb { background: #1E293B; border-radius: 2px; }
+
+    .al-item {
+      background: rgba(255,255,255,.02);
+      border: 1px solid rgba(255,255,255,.04);
+      border-radius: 9px;
+      padding: 9px 11px;
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      transition: border-color .3s;
+    }
+    .al-item.fresh {
+      border-color: rgba(56,189,248,.35);
+      background: rgba(56,189,248,.04);
+    }
+    .al-item.blocked-row {
+      background: rgba(239,68,68,.05);
+      border-color: rgba(239,68,68,.18);
+    }
+    .al-av {
+      width: 30px; height: 30px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 10px; font-weight: 800;
+      flex-shrink: 0;
+    }
+    .al-info { flex: 1; min-width: 0; }
+    .al-name { font-size: 12px; font-weight: 600; color: #CBD5E1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .al-sub  { font-size: 10px; color: #475569; margin-top: 1px; }
+    .al-time { font-size: 10px; color: #64748B; flex-shrink: 0; }
+    .al-dot {
+      width: 16px; height: 16px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 9px; flex-shrink: 0;
+    }
+    .dot-in  { background: rgba(16,185,129,.15); color: #10B981; }
+    .dot-out { background: rgba(244,114,182,.15); color: #F472B6; }
+    .dot-blk { background: rgba(239,68,68,.15);  color: #F87171; }
+
+    /* Throughput */
+    .throughput {
+      border-top: 1px solid rgba(255,255,255,.05);
+      padding-top: 10px;
+    }
+    .tp-lbl { font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: #5d7a9e; margin-bottom: 2px; }
+    .tp-num { font-size: 30px; font-weight: 900; color: #F1F5F9; line-height: 1; }
+    .tp-sub { font-size: 10px; color: #334155; margin-top: 2px; }
+
+    /* ── Result overlay ── */
+    .result-overlay {
+      position: fixed; inset: 0;
+      background: rgba(4,10,20,.88);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 200;
+      animation: fadeIn .18s ease;
+    }
+    @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+
+    .rc {
+      background: #0D1C30;
+      border-radius: 20px;
+      padding: 32px 28px 24px;
+      width: 300px;
+      text-align: center;
+      position: relative;
+      animation: slideUp .22s ease;
+    }
+    @keyframes slideUp { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
+
+    .rc.check-in  { border: 2px solid rgba(16,185,129,.45); }
+    .rc.check-out { border: 2px solid rgba(56,189,248,.45); }
+    .rc.blocked   { border: 2px solid rgba(239,68,68,.45); }
+    .rc.unknown   { border: 2px solid rgba(245,158,11,.45); }
+
+    .rc-close {
+      position: absolute; top: 12px; right: 16px;
+      color: #6b7893; font-size: 20px; cursor: pointer; line-height: 1;
+      transition: color .15s;
+    }
+    .rc-close:hover { color: #64748B; }
+
+    .rc-av {
+      width: 68px; height: 68px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px; font-weight: 800;
+      margin: 0 auto;
+    }
+    .rc-av-img {
+      width: 68px; height: 68px;
+      border-radius: 50%;
+      object-fit: cover;
+      display: block;
+      margin: 0 auto;
+      border: 2px solid rgba(255,255,255,.15);
+    }
+    .rc-badge {
+      display: inline-block;
+      padding: 3px 12px;
+      border-radius: 999px;
+      font-size: 10px; font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    .b-emp { background: rgba(56,189,248,.12); color: #38BDF8; }
+    .b-vis { background: rgba(251,191,36,.12);  color: #FCD34D; }
+    .b-blk { background: rgba(239,68,68,.12);   color: #F87171; }
+    .b-unk { background: rgba(245,158,11,.12);  color: #F59E0B; }
+
+    .rc-name { font-size: 20px; font-weight: 700; color: #F1F5F9; margin-bottom: 3px; }
+    .rc-dept { font-size: 12px; color: #475569; margin-bottom: 14px; }
+
+    .rc-denied {
+      font-size: 10px; font-weight: 700;
+      letter-spacing: 2px; text-transform: uppercase;
+      color: #F87171;
+      display: flex; align-items: center; justify-content: center; gap: 5px;
+      margin-bottom: 8px;
+    }
+    .rc-denied-msg { font-size: 12px; color: #475569; margin-bottom: 18px; }
+    .rc-err-code { font-size: 10px; color: #1E293B; margin-top: 4px; font-family: monospace; }
+
+    .rc-stats {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      background: rgba(255,255,255,.03);
+      border-radius: 10px;
+      padding: 12px 16px;
+      margin-bottom: 18px;
+    }
+    .rc-stat { text-align: center; }
+    .rc-stat-lbl { font-size: 9px; color: #334155; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 3px; }
+    .rc-stat-val { font-size: 13px; font-weight: 700; }
+    .sv-in  { color: #10B981; }
+    .sv-out { color: #38BDF8; }
+
+    .btn-dismiss {
+      width: 100%; padding: 11px;
+      border-radius: 10px;
+      font-size: 13px; font-weight: 600;
+      font-family: inherit; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+      border: none; transition: opacity .15s;
+    }
+    .btn-dismiss:hover { opacity: .85; }
+    .bd-in  { background: rgba(16,185,129,.12); color: #10B981; border: 1px solid rgba(16,185,129,.25) !important; }
+    .bd-out { background: rgba(56,189,248,.12); color: #38BDF8; border: 1px solid rgba(56,189,248,.25) !important; }
+    .bd-blk { background: rgba(239,68,68,.12);  color: #F87171; border: 1px solid rgba(239,68,68,.25) !important; }
+    .bd-unk { background: rgba(245,158,11,.12); color: #F59E0B; border: 1px solid rgba(245,158,11,.25) !important; }
+
+    /* Loading spinner */
+    .rc-spinner {
+      width: 36px; height: 36px;
+      border: 3px solid rgba(56,189,248,.15);
+      border-top-color: #38BDF8;
+      border-radius: 50%;
+      animation: spin .65s linear infinite;
+      margin: 20px auto;
+    }
+    @keyframes spin { to{transform:rotate(360deg)} }
+
+    /* Auto-dismiss timer bar */
+    .dismiss-bar {
+      height: 2px;
+      background: rgba(255,255,255,.06);
+      border-radius: 1px;
+      margin-top: 12px;
+      overflow: hidden;
+    }
+    .dismiss-fill {
+      height: 100%;
+      border-radius: 1px;
+      animation: shrink 2s linear forwards;
+    }
+    @keyframes shrink { from{width:100%} to{width:0} }
+    .df-in  { background: #10B981; }
+    .df-out { background: #38BDF8; }
+    .df-blk { background: #F87171; }
+    .df-unk { background: #F59E0B; }
+
+    /* Red corner frames on denied/unknown */
+    .scan-frame.frame-denied .sf { border-color: #EF4444 !important; }
+
+    /* ── Scan toast ── */
+    .scan-toast {
+      position: fixed;
+      top: 18px; left: 50%; transform: translateX(-50%);
+      z-index: 9999;
+      padding: 10px 24px;
+      border-radius: 8px;
+      font-size: 13px; font-weight: 700;
+      white-space: nowrap;
+      pointer-events: none;
+      box-shadow: 0 4px 20px rgba(0,0,0,.35);
+      transition: opacity .3s;
+    }
+    .st-in  { background: #10B981; color: #fff; }
+    .st-out { background: #3B82F6; color: #fff; }
+    .st-blk { background: #EF4444; color: #fff; }
+    .st-unk { background: #F59E0B; color: #fff; }
+
+    /* Mobile bottom tab bar */
+    .mobile-tab-bar {
+      display: none;
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      height: 56px;
+      background: #0D1B2A;
+      border-top: 1px solid rgba(255,255,255,.08);
+      z-index: 50;
+      align-items: stretch;
+    }
+    .mobile-tab-bar a {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: .5px;
+      text-transform: uppercase;
+      color: #6b7893;
+      text-decoration: none;
+      transition: color .15s;
+    }
+    .mobile-tab-bar a.active { color: #38BDF8; }
+    .mobile-tab-bar svg { width: 18px; height: 18px; }
+    @media (max-width: 768px) {
+      .sidebar { display: none; }
+      .scan-right, .scan-divider { display: none; }
+      .mobile-tab-bar { display: flex; }
+      .main-area { padding-bottom: 56px; }
+    }
+
+    @media print { .no-print { display: none !important; } }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+
+    /* ── Desktop inline result (tablet/web) ── */
+    @media (min-width: 769px) {
+      .result-overlay {
+        position: static !important;
+        background: none !important;
+        display: none;
+        flex: 1;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        animation: none !important;
+      }
+      .result-overlay.desktop-active {
+        display: flex !important;
+      }
+
+      #scanLeft { transition: none; }
+
+      .rc {
+        background: #fff;
+        border-radius: 16px;
+        color: #1b1c1c;
+        width: 340px;
+        max-width: 100%;
+        box-shadow: 0 8px 40px rgba(0,0,0,.25);
+      }
+      .rc.check-in  { border: 2px solid #10B981; }
+      .rc.check-out { border: 2px solid #3B82F6; }
+      .rc.blocked   { border: 2px solid #EF4444; }
+      .rc.unknown   { border: 2px solid #F59E0B; }
+
+      .rc-av { background: #f1f5f9 !important; color: #334155 !important; border: 2px solid #e2e8f0 !important; font-size: 22px !important; }
+      .rc-name { color: #1b1c1c; }
+      .rc-dept { color: #64748B; }
+      .rc-denied { color: #DC2626; }
+      .rc-denied-msg { color: #64748B; }
+      .rc-err-code { color: #94a3b8; }
+      .rc-close { color: #94a3b8; }
+      .rc-close:hover { color: #334155; }
+      .rc-stats { background: #f8fafc; }
+      .rc-stat-lbl { color: #94a3b8; }
+
+      /* Action status row */
+      .rc-action-row {
+        display: flex;
+        gap: 16px;
+        justify-content: center;
+        background: #f8fafc;
+        border-radius: 8px;
+        padding: 12px 16px;
+        margin-bottom: 14px;
+      }
+      .rc-action-label { font-size: 9px; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 3px; }
+      .rc-action-val   { font-size: 13px; font-weight: 800; }
+      .rc-action-val.av-in  { color: #10B981; }
+      .rc-action-val.av-out { color: #3B82F6; }
+      .rc-action-val.av-blk { color: #EF4444; }
+
+      .btn-dismiss-manual {
+        width: 100%;
+        padding: 13px;
+        background: #000666;
+        color: #fff;
+        border: none;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 700;
+        font-family: inherit;
+        cursor: pointer;
+        display: flex; align-items: center; justify-content: center; gap: 6px;
+        transition: background .15s;
+        margin-top: 4px;
+      }
+      .btn-dismiss-manual:hover { background: #000444; }
+    }
+
+    .rc-photo-wrap {
+      position: relative;
+      width: 68px;
+      margin: 0 auto 12px;
+    }
+    .rc-status-dot {
+      position: absolute;
+      bottom: 0; right: 0;
+      width: 20px; height: 20px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 10px; font-weight: 800;
+      border: 2px solid #fff;
+    }
+    .rc-dot-in  { background: #10B981; color: #fff; }
+    .rc-dot-out { background: #38BDF8; color: #fff; }
+    .rc-dot-blk { background: #EF4444; color: #fff; }
+
+    .mobile-sentinel {
+      display: none;
+    }
+    @media (max-width: 768px) {
+      .mobile-sentinel {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        padding: 14px 16px 12px;
+        background: #0D1B2A;
+        border-top: 1px solid rgba(255,255,255,.06);
+        flex-shrink: 0;
+      }
+      .ms-icon {
+        width: 32px; height: 32px;
+        background: rgba(0,6,102,.4);
+        border: 1px solid rgba(0,6,102,.6);
+        border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        flex-shrink: 0;
+        margin-top: 2px;
+      }
+      .ms-body { flex: 1; }
+      .ms-brand { font-size: 9px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: #38BDF8; margin-bottom: 4px; }
+      .ms-heading { font-size: 18px; font-weight: 800; color: #F1F5F9; line-height: 1.1; margin-bottom: 4px; }
+      .ms-desc { font-size: 11px; color: #475569; margin-bottom: 10px; }
+      .ms-meta { display: flex; gap: 20px; }
+      .ms-meta-item { }
+      .ms-meta-label { font-size: 8px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: #5d7a9e; }
+      .ms-meta-value { font-size: 11px; font-weight: 600; color: #475569; font-family: 'Roboto Mono', monospace; margin-top: 1px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ── Left Sidebar ── -->
+  <aside class="sidebar">
+    <div class="sb-top">
+      <div class="sb-logo">
+        <span class="sb-logo-mark">QR</span>
+        <div>
+          <div class="sb-logo-name">Att.</div>
+          <div class="sb-logo-sub">Attendance Management</div>
+        </div>
+      </div>
+    </div>
+    <nav class="sb-nav">
+      <a href="javascript:void(0)" class="sb-item" data-page="dashboard">
+        <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        <span>Dashboard</span>
+      </a>
+      <a href="javascript:void(0)" class="sb-item" data-page="scanner">
+        <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="5" height="5"/><rect x="16" y="3" width="5" height="5"/><rect x="3" y="16" width="5" height="5"/><path d="M21 16h-3v3m0-3v3h-3"/></svg>
+        <span>Scanner</span>
+      </a>
+      <a href="javascript:void(0)" class="sb-item" data-page="visitors">
+        <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        <span>Visitor Log</span>
+      </a>
+      <a href="javascript:void(0)" class="sb-item" data-page="reports">
+        <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>
+        <span>Reports</span>
+      </a>
+      <a href="javascript:void(0)" class="sb-item" data-page="admin">
+        <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M12 14c-5 0-8 2-8 3v1h16v-1c0-1-3-3-8-3z"/></svg>
+        <span>Staff Directory</span>
+      </a>
+    </nav>
+    <div class="sb-bottom">
+      <a href="javascript:void(0)" class="sb-item sb-settings" data-page="admin">
+        <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        <span>Settings</span>
+      </a>
+      <div class="sb-user">
+        <div class="sb-user-av">IA</div>
+        <div class="sb-user-info">
+          <div class="sb-user-name">Institutional Admin</div>
+          <div class="sb-user-sub">Sector 70 · Terminal</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ── Active nav handled by SPA shell ── -->
+
+  <!-- ── Main Area ── -->
+  <div class="main-area">
+    <div class="scan-layout">
+
+      <!-- Result card area (desktop inline / mobile overlay) -->
+      <div class="result-overlay" id="resultOverlay">
+        <div id="resultCard"></div>
+      </div>
+
+      <!-- ── Left: Camera (hidden on desktop when result shows) ── -->
+      <div class="scan-left" id="scanLeft">
+        <div class="scan-topbar">
+          <div class="scan-status"><span class="pulse"></span>Ready to Scan</div>
+          <div class="gate-row">
+            <label>Gate</label>
+            <select id="gateSelect">
+              <option value="Main Gate">Main Gate</option>
+              <option value="Side Gate">Side Gate</option>
+              <option value="Reception">Reception</option>
+              <option value="Rear Gate">Rear Gate</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="cam-wrap">
+          <!-- Camera blocked in GAS iframe chain on all devices; open scanner_popup.html as popup -->
+          <div id="scanLauncher" style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:16px;padding:24px;">
+            <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="#38BDF8" stroke-width="1.5"><rect x="3" y="3" width="5" height="5"/><rect x="16" y="3" width="5" height="5"/><rect x="3" y="16" width="5" height="5"/><path d="M21 16h-3v3m0-3v3h-3"/></svg>
+            <div style="text-align:center">
+              <div style="font-size:14px;font-weight:700;color:#F1F5F9;margin-bottom:6px">QR Camera Scanner</div>
+              <div style="font-size:11px;color:#475569;margin-bottom:18px">Opens in a popup window · camera stays open · scan → result → continue</div>
+            </div>
+            <button id="btnOpenScanner" onclick="openScanner()" style="background:#2563EB;color:#fff;border:none;border-radius:10px;padding:14px 32px;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;display:flex;align-items:center;gap:8px;transition:background .15s;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+              Open Scanner
+            </button>
+            <div id="scanWaiting" style="display:none;font-size:11px;color:#475569;text-align:center;line-height:1.7">
+              <span style="color:#10B981;font-weight:700">● Scanner active</span> · waiting for scan…<br>
+              <a href="#" onclick="openScanner();return false;" style="color:#38BDF8;font-weight:600">Reopen window</a>
+            </div>
+          </div>
+        </div>
+
+        <div class="manual-row no-print">
+          <input type="text" id="manualCode" placeholder="Or type QR code manually…">
+          <button class="btn-submit" onclick="submitManual()">Submit</button>
+        </div>
+      </div>
+
+      <div class="scan-divider"></div>
+
+      <!-- ── Right: Activity Log ── -->
+      <div class="scan-right">
+        <div class="log-hdr-row">
+          <div class="log-hdr-left">
+            <div class="log-hdr">Activity Log</div>
+            <div class="log-session">Live identification stream</div>
+          </div>
+          <div class="log-chip"><span class="log-chip-dot"></span>Session Active</div>
+        </div>
+        <div class="al-list" id="alList">
+          <div style="color:#1E293B;font-size:11px;padding:10px 0">Loading…</div>
+        </div>
+        <div class="throughput">
+          <div class="tp-lbl">Hourly Throughput</div>
+          <div class="tp-num" id="tpNum">–</div>
+          <div class="tp-sub" id="tpSub">scans today</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mobile: Sentinel Protocol branding section -->
+    <div class="mobile-sentinel">
+      <div class="ms-icon">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#38BDF8" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      </div>
+      <div class="ms-body">
+        <div class="ms-brand">Sentinel Protocol</div>
+        <div class="ms-heading">Verify Credentials</div>
+        <div class="ms-desc">Hold QR code steady inside the frame to begin authentication.</div>
+        <div class="ms-meta">
+          <div class="ms-meta-item">
+            <div class="ms-meta-label">Terminal ID</div>
+            <div class="ms-meta-value" id="terminalId">STNL-4492-X</div>
+          </div>
+          <div class="ms-meta-item">
+            <div class="ms-meta-label">Local Time</div>
+            <div class="ms-meta-value" id="localTime">—</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+    function post(data,callback){var action=data.action;var onErr=function(e){callback({success:false,error:e?e.message:'Unknown error'});};if(typeof google==='undefined'||!google.script){callback({success:false,error:'Not in GAS'});return;}var r=google.script.run.withFailureHandler(onErr).withSuccessHandler(callback);if(action==='processQRScan')r.processQRScan(data.qrCode,data.gate);else if(action==='getDashboardData')r.getDashboardData();else if(action==='getPendingResult')r.getPendingResult(data.sid);else callback({success:false,error:'Unknown: '+action});}
+  </script>
+  <script>
+    var COLORS = ['#3B82F6','#8B5CF6','#EC4899','#F59E0B','#10B981','#06B6D4','#EF4444','#6366F1','#84CC16','#F97316'];
+    var dismissTimer = null;
+
+    function initials(name) {
+      var p = String(name || ' ').trim().split(/\s+/);
+      return ((p[0]||'')[0] + ((p[1]||'')[0]||'')).toUpperCase();
+    }
+    function pickColor(name) {
+      var n = 0;
+      for (var i = 0; i < (name||'').length; i++) n += name.charCodeAt(i);
+      return COLORS[n % COLORS.length];
+    }
+
+    function showToast(msg, type) {
+      var el = document.createElement('div');
+      el.className = 'scan-toast st-' + (type || 'unk');
+      el.textContent = msg;
+      document.body.appendChild(el);
+      setTimeout(function() { el.style.opacity = '0'; }, 2600);
+      setTimeout(function() { if (el.parentNode) el.parentNode.removeChild(el); }, 3000);
+    }
+
+    // ── Scanner popup bridge ──────────────────────────────────
+    // GAS serves pages inside an iframe on script.google.com/macros/s/…
+    // That outer iframe does NOT carry camera permission, so getUserMedia fails
+    // even on a nested iframe with allow="camera". Only a top-level popup window works.
+    // scanner_popup.html is hosted on GitHub Pages (no Permissions-Policy restriction).
+
+    var SCANNER_URL = 'https://packmastersmumbai.github.io/att/scanner_popup.html';
+    var scannerWin = null;
+
+    function startScanner() {
+      window.addEventListener('message', function(e) {
+        if (!e.data) return;
+        if (e.data.qratt_code) onScanCode(e.data.qratt_code, e.source);
+        if (e.data.qratt_closed) onScannerClosed();
+      });
+    }
+
+    function openScanner() {
+      if (scannerWin && !scannerWin.closed) { scannerWin.focus(); return; }
+      // On mobile open full tab; on desktop open a centred popup
+      var w = 420, h = 720;
+      var left = Math.max(0, (screen.width  - w) / 2);
+      var top  = Math.max(0, (screen.height - h) / 2);
+      var features = window.innerWidth >= 769
+        ? 'width=' + w + ',height=' + h + ',left=' + left + ',top=' + top + ',resizable=yes'
+        : '';
+      scannerWin = window.open(SCANNER_URL, 'qrscanner', features);
+      var waiting = document.getElementById('scanWaiting');
+      if (waiting) waiting.style.display = 'block';
+      var btn = document.getElementById('btnOpenScanner');
+      if (btn) { btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg> Scanner Open'; }
+    }
+
+    function onScannerClosed() {
+      scannerWin = null;
+      var waiting = document.getElementById('scanWaiting');
+      if (waiting) waiting.style.display = 'none';
+      var btn = document.getElementById('btnOpenScanner');
+      if (btn) { btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg> Open Scanner'; }
+    }
+
+    function onScanCode(qrCode, sourceWindow) {
+      var gate = document.getElementById('gateSelect').value;
+      post({ action: 'processQRScan', qrCode: qrCode, gate: gate }, function(res) {
+        // Send result back to scanner popup
+        if (sourceWindow) {
+          try { sourceWindow.postMessage({ qratt_result: res }, '*'); } catch(ex) {}
+        } else if (scannerWin && !scannerWin.closed) {
+          try { scannerWin.postMessage({ qratt_result: res }, '*'); } catch(ex) {}
+        }
+        showResult(res);
+        document.getElementById('manualCode').value = '';
+        clearTimeout(dismissTimer);
+        dismissTimer = setTimeout(dismissResult, 1800);
+      });
+    }
+
+    function resumeCamera() { /* popup stays open */ }
+
+    function submitManual() {
+      var code = document.getElementById('manualCode').value.trim();
+      if (!code) return;
+      submitCode(code);
+    }
+
+    function submitCode(qrCode) {
+      var gate = document.getElementById('gateSelect').value;
+      showLoading();
+      post({ action: 'processQRScan', qrCode: qrCode, gate: gate }, function(res) {
+        showResult(res);
+        document.getElementById('manualCode').value = '';
+      });
+    }
+
+    // ── Result card ──────────────────────────────────────────
+    function showLoading() {
+      document.getElementById('resultCard').innerHTML =
+        '<div class="rc" style="border:1px solid rgba(255,255,255,.08)">' +
+        '<div class="rc-spinner"></div>' +
+        '<div style="color:#334155;font-size:12px;margin-bottom:20px">Processing scan…</div>' +
+        '</div>';
+      var overlay = document.getElementById('resultOverlay');
+      var scanLeft = document.getElementById('scanLeft');
+      overlay.style.display = '';
+      if (window.innerWidth >= 769) {
+        overlay.classList.add('desktop-active');
+        if (scanLeft) scanLeft.style.display = 'none';
+      } else {
+        overlay.style.display = 'flex';
+      }
+    }
+
+    function showResult(res) {
+      clearTimeout(dismissTimer);
+      // Distinct branch: server/GAS error (success===false and no action set)
+      if (res.success === false && !res.action) {
+        var overlay = document.getElementById('resultOverlay');
+        var scanLeft = document.getElementById('scanLeft');
+        showToast('⚠ Server error', 'unk');
+        document.getElementById('resultCard').innerHTML =
+          '<div class="rc unknown">' +
+          '<span class="rc-close" onclick="dismissResult()">×</span>' +
+          '<div class="rc-badge b-unk">ERROR</div>' +
+          '<div class="rc-name">Server Error</div>' +
+          '<div class="rc-dept">Unable to reach attendance system</div>' +
+          '<div class="rc-denied-msg">' + esc(res.error || 'An unexpected error occurred. Please try again or contact support.') + '</div>' +
+          '<div class="rc-err-code">ERR · GAS_UNREACHABLE</div>' +
+          '<button class="btn-dismiss bd-unk" onclick="dismissResult()">Dismiss</button>' +
+          '<div class="dismiss-bar"><div class="dismiss-fill df-unk"></div></div>' +
+          '</div>';
+        overlay.style.display = '';
+        if (window.innerWidth >= 769) {
+          overlay.classList.add('desktop-active');
+          if (scanLeft) scanLeft.style.display = 'none';
+        } else {
+          overlay.style.display = 'flex';
+        }
+        dismissTimer = setTimeout(function() { dismissResult(); }, 8100);
+        return;
+      }
+        var type = res.action === 'CHECK_IN'  ? 'check-in'  :
+                 res.action === 'CHECK_OUT' ? 'check-out' :
+                 res.action === 'BLOCKED'   ? 'blocked'   : 'unknown';
+      var c   = pickColor(res.name || '?');
+      var ini = initials(res.name || '?');
+
+      // Toast notification
+      var tMsg = type === 'check-in'  ? '\u2713 ' + (res.name||'') + ' \u2014 Checked In'   :
+                 type === 'check-out' ? '\u2713 ' + (res.name||'') + ' \u2014 Checked Out'  :
+                 type === 'blocked'   ? '\u26d4 ' + (res.name||'Access Denied') + ' \u2014 BLOCKED' :
+                 '\u26a0 QR code not recognised';
+      var tType = type === 'check-in' ? 'in' : type === 'check-out' ? 'out' : type === 'blocked' ? 'blk' : 'unk';
+      showToast(tMsg, tType);
+
+      // Badge
+      var bCls = res.action === 'BLOCKED' ? 'b-blk' : type === 'unknown' ? 'b-unk' : (res.type === 'VIS' ? 'b-vis' : 'b-emp');
+      var bLbl = res.action === 'BLOCKED' ? 'BLOCKED' : type === 'unknown' ? 'UNKNOWN' : (res.type === 'VIS' ? 'VISITOR' : 'EMPLOYEE');
+
+      var body = '';
+      var btnCls = 'bd-' + (type === 'check-in' ? 'in' : type === 'check-out' ? 'out' : type === 'blocked' ? 'blk' : 'unk');
+      var dfCls  = 'df-' + (type === 'check-in' ? 'in' : type === 'check-out' ? 'out' : type === 'blocked' ? 'blk' : 'unk');
+      var btnLbl = type === 'check-in'  ? '✓ Checked In'   :
+                   type === 'check-out' ? '✓ Checked Out'  :
+                   type === 'blocked'   ? 'Dismiss' : 'Dismiss';
+
+      if (type === 'blocked' || type === 'unknown') {
+        body =
+          '<div class="rc-denied">⚠ Access Denied</div>' +
+          '<div class="rc-denied-msg">' + esc(res.message || 'QR code not recognised or expired. Please contact the front desk.') + '</div>' +
+          '<div class="rc-err-code">ERR · QR_UNRESOLVED_VOID</div>' +
+          '<div style="margin-top:12px"><a href="#" onclick="dismissResult();setTimeout(function(){var m=document.getElementById(\'manualCode\');if(m)m.focus();},50);return false;" style="font-size:11px;font-weight:600;color:#38BDF8;letter-spacing:.5px">\u21b5 ENTER SERIAL MANUALLY</a></div>';
+      } else if (type === 'check-in') {
+        body =
+          '<div class="rc-stats">' +
+          '<div class="rc-stat"><div class="rc-stat-lbl">Action</div><div class="rc-stat-val sv-in">CHECK IN</div></div>' +
+          '<div class="rc-stat"><div class="rc-stat-lbl">Time</div><div class="rc-stat-val" style="color:#CBD5E1">' + esc(res.time || '') + '</div></div>' +
+          '</div>';
+      } else {
+        body =
+          '<div class="rc-stats">' +
+          '<div class="rc-stat"><div class="rc-stat-lbl">Action</div><div class="rc-stat-val sv-out">CHECK OUT</div></div>' +
+          '<div class="rc-stat"><div class="rc-stat-lbl">Duration</div><div class="rc-stat-val" style="color:#CBD5E1">' + esc(res.duration || '–') + '</div></div>' +
+          '</div>';
+      }
+
+      var avatarHtml = res.photoUrl
+        ? '<img src="' + esc(res.photoUrl) + '" class="rc-av-img" ' +
+          'onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'">' +
+          '<div class="rc-av" style="display:none;background:' + c + '22;color:' + c + ';border:2px solid ' + c + '44">' + esc(ini) + '</div>'
+        : '<div class="rc-av" style="background:' + c + '22;color:' + c + ';border:2px solid ' + c + '44">' + esc(ini) + '</div>';
+
+      document.getElementById('resultCard').innerHTML =
+        '<div class="rc ' + type + '">' +
+        '<span class="rc-close" onclick="dismissResult()">×</span>' +
+        '<div class="rc-photo-wrap">' +
+          avatarHtml +
+          (type === 'check-in'  ? '<div class="rc-status-dot rc-dot-in">✓</div>'  : '') +
+          (type === 'check-out' ? '<div class="rc-status-dot rc-dot-out">↑</div>' : '') +
+          (type === 'blocked'   ? '<div class="rc-status-dot rc-dot-blk">✕</div>' : '') +
+        '</div>' +
+        '<div class="rc-badge ' + bCls + '">' + bLbl + '</div>' +
+        '<div class="rc-name">' + esc(res.name || 'Unknown') + '</div>' +
+        (res.empId ? '<div style="font-size:11px;font-weight:700;letter-spacing:1.5px;color:#38BDF8;margin-bottom:2px;font-family:monospace">#' + esc(res.empId) + '</div>' : '') +
+        '<div class="rc-dept">' + esc(res.department || '') + '</div>' +
+        body +
+        '<button class="btn-dismiss ' + btnCls + '" onclick="dismissResult()">' + btnLbl + '</button>' +
+        (type !== 'blocked' && type !== 'unknown'
+          ? '<div style="font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#5d7a9e;margin-top:10px;text-align:center">Triggered on valid scan · Auto-dismiss in 8s</div>' +
+            '<div class="dismiss-bar" style="margin-top:6px"><div class="dismiss-fill ' + dfCls + '"></div></div>'
+          : '<div class="dismiss-bar"><div class="dismiss-fill ' + dfCls + '"></div></div>') +
+        '</div>';
+
+      // Toggle red corner frames for denied/unknown
+      var scanFrame = document.querySelector('.scan-frame');
+      if (scanFrame) {
+        if (type === 'blocked' || type === 'unknown') {
+          scanFrame.classList.add('frame-denied');
+        } else {
+          scanFrame.classList.remove('frame-denied');
+        }
+      }
+
+      // Desktop: show inline (hide camera, show result in its place)
+      // Mobile: show as overlay
+      var overlay = document.getElementById('resultOverlay');
+      var scanLeft = document.getElementById('scanLeft');
+      overlay.style.display = '';
+      if (window.innerWidth >= 769) {
+        overlay.classList.add('desktop-active');
+        if (scanLeft) scanLeft.style.display = 'none';
+        // Rename right panel header to "Live Terminal Feed"
+        var logHdr = document.querySelector('.log-hdr');
+        if (logHdr) logHdr.textContent = 'Live Terminal Feed';
+      } else {
+        overlay.style.display = 'flex';
+      }
+      // Instantly prepend this scan to the activity list (no round-trip wait)
+      (function() {
+        var al = document.getElementById('alList');
+        if (!al || !res.name) return;
+        var c   = pickColor(res.name);
+        var ini = initials(res.name);
+        var isOut = type === 'check-out';
+        var isBlk = type === 'blocked';
+        var dotCls = isBlk ? 'dot-blk' : (isOut ? 'dot-out' : 'dot-in');
+        var dotArw = isBlk ? '✕' : (isOut ? '↗' : '↙');
+        var typeLabel = res.type === 'EMP' ? 'EMPLOYEE' : res.type === 'VIS' ? 'VISITOR' : (res.type || 'EMPLOYEE');
+        var sub = typeLabel + (res.department ? ' · ' + res.department : '');
+        var newItem = '<div class="al-item fresh">' +
+          '<div class="al-av" style="background:' + c + '18;color:' + c + '">' + esc(ini) + '</div>' +
+          '<div class="al-info"><div class="al-name">' + esc(res.name) + '</div><div class="al-sub">' + esc(sub) + '</div></div>' +
+          '<div class="al-time">' + esc(res.time || '') + '</div>' +
+          '<div class="al-dot ' + dotCls + '">' + dotArw + '</div>' +
+          '</div>';
+        al.insertAdjacentHTML('afterbegin', newItem);
+        // Remove oldest if list exceeds 8
+        var items = al.querySelectorAll('.al-item');
+        for (var k = 8; k < items.length; k++) al.removeChild(items[k]);
+        // Update throughput counter
+        var tpEl = document.getElementById('tpNum');
+        if (tpEl) tpEl.textContent = String(parseInt(tpEl.textContent || '0') + 1);
+      })();
+      // Background refresh to sync with server state
+      loadActivity();
+
+      // Auto-dismiss after 8s
+      dismissTimer = setTimeout(function() {
+        dismissResult();
+      }, 8100);
+    }
+
+    function dismissResult() {
+      clearTimeout(dismissTimer);
+      var overlay = document.getElementById('resultOverlay');
+      var scanLeft = document.getElementById('scanLeft');
+      overlay.style.display = 'none';
+      overlay.classList.remove('desktop-active');
+      if (scanLeft) scanLeft.style.display = '';
+      var logHdr = document.querySelector('.log-hdr');
+      if (logHdr) logHdr.textContent = 'Activity Log';
+      resumeCamera();
+    }
+
+    // Click outside card to dismiss
+    document.addEventListener('DOMContentLoaded', function() {
+      document.getElementById('resultOverlay').addEventListener('click', function(e) {
+        if (e.target === this) dismissResult();
+      });
+    });
+
+    // ── Activity Log ─────────────────────────────────────────
+    function loadActivity() {
+      post({ action: 'getDashboardData' }, function(d) {
+        if (!d || !d.success) return;
+        var items = (d.recentActivity || []).slice(0, 8);
+
+        if (!items.length) {
+          document.getElementById('alList').innerHTML = '<div style="color:#1E293B;font-size:11px">No activity yet today</div>';
+          return;
+        }
+        // Don't overwrite while a fresh result card is showing (instant prepend is already correct)
+        var overlay = document.getElementById('resultOverlay');
+        if (overlay && overlay.classList.contains('desktop-active')) return;
+        document.getElementById('alList').innerHTML = items.map(function(r, i) {
+          var c   = pickColor(r.Name);
+          var ini = initials(r.Name);
+          var isOut = !!(r.TimeOUT && r.TimeOUT !== '');
+          var isBlk = r.Status === 'BLOCKED';
+          var dotCls = isBlk ? 'dot-blk' : (isOut ? 'dot-out' : 'dot-in');
+          var dotArw = isBlk ? '✕' : (isOut ? '↗' : '↙');
+          var typeLabel = r.Type === 'EMP' ? 'EMPLOYEE' : r.Type === 'VIS' ? 'VISITOR' : (r.Type || '');
+          var sub = esc(typeLabel + (r.Department ? ' \u00b7 ' + r.Department : ''));
+          var rowCls = 'al-item' + (i === 0 ? ' fresh' : '') + (isBlk ? ' blocked-row' : '');
+          return '<div class="' + rowCls + '">' +
+            '<div class="al-av" style="background:' + c + '18;color:' + c + '">' + esc(ini) + '</div>' +
+            '<div class="al-info">' +
+              '<div class="al-name">' + esc(r.Name || '') + '</div>' +
+              '<div class="al-sub">' + sub + '</div>' +
+            '</div>' +
+            '<div class="al-time">' + esc(r.TimeIN || '') + '</div>' +
+            '<div class="al-dot ' + dotCls + '">' + dotArw + '</div>' +
+            '</div>';
+        }).join('');
+
+        var total = (d.recentActivity || []).length;
+        document.getElementById('tpNum').textContent = total;
+        document.getElementById('tpSub').textContent = 'scans today';
+      });
+    }
+
+    /* ── Deferred activate for SPA ── */
+    var _scannerStarted = false;
+    function _scannerActivate() {
+      if (_scannerStarted) return;
+      _scannerStarted = true;
+      startScanner();
+      loadActivity();
+      setInterval(loadActivity, 8000);
+    }
+    if (typeof registerScreen === 'function') registerScreen('scanner', _scannerActivate);
+    else window.addEventListener('load', _scannerActivate);
+
+    // Update local time display
+    function updateLocalTime() {
+      var el = document.getElementById('localTime');
+      if (!el) return;
+      var now = new Date();
+      var months = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+      el.textContent = months[now.getMonth()] + ' ' + now.getDate() + ' · ' + now.toLocaleTimeString('en-US', {hour:'2-digit',minute:'2-digit',hour12:false});
+    }
+    setInterval(updateLocalTime, 1000);
+    updateLocalTime();
+  </script>
+
+  <!-- Mobile bottom tab bar -->
+  <nav class="mobile-tab-bar">
+    <a href="javascript:void(0)" data-page="scanner" class="active">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="5" height="5"/><rect x="16" y="3" width="5" height="5"/><rect x="3" y="16" width="5" height="5"/><path d="M21 16h-3v3m0-3v3h-3"/></svg>
+      Scan
+    </a>
+    <a href="javascript:void(0)" data-page="dashboard">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      Dashboard
+    </a>
+    <a href="javascript:void(0)" data-page="visitors">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      Visitors
+    </a>
+    <a href="javascript:void(0)" data-page="reports">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>
+      Reports
+    </a>
+  </nav>
+</body>
+</html>

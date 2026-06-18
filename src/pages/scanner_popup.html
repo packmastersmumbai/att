@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>QR Scanner</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;background:#07111F;font-family:system-ui,sans-serif;color:#F1F5F9;}
+
+/* ── Camera screen ── */
+#scanScreen{display:flex;flex-direction:column;height:100%;padding:env(safe-area-inset-top,12px) 12px env(safe-area-inset-bottom,12px) 12px;gap:10px;}
+.topbar{display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.brand{font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#38BDF8;}
+.btn-close{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:#94a3b8;border-radius:8px;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer;}
+.btn-close:hover{background:rgba(255,255,255,.1);}
+#wrap{position:relative;flex:1;border-radius:16px;overflow:hidden;background:#000;min-height:0;}
+video{width:100%;height:100%;object-fit:cover;display:block;}
+#flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none;transition:opacity .07s;}
+.shade{position:absolute;inset:0;box-shadow:inset 0 0 0 9999px rgba(0,0,0,.38);}
+.frm{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:62%;height:62%;pointer-events:none;}
+.fc{position:absolute;width:26px;height:26px;}
+.fc-tl{top:0;left:0;border-top:3px solid #38BDF8;border-left:3px solid #38BDF8;border-radius:3px 0 0 0;}
+.fc-tr{top:0;right:0;border-top:3px solid #38BDF8;border-right:3px solid #38BDF8;border-radius:0 3px 0 0;}
+.fc-bl{bottom:0;left:0;border-bottom:3px solid #38BDF8;border-left:3px solid #38BDF8;border-radius:0 0 0 3px;}
+.fc-br{bottom:0;right:0;border-bottom:3px solid #38BDF8;border-right:3px solid #38BDF8;border-radius:0 0 3px 0;}
+.hint{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);font-size:11px;color:rgba(255,255,255,.4);white-space:nowrap;}
+#scanSt{flex-shrink:0;text-align:center;font-size:12px;font-weight:600;color:#475569;min-height:18px;letter-spacing:.3px;}
+
+/* ── Result screen ── */
+#resultScreen{display:none;flex-direction:column;align-items:center;justify-content:center;height:100%;padding:24px 20px env(safe-area-inset-bottom,24px);gap:0;text-align:center;}
+.rs-icon{width:72px;height:72px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto 16px;flex-shrink:0;}
+.rs-icon.ic-in{background:rgba(16,185,129,.15);border:2px solid rgba(16,185,129,.4);}
+.rs-icon.ic-out{background:rgba(56,189,248,.15);border:2px solid rgba(56,189,248,.4);}
+.rs-icon.ic-blk{background:rgba(239,68,68,.15);border:2px solid rgba(239,68,68,.4);}
+.rs-icon.ic-unk{background:rgba(245,158,11,.15);border:2px solid rgba(245,158,11,.4);}
+.rs-badge{display:inline-block;padding:3px 14px;border-radius:999px;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px;}
+.bd-in{background:rgba(16,185,129,.12);color:#10B981;border:1px solid rgba(16,185,129,.25);}
+.bd-out{background:rgba(56,189,248,.12);color:#38BDF8;border:1px solid rgba(56,189,248,.25);}
+.bd-blk{background:rgba(239,68,68,.12);color:#F87171;border:1px solid rgba(239,68,68,.25);}
+.bd-unk{background:rgba(245,158,11,.12);color:#F59E0B;border:1px solid rgba(245,158,11,.25);}
+.rs-name{font-size:22px;font-weight:800;color:#F1F5F9;margin-bottom:4px;}
+.rs-dept{font-size:13px;color:#475569;margin-bottom:20px;}
+.rs-stat-box{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:14px 24px;margin-bottom:24px;width:100%;max-width:280px;}
+.rs-stat-lbl{font-size:9px;text-transform:uppercase;letter-spacing:1.5px;color:#334155;margin-bottom:4px;}
+.rs-stat-val{font-size:18px;font-weight:800;}
+.sv-in{color:#10B981;}.sv-out{color:#38BDF8;}.sv-blk{color:#F87171;}.sv-unk{color:#F59E0B;}
+.progress-wrap{width:100%;max-width:280px;height:3px;background:rgba(255,255,255,.07);border-radius:2px;margin-bottom:20px;overflow:hidden;}
+.progress-bar{height:100%;border-radius:2px;width:100%;}
+.pb-in{background:#10B981;}.pb-out{background:#38BDF8;}.pb-blk{background:#F87171;}.pb-unk{background:#F59E0B;}
+@keyframes shrink{from{width:100%}to{width:0%}}
+.btn-continue{width:100%;max-width:280px;padding:15px;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;border:none;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px;transition:opacity .15s;}
+.bc-in{background:#10B981;color:#fff;}.bc-out{background:#38BDF8;color:#fff;}
+.bc-blk{background:rgba(239,68,68,.15);color:#F87171;border:1px solid rgba(239,68,68,.3)!important;}
+.bc-unk{background:rgba(245,158,11,.12);color:#F59E0B;border:1px solid rgba(245,158,11,.3)!important;}
+.btn-continue:hover{opacity:.88;}
+.spinner{width:20px;height:20px;border:2px solid rgba(56,189,248,.15);border-top-color:#38BDF8;border-radius:50%;animation:spin .6s linear infinite;flex-shrink:0;}
+@keyframes spin{to{transform:rotate(360deg)}}
+canvas{display:none}
+</style>
+</head>
+<body>
+
+<!-- Camera screen -->
+<div id="scanScreen">
+  <div class="topbar">
+    <span class="brand">QR Scanner</span>
+    <button class="btn-close" onclick="closeScanner()">✕ Close</button>
+  </div>
+  <div id="wrap">
+    <video id="v" playsinline autoplay muted></video>
+    <div class="shade"></div>
+    <div id="flash"></div>
+    <div class="frm">
+      <div class="fc fc-tl"></div><div class="fc fc-tr"></div>
+      <div class="fc fc-bl"></div><div class="fc fc-br"></div>
+    </div>
+    <div class="hint">Hold QR code steady inside the frame</div>
+  </div>
+  <div id="scanSt">Starting camera…</div>
+</div>
+
+<!-- Result screen -->
+<div id="resultScreen">
+  <div class="rs-icon" id="rsIcon"></div>
+  <div class="rs-badge" id="rsBadge"></div>
+  <div class="rs-name" id="rsName"></div>
+  <div class="rs-dept" id="rsDept"></div>
+  <div class="rs-stat-box" id="rsStatBox"></div>
+  <div class="progress-wrap"><div class="progress-bar" id="rsBar"></div></div>
+  <button class="btn-continue" id="btnContinue" onclick="resumeScanning()">▶ Continue Scanning</button>
+</div>
+
+<canvas id="c"></canvas>
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+<script>
+  var vid = document.getElementById('v');
+  var cnv = document.getElementById('c'), ctx = cnv.getContext('2d');
+  var scanSt = document.getElementById('scanSt');
+  var flash = document.getElementById('flash');
+  var scanScreen = document.getElementById('scanScreen');
+  var resultScreen = document.getElementById('resultScreen');
+  var paused = false, stream = null, useNative = false, detector = null;
+  var autoTimer = null;
+
+  function doFlash(col) {
+    flash.style.background = col || '#fff';
+    flash.style.opacity = '0.5';
+    setTimeout(function() { flash.style.opacity = '0'; }, 120);
+  }
+
+  function closeScanner() {
+    if (stream) stream.getTracks().forEach(function(t) { t.stop(); });
+    try { window.opener && window.opener.postMessage({ qratt_closed: true }, '*'); } catch(ex) {}
+    window.close();
+  }
+
+  function resumeScanning() {
+    clearTimeout(autoTimer);
+    resultScreen.style.display = 'none';
+    scanScreen.style.display = 'flex';
+    paused = false;
+    scanSt.textContent = 'Scanning — hold QR to frame';
+  }
+
+  function showResult(d) {
+    paused = true;
+    scanScreen.style.display = 'none';
+    resultScreen.style.display = 'flex';
+    var t = d.action === 'CHECK_IN' ? 'in' : d.action === 'CHECK_OUT' ? 'out' : d.action === 'BLOCKED' ? 'blk' : 'unk';
+    var icons = { in: '✓', out: '↑', blk: '✕', unk: '?' };
+    var labels = { in: 'CHECKED IN', out: 'CHECKED OUT', blk: 'ACCESS DENIED', unk: 'UNKNOWN' };
+    document.getElementById('rsIcon').className = 'rs-icon ic-' + t;
+    document.getElementById('rsIcon').textContent = icons[t];
+    document.getElementById('rsBadge').className = 'rs-badge bd-' + t;
+    document.getElementById('rsBadge').textContent = labels[t];
+    document.getElementById('rsName').textContent = d.name || 'Unknown';
+    document.getElementById('rsDept').textContent = d.department || (d.error ? 'Error processing scan' : '');
+    var statBox = document.getElementById('rsStatBox');
+    if (t === 'in') {
+      statBox.innerHTML = '<div class="rs-stat-lbl">Time In</div><div class="rs-stat-val sv-in">' + (d.time || '–') + '</div>';
+    } else if (t === 'out') {
+      statBox.innerHTML = '<div class="rs-stat-lbl">Duration</div><div class="rs-stat-val sv-out">' + (d.duration || '–') + '</div>';
+    } else {
+      statBox.innerHTML = '<div class="rs-stat-lbl">Status</div><div class="rs-stat-val sv-' + t + '">' + labels[t] + '</div>';
+    }
+    var bar = document.getElementById('rsBar');
+    bar.className = 'progress-bar pb-' + t;
+    bar.style.animation = 'none'; bar.offsetHeight;
+    bar.style.animation = 'shrink 2s linear forwards';
+    document.getElementById('btnContinue').className = 'btn-continue bc-' + t;
+    document.getElementById('btnContinue').style.display = '';
+    doFlash(t === 'in' ? '#10B981' : t === 'out' ? '#38BDF8' : t === 'blk' ? '#EF4444' : '#F59E0B');
+    autoTimer = setTimeout(resumeScanning, 2000);
+  }
+
+  function showProcessing() {
+    paused = true;
+    scanScreen.style.display = 'none';
+    resultScreen.style.display = 'flex';
+    document.getElementById('rsIcon').className = 'rs-icon ic-unk';
+    document.getElementById('rsIcon').innerHTML = '<div class="spinner"></div>';
+    document.getElementById('rsBadge').className = 'rs-badge bd-unk';
+    document.getElementById('rsBadge').textContent = 'PROCESSING';
+    document.getElementById('rsName').textContent = '';
+    document.getElementById('rsDept').textContent = '';
+    document.getElementById('rsStatBox').innerHTML = '<div style="display:flex;align-items:center;gap:8px;justify-content:center"><div class="spinner"></div><span style="font-size:13px;color:#475569">Checking attendance record…</span></div>';
+    document.getElementById('rsBar').style.animation = 'none';
+    document.getElementById('btnContinue').style.display = 'none';
+  }
+
+  function onDetect(code) {
+    if (paused) return;
+    paused = true;
+    showProcessing();
+    try { window.opener && window.opener.postMessage({ qratt_code: code }, '*'); } catch(ex) {}
+  }
+
+  window.addEventListener('message', function(e) {
+    if (e.data && e.data.qratt_result) showResult(e.data.qratt_result);
+  });
+
+  if ('BarcodeDetector' in window) {
+    try { detector = new BarcodeDetector({ formats: ['qr_code'] }); useNative = true; } catch(ex) {}
+  }
+
+  navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } } })
+    .then(function(s) {
+      stream = s; vid.srcObject = s; vid.play();
+      scanSt.textContent = 'Scanning — hold QR to frame';
+      tick();
+    })
+    .catch(function(e) {
+      scanSt.textContent = '⚠ Camera error: ' + e.name;
+      scanSt.style.color = '#F87171';
+    });
+
+  function tickNative() {
+    if (paused || !vid.videoWidth) { requestAnimationFrame(tickNative); return; }
+    detector.detect(vid).then(function(r) {
+      if (r.length > 0) onDetect(r[0].rawValue);
+      requestAnimationFrame(tickNative);
+    }).catch(function() { requestAnimationFrame(tickNative); });
+  }
+
+  function tickJsQR() {
+    if (!paused && vid.videoWidth > 0) {
+      cnv.width = vid.videoWidth; cnv.height = vid.videoHeight;
+      ctx.drawImage(vid, 0, 0);
+      var d = ctx.getImageData(0, 0, cnv.width, cnv.height);
+      var r = jsQR(d.data, d.width, d.height, { inversionAttempts: 'attemptBoth' });
+      if (r && r.data) onDetect(r.data);
+    }
+    requestAnimationFrame(tickJsQR);
+  }
+
+  function tick() { if (useNative) tickNative(); else tickJsQR(); }
+</script>
+</body>
+</html>
