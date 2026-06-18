@@ -70,6 +70,14 @@
       var page = new URLSearchParams(location.search).get('page') || 'kiosk';
       if (valid.indexOf(page) === -1) page = 'kiosk';
 
+      // Mobile Chrome blocks GAS iframes — redirect directly to GAS URL
+      var ua = navigator.userAgent;
+      var isMobile = /Android|iPhone|iPad|iPod/i.test(ua);
+      if (isMobile) {
+        window.location.replace(base + '?page=' + page + '&v=100');
+        return;
+      }
+
       var app = document.getElementById('app');
       var loader = document.getElementById('loader');
 
