@@ -221,13 +221,18 @@
       width: 40px; height: 40px; border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
       font-size: 14px; font-weight: 700;
-      margin: 0 auto 6px; flex-shrink: 0;
+      margin: 0 auto 4px; flex-shrink: 0;
+    }
+    .a-code {
+      font-size: 8px; font-weight: 700; color: var(--muted);
+      letter-spacing: 1px; text-transform: uppercase; margin-bottom: 1px;
     }
     .a-name {
       font-size: 10px; font-weight: 600; color: var(--text-dim);
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
     .a-time { font-size: 9px; color: var(--muted); margin-top: 2px; }
+    .a-time-out { font-size: 9px; color: var(--pink); margin-top: 1px; }
     .a-badge {
       font-size: 9px; font-weight: 700; letter-spacing: .4px;
       padding: 1px 5px; border-radius: 999px;
@@ -1021,20 +1026,23 @@
             var ini    = initials(r.Name);
             var late   = !!r.isLate;
             var hasOut = r.TimeOUT && String(r.TimeOUT).trim() !== '';
+            var code   = r.EmpID || r.empId || r.Code || '';
+            var firstName = (r.Name || '').split(' ')[0];
             var borderStyle = late
               ? 'border-color:rgba(245,158,11,.6);background:rgba(245,158,11,.06)'
               : (i === 0 ? 'border-color:rgba(56,189,248,.45);background:rgba(56,189,248,.07)' : '');
             var avRing = late ? ';box-shadow:0 0 0 2px rgba(245,158,11,.5)' : '';
-            var timeRow = '<div class="a-time" style="color:' + (late ? 'var(--amber)' : 'var(--muted)') + '">' +
-              esc(r.TimeIN || '–') + '</div>';
-            if (hasOut) {
-              timeRow += '<div class="a-time" style="color:var(--pink);margin-top:1px">↗ ' + esc(r.TimeOUT) + '</div>';
-            }
+            var photo = r.PhotoURL || r.photoUrl || '';
+            var avHtml = photo
+              ? '<img src="' + esc(photo) + '" style="width:40px;height:40px;border-radius:50%;object-fit:cover;margin:0 auto 4px;display:block;" onerror="this.style.display=\'none\'">'
+              : '<div class="a-av" style="background:' + c + '22;color:' + c + avRing + '">' + esc(ini) + '</div>';
             return '<div class="a-card" style="' + borderStyle + '">' +
-              '<div class="a-av" style="background:' + c + '22;color:' + c + avRing + '">' + esc(ini) + '</div>' +
-              '<div class="a-name">' + esc((r.Name || '').split(' ')[0]) + '</div>' +
-              timeRow +
-              (late ? '<span class="a-badge" style="background:rgba(245,158,11,.15);color:var(--amber)">LATE</span>' : '') +
+              avHtml +
+              (code ? '<div class="a-code">#' + esc(String(code)) + '</div>' : '') +
+              '<div class="a-name">' + esc(firstName) + '</div>' +
+              '<div class="a-time" style="color:' + (late ? 'var(--amber)' : 'var(--teal)') + '">↓ ' + esc(r.TimeIN || '–') + '</div>' +
+              (hasOut ? '<div class="a-time-out">↑ ' + esc(r.TimeOUT) + '</div>' : '') +
+              (late ? '<span class="a-badge" style="background:rgba(245,158,11,.15);color:var(--amber);font-size:8px">LATE</span>' : '') +
               '</div>';
           }).join('');
         }

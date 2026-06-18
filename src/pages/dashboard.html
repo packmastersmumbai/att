@@ -346,6 +346,7 @@
 
     /* ── Absent Roster panel ── */
     .absent-panel {
+      display: none !important; /* replaced by inline present/absent table */
       width: 280px;
       flex-shrink: 0;
       background: var(--color-surface, #fff);
@@ -679,17 +680,27 @@
       </div>
 
       <!-- Main content + right sidebar -->
+      <!-- Present / Absent compact table -->
+      <div class="card" style="padding:0;margin-bottom:16px;overflow:hidden;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid var(--color-border);">
+          <div style="padding:10px 14px;font-size:12px;font-weight:700;color:#2563EB;border-right:1px solid var(--color-border);">
+            ● PRESENT <span id="presentCount" style="margin-left:6px;background:#DBEAFE;color:#1D4ED8;padding:1px 7px;border-radius:99px;font-size:11px">–</span>
+          </div>
+          <div style="padding:10px 14px;font-size:12px;font-weight:700;color:#DC2626;">
+            ○ ABSENT <span id="absentCount" style="margin-left:6px;background:#FEE2E2;color:#B91C1C;padding:1px 7px;border-radius:99px;font-size:11px">–</span>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;">
+          <div id="presentTableCol" style="border-right:1px solid var(--color-border);max-height:260px;overflow-y:auto;"></div>
+          <div id="absentTableCol" style="max-height:260px;overflow-y:auto;"></div>
+        </div>
+      </div>
+
       <div class="dash-grid">
 
         <!-- ── Main column ── -->
         <div>
           <div class="section-title">
-            Present Right Now
-            <a onclick="switchToSection('present')">View All</a>
-          </div>
-          <div class="person-grid" id="presentGrid"></div>
-
-          <div class="section-title" style="margin-top:4px">
             Recent Activity
           </div>
           <div class="card" id="activityFeed" style="margin-bottom:0"></div>
@@ -703,15 +714,6 @@
 
         <!-- ── Right Sidebar ── -->
         <div class="right-sidebar">
-
-          <!-- Absent Roster -->
-          <div class="card" style="padding:14px 16px">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-              <div style="font-size:13px;font-weight:700;color:var(--color-text)">Absent Roster</div>
-              <div id="absentBadge" style="font-size:11px;font-weight:600;color:#DC2626;background:#FEE2E2;padding:2px 8px;border-radius:20px">— absent</div>
-            </div>
-            <div id="absentRoster"><div style="color:var(--color-text-muted);font-size:12px;text-align:center;padding:8px 0">Loading…</div></div>
-          </div>
 
           <!-- System Status (dark teal) -->
           <div class="system-status-card">
@@ -945,10 +947,8 @@
         document.getElementById('kpiPending').textContent  = pending;
         document.getElementById('syncTime').textContent    = 'Last sync: ' + new Date().toLocaleTimeString();
 
-        renderPersonGrid('presentGrid', data.presentList || [], false);
         renderActivity(data.recentActivity || []);
-        renderAbsentRoster(data.absentList || []);
-        renderAbsentPanel(data.absentList || []);
+        renderPresentAbsentTable(data.presentList || [], data.absentList || []);
       });
     }
 
@@ -1031,6 +1031,51 @@
           '<span class="act-badge ' + badgeClass + '">' + badgeText + '</span>' +
           '</div>';
       }).join('');
+    }
+
+    function renderPresentAbsentTable(presentList, absentList) {
+      document.getElementById('presentCount').textContent = presentList.length;
+      document.getElementById('absentCount').textContent  = absentList.length;
+
+      var ROW = 'display:flex;align-items:center;gap:8px;padding:6px 12px;border-bottom:1px solid var(--color-border);font-size:12px;';
+      var AV  = 'width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;';
+
+      function avColor(name) {
+        var h = 0; for (var i=0; i<(name||'').length; i++) h = (h*31+name.charCodeAt(i))&0xffff;
+        var COLS = ['#DBEAFE:#1D4ED8','#DCFCE7:#166534','#FEF3C7:#92400E','#FCE7F3:#9D174D','#EDE9FE:#5B21B6','#CCFBF1:#134E4A'];
+        var p = COLS[h % COLS.length].split(':'); return {bg:p[0],fg:p[1]};
+      }
+
+      var pCol = document.getElementById('presentTableCol');
+      var aCol = document.getElementById('absentTableCol');
+
+      if (!presentList.length) {
+        pCol.innerHTML = '<div style="padding:10px 12px;font-size:11px;color:var(--color-text-muted)">None present</div>';
+      } else {
+        pCol.innerHTML = presentList.map(function(p) {
+          var name = p.Name || p.name || ''; var dept = p.Department || p.dept || '';
+          var c = avColor(name); var ini = name.split(' ').map(function(w){return w[0]||'';}).join('').substring(0,2).toUpperCase();
+          return '<div style="'+ROW+'">' +
+            '<div style="'+AV+'background:'+c.bg+';color:'+c.fg+'">'+esc(ini)+'</div>' +
+            '<div style="min-width:0;flex:1"><div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(name)+'</div>' +
+            '<div style="font-size:10px;color:var(--color-text-muted)">'+esc(dept)+'</div></div>' +
+            '</div>';
+        }).join('');
+      }
+
+      if (!absentList.length) {
+        aCol.innerHTML = '<div style="padding:10px 12px;font-size:11px;color:var(--color-text-muted)">All present</div>';
+      } else {
+        aCol.innerHTML = absentList.map(function(p) {
+          var name = p.Name || p.name || ''; var dept = p.Department || p.dept || '';
+          var c = avColor(name); var ini = name.split(' ').map(function(w){return w[0]||'';}).join('').substring(0,2).toUpperCase();
+          return '<div style="'+ROW+'">' +
+            '<div style="'+AV+'background:'+c.bg+';color:'+c.fg+';opacity:.5">'+esc(ini)+'</div>' +
+            '<div style="min-width:0;flex:1"><div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--color-text-muted)">'+esc(name)+'</div>' +
+            '<div style="font-size:10px;color:var(--color-text-muted)">'+esc(dept)+'</div></div>' +
+            '</div>';
+        }).join('');
+      }
     }
 
     function renderAbsentRoster(absentList) {
