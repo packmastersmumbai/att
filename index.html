@@ -2,16 +2,20 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="description" content="QR-based attendance and visitor management system.">
   <title>QR Att. — Attendance System</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html, body { width: 100%; height: 100%; overflow: hidden; background: #07111F; font-family: system-ui, -apple-system, sans-serif; }
+    html, body { width: 100%; height: 100%; height: 100dvh; overflow: hidden; background: #07111F; font-family: system-ui, -apple-system, sans-serif; }
 
     #loader {
       position: fixed; inset: 0; background: #07111F;
       display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 28px;
+      z-index: 10; transition: opacity 0.3s;
     }
     .loader-logo { display: flex; align-items: center; gap: 14px; }
     .loader-mark {
@@ -32,6 +36,13 @@
     .loader-dots span:nth-child(2) { animation-delay: 0.2s; }
     .loader-dots span:nth-child(3) { animation-delay: 0.4s; }
     @keyframes pulse { 0%,100%{background:#334155;transform:scale(1)} 50%{background:#2563eb;transform:scale(1.4)} }
+
+    #app {
+      position: fixed; inset: 0;
+      width: 100%; height: 100%; height: 100dvh;
+      border: none; opacity: 0; transition: opacity 0.3s;
+    }
+    #app.ready { opacity: 1; }
   </style>
 </head>
 <body>
@@ -44,21 +55,58 @@
     <div class="loader-bar"><div class="loader-bar-fill"></div></div>
     <div class="loader-dots"><span></span><span></span><span></span></div>
   </div>
+
+  <iframe
+    id="app"
+    src=""
+    allow="accelerometer; camera; encrypted-media; geolocation; gyroscope; microphone"
+    allowfullscreen
+  ></iframe>
+
   <script>
     (function() {
       var s = [
         'aHR0cHM6Ly9zY3JpcHQuZ29vZ2xlLmNvbS9tYWNyb3Mv',
-        'cy9BS2Z5Y2J3OTFKZl9fTHB5dnRkQmdBUFBibEFVc0lD',
-        'VVR0dktXbmhPQmZKbTVjZDYvZXhlYw=='
+        'cy9BS2Z5Y2J4MGFvVmVDSmVWWEdmY3BLQU03a1JzOWst',
+        'al8yZWJPOVhPY0gzWWxvakQyREw4R000QmRDbjlBU256',
+        'Q0hfR25kZ04vZXhlYw=='
       ].join('');
       var base = atob(s);
-      var page = new URLSearchParams(location.search).get('page') || 'scanner';
       var valid = ['scanner','dashboard','reports','visitors','kiosk','admin','idcards'];
-      if (valid.indexOf(page) === -1) page = 'scanner';
-      // Redirect directly — no iframe, works on all mobile browsers
+      var page = new URLSearchParams(location.search).get('page') || 'kiosk';
+      if (valid.indexOf(page) === -1) page = 'kiosk';
+
+      var app = document.getElementById('app');
+      var loader = document.getElementById('loader');
+
+      function loadPage(pg) {
+        loader.style.display = 'flex';
+        loader.style.opacity = '1';
+        app.classList.remove('ready');
+        app.src = base + '?page=' + pg;
+        history.replaceState(null, '', '?page=' + pg);
+      }
+
+      loadPage(page);
+
+      app.addEventListener('load', function() {
+        app.classList.add('ready');
+        loader.style.opacity = '0';
+        setTimeout(function() { loader.style.display = 'none'; }, 300);
+      });
+
+      // Listen for nav signals from inside the GAS iframe
+      window.addEventListener('message', function(e) {
+        if (e.data && e.data.qratt_nav && valid.indexOf(e.data.qratt_nav) !== -1) {
+          loadPage(e.data.qratt_nav);
+        }
+      });
+
+      // Fallback: hide loader after 12s if iframe load event doesn't fire
       setTimeout(function() {
-        window.location.replace(base + '?page=' + page);
-      }, 1200);
+        app.classList.add('ready');
+        loader.style.display = 'none';
+      }, 12000);
     })();
   </script>
 </body>
