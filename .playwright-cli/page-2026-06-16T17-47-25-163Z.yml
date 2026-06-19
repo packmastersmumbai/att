@@ -1,0 +1,89 @@
+- table [ref=e2]:
+  - rowgroup [ref=e3]:
+    - row "This application was created by a Google Apps Script user" [ref=e4]:
+      - cell "This application was created by a Google Apps Script user" [ref=e5]:
+        - banner "This application was created by a Google Apps Script user" [ref=e6]:
+          - generic [ref=e7]:
+            - generic [ref=e8]:
+              - img [ref=e10]
+              - alert [ref=e12]: This application was created by a Google Apps Script user
+            - generic [ref=e13]:
+              - link "Report abuse" [ref=e14] [cursor=pointer]:
+                - /url: https://drive.google.com/abuse?id=AKkXjoyLp96LhE4CmKhn_BXfC295kLpCF-6p3a5Ik303EdgtgzD7kYC7hQTL8NaFQXWnwjywHTXO2Bi5jb6ychZmq8ZpYk2JOynYgES4%3A0&docurl=https%3A%2F%2Fscript.google.com%2Fmacros%2Fs%2FAKfycbxgSHTpf_FSF8bNnOHeCPEMO0xJtJKe3Pxpy3-O2YkW1x1M5zsmDbWqBV0tXji9i_-9-A%2Fexec%3Fpage%3Dscanner
+              - link "Learn more" [ref=e15] [cursor=pointer]:
+                - /url: https://developers.google.com/apps-script
+          - button "Dismiss" [ref=e16]:
+            - img [ref=e17]
+    - row [ref=e19]:
+      - cell [ref=e20]:
+        - iframe [ref=e21]:
+          - iframe [ref=f11e2]:
+            - generic [active] [ref=f12e1]:
+              - complementary [ref=f12e2]:
+                - generic [ref=f12e4]:
+                  - generic [ref=f12e5]: QR
+                  - generic [ref=f12e6]:
+                    - generic [ref=f12e7]: Att.
+                    - generic [ref=f12e8]: Attendance Management
+                - navigation [ref=f12e9]:
+                  - link "Dashboard" [ref=f12e10] [cursor=pointer]:
+                    - /url: "?page=dashboard"
+                    - img [ref=f12e11]
+                    - generic [ref=f12e16]: Dashboard
+                  - link "Scanner" [ref=f12e17] [cursor=pointer]:
+                    - /url: "?page=scanner"
+                    - img [ref=f12e18]
+                    - generic [ref=f12e23]: Scanner
+                  - link "Visitor Log" [ref=f12e24] [cursor=pointer]:
+                    - /url: "?page=visitors"
+                    - img [ref=f12e25]
+                    - generic [ref=f12e30]: Visitor Log
+                  - link "Reports" [ref=f12e31] [cursor=pointer]:
+                    - /url: "?page=reports"
+                    - img [ref=f12e32]
+                    - generic [ref=f12e35]: Reports
+                  - link "Staff Directory" [ref=f12e36] [cursor=pointer]:
+                    - /url: "?page=admin"
+                    - img [ref=f12e37]
+                    - generic [ref=f12e40]: Staff Directory
+                - generic [ref=f12e41]:
+                  - link "Settings" [ref=f12e42] [cursor=pointer]:
+                    - /url: "?page=admin"
+                    - img [ref=f12e43]
+                    - generic [ref=f12e46]: Settings
+                  - generic [ref=f12e47]:
+                    - generic [ref=f12e48]: IA
+                    - generic [ref=f12e49]:
+                      - generic [ref=f12e50]: Institutional Admin
+                      - generic [ref=f12e51]: Sector 70 · Terminal
+              - generic [ref=f12e53]:
+                - generic [ref=f12e54]:
+                  - generic [ref=f12e55]:
+                    - generic [ref=f12e56]: Ready to Scan
+                    - generic [ref=f12e58]:
+                      - generic [ref=f12e59]: Gate
+                      - combobox [ref=f12e60] [cursor=pointer]:
+                        - option "Main Gate" [selected]
+                        - option "Side Gate"
+                        - option "Reception"
+                        - option "Rear Gate"
+                  - generic [ref=f12e61]:
+                    - button "📷 Open Scanner Camera stays open · scan → result → continue" [ref=f12e64] [cursor=pointer]:
+                      - generic [ref=f12e65]: 📷
+                      - generic [ref=f12e66]: Open Scanner
+                      - generic [ref=f12e67]: Camera stays open · scan → result → continue
+                    - generic [ref=f12e68]: Position the personnel QR code within the frame to initiate authentication.
+                  - generic [ref=f12e69]:
+                    - textbox "Or type QR code manually…" [ref=f12e70]
+                    - button "Submit" [ref=f12e71] [cursor=pointer]
+                - generic [ref=f12e73]:
+                  - generic [ref=f12e74]:
+                    - generic [ref=f12e75]:
+                      - generic [ref=f12e76]: Activity Log
+                      - generic [ref=f12e77]: Live identification stream
+                    - generic [ref=f12e78]: Session Active
+                  - generic [ref=f12e81]: Loading…
+                  - generic [ref=f12e82]:
+                    - generic [ref=f12e83]: Hourly Throughput
+                    - generic [ref=f12e84]: –
+                    - generic [ref=f12e85]: scans today

@@ -1,0 +1,21 @@
+Total messages: 19 (Errors: 0, Warnings: 1)
+
+[WARNING] An iframe which has both allow-scripts and allow-same-origin for its sandbox attribute can escape its sandboxing. @ about:blank:0
+[INFO] Net state changed from IDLE to BUSY @ https://script.google.com/static/macros/client/js/3637624865-warden_bin_i18n_warden__en_gb.js:161
+[INFO] Net state changed from BUSY to IDLE @ https://script.google.com/static/macros/client/js/3637624865-warden_bin_i18n_warden__en_gb.js:161
+[INFO] Net state changed from IDLE to BUSY @ https://script.google.com/static/macros/client/js/3637624865-warden_bin_i18n_warden__en_gb.js:161
+[INFO] Net state changed from BUSY to IDLE @ https://script.google.com/static/macros/client/js/3637624865-warden_bin_i18n_warden__en_gb.js:161
+[INFO] Net state changed from IDLE to BUSY @ https://script.google.com/static/macros/client/js/3637624865-warden_bin_i18n_warden__en_gb.js:161
+[INFO] Net state changed from BUSY to IDLE @ https://script.google.com/static/macros/client/js/3637624865-warden_bin_i18n_warden__en_gb.js:161
+[INFO] Net state changed from IDLE to BUSY @ https://script.google.com/static/macros/client/js/3637624865-warden_bin_i18n_warden__en_gb.js:161
+[INFO] Net state changed from BUSY to IDLE @ https://script.google.com/static/macros/client/js/3637624865-warden_bin_i18n_warden__en_gb.js:161
+[INFO] Net state changed from IDLE to BUSY @ https://script.google.com/static/macros/client/js/3637624865-warden_bin_i18n_warden__en_gb.js:161
+[INFO] Net state changed from BUSY to IDLE @ https://script.google.com/static/macros/client/js/3637624865-warden_bin_i18n_warden__en_gb.js:161
+[INFO] Net state changed from IDLE to BUSY @ https://script.google.com/static/macros/client/js/3637624865-warden_bin_i18n_warden__en_gb.js:161
+[INFO] Net state changed from BUSY to IDLE @ https://script.google.com/static/macros/client/js/3637624865-warden_bin_i18n_warden__en_gb.js:161
+[INFO] Net state changed from IDLE to BUSY @ https://script.google.com/static/macros/client/js/3637624865-warden_bin_i18n_warden__en_gb.js:161
+[INFO] Net state changed from BUSY to IDLE @ https://script.google.com/static/macros/client/js/3637624865-warden_bin_i18n_warden__en_gb.js:161
+[INFO] Net state changed from IDLE to BUSY @ https://script.google.com/static/macros/client/js/3637624865-warden_bin_i18n_warden__en_gb.js:161
+[INFO] Net state changed from BUSY to IDLE @ https://script.google.com/static/macros/client/js/3637624865-warden_bin_i18n_warden__en_gb.js:161
+[INFO] Net state changed from IDLE to BUSY @ https://script.google.com/static/macros/client/js/3637624865-warden_bin_i18n_warden__en_gb.js:161
+[INFO] Net state changed from BUSY to IDLE @ https://script.google.com/static/macros/client/js/3637624865-warden_bin_i18n_warden__en_gb.js:161

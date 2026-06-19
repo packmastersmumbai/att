@@ -1,0 +1,21 @@
+{
+  "name": "packmastersqratt",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "test:scanner": "playwright test tests/scanner.spec.js --headed",
+    "test:admin": "playwright test tests/admin.spec.js --headed",
+    "test:kiosk": "playwright test tests/kiosk.spec.js --headed",
+    "test:report": "playwright show-report test-report"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "@playwright/test": "^1.60.0"
+  }
+}

@@ -1,0 +1,36 @@
+- table [ref=e2]:
+  - rowgroup [ref=e3]:
+    - row "This application was created by a Google Apps Script user" [ref=e4]:
+      - cell "This application was created by a Google Apps Script user" [ref=e5]:
+        - banner "This application was created by a Google Apps Script user" [ref=e6]:
+          - generic [ref=e7]:
+            - generic [ref=e8]:
+              - img [ref=e10]
+              - alert [ref=e12]: This application was created by a Google Apps Script user
+            - generic [ref=e13]:
+              - link "Report abuse" [ref=e14] [cursor=pointer]:
+                - /url: https://drive.google.com/abuse?id=AKkXjoyLp96LhE4CmKhn_BXfC295kLpCF-6p3a5Ik303EdgtgzD7kYC7hQTL8NaFQXWnwjywHTXO2Bi5jb6ychZmq8ZpYk2JOynYgES4%3A0&docurl=https%3A%2F%2Fscript.google.com%2Fmacros%2Fs%2FAKfycbxgSHTpf_FSF8bNnOHeCPEMO0xJtJKe3Pxpy3-O2YkW1x1M5zsmDbWqBV0tXji9i_-9-A%2Fexec%3Fpage%3Didcards
+              - link "Learn more" [ref=e15] [cursor=pointer]:
+                - /url: https://developers.google.com/apps-script
+          - button "Dismiss" [ref=e16]:
+            - img [ref=e17]
+    - row [ref=e19]:
+      - cell [ref=e20]:
+        - iframe [ref=e21]:
+          - iframe [ref=f3e2]:
+            - generic [active] [ref=f4e1]:
+              - generic [ref=f4e2]:
+                - heading "Employee ID Cards — My Organisation" [level=1] [ref=f4e3]
+                - link "← Back to Admin" [ref=f4e4] [cursor=pointer]:
+                  - /url: "?page=admin"
+                - button "Print / Save PDF" [ref=f4e5] [cursor=pointer]:
+                  - img [ref=f4e6]
+                  - text: Print / Save PDF
+              - generic [ref=f4e10]:
+                - textbox "Search name or ID…" [ref=f4e11]
+                - combobox [ref=f4e12]:
+                  - option "All Departments" [selected]
+                - combobox [ref=f4e13]:
+                  - option "All Status" [selected]
+                  - option "Active"
+                  - option "Inactive"

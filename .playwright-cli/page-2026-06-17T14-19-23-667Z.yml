@@ -1,0 +1,84 @@
+- table [ref=e2]:
+  - rowgroup [ref=e3]:
+    - row "This application was created by a Google Apps Script user" [ref=e4]:
+      - cell "This application was created by a Google Apps Script user" [ref=e5]:
+        - banner "This application was created by a Google Apps Script user" [ref=e6]:
+          - generic [ref=e7]:
+            - generic [ref=e8]:
+              - img [ref=e10]
+              - alert [ref=e12]: This application was created by a Google Apps Script user
+            - generic [ref=e13]:
+              - link "Report abuse" [ref=e14] [cursor=pointer]:
+                - /url: https://drive.google.com/abuse?id=AKkXjoyLp96LhE4CmKhn_BXfC295kLpCF-6p3a5Ik303EdgtgzD7kYC7hQTL8NaFQXWnwjywHTXO2Bi5jb6ychZmq8ZpYk2JOynYgES4%3A0&docurl=https%3A%2F%2Fscript.google.com%2Fmacros%2Fs%2FAKfycbxgSHTpf_FSF8bNnOHeCPEMO0xJtJKe3Pxpy3-O2YkW1x1M5zsmDbWqBV0tXji9i_-9-A%2Fexec%3Fpage%3Dkiosk
+              - link "Learn more" [ref=e15] [cursor=pointer]:
+                - /url: https://developers.google.com/apps-script
+          - button "Dismiss" [ref=e16]:
+            - img [ref=e17]
+    - row [ref=e19]:
+      - cell [ref=e20]:
+        - iframe [ref=e21]:
+          - iframe [ref=f1e2]:
+            - generic [active] [ref=f2e1]:
+              - generic [ref=f2e2]:
+                - generic [ref=f2e3]:
+                  - generic [ref=f2e4]: QR
+                  - generic [ref=f2e5]:
+                    - generic [ref=f2e6]: QR ATT.
+                    - generic [ref=f2e7]: Attendance Live
+                - navigation [ref=f2e8]:
+                  - generic [ref=f2e9] [cursor=pointer]: ☰ Dashboard
+                  - generic [ref=f2e10] [cursor=pointer]: ☍ Reports
+                  - generic [ref=f2e11] [cursor=pointer]: ☺ Visitors
+                  - generic [ref=f2e12] [cursor=pointer]: ⚙ Admin
+                - generic [ref=f2e13]:
+                  - generic [ref=f2e14]: 19:49:23
+                  - generic [ref=f2e15]: Wednesday 17 Jun
+              - generic [ref=f2e16]:
+                - generic [ref=f2e17]:
+                  - generic [ref=f2e18]:
+                    - generic [ref=f2e19]: –
+                    - generic [ref=f2e20]: Total Present
+                  - generic [ref=f2e21]:
+                    - generic [ref=f2e22]:
+                      - generic [ref=f2e23]: –
+                      - generic [ref=f2e24]: Visitors
+                    - generic [ref=f2e25]:
+                      - generic [ref=f2e26]: –
+                      - generic [ref=f2e27]: Check-Outs
+                  - generic [ref=f2e29]:
+                    - generic [ref=f2e30]: –%
+                    - generic [ref=f2e31]: Efficiency Index
+                  - generic [ref=f2e35]: All Terminals Online
+                - generic [ref=f2e36]:
+                  - generic [ref=f2e37]:
+                    - generic [ref=f2e38]:
+                      - generic [ref=f2e39]: Ready to Scan
+                      - generic [ref=f2e41]:
+                        - generic [ref=f2e42]: Gate
+                        - combobox [ref=f2e43] [cursor=pointer]:
+                          - option "Main Gate" [selected]
+                          - option "Side Gate"
+                          - option "Reception"
+                          - option "Rear Gate"
+                    - generic [ref=f2e45]:
+                      - img [ref=f2e46]
+                      - generic [ref=f2e51]:
+                        - generic [ref=f2e52]: QR Camera Scanner
+                        - generic [ref=f2e53]: Opens a popup · scan → result continues here
+                      - button "Open Scanner" [ref=f2e54] [cursor=pointer]:
+                        - img [ref=f2e55]
+                        - text: Open Scanner
+                    - generic [ref=f2e58]:
+                      - textbox "Or type QR code manually…" [ref=f2e59]
+                      - button "Submit" [ref=f2e60] [cursor=pointer]
+                  - generic [ref=f2e61]: Recent Arrivals
+                  - generic [ref=f2e63]: Loading…
+              - generic [ref=f2e64]:
+                - generic [ref=f2e67]: System Active
+                - generic [ref=f2e68]:
+                  - img [ref=f2e70]
+                  - generic [ref=f2e75]: SCAN YOUR QR CODE AT THE TERMINAL
+                - generic [ref=f2e76]:
+                  - generic [ref=f2e77]: "Last updated: —"
+                  - generic [ref=f2e78]: "Auto-refresh: 8s"
+              - generic "Kiosk Settings" [ref=f2e79] [cursor=pointer]: ⚙

@@ -1,0 +1,18 @@
+[    1884ms] [WARNING] An iframe which has both allow-scripts and allow-same-origin for its sandbox attribute can escape its sandboxing. @ about:blank:0
+[    5008ms] It
+[   14188ms] It
+[   21550ms] It
+[   25165ms] TypeError: Cannot read properties of null (reading 'innerHTML')
+    at eval (eval at evaluate (:301:30), <anonymous>:1:84)
+[   29715ms] It
+[   37402ms] It
+[   46669ms] It
+[   53089ms] It
+[   63011ms] It
+[   69736ms] It
+[   77262ms] It
+[   85216ms] It
+[   90662ms] [WARNING] An iframe which has both allow-scripts and allow-same-origin for its sandbox attribute can escape its sandboxing. @ about:blank:0
+[   93140ms] It
+[  101536ms] It
+[  110564ms] It

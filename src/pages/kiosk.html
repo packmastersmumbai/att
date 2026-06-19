@@ -196,48 +196,72 @@
     }
     .arrivals-grid {
       display: grid;
-      grid-template-columns: repeat(6, 1fr);
-      gap: 7px;
+      grid-template-columns: repeat(8, 1fr);
+      gap: 6px;
       align-content: start;
       flex: 1;
       overflow-y: auto;
       overflow-x: hidden;
     }
 
-    /* Arrival card */
+    /* Arrival card — full-bleed photo with overlay */
     .a-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 10px 6px 8px;
-      text-align: center;
-      transition: border-color .25s, background .25s;
+      position: relative;
+      border-radius: 14px;
+      overflow: hidden;
+      aspect-ratio: 1/1;
+      border: 1.5px solid var(--border);
+      transition: border-color .25s;
     }
-    .a-card.newest {
-      border-color: rgba(56,189,248,.45);
-      background: rgba(56,189,248,.07);
+    .a-card.newest { border-color: rgba(56,189,248,.6); }
+    .a-card-bg {
+      position: absolute; inset: 0;
+      background-size: cover; background-position: center top;
     }
-    .a-av {
-      width: 40px; height: 40px; border-radius: 50%;
+    /* initials fallback fills entire card */
+    .a-av-fill {
+      position: absolute; inset: 0;
       display: flex; align-items: center; justify-content: center;
-      font-size: 14px; font-weight: 700;
-      margin: 0 auto 4px; flex-shrink: 0;
+      font-size: 30px; font-weight: 800; letter-spacing: -1px;
+    }
+    /* gradient overlay from bottom */
+    .a-overlay {
+      position: absolute; inset: 0;
+      background: linear-gradient(to top, rgba(0,0,0,.88) 0%, rgba(0,0,0,.4) 45%, transparent 75%);
+    }
+    /* LATE top-right badge */
+    .a-late-tag {
+      position: absolute; top: 8px; right: 8px;
+      background: rgba(245,158,11,.85); color: #fff;
+      font-size: 9px; font-weight: 800; letter-spacing: .8px;
+      padding: 2px 6px; border-radius: 6px;
+    }
+    /* newest top-left dot */
+    .a-new-dot {
+      position: absolute; top: 9px; left: 9px;
+      width: 8px; height: 8px; border-radius: 50%;
+      background: #38BDF8; box-shadow: 0 0 6px #38BDF8;
+    }
+    /* text info at bottom */
+    .a-info {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      padding: 6px 7px 7px;
     }
     .a-code {
-      font-size: 8px; font-weight: 700; color: var(--muted);
+      font-size: 8px; font-weight: 700; color: rgba(255,255,255,.5);
       letter-spacing: 1px; text-transform: uppercase; margin-bottom: 1px;
     }
     .a-name {
-      font-size: 10px; font-weight: 600; color: var(--text-dim);
+      font-size: 11px; font-weight: 700; color: #fff;
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      line-height: 1.2;
     }
-    .a-time { font-size: 9px; color: var(--muted); margin-top: 2px; }
-    .a-time-out { font-size: 9px; color: var(--pink); margin-top: 1px; }
-    .a-badge {
-      font-size: 9px; font-weight: 700; letter-spacing: .4px;
-      padding: 1px 5px; border-radius: 999px;
-      display: inline-block; margin-top: 4px;
+    .a-time {
+      font-size: 9px; font-weight: 600; margin-top: 3px;
+      display: flex; align-items: center; gap: 4px; flex-wrap: wrap;
     }
+    .a-tin  { color: #6EE7B7; }
+    .a-tout { color: #F9A8D4; }
     .b-emp  { background: rgba(56,189,248,.14);  color: #7DD3FC; }
     .b-vis  { background: rgba(251,191,36,.14);   color: #FCD34D; }
     .b-cont { background: rgba(167,139,250,.14);  color: #C4B5FD; }
@@ -1026,23 +1050,26 @@
             var ini    = initials(r.Name);
             var late   = !!r.isLate;
             var hasOut = r.TimeOUT && String(r.TimeOUT).trim() !== '';
-            var code   = r.EmpID || r.empId || r.Code || '';
+            var code   = r.EmpID || r.empId || r.Code || r.PersonID || '';
             var firstName = (r.Name || '').split(' ')[0];
-            var borderStyle = late
-              ? 'border-color:rgba(245,158,11,.6);background:rgba(245,158,11,.06)'
-              : (i === 0 ? 'border-color:rgba(56,189,248,.45);background:rgba(56,189,248,.07)' : '');
-            var avRing = late ? ';box-shadow:0 0 0 2px rgba(245,158,11,.5)' : '';
             var photo = r.PhotoURL || r.photoUrl || '';
-            var avHtml = photo
-              ? '<img src="' + esc(photo) + '" style="width:40px;height:40px;border-radius:50%;object-fit:cover;margin:0 auto 4px;display:block;" onerror="this.style.display=\'none\'">'
-              : '<div class="a-av" style="background:' + c + '22;color:' + c + avRing + '">' + esc(ini) + '</div>';
-            return '<div class="a-card" style="' + borderStyle + '">' +
-              avHtml +
-              (code ? '<div class="a-code">#' + esc(String(code)) + '</div>' : '') +
-              '<div class="a-name">' + esc(firstName) + '</div>' +
-              '<div class="a-time" style="color:' + (late ? 'var(--amber)' : 'var(--teal)') + '">↓ ' + esc(r.TimeIN || '–') + '</div>' +
-              (hasOut ? '<div class="a-time-out">↑ ' + esc(r.TimeOUT) + '</div>' : '') +
-              (late ? '<span class="a-badge" style="background:rgba(245,158,11,.15);color:var(--amber);font-size:8px">LATE</span>' : '') +
+            var bgHtml = photo
+              ? '<div class="a-card-bg" style="background-image:url(\'' + esc(photo) + '\')"></div>'
+              : '<div class="a-av-fill" style="background:' + c + '33;color:' + c + '">' + esc(ini) + '</div>';
+            return '<div class="a-card' + (i === 0 ? ' newest' : '') + '"' +
+              (late ? ' style="border-color:rgba(245,158,11,.7)"' : '') + '>' +
+              bgHtml +
+              '<div class="a-overlay"></div>' +
+              (late ? '<div class="a-late-tag">LATE</div>' : '') +
+              (i === 0 ? '<div class="a-new-dot"></div>' : '') +
+              '<div class="a-info">' +
+                (code ? '<div class="a-code">#' + esc(String(code)) + '</div>' : '') +
+                '<div class="a-name">' + esc(firstName) + '</div>' +
+                '<div class="a-time">' +
+                  '<span class="a-tin">↓ ' + esc(r.TimeIN || '–') + '</span>' +
+                  (hasOut ? '<span class="a-tout">↑ ' + esc(r.TimeOUT) + '</span>' : '') +
+                '</div>' +
+              '</div>' +
               '</div>';
           }).join('');
         }

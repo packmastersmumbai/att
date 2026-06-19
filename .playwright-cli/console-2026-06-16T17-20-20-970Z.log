@@ -1,0 +1,5 @@
+Total messages: 2 (Errors: 1, Warnings: 1)
+
+[WARNING] An iframe which has both allow-scripts and allow-same-origin for its sandbox attribute can escape its sandboxing. @ about:blank:0
+TypeError: EMPLOYEES.forEach is not a function
+    at <anonymous>:30:15

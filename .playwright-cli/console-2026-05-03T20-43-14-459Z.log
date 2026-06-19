@@ -1,0 +1,13 @@
+Total messages: 11 (Errors: 0, Warnings: 9)
+
+[WARNING] Unrecognized feature: 'ambient-light-sensor'. @ https://script.google.com/macros/s/AKfycbxgSHTpf_FSF8bNnOHeCPEMO0xJtJKe3Pxpy3-O2YkW1x1M5zsmDbWqBV0tXji9i_-9-A/exec?page=scanner:10
+[WARNING] Unrecognized feature: 'speaker'. @ https://script.google.com/macros/s/AKfycbxgSHTpf_FSF8bNnOHeCPEMO0xJtJKe3Pxpy3-O2YkW1x1M5zsmDbWqBV0tXji9i_-9-A/exec?page=scanner:10
+[WARNING] Unrecognized feature: 'vibrate'. @ https://script.google.com/macros/s/AKfycbxgSHTpf_FSF8bNnOHeCPEMO0xJtJKe3Pxpy3-O2YkW1x1M5zsmDbWqBV0tXji9i_-9-A/exec?page=scanner:10
+[WARNING] Unrecognized feature: 'vr'. @ https://script.google.com/macros/s/AKfycbxgSHTpf_FSF8bNnOHeCPEMO0xJtJKe3Pxpy3-O2YkW1x1M5zsmDbWqBV0tXji9i_-9-A/exec?page=scanner:10
+[WARNING] An iframe which has both allow-scripts and allow-same-origin for its sandbox attribute can escape its sandboxing. @ about:blank:0
+[WARNING] Unrecognized feature: 'ambient-light-sensor'. @ https://n-cxi7xh6htfucfwel5e27v4dvm6sn2jqjn7ygtjq-0lu-script.googleusercontent.com/userCodeAppPanel:0
+[WARNING] Unrecognized feature: 'speaker'. @ https://n-cxi7xh6htfucfwel5e27v4dvm6sn2jqjn7ygtjq-0lu-script.googleusercontent.com/userCodeAppPanel:0
+[WARNING] Unrecognized feature: 'vibrate'. @ https://n-cxi7xh6htfucfwel5e27v4dvm6sn2jqjn7ygtjq-0lu-script.googleusercontent.com/userCodeAppPanel:0
+[WARNING] Unrecognized feature: 'vr'. @ https://n-cxi7xh6htfucfwel5e27v4dvm6sn2jqjn7ygtjq-0lu-script.googleusercontent.com/userCodeAppPanel:0
+[INFO] Net state changed from IDLE to BUSY @ https://script.google.com/static/macros/client/js/897593820-warden_bin_i18n_warden__en_gb.js:150
+[INFO] Net state changed from BUSY to IDLE @ https://script.google.com/static/macros/client/js/897593820-warden_bin_i18n_warden__en_gb.js:150

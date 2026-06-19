@@ -1,0 +1,26 @@
+# Dependencies
+node_modules/
+
+# Playwright artifacts
+.playwright-cli/
+test-results/
+test-report/
+tests/
+
+# Screenshots / debug images
+*.png
+
+# E2E scripts (local dev tooling)
+e2e-*.js
+playwright.config.js
+package.json
+package-lock.json
+run_params.json
+
+# Design/product docs (not source)
+DESIGN.json
+DESIGN.md
+PRODUCT.md
+
+# Google Apps Script deploy config
+.clasp.json

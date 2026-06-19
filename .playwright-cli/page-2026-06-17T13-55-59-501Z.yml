@@ -1,0 +1,86 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - generic [ref=e3]:
+      - generic [ref=e4]: QR
+      - generic [ref=e5]: Att.
+    - generic [ref=e6]: Attendance System
+  - iframe [ref=e12]:
+    - table [ref=f1e2]:
+      - rowgroup [ref=f1e3]:
+        - row:
+          - cell
+        - row [ref=f1e4]:
+          - cell [ref=f1e5]:
+            - iframe [ref=f1e6]:
+              - iframe [ref=f2e2]:
+                - generic [active] [ref=f3e1]:
+                  - complementary [ref=f3e2]:
+                    - generic [ref=f3e4]:
+                      - generic [ref=f3e5]: QR
+                      - generic [ref=f3e6]:
+                        - generic [ref=f3e7]: Att.
+                        - generic [ref=f3e8]: Attendance Management
+                    - navigation [ref=f3e9]:
+                      - link "Dashboard" [ref=f3e10] [cursor=pointer]:
+                        - /url: "?page=dashboard"
+                        - img [ref=f3e11]
+                        - generic [ref=f3e16]: Dashboard
+                      - link "Scanner" [ref=f3e17] [cursor=pointer]:
+                        - /url: "?page=scanner"
+                        - img [ref=f3e18]
+                        - generic [ref=f3e23]: Scanner
+                      - link "Visitor Log" [ref=f3e24] [cursor=pointer]:
+                        - /url: "?page=visitors"
+                        - img [ref=f3e25]
+                        - generic [ref=f3e30]: Visitor Log
+                      - link "Reports" [ref=f3e31] [cursor=pointer]:
+                        - /url: "?page=reports"
+                        - img [ref=f3e32]
+                        - generic [ref=f3e35]: Reports
+                      - link "Staff Directory" [ref=f3e36] [cursor=pointer]:
+                        - /url: "?page=admin"
+                        - img [ref=f3e37]
+                        - generic [ref=f3e40]: Staff Directory
+                    - generic [ref=f3e41]:
+                      - link "Settings" [ref=f3e42] [cursor=pointer]:
+                        - /url: "?page=admin"
+                        - img [ref=f3e43]
+                        - generic [ref=f3e46]: Settings
+                      - generic [ref=f3e47]:
+                        - generic [ref=f3e48]: IA
+                        - generic [ref=f3e49]:
+                          - generic [ref=f3e50]: Institutional Admin
+                          - generic [ref=f3e51]: Sector 70 · Terminal
+                  - generic [ref=f3e53]:
+                    - generic [ref=f3e54]:
+                      - generic [ref=f3e55]:
+                        - generic [ref=f3e56]: Ready to Scan
+                        - generic [ref=f3e58]:
+                          - generic [ref=f3e59]: Gate
+                          - combobox [ref=f3e60] [cursor=pointer]:
+                            - option "Main Gate" [selected]
+                            - option "Side Gate"
+                            - option "Reception"
+                            - option "Rear Gate"
+                      - generic [ref=f3e62]:
+                        - img [ref=f3e63]
+                        - generic [ref=f3e68]:
+                          - generic [ref=f3e69]: QR Camera Scanner
+                          - generic [ref=f3e70]: Opens in a popup window · camera stays open · scan → result → continue
+                        - button "Open Scanner" [ref=f3e71] [cursor=pointer]:
+                          - img [ref=f3e72]
+                          - text: Open Scanner
+                      - generic [ref=f3e75]:
+                        - textbox "Or type QR code manually…" [ref=f3e76]
+                        - button "Submit" [ref=f3e77] [cursor=pointer]
+                    - generic [ref=f3e79]:
+                      - generic [ref=f3e80]:
+                        - generic [ref=f3e81]:
+                          - generic [ref=f3e82]: Activity Log
+                          - generic [ref=f3e83]: Live identification stream
+                        - generic [ref=f3e84]: Session Active
+                      - generic [ref=f3e87]: Loading…
+                      - generic [ref=f3e88]:
+                        - generic [ref=f3e89]: Hourly Throughput
+                        - generic [ref=f3e90]: –
+                        - generic [ref=f3e91]: scans today

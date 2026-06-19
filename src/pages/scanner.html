@@ -776,13 +776,18 @@
     </div>
   </aside>
 
-  <!-- ── Active nav detection ── -->
+  <!-- ── Active nav detection + mobile-safe navigation ── -->
   <script>
     (function() {
       var p = (new URLSearchParams(window.location.search)).get('page') || 'scanner';
       if (p === '') p = 'scanner';
       document.querySelectorAll('.sb-nav .sb-item[data-page]').forEach(function(a) {
         if (a.dataset.page === p) a.classList.add('active');
+        a.addEventListener('click', function(e) {
+          e.preventDefault();
+          var url = window.location.href.split('?')[0] + '?page=' + a.dataset.page;
+          try { window.top.location.href = url; } catch(ex) { try { window.parent.location.href = url; } catch(ex2) { window.location.href = url; } }
+        });
       });
     })();
   </script>

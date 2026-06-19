@@ -1,0 +1,71 @@
+- table [ref=e2]:
+  - rowgroup [ref=e3]:
+    - row "This application was created by a Google Apps Script user" [ref=e4]:
+      - cell "This application was created by a Google Apps Script user" [ref=e5]:
+        - banner "This application was created by a Google Apps Script user" [ref=e6]:
+          - generic [ref=e7]:
+            - generic [ref=e8]:
+              - img [ref=e10]
+              - alert [ref=e12]: This application was created by a Google Apps Script user
+            - generic [ref=e13]:
+              - link "Report abuse" [ref=e14] [cursor=pointer]:
+                - /url: https://drive.google.com/abuse?id=AKkXjoyLp96LhE4CmKhn_BXfC295kLpCF-6p3a5Ik303EdgtgzD7kYC7hQTL8NaFQXWnwjywHTXO2Bi5jb6ychZmq8ZpYk2JOynYgES4%3A0&docurl=https%3A%2F%2Fscript.google.com%2Fmacros%2Fs%2FAKfycbxgSHTpf_FSF8bNnOHeCPEMO0xJtJKe3Pxpy3-O2YkW1x1M5zsmDbWqBV0tXji9i_-9-A%2Fexec%3Fpage%3Dscanner%26tab%3Dpersonnel
+              - link "Learn more" [ref=e15] [cursor=pointer]:
+                - /url: https://developers.google.com/apps-script
+          - button "Dismiss" [ref=e16]:
+            - img [ref=e17]
+    - row [ref=e19]:
+      - cell [ref=e20]:
+        - iframe [ref=e21]:
+          - iframe [ref=f3e2]:
+            - generic [active] [ref=f4e1]:
+              - generic [ref=f4e2]:
+                - generic [ref=f4e4]:
+                  - generic [ref=f4e5]:
+                    - generic [ref=f4e6]: Ready to Scan
+                    - generic [ref=f4e8]:
+                      - generic [ref=f4e9]: Gate
+                      - combobox [ref=f4e10] [cursor=pointer]:
+                        - option "Main Gate" [selected]
+                        - option "Side Gate"
+                        - option "Reception"
+                        - option "Rear Gate"
+                  - generic [ref=f4e11]:
+                    - button "📷 Open Camera Opens a camera window" [ref=f4e14] [cursor=pointer]:
+                      - generic [ref=f4e15]: 📷
+                      - generic [ref=f4e16]: Open Camera
+                      - generic [ref=f4e17]: Opens a camera window
+                    - generic [ref=f4e18]: Position the personnel QR code within the frame to initiate authentication.
+                  - generic [ref=f4e19]:
+                    - textbox "Or type QR code manually…" [ref=f4e20]
+                    - button "Submit" [ref=f4e21] [cursor=pointer]
+                - generic [ref=f4e22]:
+                  - img [ref=f4e24]
+                  - generic [ref=f4e26]:
+                    - generic [ref=f4e27]: Sentinel Protocol
+                    - generic [ref=f4e28]: Verify Credentials
+                    - generic [ref=f4e29]: Hold QR code steady inside the frame to begin authentication.
+                    - generic [ref=f4e30]:
+                      - generic [ref=f4e31]:
+                        - generic [ref=f4e32]: Terminal ID
+                        - generic [ref=f4e33]: STNL-4492-X
+                      - generic [ref=f4e34]:
+                        - generic [ref=f4e35]: Local Time
+                        - generic [ref=f4e36]: OCT 14 · 08:37
+              - navigation [ref=f4e37]:
+                - link "Scan" [ref=f4e38] [cursor=pointer]:
+                  - /url: "?page=scanner"
+                  - img [ref=f4e39]
+                  - text: Scan
+                - link "Personnel" [ref=f4e44] [cursor=pointer]:
+                  - /url: "?page=dashboard"
+                  - img [ref=f4e45]
+                  - text: Personnel
+                - link "Metrics" [ref=f4e50] [cursor=pointer]:
+                  - /url: "?page=reports"
+                  - img [ref=f4e51]
+                  - text: Metrics
+                - link "Reports" [ref=f4e53] [cursor=pointer]:
+                  - /url: "?page=reports"
+                  - img [ref=f4e54]
+                  - text: Reports

@@ -106,10 +106,46 @@ function getDashboardData() {
     return true;
   });
 
-  // Mark isLate on all recent activity too
+  // Build photo lookup from Employees sheet
+  var photoMap = {};
+  allEmps.forEach(function(e) { if (e.PhotoURL) photoMap[String(e.EmpID)] = e.PhotoURL; });
+
+  // Monthly stats — count present/absent/late days this month per employee
+  var nowDate2   = new Date();
+  var ymPrefix   = todayStr.substring(0, 7); // "YYYY-MM"
+  var todayDay   = nowDate2.getDate();
+  var monthLogs  = logs.filter(function(r) { return r.Type === 'EMP' && r.Date && String(r.Date).indexOf(ymPrefix) === 0; });
+  var mthDayMap  = {}; // empId -> { day -> timeIn }
+  monthLogs.forEach(function(r) {
+    var id  = String(r.PersonID);
+    var day = parseInt(String(r.Date).split('-')[2], 10);
+    if (!mthDayMap[id]) mthDayMap[id] = {};
+    if (!mthDayMap[id][day]) mthDayMap[id][day] = r.TimeIN || '';
+  });
+  function mthStats(empId) {
+    var id = String(empId);
+    var dayMap = mthDayMap[id] || {};
+    var present = 0, absentDays = 0, late = 0;
+    for (var d = 1; d <= todayDay; d++) {
+      if (dayMap[d] !== undefined) {
+        present++;
+        var t = parseTimeMinutes(dayMap[d]);
+        if (t !== null && t > lateThreshMin) late++;
+      } else { absentDays++; }
+    }
+    return { mthPresent: present, mthAbsent: absentDays, mthLate: late };
+  }
+
+  // Attach monthly stats to presentList (PersonID = EmpID in logs)
+  presentList = presentList.map(function(r) { return Object.assign({}, r, mthStats(r.PersonID)); });
+  // Attach monthly stats to absent list (EmpID field)
+  absent = absent.map(function(e) { return Object.assign({}, e, mthStats(e.EmpID)); });
+
+  // Mark isLate on all recent activity too, attach PhotoURL
   var recent = todayLogs.slice(-20).reverse().map(function(r) {
     var tMin = parseTimeMinutes(r.TimeIN);
     r.isLate = tMin !== null && tMin > lateThreshMin;
+    r.PhotoURL = photoMap[String(r.PersonID)] || '';
     return r;
   });
 

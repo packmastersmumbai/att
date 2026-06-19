@@ -1,0 +1,124 @@
+- table [ref=e2]:
+  - rowgroup [ref=e3]:
+    - row "This application was created by a Google Apps Script user" [ref=e4]:
+      - cell "This application was created by a Google Apps Script user" [ref=e5]:
+        - banner "This application was created by a Google Apps Script user" [ref=e6]:
+          - generic [ref=e7]:
+            - generic [ref=e8]:
+              - img [ref=e10]
+              - alert [ref=e12]: This application was created by a Google Apps Script user
+            - generic [ref=e13]:
+              - link "Report abuse" [ref=e14] [cursor=pointer]:
+                - /url: https://drive.google.com/abuse?id=AKkXjoyLp96LhE4CmKhn_BXfC295kLpCF-6p3a5Ik303EdgtgzD7kYC7hQTL8NaFQXWnwjywHTXO2Bi5jb6ychZmq8ZpYk2JOynYgES4%3A0&docurl=https%3A%2F%2Fscript.google.com%2Fmacros%2Fs%2FAKfycbxgSHTpf_FSF8bNnOHeCPEMO0xJtJKe3Pxpy3-O2YkW1x1M5zsmDbWqBV0tXji9i_-9-A%2Fexec%3Fpage%3Dscanner
+              - link "Learn more" [ref=e15] [cursor=pointer]:
+                - /url: https://developers.google.com/apps-script
+          - button "Dismiss" [ref=e16]:
+            - img [ref=e17]
+    - row [ref=e19]:
+      - cell [ref=e20]:
+        - iframe [active] [ref=e21]:
+          - iframe [active] [ref=f1e2]:
+            - generic [active] [ref=f2e1]:
+              - complementary [ref=f2e2]:
+                - generic [ref=f2e4]:
+                  - generic [ref=f2e5]: QR
+                  - generic [ref=f2e6]:
+                    - generic [ref=f2e7]: Att.
+                    - generic [ref=f2e8]: Attendance Management
+                - navigation [ref=f2e9]:
+                  - link "Dashboard" [ref=f2e10] [cursor=pointer]:
+                    - /url: "?page=dashboard"
+                    - img [ref=f2e11]
+                    - generic [ref=f2e16]: Dashboard
+                  - link "Scanner" [ref=f2e17] [cursor=pointer]:
+                    - /url: "?page=scanner"
+                    - img [ref=f2e18]
+                    - generic [ref=f2e23]: Scanner
+                  - link "Visitor Log" [ref=f2e24] [cursor=pointer]:
+                    - /url: "?page=visitors"
+                    - img [ref=f2e25]
+                    - generic [ref=f2e30]: Visitor Log
+                  - link "Reports" [ref=f2e31] [cursor=pointer]:
+                    - /url: "?page=reports"
+                    - img [ref=f2e32]
+                    - generic [ref=f2e35]: Reports
+                  - link "Staff Directory" [ref=f2e36] [cursor=pointer]:
+                    - /url: "?page=admin"
+                    - img [ref=f2e37]
+                    - generic [ref=f2e40]: Staff Directory
+                - generic [ref=f2e41]:
+                  - link "Settings" [ref=f2e42] [cursor=pointer]:
+                    - /url: "?page=admin"
+                    - img [ref=f2e43]
+                    - generic [ref=f2e46]: Settings
+                  - generic [ref=f2e47]:
+                    - generic [ref=f2e48]: IA
+                    - generic [ref=f2e49]:
+                      - generic [ref=f2e50]: Institutional Admin
+                      - generic [ref=f2e51]: Sector 70 · Terminal
+              - generic [ref=f2e53]:
+                - generic [ref=f2e282]:
+                  - generic [ref=f2e283] [cursor=pointer]: ×
+                  - generic [ref=f2e284]:
+                    - img [ref=f2e285]
+                    - generic [ref=f2e286]: ✓
+                  - generic [ref=f2e287]: EMPLOYEE
+                  - generic [ref=f2e288]: ANITA RAJBHAR
+                  - generic [ref=f2e289]: "#556"
+                  - generic [ref=f2e290]: Direct
+                  - generic [ref=f2e291]:
+                    - generic [ref=f2e292]:
+                      - generic [ref=f2e293]: Action
+                      - generic [ref=f2e294]: CHECK IN
+                    - generic [ref=f2e295]:
+                      - generic [ref=f2e296]: Time
+                      - generic [ref=f2e297]: 10:02 PM
+                  - button "✓ Checked In" [ref=f2e298] [cursor=pointer]
+                  - generic [ref=f2e299]: Triggered on valid scan · Auto-dismiss in 4s
+                - generic [ref=f2e68]:
+                  - generic [ref=f2e69]:
+                    - generic [ref=f2e70]:
+                      - generic [ref=f2e71]: Live Terminal Feed
+                      - generic [ref=f2e72]: Live identification stream
+                    - generic [ref=f2e73]: Session Active
+                  - generic [ref=f2e75]:
+                    - generic [ref=f2e247]:
+                      - generic [ref=f2e248]: AR
+                      - generic [ref=f2e249]:
+                        - generic [ref=f2e250]: ANITA RAJBHAR
+                        - generic [ref=f2e251]: EMPLOYEE · Direct
+                      - generic [ref=f2e252]: 9:57 PM
+                      - generic [ref=f2e253]: ↗
+                    - generic [ref=f2e254]:
+                      - generic [ref=f2e255]: AR
+                      - generic [ref=f2e256]:
+                        - generic [ref=f2e257]: ANITA RAJBHAR
+                        - generic [ref=f2e258]: EMPLOYEE · Direct
+                      - generic [ref=f2e259]: 9:55 PM
+                      - generic [ref=f2e260]: ↗
+                    - generic [ref=f2e261]:
+                      - generic [ref=f2e262]: AR
+                      - generic [ref=f2e263]:
+                        - generic [ref=f2e264]: ANITA RAJBHAR
+                        - generic [ref=f2e265]: EMPLOYEE · Direct
+                      - generic [ref=f2e266]: 9:49 PM
+                      - generic [ref=f2e267]: ↗
+                    - generic [ref=f2e268]:
+                      - generic [ref=f2e269]: AR
+                      - generic [ref=f2e270]:
+                        - generic [ref=f2e271]: ANITA RAJBHAR
+                        - generic [ref=f2e272]: EMPLOYEE · Direct
+                      - generic [ref=f2e273]: 12:07 PM
+                      - generic [ref=f2e274]: ↗
+                    - generic [ref=f2e275]:
+                      - generic [ref=f2e276]: DN
+                      - generic [ref=f2e277]:
+                        - generic [ref=f2e278]: DEEPAK NISHAD
+                        - generic [ref=f2e279]: EMPLOYEE · Direct
+                      - generic [ref=f2e280]: 12:07 PM
+                      - generic [ref=f2e281]: ↙
+                  - generic [ref=f2e77]:
+                    - generic [ref=f2e78]: Hourly Throughput
+                    - generic [ref=f2e79]: "5"
+                    - generic [ref=f2e80]: scans today
+              - generic: ✓ ANITA RAJBHAR — Checked In
