@@ -70,16 +70,16 @@
       var page = new URLSearchParams(location.search).get('page') || 'kiosk';
       if (valid.indexOf(page) === -1) page = 'kiosk';
 
-      // Mobile Chrome blocks GAS iframes — redirect directly to GAS URL
-      var ua = navigator.userAgent;
-      var isMobile = /Android|iPhone|iPad|iPod/i.test(ua);
-      if (isMobile) {
-        window.location.replace(base + '?page=' + page + '&v=100');
-        return;
-      }
-
       var app = document.getElementById('app');
       var loader = document.getElementById('loader');
+
+      // ponytail: mobile once got a hard redirect to the raw GAS URL to dodge an
+      // iframe block. The iframe loads fine now, so try it first and only fall
+      // back to the raw URL if it genuinely never loads (real block returns).
+      var iframeLoaded = false;
+      setTimeout(function() {
+        if (!iframeLoaded) window.location.replace(base + '?page=' + page + '&v=100');
+      }, 4000);
 
       function loadPage(pg) {
         loader.style.display = 'flex';
@@ -92,6 +92,7 @@
       loadPage(page);
 
       app.addEventListener('load', function() {
+        iframeLoaded = true;
         app.classList.add('ready');
         loader.style.opacity = '0';
         setTimeout(function() { loader.style.display = 'none'; }, 300);
