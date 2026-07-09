@@ -197,12 +197,12 @@
     <!-- Confirmation shown after submit (replaces the form) -->
     <div class="card" id="doneCard" style="display:none;text-align:center">
       <div style="font-size:40px;line-height:1;margin:6px 0 4px">✅</div>
-      <div style="font-size:17px;font-weight:800">You're registered</div>
-      <div style="font-size:13px;color:var(--muted);margin-top:4px">Show this QR at the security desk to check in / out.</div>
+      <div id="doneTitle" data-i18n="vreg_done_title" style="font-size:17px;font-weight:800">You're registered</div>
+      <div id="doneSub" data-i18n="vreg_done_subline" style="font-size:13px;color:var(--muted);margin-top:4px">Show this QR at the security desk to check in / out.</div>
       <img id="doneQR" alt="Visitor QR" style="width:200px;height:200px;margin:16px auto 8px;border-radius:10px;background:#f1f5f4;display:block">
       <div id="doneVid" style="font-size:12px;color:var(--muted);font-weight:600;letter-spacing:.5px"></div>
-      <a id="doneLink" href="#" style="display:inline-block;margin-top:10px;font-size:13px;color:var(--primary);font-weight:700">Open my pass ↗</a>
-      <button class="btn" style="margin-top:16px" onclick="closeReg()">Close</button>
+      <a id="doneLink" href="#" data-i18n="vreg_open_pass" style="display:inline-block;margin-top:10px;font-size:13px;color:var(--primary);font-weight:700">Open my pass ↗</a>
+      <button class="btn" style="margin-top:16px" data-i18n="vreg_close" onclick="closeReg()">Close</button>
     </div>
   </div>
 
@@ -468,10 +468,13 @@
     function showDone(visitorId, returning){
       document.getElementById('returnCard').style.display='none';
       document.getElementById('formCard').style.display='none';
-      if(returning){
-        document.querySelector('#doneCard div:nth-child(2)').textContent='Welcome back';
-        document.querySelector('#doneCard div:nth-child(3)').textContent='We recognised your number — this is your existing pass. Show it at the desk to check in / out.';
-      }
+      var titleEl=document.getElementById('doneTitle'), subEl=document.getElementById('doneSub');
+      // Returning visitors see different copy; swap the i18n key so language
+      // toggles keep working, instead of hardcoding English text in place.
+      titleEl.setAttribute('data-i18n', returning ? 'vreg_done_returning_title' : 'vreg_done_title');
+      subEl.setAttribute('data-i18n', returning ? 'vreg_done_returning_sub' : 'vreg_done_subline');
+      titleEl.textContent=qrattT(titleEl.getAttribute('data-i18n'));
+      subEl.textContent=qrattT(subEl.getAttribute('data-i18n'));
       document.getElementById('doneVid').textContent=visitorId;
       document.getElementById('doneQR').src=
         'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data='+encodeURIComponent(visitorId);

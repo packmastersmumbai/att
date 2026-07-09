@@ -114,6 +114,11 @@ async function run() {
       if (!txt.includes('प्रभारी')) throw new Error(`label: "${txt}"`);
     });
 
+    await R.check('check-in button label is Hindi when lang=hi', async () => {
+      const txt = await page.locator('#toggleBtn').textContent();
+      if (!txt.includes('चेक आउट करें')) throw new Error(`button label: "${txt}"`);
+    });
+
     summary.push(R.report());
     await context.close();
   }
