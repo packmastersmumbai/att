@@ -147,14 +147,20 @@ const GAS_MOCK_SCRIPT = `
       },
 
       getLogs: function(filters) {
-        respond({ success: true, data: [
+        var rows = [
           { LogID: 'L1', Name: 'Priya Sharma', Type: 'EMP', Department: 'Operations',
             TimeIN: '09:05 AM', TimeOUT: '06:00 PM', Duration: '8h 55m',
             Date: '2026-06-17', Gate: 'Main Gate', Status: 'PRESENT' },
           { LogID: 'L2', Name: 'Walk-in Visitor', Type: 'VIS', Department: '',
             TimeIN: '10:30 AM', TimeOUT: '', Duration: '',
             Date: '2026-06-17', Gate: 'Reception', Status: 'PARTIAL' },
-        ], total: 2 });
+        ];
+        // Honour the type filter reports.html sends via getFilters(), so
+        // e2e tests can assert the filtered result instead of just "not empty".
+        if (filters && filters.type && filters.type !== 'ALL') {
+          rows = rows.filter(function(r) { return r.Type === filters.type; });
+        }
+        respond({ success: true, data: rows, total: rows.length });
       },
 
       getMonthlyAttendance: function(year, month) {

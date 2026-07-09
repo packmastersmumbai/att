@@ -6,77 +6,6 @@
 
 const { launch, openPage, settle, makeRunner } = require('./e2e-lib');
 
-/**
- * Extend gas-mock with getLogs, getAnalyticsData, getMonthlyAttendance.
- * gas-mock.js uses a chaining pattern: each withSuccessHandler/withFailureHandler
- * call returns a NEW object. We extend by adding methods to the prototype chain
- * without breaking the existing makeRunner closure.
- */
-const REPORTS_PATCH = `
-(function() {
-  // Monkey-patch makeRunner to add missing methods on each returned runner object.
-  // The gas-mock's makeRunner creates a plain object; we intercept withSuccessHandler
-  // at the top level and add our methods to every returned runner.
-  var origRun = window.google.script.run;
-
-  function addMissingMethods(runner) {
-    if (!runner.getLogs) {
-      runner.getLogs = function(f) {
-        setTimeout(function() {
-          if (runner.__sh) runner.__sh({ success: true, data: [
-            { LogID:'L1', Name:'Priya Sharma', Type:'EMP', Department:'Operations',
-              TimeIN:'09:05 AM', TimeOUT:'06:00 PM', Duration:'8h 55m', Date:'2026-06-17',
-              Gate:'Main Gate', Status:'PRESENT' },
-            { LogID:'L2', Name:'Walk-in Visitor', Type:'VIS', Department:'',
-              TimeIN:'10:30 AM', TimeOUT:'', Duration:'', Date:'2026-06-17',
-              Gate:'Reception', Status:'PARTIAL' },
-          ], total: 2 });
-        }, 150);
-      };
-    }
-    if (!runner.getAnalyticsData) {
-      runner.getAnalyticsData = function(range) {
-        setTimeout(function() {
-          if (runner.__sh) runner.__sh({ success: true,
-            trend: Array.from({length:7}, function(_,i) { return { date:'2026-06-' + (11+i), emp: 3+i, vis: 1 }; }),
-            peakHours: [{ hour:'09:00', count:12 }, { hour:'10:00', count:8 }],
-            totals: { employees:4, present:3, absent:1, visitors:5 }
-          });
-        }, 150);
-      };
-    }
-    if (!runner.getMonthlyAttendance) {
-      runner.getMonthlyAttendance = function(y, m) {
-        setTimeout(function() {
-          if (runner.__sh) runner.__sh({ success: true, data: [
-            { EmpID:'EMP001', Name:'Priya Sharma', attendance: {} }
-          ], year: y, month: m });
-        }, 150);
-      };
-    }
-    if (!runner.exportCSV) {
-      runner.exportCSV = function(f) {
-        setTimeout(function() {
-          if (runner.__sh) runner.__sh({ success: true,
-            csv: 'Name,Date\\nPriya Sharma,2026-06-17', filename: 'export.csv' });
-        }, 150);
-      };
-    }
-    return runner;
-  }
-
-  // Wrap withSuccessHandler to capture sh AND inject missing methods
-  var origWSH = origRun.withSuccessHandler.bind(origRun);
-  origRun.withSuccessHandler = function(sh) {
-    var runner = origWSH(sh);
-    runner.__sh = sh;
-    return addMissingMethods(runner);
-  };
-  // Also add to the root run object for direct calls
-  addMissingMethods(origRun);
-})();
-`;
-
 async function run() {
   const browser = await launch();
   const summary = [];
@@ -124,20 +53,30 @@ async function run() {
       if (!txt.includes('Walk-in Visitor')) throw new Error('Visitor not in logs');
     });
 
-    await R.check('quick-date "Today" click triggers reload', async () => {
+    await R.check('quick-date "Today" click sets both date inputs to today', async () => {
       await page.click('#qdToday');
       await settle(page, 200);
-      // Table should still have rows (reload with today filter)
-      const rows = await page.locator('#logsBody tr').count();
-      if (rows < 1) throw new Error('Table empty after today filter');
+      // quickDate('today', …) sets #dateFrom/#dateTo to today's ISO date (reports.html
+      // clearFilters/quickDate logic); assert the inputs actually reflect that, not
+      // just that the table has rows (which is true regardless of the filter).
+      const today = new Date().toISOString().split('T')[0];
+      const from = await page.locator('#dateFrom').inputValue();
+      const to   = await page.locator('#dateTo').inputValue();
+      if (from !== today || to !== today)
+        throw new Error(`Expected both dates to be ${today}, got from=${from} to=${to}`);
     });
 
-    await R.check('filter by type EMP narrows rows', async () => {
+    await R.check('filter by type EMP narrows rows to employees only', async () => {
       await page.selectOption('#filterType', 'EMP');
-      await settle(page, 200);
+      await page.click('.fs-apply');
+      await settle(page, 300);
+      // getLogs() is called with filters.type='EMP'; gas-mock's getLogs now honours
+      // this, so the Visitor row must disappear and only the Employee row remains.
       const txt = await page.locator('#logsBody').textContent();
-      // Visitor row may or may not be filtered client-side; at minimum no crash
-      if (!txt) throw new Error('logsBody empty after type filter');
+      if (txt.includes('Walk-in Visitor'))
+        throw new Error('Visitor row still present after filtering to type=EMP');
+      if (!txt.includes('Priya Sharma'))
+        throw new Error('Employee row missing after filtering to type=EMP');
     });
 
     summary.push(R.report());
@@ -234,7 +173,6 @@ async function run() {
   {
     const R = makeRunner('5c · Reports — Summary stats');
     const { page, context } = await openPage(browser, 'reports');
-    await page.addScriptTag({ content: REPORTS_PATCH });
     await settle(page, 400);
 
     await R.check('sumTotal shows value', async () => {

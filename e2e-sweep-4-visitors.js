@@ -1,14 +1,10 @@
 'use strict';
 /**
  * Suite 4 — Visitors page: register form, QR pass display, active tab, history tab.
- * Mock registerVisitor returns { success:true, visitorId:'VIS-MOCK', qrCode:'VIS-MOCK-QR' }
- * (added to gas-mock dynamically — see note in check).
+ * registerVisitor is defined natively in tests/helpers/gas-mock.js.
  */
 
 const { launch, openPage, settle, makeRunner } = require('./e2e-lib');
-
-// No patch needed — registerVisitor, getLogs, etc. are now in gas-mock.js
-const REGISTER_VISITOR_PATCH = null;
 
 async function run() {
   const browser = await launch();
