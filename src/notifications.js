@@ -27,31 +27,69 @@ function _sendTelegram(message) {
   chatId = String(chatId).trim();
   var url = 'https://api.telegram.org/bot' + token + '/sendMessage';
 
-  function post(payload) {
-    return UrlFetchApp.fetch(url, {
-      method: 'post', contentType: 'application/json',
-      payload: JSON.stringify(payload), muteHttpExceptions: true
-    });
-  }
-  try {
-    var resp = post({ chat_id: chatId, text: message, parse_mode: 'HTML', disable_web_page_preview: true });
-    if (resp.getResponseCode() === 200) return true;
-
-    var errTxt = resp.getContentText();
-    // If HTML parsing failed on some stray tag, retry as plain text so the message still delivers
-    if (/can't parse entities/i.test(errTxt)) {
-      var plain = String(message).replace(/<[^>]+>/g, '');
-      var retry = post({ chat_id: chatId, text: plain, disable_web_page_preview: true });
-      if (retry.getResponseCode() === 200) return true;
-      Logger.log('Telegram plain retry failed: ' + retry.getContentText());
+  // Sends one chunk (chat_id/parse_mode fixed here), retrying as plain text if
+  // HTML parsing fails so the message still delivers.
+  function sendOne(text) {
+    function post(t, html) {
+      var payload = { chat_id: chatId, text: t, disable_web_page_preview: true };
+      if (html) payload.parse_mode = 'HTML';
+      return UrlFetchApp.fetch(url, {
+        method: 'post', contentType: 'application/json',
+        payload: JSON.stringify(payload), muteHttpExceptions: true
+      });
+    }
+    try {
+      var resp = post(text, true);
+      if (resp.getResponseCode() === 200) return true;
+      var errTxt = resp.getContentText();
+      if (/can't parse entities/i.test(errTxt)) {
+        var retry = post(String(text).replace(/<[^>]+>/g, ''), false);
+        if (retry.getResponseCode() === 200) return true;
+        Logger.log('Telegram plain retry failed: ' + retry.getContentText());
+        return false;
+      }
+      Logger.log('Telegram send failed (' + resp.getResponseCode() + '): ' + errTxt);
+      return false;
+    } catch (e) {
+      Logger.log('Telegram send failed: ' + e.message);
       return false;
     }
-    Logger.log('Telegram send failed (' + resp.getResponseCode() + '): ' + errTxt);
-    return false;
-  } catch (e) {
-    Logger.log('Telegram send failed: ' + e.message);
-    return false;
   }
+
+  // Telegram rejects any message over 4096 chars. Split on blank-line section
+  // boundaries (never inside a <pre>) so the full present/absent list is
+  // delivered across several messages instead of being truncated.
+  var allOk = true;
+  _splitTelegramMessage_(message).forEach(function(chunk) {
+    if (!sendOne(chunk)) allOk = false;
+  });
+  return allOk;
+}
+
+/**
+ * Splits an HTML message into <=LIMIT-char chunks on blank-line boundaries.
+ * A single section longer than LIMIT (e.g. a huge <pre>) is passed through
+ * whole rather than split mid-tag — Telegram will reject it, which is louder
+ * and safer than silently corrupting markup.
+ */
+function _splitTelegramMessage_(message) {
+  var LIMIT = 4000; // under 4096 to leave headroom
+  if (message.length <= LIMIT) return [message];
+
+  var sections = message.split('\n\n');
+  var chunks = [];
+  var cur = '';
+  sections.forEach(function(sec) {
+    var candidate = cur ? cur + '\n\n' + sec : sec;
+    if (candidate.length <= LIMIT) {
+      cur = candidate;
+    } else {
+      if (cur) chunks.push(cur);
+      cur = sec;
+    }
+  });
+  if (cur) chunks.push(cur);
+  return chunks;
 }
 
 /**
@@ -326,7 +364,10 @@ function _buildTelegramDigest_(todayStr, orgName, empLogs, visLogs, presentCount
   var pct = activeTotal > 0 ? Math.round((presentCount / activeTotal) * 100) : 0;
 
   function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
-  var CAP = 15; // don't flood the channel
+  // Present rows are paged into <pre> blocks of this many so a long roster still
+  // renders as a table and _sendTelegram can split between blocks. The full
+  // list is always shown — nothing is dropped.
+  var ROWS_PER_BLOCK = 25;
 
   var lines = [];
   lines.push('📊 <b>' + esc(orgName) + ' — Daily Attendance</b>');
@@ -341,28 +382,35 @@ function _buildTelegramDigest_(todayStr, orgName, empLogs, visLogs, presentCount
   function pad(s, n) { s = String(s == null ? '' : s); return s.length >= n ? s.slice(0, n) : s + Array(n - s.length + 1).join(' '); }
 
   if (presentList.length) {
-    lines.push('');
-    lines.push('<b>Present</b>');
     var INW = 9;
-    var t = pad('Name', NAMEW) + pad('IN', INW) + '⏰ ⚥\n';
-    t += Array(NAMEW + INW + 2).join('-') + '\n';
-    presentList.slice(0, CAP).forEach(function(p) {
-      // esc AFTER padding so alignment uses real char widths, not entity lengths
-      t += esc(pad(p.name, NAMEW) + pad(p.timeIn, INW) + (p.late ? '⏰' : '  ')) + ' ' + gSym(p.gender) + '\n';
-    });
-    lines.push('<pre>' + t + '</pre>');
-    if (presentList.length > CAP) lines.push('… +' + (presentList.length - CAP) + ' more present');
+    var header = pad('Name', NAMEW) + pad('IN', INW) + '⏰ ⚥\n' +
+                 Array(NAMEW + INW + 2).join('-') + '\n';
+    for (var start = 0; start < presentList.length; start += ROWS_PER_BLOCK) {
+      var block = presentList.slice(start, start + ROWS_PER_BLOCK);
+      var t = header;
+      block.forEach(function(p) {
+        // esc AFTER padding so alignment uses real char widths, not entity lengths
+        t += esc(pad(p.name, NAMEW) + pad(p.timeIn, INW) + (p.late ? '⏰' : '  ')) + ' ' + gSym(p.gender) + '\n';
+      });
+      lines.push('');
+      lines.push(start === 0
+        ? '<b>Present (' + presentList.length + ')</b>'
+        : '<b>Present (cont.)</b>');
+      lines.push('<pre>' + t + '</pre>');
+    }
 
     // Explicit late-arrivals callout so tardiness is impossible to miss.
     var lateNames = presentList.filter(function(p) { return p.late; }).map(function(p) { return p.name + ' (' + p.timeIn + ')'; });
     if (lateNames.length) {
+      lines.push('');
       lines.push('🚨 <b>Late arrivals (' + lateNames.length + '):</b> ' + esc(lateNames.join(', ')));
     }
   }
 
   if (absent.length) {
-    var names = absent.slice(0, CAP).map(function(e) { return esc(e.Name); }).join(', ');
-    lines.push('❌ <b>Absent:</b> ' + names + (absent.length > CAP ? ' … +' + (absent.length - CAP) + ' more' : ''));
+    var names = absent.map(function(e) { return esc(e.Name); }).join(', ');
+    lines.push('');
+    lines.push('❌ <b>Absent (' + absent.length + '):</b> ' + names);
   }
 
   return lines.join('\n');
