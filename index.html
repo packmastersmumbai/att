@@ -43,6 +43,24 @@
       border: none; opacity: 0; transition: opacity 0.3s;
     }
     #app.ready { opacity: 1; }
+
+    #blocked {
+      display: none; position: fixed; inset: 0; z-index: 20; background: #07111F;
+      align-items: center; justify-content: center; padding: 24px;
+    }
+    .bk-card { max-width: 380px; text-align: center; color: #e2e8f0; }
+    .bk-mark {
+      width: 52px; height: 52px; margin: 0 auto 16px; background: #000666; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 900; font-size: 16px; color: #fff; letter-spacing: 1px;
+    }
+    .bk-title { font-size: 19px; font-weight: 800; margin-bottom: 10px; }
+    .bk-text { font-size: 13px; line-height: 1.65; color: #94a3b8; margin-bottom: 20px; }
+    .bk-btn {
+      display: block; padding: 14px; border-radius: 10px; background: #2563eb; color: #fff;
+      font-size: 15px; font-weight: 700; text-decoration: none;
+    }
+    .bk-hint { font-size: 11px; color: #475569; margin-top: 14px; line-height: 1.6; }
   </style>
 </head>
 <body>
@@ -62,6 +80,21 @@
     allow="accelerometer; camera; encrypted-media; geolocation; gyroscope; microphone"
     allowfullscreen
   ></iframe>
+
+  <!-- Shown when Google refuses to render the app in this frame (logged-in users
+       get redirected to an auth page that sets X-Frame-Options: SAMEORIGIN). -->
+  <div id="blocked">
+    <div class="bk-card">
+      <div class="bk-mark">QR</div>
+      <div class="bk-title">Open the attendance app</div>
+      <div class="bk-text">
+        Google won't display the app inside this page while you're signed in to a
+        Google account. Tap below to open it directly.
+      </div>
+      <a id="blockedLink" class="bk-btn" href="#">Open the app →</a>
+      <div class="bk-hint">Tip: it also works here in a private / incognito window.</div>
+    </div>
+  </div>
 
   <script>
     (function() {
@@ -88,6 +121,13 @@
 
       loadPage(page);
 
+      // A blocked cross-origin iframe still fires `load`, so `load` can't tell us
+      // whether the app actually rendered. The app posts {qratt_ready:1} when it
+      // boots; if that ping never arrives, Google refused to be framed (it
+      // redirects logged-in users to an auth page that sends
+      // X-Frame-Options: SAMEORIGIN) and we show a manual "Open the app" panel.
+      var appBooted = false;
+
       app.addEventListener('load', function() {
         iframeLoaded = true;
         app.classList.add('ready');
@@ -95,18 +135,29 @@
         setTimeout(function() { loader.style.display = 'none'; }, 300);
       });
 
-      // Listen for nav signals from inside the GAS iframe
       window.addEventListener('message', function(e) {
-        if (e.data && e.data.qratt_nav && valid.indexOf(e.data.qratt_nav) !== -1) {
-          loadPage(e.data.qratt_nav);
-        }
+        if (!e.data) return;
+        if (e.data.qratt_ready) { appBooted = true; hideBlockedPanel(); }
+        if (e.data.qratt_nav && valid.indexOf(e.data.qratt_nav) !== -1) loadPage(e.data.qratt_nav);
       });
 
-      // Fallback: hide loader after 12s if iframe load event doesn't fire
-      setTimeout(function() {
-        app.classList.add('ready');
+      function directUrl() { return base + '?page=' + page + '&v=100'; }
+      function hideBlockedPanel() {
+        var el = document.getElementById('blocked');
+        if (el) el.style.display = 'none';
+      }
+      function showBlockedPanel() {
         loader.style.display = 'none';
-      }, 12000);
+        var el = document.getElementById('blocked');
+        document.getElementById('blockedLink').href = directUrl();
+        el.style.display = 'flex';
+      }
+
+      // If the app hasn't announced itself in 8s, assume the frame was blocked.
+      setTimeout(function() {
+        loader.style.display = 'none';
+        if (!appBooted) showBlockedPanel();
+      }, 8000);
     })();
   </script>
 </body>
