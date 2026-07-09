@@ -38,14 +38,18 @@
     @keyframes pulse { 0%,100%{background:#334155;transform:scale(1)} 50%{background:#2563eb;transform:scale(1.4)} }
 
     #app {
-      position: fixed; inset: 0;
+      position: fixed; inset: 0; z-index: 5;
       width: 100%; height: 100%; height: 100dvh;
       border: none; opacity: 0; transition: opacity 0.3s;
+      /* No background: a blocked iframe paints nothing, so the fallback panel
+         shows through. A loaded app paints its own opaque background. */
     }
     #app.ready { opacity: 1; }
 
+    /* Sits BEHIND the iframe (#app has z-index 5). Visible only when the iframe
+       renders nothing — i.e. when Google refuses to frame the app. */
     #blocked {
-      display: none; position: fixed; inset: 0; z-index: 20; background: #07111F;
+      display: flex; position: fixed; inset: 0; z-index: 1; background: #07111F;
       align-items: center; justify-content: center; padding: 24px;
     }
     .bk-card { max-width: 380px; text-align: center; color: #e2e8f0; }
@@ -121,12 +125,13 @@
 
       loadPage(page);
 
-      // A blocked cross-origin iframe still fires `load`, so `load` can't tell us
-      // whether the app actually rendered. The app posts {qratt_ready:1} when it
-      // boots; if that ping never arrives, Google refused to be framed (it
-      // redirects logged-in users to an auth page that sends
-      // X-Frame-Options: SAMEORIGIN) and we show a manual "Open the app" panel.
-      var appBooted = false;
+      // A blocked cross-origin iframe is opaque: it still fires `load`, exposes no
+      // child frames, and messages from inside GAS's sandbox can't reach us. So we
+      // don't try to *detect* the block — we simply render the fallback panel
+      // BEHIND the iframe. If the app renders, it covers the panel. If Google
+      // refuses to frame it (auth interstitial sets X-Frame-Options: SAMEORIGIN),
+      // the iframe stays blank and the panel shows through.
+      document.getElementById('blockedLink').href = base + '?page=' + page + '&v=100';
 
       app.addEventListener('load', function() {
         iframeLoaded = true;
@@ -135,28 +140,18 @@
         setTimeout(function() { loader.style.display = 'none'; }, 300);
       });
 
+      // Nav signals from inside the GAS iframe (same-origin hops still deliver these)
       window.addEventListener('message', function(e) {
-        if (!e.data) return;
-        if (e.data.qratt_ready) { appBooted = true; hideBlockedPanel(); }
-        if (e.data.qratt_nav && valid.indexOf(e.data.qratt_nav) !== -1) loadPage(e.data.qratt_nav);
+        if (e.data && e.data.qratt_nav && valid.indexOf(e.data.qratt_nav) !== -1) {
+          loadPage(e.data.qratt_nav);
+          document.getElementById('blockedLink').href = base + '?page=' + e.data.qratt_nav + '&v=100';
+        }
       });
 
-      function directUrl() { return base + '?page=' + page + '&v=100'; }
-      function hideBlockedPanel() {
-        var el = document.getElementById('blocked');
-        if (el) el.style.display = 'none';
-      }
-      function showBlockedPanel() {
-        loader.style.display = 'none';
-        var el = document.getElementById('blocked');
-        document.getElementById('blockedLink').href = directUrl();
-        el.style.display = 'flex';
-      }
-
-      // If the app hasn't announced itself in 8s, assume the frame was blocked.
+      // Never leave a spinner hanging.
       setTimeout(function() {
+        app.classList.add('ready');
         loader.style.display = 'none';
-        if (!appBooted) showBlockedPanel();
       }, 8000);
     })();
   </script>

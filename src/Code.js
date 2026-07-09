@@ -26,7 +26,7 @@ function doGet(e) {
   }
 
   var page = (e && e.parameter && e.parameter.page) ? e.parameter.page : 'scanner';
-  var validPages = ['scanner', 'scanner_popup', 'dashboard', 'reports', 'visitors', 'kiosk', 'admin', 'idcards', 'e2e'];
+  var validPages = ['scanner', 'scanner_popup', 'dashboard', 'reports', 'visitors', 'kiosk', 'admin', 'idcards', 'e2e', 'vreg', 'vpass'];
   if (validPages.indexOf(page) === -1) page = 'scanner';
 
   var template = HtmlService.createTemplateFromFile('pages/' + page);
@@ -50,6 +50,26 @@ function doGet(e) {
     template.orgName = '';
     template.idcardsError = '';
   }
+
+  // Public visitor self-service pages: inject org name + (for vpass) the pass record
+  if (page === 'vreg' || page === 'vpass') {
+    var vOrg = 'My Organisation';
+    try {
+      getSheetAsObjects(SHEETS.CONFIG).forEach(function(c) {
+        if (String(c.Key).trim() === 'OrgName') vOrg = String(c.Value || vOrg).trim();
+      });
+    } catch(ex) {}
+    template.orgName = vOrg;
+  }
+  if (page === 'vpass') {
+    var vid = String((e && e.parameter && e.parameter.id) || '');
+    var passJson = '{}';
+    try { passJson = JSON.stringify(getVisitorPass(vid)); } catch(ex) { passJson = JSON.stringify({ success: false, error: ex.message }); }
+    template.passJson = passJson;
+  } else {
+    template.passJson = '{}';
+  }
+
   return template.evaluate()
     .setTitle('QR Attendance System')
     .addMetaTag('viewport', 'width=device-width, initial-scale=1')
@@ -67,11 +87,12 @@ function _bootstrapIfNeeded() {
   if (props.getProperty('bootstrapped') === 'true') return;
 
   var schema = {
-    'Employees':      ['EmpID','Name','Department','Phone','Email','QRCode','Status','PhotoURL','QRImageURL'],
-    'Visitors':       ['VisitorID','Name','Company','Phone','HostEmpID','Purpose','ExpectedOut','BlacklistFlag'],
+    'Employees':      ['EmpID','Name','Department','Gender','BloodGroup','Phone','Email','QRCode','Status','PhotoURL','QRImageURL'],
+    'Visitors':       ['VisitorID','Name','Company','Phone','HostEmpID','Purpose','ExpectedOut','BlacklistFlag','IDType','IDNumber','Vehicle','PhotoURL','SafetyAckAt'],
     'Logs':           ['LogID','QRCode','PersonID','Type','Name','Department','TimeIN','TimeOUT','Duration','Date','Gate','Status'],
     'ActiveVisitors': ['VisitorID','Name','TimeIN','HostEmpID','Gate'],
     'Blacklist':      ['QRCode','PersonName','Reason','AddedDate','AddedBy'],
+    'HoursSummary':   ['Year','Month','EmpID','Name','Department','DaysWorked','PresentDays','LateDays','OpenSessions','TotalMinutes','TotalHours','AvgPerDay','OvertimeHours','Status'],
     'Config':         ['Key','Value']
   };
 
@@ -107,7 +128,14 @@ function _bootstrapIfNeeded() {
       ['SchemaVersion',  '1'],
       ['CallMeBotKey',   ''],
       ['AutoCheckoutHr', '23'],
-      ['SummaryHr',      '19']
+      ['SummaryHr',      '9'],
+      ['LateAfter',          '09:30'],
+      ['StandardHours',      '8'],
+      ['OvertimeAfterHours', '8'],
+      ['HoursRebuildHr',     '1'],
+      ['TelegramBotToken',   ''],
+      ['TelegramChatID',     ''],
+      ['TelegramLiveScans',  'off']
     ];
     configSheet.getRange(2, 1, defaults.length, 2).setValues(defaults);
   }
@@ -118,7 +146,7 @@ function _bootstrapIfNeeded() {
 
   // Install triggers
   ScriptApp.getProjectTriggers().forEach(function(t) { ScriptApp.deleteTrigger(t); });
-  ScriptApp.newTrigger('sendDailySummary').timeBased().atHour(19).everyDays(1).create();
+  ScriptApp.newTrigger('sendDailySummary').timeBased().atHour(9).everyDays(1).create();
   ScriptApp.newTrigger('autoCheckoutAll').timeBased().atHour(23).everyDays(1).create();
 
   props.setProperty('bootstrapped', 'true');
@@ -131,11 +159,17 @@ function include(filename) {
 
 function doPost(e) {
   var params = JSON.parse(e.postData.contents);
+
+  // (Telegram uses polling, not webhooks — GAS doPost 302s, which Telegram
+  //  rejects. See TelegramLib.poll / telegramPoll trigger.)
+
   var action = params.action;
 
   if (action === 'processQRScan')    return jsonResponse(processQRScan(params.qrCode, params.gate));
   if (action === 'registerVisitor')  return jsonResponse(registerVisitor(params.visitor));
   if (action === 'checkoutVisitor')  return jsonResponse(checkoutVisitor(params.visitorId));
+  if (action === 'lookupVisitorByPhone') return jsonResponse(lookupVisitorByPhone(params.phone));
+  if (action === 'importGenderBloodGroup') return jsonResponse(importGenderBloodGroup());
   if (action === 'getDashboardData') return jsonResponse(getDashboardData());
   if (action === 'getAnalyticsData') return jsonResponse(getAnalyticsData(params.range));
   if (action === 'getLogs')          return jsonResponse(getLogs(params.filters));
