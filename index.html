@@ -37,19 +37,22 @@
     .loader-dots span:nth-child(3) { animation-delay: 0.4s; }
     @keyframes pulse { 0%,100%{background:#334155;transform:scale(1)} 50%{background:#2563eb;transform:scale(1.4)} }
 
+    /* The iframe sits BELOW the panel and never captures taps. If Google ever
+       allows framing again, `showApp()` lifts it above and re-enables input. */
     #app {
-      position: fixed; inset: 0; z-index: 5;
+      position: fixed; inset: 0; z-index: 1;
       width: 100%; height: 100%; height: 100dvh;
       border: none; opacity: 0; transition: opacity 0.3s;
-      /* No background: a blocked iframe paints nothing, so the fallback panel
-         shows through. A loaded app paints its own opaque background. */
+      pointer-events: none;
     }
-    #app.ready { opacity: 1; }
+    #app.ready { opacity: 1; z-index: 30; pointer-events: auto; }
 
-    /* Sits BEHIND the iframe (#app has z-index 5). Visible only when the iframe
-       renders nothing — i.e. when Google refuses to frame the app. */
+    /* Launcher panel. Google currently refuses to render the web app in a frame
+       (its auth interstitial sends X-Frame-Options: SAMEORIGIN), and a blocked
+       cross-origin iframe is undetectable from here — so the portal shows this
+       and opens the app directly. */
     #blocked {
-      display: flex; position: fixed; inset: 0; z-index: 1; background: #07111F;
+      display: flex; position: fixed; inset: 0; z-index: 20; background: #07111F;
       align-items: center; justify-content: center; padding: 24px;
     }
     .bk-card { max-width: 380px; text-align: center; color: #e2e8f0; }
@@ -90,13 +93,10 @@
   <div id="blocked">
     <div class="bk-card">
       <div class="bk-mark">QR</div>
-      <div class="bk-title">Open the attendance app</div>
-      <div class="bk-text">
-        Google won't display the app inside this page while you're signed in to a
-        Google account. Tap below to open it directly.
-      </div>
+      <div class="bk-title">QR Attendance</div>
+      <div class="bk-text">Tap below to open the attendance app.</div>
       <a id="blockedLink" class="bk-btn" href="#">Open the app →</a>
-      <div class="bk-hint">Tip: it also works here in a private / incognito window.</div>
+      <div class="bk-hint">Add this page to your home screen for quick access.</div>
     </div>
   </div>
 
@@ -123,36 +123,23 @@
         history.replaceState(null, '', '?page=' + pg);
       }
 
-      loadPage(page);
-
-      // A blocked cross-origin iframe is opaque: it still fires `load`, exposes no
-      // child frames, and messages from inside GAS's sandbox can't reach us. So we
-      // don't try to *detect* the block — we simply render the fallback panel
-      // BEHIND the iframe. If the app renders, it covers the panel. If Google
-      // refuses to frame it (auth interstitial sets X-Frame-Options: SAMEORIGIN),
-      // the iframe stays blank and the panel shows through.
+      // Deliberately NOT loading the iframe. Google refuses to frame the web app
+      // (its auth interstitial sends X-Frame-Options: SAMEORIGIN) and a blocked
+      // cross-origin iframe is undetectable from the parent — it fires no usable
+      // event, exposes no child frames, and its postMessages never arrive. So the
+      // portal acts as a launcher and opens the app directly.
       document.getElementById('blockedLink').href = base + '?page=' + page + '&v=100';
+      history.replaceState(null, '', '?page=' + page);
+      loader.style.display = 'none';
 
-      app.addEventListener('load', function() {
-        iframeLoaded = true;
-        app.classList.add('ready');
-        loader.style.opacity = '0';
-        setTimeout(function() { loader.style.display = 'none'; }, 300);
-      });
-
-      // Nav signals from inside the GAS iframe (same-origin hops still deliver these)
+      // If Google ever allows framing again, the app's nav ping proves it rendered;
+      // lift the iframe above the launcher at that point.
       window.addEventListener('message', function(e) {
         if (e.data && e.data.qratt_nav && valid.indexOf(e.data.qratt_nav) !== -1) {
           loadPage(e.data.qratt_nav);
           document.getElementById('blockedLink').href = base + '?page=' + e.data.qratt_nav + '&v=100';
         }
       });
-
-      // Never leave a spinner hanging.
-      setTimeout(function() {
-        app.classList.add('ready');
-        loader.style.display = 'none';
-      }, 8000);
     })();
   </script>
 </body>
