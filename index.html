@@ -107,6 +107,15 @@
       var page = new URLSearchParams(location.search).get('page') || 'kiosk';
       if (valid.indexOf(page) === -1) page = 'kiosk';
 
+      // Cache-buster that rotates DAILY. The GAS app already sends no-store, but
+      // Chrome mobile still served a stale copy of the exact app URL because the
+      // old buster was a hardcoded '&v=100' that never changed — so a deploy left
+      // users on yesterday's cached page until they cleared history. A per-day
+      // token means every day's first open fetches fresh, without busting the
+      // cache on every single tap (which would slow every launch).
+      var appVer = 'd' + Math.floor(Date.now() / 86400000); // days since epoch
+      function appUrl(pg) { return base + '?page=' + pg + '&v=' + appVer; }
+
       var app = document.getElementById('app');
       var loader = document.getElementById('loader');
 
@@ -119,7 +128,7 @@
         loader.style.display = 'flex';
         loader.style.opacity = '1';
         app.classList.remove('ready');
-        app.src = base + '?page=' + pg + '&v=100';
+        app.src = appUrl(pg);
         history.replaceState(null, '', '?page=' + pg);
       }
 
@@ -128,7 +137,7 @@
       // cross-origin iframe is undetectable from the parent — it fires no usable
       // event, exposes no child frames, and its postMessages never arrive. So the
       // portal acts as a launcher and opens the app directly.
-      document.getElementById('blockedLink').href = base + '?page=' + page + '&v=100';
+      document.getElementById('blockedLink').href = appUrl(page);
       history.replaceState(null, '', '?page=' + page);
       loader.style.display = 'none';
 
@@ -137,7 +146,7 @@
       window.addEventListener('message', function(e) {
         if (e.data && e.data.qratt_nav && valid.indexOf(e.data.qratt_nav) !== -1) {
           loadPage(e.data.qratt_nav);
-          document.getElementById('blockedLink').href = base + '?page=' + e.data.qratt_nav + '&v=100';
+          document.getElementById('blockedLink').href = appUrl(e.data.qratt_nav);
         }
       });
     })();
