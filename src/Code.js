@@ -70,7 +70,14 @@ function doGet(e) {
     template.passJson = '{}';
   }
 
-  return template.evaluate()
+  // Inject the shared i18n runtime (dictionary + qrattT/qrattApplyLang/etc.)
+  // into every served page before </head>. HtmlOutput methods like
+  // setTitle/addMetaTag/setXFrameOptionsMode aren't available on a template,
+  // so evaluate first, patch the content string, then rebuild the output.
+  var evaluated = template.evaluate();
+  var withI18n = evaluated.getContent().replace('</head>',
+    HtmlService.createHtmlOutputFromFile('i18n').getContent() + '</head>');
+  return HtmlService.createHtmlOutput(withI18n)
     .setTitle('QR Attendance System')
     .addMetaTag('viewport', 'width=device-width, initial-scale=1')
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);

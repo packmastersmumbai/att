@@ -1,0 +1,111 @@
+<script>
+/**
+ * QRATT_I18N — shared i18n dictionary for the public-facing pages
+ * (vreg, vpass). Keys map to {en, hi} pairs; hi is simple spoken Hindi
+ * (Devanagari) suitable for a guard or visitor reading on a phone.
+ *
+ * This file is injected verbatim into <head> of every served page by
+ * doGet() (see src/Code.js) and by the e2e test harness (see e2e-lib.js),
+ * so it must stay pure ES5 script — no template placeholders.
+ */
+var QRATT_I18N = {
+  // ── Language toggle ───────────────────────────────────────────────────
+  lang_en: { en: 'English', hi: 'English' },
+  lang_hi: { en: 'हिंदी',   hi: 'हिंदी' },
+
+  // ── vreg.html — returning-visitor fast path ───────────────────────────
+  vreg_been_here:      { en: 'Been here before?',                    hi: 'पहले आए हैं?' },
+  vreg_mobile_ph:      { en: 'Mobile number',                        hi: 'मोबाइल नंबर' },
+  vreg_find:           { en: 'Find',                                 hi: 'खोजें' },
+  vreg_new_visitor_hint:{ en: 'New visitor? Fill the form below.',   hi: 'नए विज़िटर नीचे फ़ॉर्म भरें' },
+
+  // ── vreg.html — main form ─────────────────────────────────────────────
+  vreg_name:           { en: 'Name',                                 hi: 'नाम' },
+  vreg_name_ph:        { en: 'Rahul Sharma',                         hi: 'राहुल शर्मा' },
+  vreg_mobile:         { en: 'Mobile',                                hi: 'मोबाइल' },
+  vreg_whom:           { en: 'Whom to meet',                          hi: 'किससे मिलना है' },
+  vreg_loading:        { en: 'Loading…',                              hi: 'लोड हो रहा है…' },
+  vreg_purpose:        { en: 'Purpose',                               hi: 'उद्देश्य' },
+  vreg_add_photo:      { en: 'Add Photo (optional)',                  hi: 'फ़ोटो लें' },
+  vreg_photo_added:    { en: 'Photo added ✓',                         hi: 'फ़ोटो जोड़ी गई ✓' },
+  vreg_tap_camera:      { en: 'Tap to use camera',                    hi: 'कैमरा खोलने के लिए टैप करें' },
+  vreg_more_details:   { en: 'More details',                          hi: 'अधिक जानकारी' },
+  vreg_type:           { en: 'Type',                                  hi: 'प्रकार' },
+  vreg_company:        { en: 'Company',                               hi: 'कंपनी' },
+  vreg_id_type:        { en: 'ID Type',                               hi: 'ID प्रकार' },
+  vreg_id_number:      { en: 'ID Number',                             hi: 'ID नंबर' },
+  vreg_id_number_ph:   { en: 'Last 4 digits',                         hi: 'अंतिम 4 अंक' },
+  vreg_vehicle:        { en: 'Vehicle Number',                        hi: 'वाहन नंबर' },
+
+  // ── vreg.html — purpose chips ──────────────────────────────────────────
+  vreg_purpose_meeting:    { en: 'Meeting',     hi: 'मीटिंग' },
+  vreg_purpose_delivery:   { en: 'Delivery',    hi: 'डिलीवरी' },
+  vreg_purpose_interview:  { en: 'Interview',   hi: 'इंटरव्यू' },
+  vreg_purpose_maintenance:{ en: 'Maintenance', hi: 'मेंटेनेंस' },
+  vreg_purpose_other:      { en: 'Other',       hi: 'अन्य' },
+
+  // ── vreg.html — safety induction ───────────────────────────────────────
+  vreg_safety_title:   { en: 'Safety Instructions',                   hi: 'सुरक्षा निर्देश' },
+  vreg_video_unavailable:{ en: 'Video unavailable',                   hi: 'वीडियो उपलब्ध नहीं' },
+  vreg_tap_each_rule:  { en: 'Tap each rule to reveal',                hi: 'हर नियम पर टैप करें' },
+  vreg_tap_to_read:    { en: 'Tap to read',                            hi: 'टैप करें' },
+  vreg_safety_ack:     { en: 'I have read and understood all the rules.', hi: 'मैंने सभी नियम पढ़े और समझ लिए हैं' },
+  vreg_register_btn:   { en: 'Register & Get Pass',                   hi: 'पंजीकरण करें' },
+  vreg_registering:    { en: 'Registering…',                          hi: 'पंजीकरण हो रहा है…' },
+
+  // ── vreg.html — host dropdown (JS-built) ──────────────────────────────
+  vreg_select_person:  { en: 'Select person…',                        hi: 'व्यक्ति चुनें…' },
+  vreg_owner_group:    { en: 'Owner',                                 hi: 'मालिक' },
+  vreg_office_group:   { en: 'Office',                                hi: 'ऑफिस' },
+
+  // ── vreg.html — toasts ─────────────────────────────────────────────────
+  vreg_toast_required:      { en: 'Name and Mobile are required',        hi: 'नाम और मोबाइल आवश्यक' },
+  vreg_toast_rules_pending: { en: 'Please read all safety rules first',  hi: 'कृपया सभी नियम पढ़ें' },
+
+  // ── Shared safety rules (identical text on vreg + vpass) ──────────────
+  safety_rule_1: { en: 'The entire site is a NO SMOKING area.',
+                   hi: 'पूरा परिसर धूम्रपान निषेध क्षेत्र है।' },
+  safety_rule_2: { en: 'Photography inside the premises is strictly prohibited.',
+                   hi: 'परिसर के अंदर फ़ोटोग्राफ़ी सख़्त वर्जित है।' },
+  safety_rule_3: { en: 'No mobile phone use outside the office. Phones must be switched OFF elsewhere.',
+                   hi: 'ऑफिस के अलावा कहीं भी मोबाइल का उपयोग न करें; बाहर मोबाइल बंद रखें।' },
+  safety_rule_4: { en: 'Please do not litter. Help us keep the site clean.',
+                   hi: 'कूड़ा न फैलाएँ। परिसर को साफ़ रखने में मदद करें।' },
+  safety_rule_5: { en: 'Entry to any area outside the office is prohibited unless authorised and accompanied by your host.',
+                   hi: 'ऑफिस के बाहर किसी भी क्षेत्र में बिना अनुमति और बिना साथी के प्रवेश वर्जित है — आपका मेज़बान आपके साथ रहेगा।' },
+  safety_rule_6: { en: 'Be alert to safety signs and internal traffic. Do not play with any equipment.',
+                   hi: 'सुरक्षा संकेतों और आंतरिक यातायात का ध्यान रखें। किसी भी उपकरण से छेड़छाड़ न करें।' },
+  safety_rule_7: { en: 'If the alarm sounds, follow the instructions of your contact person.',
+                   hi: 'अलार्म बजने पर संपर्क व्यक्ति के निर्देशों का पालन करें।' },
+
+  // ── vpass.html ─────────────────────────────────────────────────────────
+  vpass_exit_note:     { en: '⚠ Show this pass to security when leaving.', hi: '⚠ बाहर जाते समय यह पास सुरक्षा को दिखाएँ' },
+  vpass_emergency_title:{ en: 'Emergency Contacts',                    hi: 'आपातकालीन संपर्क' },
+  vpass_safety_rules_title:{ en: 'Safety Rules',                       hi: 'सुरक्षा नियम' },
+
+  // ── vpass.html — emergency contact defaults ───────────────────────────
+  vpass_emg_incharge:  { en: 'In-charge', hi: 'प्रभारी' },
+  vpass_emg_main_gate: { en: 'Main Gate', hi: 'मुख्य गेट' },
+  vpass_emg_office:    { en: 'Office',    hi: 'ऑफिस' }
+};
+
+(function(){
+  function lang(){ return sessionStorage.getItem('qratt_lang') === 'hi' ? 'hi' : 'en'; }
+  window.qrattLang = lang;
+  window.qrattT = function(key){ var e = QRATT_I18N[key]; if(!e) return key; return e[lang()] != null ? e[lang()] : e.en; };
+  window.qrattApplyLang = function(){
+    document.querySelectorAll('[data-i18n]').forEach(function(n){ n.textContent = qrattT(n.getAttribute('data-i18n')); });
+    document.querySelectorAll('[data-i18n-ph]').forEach(function(n){ n.setAttribute('placeholder', qrattT(n.getAttribute('data-i18n-ph'))); });
+    document.documentElement.setAttribute('lang', lang());
+    document.querySelectorAll('[data-lang-btn]').forEach(function(b){
+      b.classList.toggle('active', b.getAttribute('data-lang-btn') === lang());
+    });
+  };
+  window.qrattSetLang = function(code){ sessionStorage.setItem('qratt_lang', code === 'hi' ? 'hi' : 'en'); qrattApplyLang(); };
+  document.addEventListener('DOMContentLoaded', function(){
+    var u = new URLSearchParams(location.search).get('lang');
+    if (u === 'hi' || u === 'en') sessionStorage.setItem('qratt_lang', u);
+    qrattApplyLang();
+  });
+})();
+</script>

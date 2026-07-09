@@ -67,6 +67,12 @@
     .rules-body li{font-size:12px;line-height:1.6;color:#e2e8f0;margin-bottom:9px}
     .rules-body li:last-child{margin-bottom:0}
     .rules-body .en{display:block;color:#94a3b8;font-size:11px;margin-top:2px}
+
+    /* Compact header language toggle (mirrors vreg.html) */
+    .lang-toggle{display:flex;gap:6px;justify-content:center;margin-top:10px}
+    .lang-btn{min-height:32px;padding:5px 12px;border:1px solid var(--border);border-radius:8px;
+      background:rgba(255,255,255,.05);color:var(--text);font-size:11px;font-weight:700;cursor:pointer}
+    .lang-btn.active{background:var(--primary);border-color:var(--primary);color:#fff}
   </style>
 </head>
 <body>
@@ -74,6 +80,10 @@
     <div class="head">
       <div class="t1"><?= orgName ?></div>
       <div class="t2">Visitor Pass</div>
+      <div class="lang-toggle" id="langToggle">
+        <button type="button" class="lang-btn" data-lang-btn="en" onclick="qrattSetLang('en')">EN</button>
+        <button type="button" class="lang-btn" data-lang-btn="hi" onclick="qrattSetLang('hi')">हिं</button>
+      </div>
     </div>
     <div id="root"></div>
   </div>
@@ -108,28 +118,30 @@
             (isIn?'Check OUT':'Check IN')+'</button>'+
           '<div class="hint">Tap the button to '+(isIn?'check out':'check in')+'. '+
             'Keep this page — you can check in and out from here, or show the QR at the gate.</div>'+
-          '<div class="exit-note">⚠ बाहर जाते समय यह पास सुरक्षा को दिखाएँ ·<br>'+
-            'Show this pass to security when leaving.</div>'+
+          '<div class="exit-note" data-i18n="vpass_exit_note">'+qrattT('vpass_exit_note')+'</div>'+
         '</div>'+
         renderEmergency()+
         renderSafetyRules();
+      qrattApplyLang();   // re-apply i18n + toggle active-state after the DOM was rebuilt
     }
 
     /* ── Emergency contacts — tap to call. Always visible, above the rules,
-          because in an emergency nobody scrolls. Config-driven with defaults. ── */
+          because in an emergency nobody scrolls. i18n key + phone number are
+          fixed defaults (not visitor data), so a data-i18n key is used for
+          the label and the number is rendered as plain esc()'d text. ── */
     var EMERGENCY_DEFAULTS = [
-      { hi:'प्रभारी',    en:'In-charge',  num:'9136107776' },
-      { hi:'मुख्य गेट',  en:'Main Gate',  num:'9136107773' },
-      { hi:'ऑफिस',      en:'Office',     num:'02240020855' }
+      { key:'vpass_emg_incharge',  num:'9136107776' },
+      { key:'vpass_emg_main_gate', num:'9136107773' },
+      { key:'vpass_emg_office',    num:'02240020855' }
     ];
     var EMERGENCY = EMERGENCY_DEFAULTS.slice();
 
     function renderEmergency(){
       return '<div class="emg">'+
-        '<div class="emg-hd">🆘 आपातकालीन संपर्क · Emergency Contacts</div>'+
+        '<div class="emg-hd" data-i18n="vpass_emergency_title">🆘 '+qrattT('vpass_emergency_title')+'</div>'+
         EMERGENCY.map(function(c){
           return '<a class="emg-btn" href="tel:'+esc(c.num)+'">'+
-                   '<span class="emg-lbl">📞 '+esc(c.hi)+' · '+esc(c.en)+'</span>'+
+                   '<span class="emg-lbl">📞 <span data-i18n="'+c.key+'">'+qrattT(c.key)+'</span></span>'+
                    '<span class="emg-num">'+esc(c.num)+'</span>'+
                  '</a>';
         }).join('')+
@@ -137,26 +149,20 @@
     }
 
     /* ── Safety rules — ALWAYS readable (never hidden/blurred). This is the copy
-          the visitor carries on site; obscuring it would be unsafe. ── */
-    var SAFETY_RULES=[
-      { hi:'पूरा परिसर धूम्रपान निषेध क्षेत्र है।', en:'The entire site is a NO SMOKING area.' },
-      { hi:'परिसर के अंदर फ़ोटोग्राफ़ी सख़्त वर्जित है।', en:'Photography inside the premises is strictly prohibited.' },
-      { hi:'ऑफिस के अलावा कहीं भी मोबाइल का उपयोग न करें; बाहर मोबाइल बंद रखें।', en:'No mobile phone use outside the office. Phones must be switched OFF elsewhere.' },
-      { hi:'कूड़ा न फैलाएँ। परिसर को साफ़ रखने में मदद करें।', en:'Please do not litter. Help us keep the site clean.' },
-      { hi:'ऑफिस के बाहर किसी भी क्षेत्र में बिना अनुमति और बिना साथी के प्रवेश वर्जित है — आपका मेज़बान आपके साथ रहेगा।', en:'Entry to any area outside the office is prohibited unless authorised and accompanied by your host.' },
-      { hi:'सुरक्षा संकेतों और आंतरिक यातायात का ध्यान रखें। किसी भी उपकरण से छेड़छाड़ न करें।', en:'Be alert to safety signs and internal traffic. Do not play with any equipment.' },
-      { hi:'अलार्म बजने पर संपर्क व्यक्ति के निर्देशों का पालन करें।', en:'If the alarm sounds, follow the instructions of your contact person.' }
-    ];
+          the visitor carries on site; obscuring it would be unsafe. Keys match
+          the shared safety_rule_N dictionary entries (identical text on vreg). ── */
+    var SAFETY_RULE_KEYS=['safety_rule_1','safety_rule_2','safety_rule_3','safety_rule_4',
+                           'safety_rule_5','safety_rule_6','safety_rule_7'];
 
     function renderSafetyRules(){
       return '<div class="rules-card">'+
         '<div class="rules-hd" onclick="toggleRules()">'+
-          '<span>🦺 सुरक्षा नियम · Safety Rules</span>'+
+          '<span data-i18n="vpass_safety_rules_title">🦺 '+qrattT('vpass_safety_rules_title')+'</span>'+
           '<span id="rulesArrow">▾</span>'+
         '</div>'+
         '<ol id="rulesBody" class="rules-body">'+
-          SAFETY_RULES.map(function(r){
-            return '<li>'+esc(r.hi)+'<span class="en">'+esc(r.en)+'</span></li>';
+          SAFETY_RULE_KEYS.map(function(key){
+            return '<li data-i18n="'+key+'">'+qrattT(key)+'</li>';
           }).join('')+
         '</ol>'+
       '</div>';

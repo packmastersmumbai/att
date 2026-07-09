@@ -68,6 +68,15 @@
       font-size: 15px; font-weight: 700; text-decoration: none;
     }
     .bk-hint { font-size: 11px; color: #475569; margin-top: 14px; line-height: 1.6; }
+
+    /* First-run language picker — tap targets kept >=44px for easy thumb taps. */
+    .bk-lang { display: flex; gap: 10px; justify-content: center; margin-bottom: 18px; }
+    .bk-lang-btn {
+      min-width: 96px; min-height: 44px; padding: 10px 18px; border-radius: 10px;
+      border: 1px solid #334155; background: #0f172a; color: #cbd5e1;
+      font-size: 14px; font-weight: 700; cursor: pointer;
+    }
+    .bk-lang-btn.active { background: #2563eb; border-color: #2563eb; color: #fff; }
   </style>
 </head>
 <body>
@@ -94,6 +103,10 @@
     <div class="bk-card">
       <div class="bk-mark">QR</div>
       <div class="bk-title">QR Attendance</div>
+      <div class="bk-lang" id="langPicker">
+        <button type="button" class="bk-lang-btn" data-lang-choice="en">English</button>
+        <button type="button" class="bk-lang-btn" data-lang-choice="hi">हिंदी</button>
+      </div>
       <div class="bk-text">Tap below to open the attendance app.</div>
       <a id="blockedLink" class="bk-btn" href="#">Open the app →</a>
       <div class="bk-hint">Add this page to your home screen for quick access.</div>
@@ -114,7 +127,29 @@
       // token means every day's first open fetches fresh, without busting the
       // cache on every single tap (which would slow every launch).
       var appVer = 'd' + Math.floor(Date.now() / 86400000); // days since epoch
-      function appUrl(pg) { return base + '?page=' + pg + '&v=' + appVer; }
+
+      // Language choice persists across launcher visits (own origin only —
+      // script.google.com can't read this localStorage, so it's forwarded
+      // via ?lang= on every app URL instead).
+      var chosenLang = localStorage.getItem('qratt_lang') === 'hi' ? 'hi' : 'en';
+      function appUrl(pg) { return base + '?page=' + pg + '&v=' + appVer + '&lang=' + chosenLang; }
+
+      // Reflect the current choice on the picker buttons, and re-point the
+      // "Open the app" link whenever the visitor taps a different language.
+      function renderLangPicker() {
+        document.querySelectorAll('.bk-lang-btn').forEach(function(btn) {
+          btn.classList.toggle('active', btn.getAttribute('data-lang-choice') === chosenLang);
+        });
+      }
+      document.getElementById('langPicker').addEventListener('click', function(e) {
+        var btn = e.target.closest('.bk-lang-btn');
+        if (!btn) return;
+        chosenLang = btn.getAttribute('data-lang-choice') === 'hi' ? 'hi' : 'en';
+        localStorage.setItem('qratt_lang', chosenLang);
+        renderLangPicker();
+        document.getElementById('blockedLink').href = appUrl(page);
+      });
+      renderLangPicker();
 
       var app = document.getElementById('app');
       var loader = document.getElementById('loader');

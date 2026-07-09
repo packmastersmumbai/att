@@ -78,6 +78,7 @@
     .rule.revealed{border-color:#86efac;background:#f0fdf4;cursor:default}
     .rule.revealed .tap{display:none}
     .rule.revealed:after{content:'✓';position:absolute;top:8px;right:10px;color:#16a34a;font-weight:800;font-size:13px}
+    .lang-btn.active{background:var(--primary);color:#fff;border-color:var(--primary)}
   </style>
 </head>
 <body>
@@ -88,37 +89,41 @@
         <div class="t1"><?= orgName ?></div>
         <div class="t2">Visitor Self Registration</div>
       </div>
+      <div class="lang-toggle" id="langToggle" style="margin-left:auto;display:flex;gap:6px">
+        <button type="button" class="lang-btn" data-lang-btn="en" onclick="qrattSetLang('en')" style="min-height:32px;padding:5px 10px;border:1px solid var(--border);border-radius:8px;background:#fff;font-size:11px;font-weight:700;cursor:pointer">EN</button>
+        <button type="button" class="lang-btn" data-lang-btn="hi" onclick="qrattSetLang('hi')" style="min-height:32px;padding:5px 10px;border:1px solid var(--border);border-radius:8px;background:#fff;font-size:11px;font-weight:700;cursor:pointer">हिं</button>
+      </div>
     </div>
 
     <!-- Fast path for frequent visitors: just enter phone, skip the form -->
     <div class="card" id="returnCard" style="margin-bottom:12px">
-      <label style="display:block;font-size:13px;font-weight:700;margin-bottom:6px">पहले आए हैं? · Been here before?</label>
+      <label data-i18n="vreg_been_here" style="display:block;font-size:13px;font-weight:700;margin-bottom:6px">Been here before?</label>
       <div class="row" style="align-items:stretch">
-        <input type="tel" id="rPhone" class="input" placeholder="मोबाइल नंबर · Mobile number" style="flex:1" autocomplete="tel">
-        <button class="btn" id="rBtn" style="width:auto;margin:0;padding:0 18px;white-space:nowrap" onclick="lookupReturning()">खोजें · Find</button>
+        <input type="tel" id="rPhone" class="input" data-i18n-ph="vreg_mobile_ph" placeholder="Mobile number" style="flex:1" autocomplete="tel">
+        <button class="btn" id="rBtn" data-i18n="vreg_find" style="width:auto;margin:0;padding:0 18px;white-space:nowrap" onclick="lookupReturning()">Find</button>
       </div>
-      <div style="font-size:11px;color:var(--muted);margin-top:6px">नए विज़िटर नीचे फ़ॉर्म भरें · New visitor? Fill the form below.</div>
+      <div data-i18n="vreg_new_visitor_hint" style="font-size:11px;color:var(--muted);margin-top:6px">New visitor? Fill the form below.</div>
     </div>
 
     <div class="card" id="formCard">
       <div class="fg">
-        <label>नाम · Name <span class="req">*</span></label>
-        <input type="text" id="vName" class="input" placeholder="राहुल शर्मा · Rahul Sharma" autocomplete="name">
+        <label><span data-i18n="vreg_name">Name</span> <span class="req">*</span></label>
+        <input type="text" id="vName" class="input" data-i18n-ph="vreg_name_ph" placeholder="Rahul Sharma" autocomplete="name">
       </div>
       <div class="fg">
-        <label>मोबाइल · Mobile <span class="req">*</span></label>
+        <label><span data-i18n="vreg_mobile">Mobile</span> <span class="req">*</span></label>
         <input type="tel" id="vPhone" class="input" placeholder="98765 43210" autocomplete="tel">
       </div>
 
       <div class="fg">
-        <label>किससे मिलना है · Whom to meet <span class="req">*</span></label>
+        <label><span data-i18n="vreg_whom">Whom to meet</span> <span class="req">*</span></label>
         <select id="vHost" class="input">
-          <option value="">लोड हो रहा है… · Loading…</option>
+          <option value="" data-i18n="vreg_loading">Loading…</option>
         </select>
       </div>
 
       <div class="fg">
-        <label>उद्देश्य · Purpose</label>
+        <label data-i18n="vreg_purpose">Purpose</label>
         <div class="chips" id="purposeChips"></div>
         <input type="hidden" id="vPurpose" value="">
       </div>
@@ -126,32 +131,32 @@
       <div class="photo" id="photoBox" onclick="document.getElementById('vPhotoFile').click()">
         <img id="vPhotoPreview" alt="">
         <div class="ic" id="photoIc">📷</div>
-        <div class="l" id="photoLbl">फ़ोटो लें · Add Photo (optional)</div>
-        <div class="s">कैमरा खोलने के लिए टैप करें · Tap to use camera</div>
+        <div class="l" id="photoLbl" data-i18n="vreg_add_photo">Add Photo (optional)</div>
+        <div class="s" data-i18n="vreg_tap_camera">Tap to use camera</div>
       </div>
       <input type="file" id="vPhotoFile" accept="image/*" capture="user" style="display:none" onchange="previewPhoto(this)">
 
       <!-- Optional details — collapsed by default for fast entry -->
       <div class="more-toggle" id="moreToggle" onclick="toggleMore()">
-        <span id="moreArrow">▸</span> अधिक जानकारी · More details
+        <span id="moreArrow">▸</span> <span data-i18n="vreg_more_details">More details</span>
       </div>
       <div id="moreFields" style="display:none">
         <div class="row">
           <div class="fg">
-            <label>प्रकार · Type</label>
+            <label data-i18n="vreg_type">Type</label>
             <select id="vType" class="input">
               <option>Guest</option><option>Courier</option><option>Supplier</option>
               <option>Contractor</option><option>Other</option>
             </select>
           </div>
           <div class="fg">
-            <label>कंपनी · Company</label>
+            <label data-i18n="vreg_company">Company</label>
             <input type="text" id="vCompany" class="input" placeholder="Company">
           </div>
         </div>
         <div class="row">
           <div class="fg" style="flex:0 0 42%">
-            <label>ID प्रकार · ID Type</label>
+            <label data-i18n="vreg_id_type">ID Type</label>
             <select id="vIDType" class="input">
               <option value="">—</option>
               <option>Aadhaar</option><option>Passport</option><option>PAN Card</option>
@@ -159,34 +164,34 @@
             </select>
           </div>
           <div class="fg">
-            <label>ID नंबर · ID Number</label>
-            <input type="text" id="vIDNumber" class="input" placeholder="अंतिम 4 अंक · Last 4 digits">
+            <label data-i18n="vreg_id_number">ID Number</label>
+            <input type="text" id="vIDNumber" class="input" data-i18n-ph="vreg_id_number_ph" placeholder="Last 4 digits">
           </div>
         </div>
         <div class="fg">
-          <label>वाहन नंबर · Vehicle Number</label>
+          <label data-i18n="vreg_vehicle">Vehicle Number</label>
           <input type="text" id="vVehicle" class="input" placeholder="MH-01-AB-1234">
         </div>
       </div>
 
       <!-- Safety induction — video + every rule must be revealed, then acknowledged -->
       <div class="safety" id="safetyBox">
-        <div class="safety-hd">🦺 सुरक्षा निर्देश · Safety Instructions <span class="req">*</span></div>
+        <div class="safety-hd">🦺 <span data-i18n="vreg_safety_title">Safety Instructions</span> <span class="req">*</span></div>
         <div id="safetyVideoWrap" class="safety-video"></div>
 
         <div class="rules-hint">
-          <span>हर नियम पर टैप करें · Tap each rule to reveal</span>
+          <span data-i18n="vreg_tap_each_rule">Tap each rule to reveal</span>
           <span class="rules-count" id="rulesCount">0 / 0</span>
         </div>
         <div id="rulesList"></div>
 
         <label class="safety-ack" id="ackLabel">
           <input type="checkbox" id="vSafetyAck" onchange="onSafetyAck()" disabled>
-          <span>मैंने सभी नियम पढ़े और समझ लिए हैं ·<br>I have read and understood all the rules.</span>
+          <span data-i18n="vreg_safety_ack">I have read and understood all the rules.</span>
         </label>
       </div>
 
-      <button class="btn" id="regBtn" onclick="submitReg()" style="display:none">पंजीकरण करें · Register &amp; Get Pass</button>
+      <button class="btn" id="regBtn" data-i18n="vreg_register_btn" onclick="submitReg()" style="display:none">Register &amp; Get Pass</button>
     </div>
 
     <!-- Confirmation shown after submit (replaces the form) -->
@@ -259,24 +264,28 @@
           var prev=document.getElementById('vPhotoPreview');
           prev.src=stamped; prev.style.display='block';
           document.getElementById('photoIc').style.display='none';
-          document.getElementById('photoLbl').textContent='फ़ोटो जोड़ी गई ✓ · Photo added';
+          var lbl=document.getElementById('photoLbl');
+          lbl.removeAttribute('data-i18n');   // no longer the "add photo" prompt
+          lbl.textContent=qrattT('vreg_photo_added');
         });
       };
       reader.readAsDataURL(input.files[0]);
     }
 
-    // Purpose chips — one tap to select (bilingual label, English value stored)
+    // Purpose chips — one tap to select (i18n label, English value stored)
     var PURPOSES=[
-      {v:'Meeting',    l:'मीटिंग · Meeting'},
-      {v:'Delivery',   l:'डिलीवरी · Delivery'},
-      {v:'Interview',  l:'इंटरव्यू · Interview'},
-      {v:'Maintenance',l:'मेंटेनेंस · Maintenance'},
-      {v:'Other',      l:'अन्य · Other'}
+      {v:'Meeting',    key:'vreg_purpose_meeting'},
+      {v:'Delivery',   key:'vreg_purpose_delivery'},
+      {v:'Interview',  key:'vreg_purpose_interview'},
+      {v:'Maintenance',key:'vreg_purpose_maintenance'},
+      {v:'Other',      key:'vreg_purpose_other'}
     ];
     (function renderChips(){
       var box=document.getElementById('purposeChips');
+      // Each chip carries data-i18n so qrattApplyLang() keeps its label in
+      // sync on every language switch, same as any other translated node.
       box.innerHTML=PURPOSES.map(function(p){
-        return '<span class="chip" data-v="'+p.v+'" onclick="pickPurpose(this)">'+p.l+'</span>';
+        return '<span class="chip" data-v="'+p.v+'" data-i18n="'+p.key+'" onclick="pickPurpose(this)">'+qrattT(p.key)+'</span>';
       }).join('');
     })();
     function pickPurpose(el){
@@ -313,37 +322,24 @@
         v.src=url; v.controls=true; v.playsInline=true;
         wrap.innerHTML=''; wrap.appendChild(v);
       } else {
-        wrap.innerHTML='<div class="novid">वीडियो उपलब्ध नहीं · Video unavailable</div>';
+        wrap.innerHTML='<div class="novid" data-i18n="vreg_video_unavailable">'+qrattT('vreg_video_unavailable')+'</div>';
       }
     }
     /* Safety rules. Each starts blurred; the visitor must tap every one to reveal
        it. Only when all are revealed does the acknowledgement checkbox unlock, and
-       only when that is ticked does the Register button appear. Bilingual. */
-    var SAFETY_RULES=[
-      { hi:'पूरा परिसर धूम्रपान निषेध क्षेत्र है।',
-        en:'The entire site is a NO SMOKING area.' },
-      { hi:'परिसर के अंदर फ़ोटोग्राफ़ी सख़्त वर्जित है।',
-        en:'Photography inside the premises is strictly prohibited.' },
-      { hi:'ऑफिस के अलावा कहीं भी मोबाइल का उपयोग न करें; बाहर मोबाइल बंद रखें।',
-        en:'No mobile phone use outside the office. Phones must be switched OFF elsewhere.' },
-      { hi:'कूड़ा न फैलाएँ। परिसर को साफ़ रखने में मदद करें।',
-        en:'Please do not litter. Help us keep the site clean.' },
-      { hi:'ऑफिस के बाहर किसी भी क्षेत्र में बिना अनुमति और बिना साथी के प्रवेश वर्जित है — आपका मेज़बान आपके साथ रहेगा।',
-        en:'Entry to any area outside the office is prohibited unless authorised and accompanied by your host.' },
-      { hi:'सुरक्षा संकेतों और आंतरिक यातायात का ध्यान रखें। किसी भी उपकरण से छेड़छाड़ न करें।',
-        en:'Be alert to safety signs and internal traffic. Do not play with any equipment.' },
-      { hi:'अलार्म बजने पर संपर्क व्यक्ति के निर्देशों का पालन करें।',
-        en:'If the alarm sounds, follow the instructions of your contact person.' }
-    ];
+       only when that is ticked does the Register button appear. Keys match the
+       shared safety_rule_N dictionary entries (identical text also used on vpass). */
+    var SAFETY_RULE_KEYS=['safety_rule_1','safety_rule_2','safety_rule_3','safety_rule_4',
+                           'safety_rule_5','safety_rule_6','safety_rule_7'];
     var rulesRevealed=0;
 
     function renderRules(){
       var list=document.getElementById('rulesList');
-      list.innerHTML=SAFETY_RULES.map(function(r,i){
+      list.innerHTML=SAFETY_RULE_KEYS.map(function(key,i){
         return '<div class="rule blurred" data-i="'+i+'" onclick="revealRule(this)">'+
-                 '<div class="rtxt"><span class="rnum">'+(i+1)+'.</span>'+r.hi+
-                   '<span class="en">'+r.en+'</span></div>'+
-                 '<div class="tap">👆 टैप करें · Tap to read</div>'+
+                 '<div class="rtxt"><span class="rnum">'+(i+1)+'.</span>'+
+                   '<span data-i18n="'+key+'">'+qrattT(key)+'</span></div>'+
+                 '<div class="tap">👆 <span data-i18n="vreg_tap_to_read">'+qrattT('vreg_tap_to_read')+'</span></div>'+
                '</div>';
       }).join('');
       updateRulesCount();
@@ -356,7 +352,7 @@
       updateRulesCount();
     }
     function updateRulesCount(){
-      var n=SAFETY_RULES.length;
+      var n=SAFETY_RULE_KEYS.length;
       var c=document.getElementById('rulesCount');
       c.textContent=rulesRevealed+' / '+n;
       var all=rulesRevealed>=n;
@@ -366,7 +362,7 @@
       if(!all){ cb.checked=false; onSafetyAck(); }
     }
     function onSafetyAck(){
-      var ok=document.getElementById('vSafetyAck').checked && rulesRevealed>=SAFETY_RULES.length;
+      var ok=document.getElementById('vSafetyAck').checked && rulesRevealed>=SAFETY_RULE_KEYS.length;
       vSafetyAckAt = ok ? new Date().toISOString() : '';
       document.getElementById('regBtn').style.display = ok ? 'block' : 'none';
     }
@@ -400,9 +396,9 @@
           }
           var office=optsFor('office'), owner=optsFor('management');
           if(!office && !owner){ sel.innerHTML='<option value="">—</option>'; return; }
-          var html='<option value="">व्यक्ति चुनें · Select person…</option>';
-          if(owner)  html+='<optgroup label="👤 मालिक · Owner">'+owner+'</optgroup>';
-          if(office) html+='<optgroup label="🏢 ऑफिस · Office">'+office+'</optgroup>';
+          var html='<option value="">'+qrattT('vreg_select_person')+'</option>';
+          if(owner)  html+='<optgroup label="👤 '+qrattT('vreg_owner_group')+'">'+owner+'</optgroup>';
+          if(office) html+='<optgroup label="🏢 '+qrattT('vreg_office_group')+'">'+office+'</optgroup>';
           sel.innerHTML=html;
         })
         .withFailureHandler(function(){ sel.innerHTML='<option value="">—</option>'; })
@@ -424,22 +420,29 @@
         PhotoData:   vPhotoData,
         SafetyAckAt: vSafetyAckAt
       };
-      if(!v.Name || !v.Phone){ toast('नाम और मोबाइल आवश्यक · Name and Mobile are required','error'); return; }
-      if(rulesRevealed < SAFETY_RULES.length || !document.getElementById('vSafetyAck').checked){
-        toast('कृपया सभी नियम पढ़ें · Please read all safety rules first','error'); return;
+      if(!v.Name || !v.Phone){ toast(qrattT('vreg_toast_required'),'error'); return; }
+      if(rulesRevealed < SAFETY_RULE_KEYS.length || !document.getElementById('vSafetyAck').checked){
+        toast(qrattT('vreg_toast_rules_pending'),'error'); return;
       }
       var btn=document.getElementById('regBtn');
-      btn.textContent='Registering…'; btn.disabled=true;
+      btn.removeAttribute('data-i18n');   // showing transient "Registering…" state, not the static label
+      btn.textContent=qrattT('vreg_registering'); btn.disabled=true;
 
-      if(typeof google==='undefined' || !google.script){ toast('Not in app context','error'); btn.disabled=false; btn.textContent='Register & Get Pass'; return; }
+      function resetRegBtn(){
+        btn.disabled=false;
+        btn.setAttribute('data-i18n','vreg_register_btn');
+        btn.textContent=qrattT('vreg_register_btn');
+      }
+
+      if(typeof google==='undefined' || !google.script){ toast('Not in app context','error'); resetRegBtn(); return; }
       google.script.run
         .withSuccessHandler(function(res){
-          if(!res || !res.success){ toast('Error: '+((res&&res.error)||'unknown'),'error'); btn.disabled=false; btn.textContent='Register & Get Pass'; return; }
+          if(!res || !res.success){ toast('Error: '+((res&&res.error)||'unknown'),'error'); resetRegBtn(); return; }
           showDone(res.visitorId, res.returning);
         })
         .withFailureHandler(function(e){
           toast('Error: '+(e&&e.message||'server error'),'error');
-          btn.disabled=false; btn.textContent='Register & Get Pass';
+          resetRegBtn();
         })
         .registerVisitor(v);
     }
