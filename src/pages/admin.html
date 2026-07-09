@@ -795,6 +795,21 @@
                 </div>
               </div>
             </div>
+
+            <div class="cfg-block">
+              <div class="cfg-section-title">India Holidays (2026)</div>
+              <div class="form-hint" style="margin-bottom:8px">
+                The 3 gazetted national holidays are always observed and cannot be unchecked.
+                Tick any additional festivals your organisation observes. This list is for 2026 —
+                festival dates shift yearly, so refresh it when the year changes.
+              </div>
+              <div id="holidayList" class="form-grid-2">
+                <div class="empty-state">Loading…</div>
+              </div>
+              <button class="btn btn-primary btn-sm" style="margin-top:12px" onclick="saveHolidays()">
+                Save Holidays
+              </button>
+            </div>
           </div>
         </div>
 
@@ -1017,6 +1032,9 @@
       else if (action === 'setEmployeeStatus') r.setEmployeeStatus(data.empId, data.status, t);
       else if (action === 'getConfig')      r.getConfig(t);
       else if (action === 'saveConfig')     r.saveConfig(data.config, t);
+      else if (action === 'getHolidayCatalog') r.getHolidayCatalog();
+      else if (action === 'getHolidays')    r.getHolidays();
+      else if (action === 'saveHolidays')   r.saveHolidays(data.dates, t);
       else if (action === 'sendTestTelegram') r.sendTestTelegram(t);
       else if (action === 'sendDigestNow')  r.sendDigestNow(t);
       else if (action === 'setTelegramWebhook') r.setTelegramWebhook(t);
@@ -1313,6 +1331,48 @@
     function loadConfig() {
       post({ action: 'getConfig' }, function(res) {
         if (res.success) populateConfig(res.data);
+      });
+      loadHolidays();
+    }
+
+    /* ── India Holidays ───────────────────────────────────
+       Catalog (2026 dates, which ones are national) and the admin's current
+       selection are two separate calls — render only after both return. */
+    function loadHolidays() {
+      var catalog = null, selected = null;
+
+      function renderIfReady() {
+        if (catalog && selected) renderHolidayList(catalog, selected);
+      }
+
+      post({ action: 'getHolidayCatalog' }, function(res) {
+        if (res.success) { catalog = res.catalog; renderIfReady(); }
+      });
+      post({ action: 'getHolidays' }, function(res) {
+        if (res.success) { selected = res.dates; renderIfReady(); }
+      });
+    }
+
+    function renderHolidayList(catalog, selectedDates) {
+      var list = document.getElementById('holidayList');
+      list.innerHTML = catalog.map(function(h) {
+        var checked  = h.national || selectedDates.indexOf(h.date) !== -1;
+        var disabled = h.national; // gazetted national holidays are always observed
+        return '<label class="form-group" style="flex-direction:row;align-items:center;gap:8px">' +
+          '<input type="checkbox" class="holiday-check" value="' + esc(h.date) + '"' +
+            (checked ? ' checked' : '') + (disabled ? ' disabled' : '') + '>' +
+          '<span>' + esc(h.name) + ' — ' + esc(h.date) + (h.national ? ' (National)' : '') + '</span>' +
+        '</label>';
+      }).join('');
+    }
+
+    function saveHolidays() {
+      var dates = Array.prototype.map.call(
+        document.querySelectorAll('.holiday-check:checked'),
+        function(cb) { return cb.value; }
+      );
+      post({ action: 'saveHolidays', dates: dates }, function(res) {
+        showToast(res.success ? 'Holidays saved successfully' : 'Error: ' + res.error, res.success ? 'success' : 'error');
       });
     }
 

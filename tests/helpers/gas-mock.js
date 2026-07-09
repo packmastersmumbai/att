@@ -17,6 +17,10 @@ const GAS_MOCK_SCRIPT = `
     { QRCode: 'EMP-BLOCKED', PersonName: 'Bad Actor', Reason: 'Unauthorised Entry', AddedBy: 'Admin', AddedDate: '2026-01-15' }
   ];
 
+  // National holidays start pre-selected — mirrors getHolidays() always
+  // including the 3 gazetted dates even before the admin ticks anything.
+  var MOCK_HOLIDAYS = ['2026-01-26', '2026-08-15', '2026-10-02'];
+
   var MOCK_DASHBOARD = {
     success: true,
     present: 3,
@@ -135,6 +139,29 @@ const GAS_MOCK_SCRIPT = `
       },
 
       saveConfig: function() { respond({ success: true }); },
+
+      // India holidays (Phase 3): catalog is static 2026 dates; selection is
+      // held in-memory for the duration of the test run, mirroring the
+      // Config-sheet-backed real implementation.
+      getHolidayCatalog: function() {
+        respond({ success: true, catalog: [
+          { date: '2026-01-26', name: 'Republic Day',        national: true },
+          { date: '2026-08-15', name: 'Independence Day',    national: true },
+          { date: '2026-10-02', name: 'Gandhi Jayanti',      national: true },
+          { date: '2026-03-04', name: 'Holi',                national: false },
+          { date: '2026-11-08', name: 'Diwali',              national: false }
+        ]});
+      },
+
+      getHolidays: function() {
+        respond({ success: true, dates: MOCK_HOLIDAYS.slice() });
+      },
+
+      saveHolidays: function(dates, token) {
+        if (!token) { respond({ success: false, error: 'Unauthorized: admin sign-in required' }); return; }
+        MOCK_HOLIDAYS = (dates || []).slice();
+        respond({ success: true });
+      },
 
       getAnalyticsData: function(range) {
         respond({ success: true,

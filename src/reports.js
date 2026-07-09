@@ -89,6 +89,7 @@ function invalidateDashboardCache() {
 
 function _computeDashboardData_() {
   var todayStr = today();
+  var holiday  = isHoliday(todayStr);
   var logs     = getSheetAsObjects(SHEETS.LOGS);
   var todayLogs = logs.filter(function(r) { return r.Date === todayStr; });
 
@@ -239,6 +240,7 @@ function _computeDashboardData_() {
   return {
     success:           true,
     date:              todayStr,
+    holiday:           holiday,
     present:           presentIds.length,
     absent:            absent.length,
     presentGender:     presentGender,

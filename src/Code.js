@@ -135,7 +135,8 @@ function _bootstrapIfNeeded() {
       ['HoursRebuildHr',     '1'],
       ['TelegramBotToken',   ''],
       ['TelegramChatID',     ''],
-      ['TelegramLiveScans',  'off']
+      ['TelegramLiveScans',  'off'],
+      ['Holidays',           '']
     ];
     configSheet.getRange(2, 1, defaults.length, 2).setValues(defaults);
   }
@@ -195,6 +196,9 @@ function _dispatchPost_(params) {
   if (action === 'getMonthlyAttendance') return jsonResponse(getMonthlyAttendance(params.year, params.month));
   if (action === 'processAndStoreScan') return jsonResponse(processAndStoreScan(params.qrCode, params.gate, params.sid));
   if (action === 'getPendingResult')    return jsonResponse(getPendingResult(params.sid));
+  if (action === 'getHolidayCatalog') return jsonResponse(getHolidayCatalog());
+  if (action === 'getHolidays')       return jsonResponse(getHolidays());
+  if (action === 'saveHolidays')      return jsonResponse(saveHolidays(params.dates, params.token));
 
   return jsonResponse({ success: false, error: 'Unknown action: ' + action });
 }

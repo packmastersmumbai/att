@@ -239,3 +239,14 @@ function _test_configMemo_() {
   Logger.log('memo consistent: ' + (a === b) + '  value=' + a);
   return a === b;
 }
+
+// ── Manual editor-run check: India holidays (Phase 3) ──────────
+// Not part of runAllTests — run directly from the Apps Script editor.
+// Confirms saveHolidays() persists selections and isHoliday() reads them back.
+function _test_isHoliday_() {
+  saveHolidays(['2026-01-26','2026-08-15'], _issueAdminToken_());
+  var a = isHoliday('2026-01-26');      // true
+  var b = isHoliday('2026-03-03');      // false
+  Logger.log('isHoliday 26Jan=' + a + ' 03Mar=' + b);
+  return a === true && b === false;
+}
