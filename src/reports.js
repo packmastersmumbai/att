@@ -358,14 +358,16 @@ function getAnalyticsData(range) {
 // year: "2025", month: "06" (1-indexed, zero-padded)
 function getMonthlyAttendance(year, month) {
   var ym = year + '-' + (String(month).length === 1 ? '0' + month : month);
-  var logs = getSheetAsObjects(SHEETS.LOGS);
+  // Note: getSheetAsObjects still reads the full Logs sheet — GAS has no
+  // server-side range filter on header objects — but bounding the rows to
+  // this month right after the read keeps all downstream per-row work
+  // (empDayMap build, totals) scoped to a single month instead of full
+  // history. A true fix (per-month sheet) is out of scope here.
+  var monthLogs = getSheetAsObjects(SHEETS.LOGS).filter(function(r) {
+    return r.Type === 'EMP' && r.Date && String(r.Date).indexOf(ym) === 0;
+  });
   var employees = getSheetAsObjects(SHEETS.EMPLOYEES).filter(function(e) {
     return e.Status === 'ACTIVE' || e.Status === 'INACTIVE';
-  });
-
-  // Filter to this month, employees only
-  var monthLogs = logs.filter(function(r) {
-    return r.Type === 'EMP' && r.Date && String(r.Date).indexOf(ym) === 0;
   });
 
   var lateThreshMin = _hoursThresholds_().lateThreshMin;  // shared threshold
@@ -461,5 +463,8 @@ function saveConfig(configArray, token) {
     cell.setNumberFormat('@');
     cell.setValue(item.Value == null ? '' : String(item.Value));
   });
+  // Invalidate the per-execution Config memo so a value changed here is
+  // seen by any getConfigValue() call later in this same execution.
+  _CONFIG_MEMO = null;
   return { success: true };
 }

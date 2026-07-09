@@ -228,3 +228,14 @@ function testGetLogsFilters() {
   _assert(partial.data.every(function(r) { return r.Status === 'PARTIAL'; }),
     'status:PARTIAL filter correct');
 }
+
+// ── Manual editor-run check: Config memoization (Phase 2 perf) ─
+// Not part of runAllTests — run directly from the Apps Script editor.
+// Confirms getConfigValue() returns the same value on repeated calls
+// within one execution now that it's backed by a per-execution memo.
+function _test_configMemo_() {
+  var a = getConfigValue('OrgName');
+  var b = getConfigValue('OrgName');
+  Logger.log('memo consistent: ' + (a === b) + '  value=' + a);
+  return a === b;
+}

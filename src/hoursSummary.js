@@ -71,18 +71,35 @@ var _MONTH_NAMES_ = ['January','February','March','April','May','June',
                      'July','August','September','October','November','December'];
 
 /**
+ * Reads and filters the Logs sheet once. Shared by getHoursSummary() and
+ * getHoursKpis() so a single request that needs both (getHoursKpis calls
+ * getHoursSummary internally for the overtime figure) reads Logs only once
+ * instead of twice.
+ *
+ * @param {Array} [rawLogs]  Pre-fetched getSheetAsObjects(SHEETS.LOGS) rows.
+ *   Pass this when the caller already has the raw rows (see getHoursKpis)
+ *   to avoid re-reading the sheet; omitted, this reads it directly.
+ * @return {Array} EMP log rows with a well-formed Date
+ */
+function _computeHours_(rawLogs) {
+  var rows = rawLogs || getSheetAsObjects(SHEETS.LOGS);
+  return rows.filter(function(r) {
+    return r.Type === 'EMP' && r.Date && String(r.Date).match(/^\d{4}-\d{2}-\d{2}$/);
+  });
+}
+
+/**
  * Core aggregation: groups EMP logs by Year → Month → Employee.
  * One employee-day = the first IN of that date for that person (dedupe multi-swipes).
  * Returns a nested structure consumed by both the UI and the sheet writer.
  *
  * @param {Object} opts  { includeInactive: bool }
+ * @param {Array} [rawLogs]  Pre-fetched Logs rows — see _computeHours_.
  */
-function getHoursSummary(opts) {
+function getHoursSummary(opts, rawLogs) {
   opts = opts || {};
   var th = _hoursThresholds_();
-  var logs = getSheetAsObjects(SHEETS.LOGS).filter(function(r) {
-    return r.Type === 'EMP' && r.Date && String(r.Date).match(/^\d{4}-\d{2}-\d{2}$/);
-  });
+  var logs = _computeHours_(rawLogs);
 
   var emps = getSheetAsObjects(SHEETS.EMPLOYEES);
   var empMap = {};
@@ -198,8 +215,12 @@ function getHoursSummary(opts) {
 function getHoursKpis(year, month) {
   var th = _hoursThresholds_();
   var ym = String(year) + '-' + (month < 10 ? '0' + month : String(month));
-  var logs = getSheetAsObjects(SHEETS.LOGS).filter(function(r) {
-    return r.Type === 'EMP' && r.Date && String(r.Date).indexOf(ym) === 0;
+  // Read Logs exactly once for this request: rawLogs is reused below when
+  // calling getHoursSummary() for the overtime figure, instead of it doing
+  // its own second full read.
+  var rawLogs = getSheetAsObjects(SHEETS.LOGS);
+  var logs = _computeHours_(rawLogs).filter(function(r) {
+    return String(r.Date).indexOf(ym) === 0;
   });
   var activeEmps = getSheetAsObjects(SHEETS.EMPLOYEES)
     .filter(function(e) { return e.Status === 'ACTIVE'; });
@@ -240,7 +261,7 @@ function getHoursKpis(year, month) {
     ? Math.round((presentIds.length / activeEmps.length) * 1000) / 10 : 0;
 
   // Overtime total = sum over employees of (totalMinutes - standard*daysWorked) when positive
-  var summary = getHoursSummary({ includeInactive: false });
+  var summary = getHoursSummary({ includeInactive: false }, rawLogs);
   var otTotal = 0;
   summary.years.forEach(function(y) {
     if (String(y.year) !== String(year)) return;

@@ -123,14 +123,29 @@ function verifyPIN(pin) {
   return { success: true, token: _issueAdminToken_() };
 }
 
+// Per-execution memo of the Config sheet, keyed by Key column.
+// GAS re-evaluates global vars on every invocation, so this naturally
+// resets between executions — no explicit reset needed on cold start.
+// saveConfig() clears it explicitly so a write is visible within the
+// same execution that made it.
+var _CONFIG_MEMO = null;
+
 /**
  * Reads a value from the Config tab by key.
+ * Reads the whole sheet once per execution (memoized) instead of once
+ * per call, since callers often ask for several keys in one request.
  */
 function getConfigValue(key) {
-  var sheet = getSheet(SHEETS.CONFIG);
-  var row = findRowByValue(sheet, 'Key', key);
-  if (row === -1) return null;
-  return getCell(sheet, row, 'Value');
+  if (_CONFIG_MEMO === null) {
+    _CONFIG_MEMO = {};
+    getSheetAsObjects(SHEETS.CONFIG).forEach(function(r) {
+      _CONFIG_MEMO[String(r.Key).trim()] = r.Value;
+    });
+  }
+  // hasOwnProperty (not a falsy check) so an existing key whose Value is
+  // an empty string still returns '', matching the pre-memo behavior of
+  // getCell() — only a genuinely absent key returns null.
+  return _CONFIG_MEMO.hasOwnProperty(key) ? _CONFIG_MEMO[key] : null;
 }
 
 /**
