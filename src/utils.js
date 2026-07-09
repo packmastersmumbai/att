@@ -93,15 +93,34 @@ function getCell(sheet, rowNum, columnName) {
   return sheet.getRange(rowNum, col).getValue();
 }
 
+var PIN_MAX_ATTEMPTS = 5;
+var PIN_LOCKOUT_SEC  = 900; // 15 min
+
 /**
- * Verifies an admin PIN server-side.
- * Never exposes the stored PIN to the client.
+ * Verifies an admin PIN server-side and, on success, mints the bearer token
+ * that every mutating admin action requires. Never exposes the stored PIN.
+ *
+ * Rate-limited: the PIN is 4 digits and this endpoint is publicly reachable,
+ * so unmetered guessing would exhaust the keyspace in minutes.
+ *
  * @param {string} pin  PIN entered by user
- * @returns {{success: boolean}}
+ * @returns {{success: boolean, token: (string|undefined), error: (string|undefined)}}
  */
 function verifyPIN(pin) {
+  var cache = CacheService.getScriptCache();
+  var fails = parseInt(cache.get('PIN_FAILS') || '0', 10) || 0;
+  if (fails >= PIN_MAX_ATTEMPTS) {
+    return { success: false, error: 'Too many attempts. Try again in 15 minutes.' };
+  }
+
   var stored = getConfigValue('AdminPIN');
-  return { success: String(pin) === String(stored) };
+  if (String(pin) !== String(stored)) {
+    cache.put('PIN_FAILS', String(fails + 1), PIN_LOCKOUT_SEC);
+    return { success: false };
+  }
+
+  cache.remove('PIN_FAILS');
+  return { success: true, token: _issueAdminToken_() };
 }
 
 /**

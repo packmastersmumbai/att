@@ -369,6 +369,10 @@
     .table-area {
       flex: 1;
       overflow-y: auto;
+      /* The logs table is 11 columns wide and the monthly table has one column
+         per day — without this they overflow the page body on a phone. */
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
       padding: 0;
     }
     table {
@@ -938,6 +942,12 @@
       <option value="VIS">Visitor</option>
       <option value="CON">Contractor</option>
     </select>
+    <select id="filterGender" class="fs-select" onchange="loadLogs()">
+      <option value="ALL">All Genders</option>
+      <option value="Male">Male</option>
+      <option value="Female">Female</option>
+      <option value="Other">Other</option>
+    </select>
     <div style="font-size:9px;color:var(--muted);margin-bottom:5px;margin-top:2px">Presence Status</div>
     <div class="presence-grid">
       <div class="pt-btn all active" data-val="ALL"     onclick="setPresence(this)">ALL</div>
@@ -970,6 +980,7 @@
       <button class="rtab active" id="rtabLogs" onclick="switchReportTab('logs')">Access Logs</button>
       <button class="rtab" id="rtabAnalytics" onclick="switchReportTab('analytics')">Analytics</button>
       <button class="rtab" id="rtabMonthly" onclick="switchReportTab('monthly')">Monthly View</button>
+      <button class="rtab" id="rtabHours" onclick="switchReportTab('hours')">Hours Summary</button>
       <button class="filter-toggle-btn" onclick="openFilterDrawer()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/></svg>
         Filters
@@ -1184,6 +1195,36 @@
 
     </div><!-- /reportsViewMonthly -->
 
+    <!-- ── Working Hours & Attendance Summary ── -->
+    <div class="analytics-view" id="reportsViewHours" style="padding:0;display:none;flex-direction:column;overflow:hidden;">
+
+      <!-- Controls bar -->
+      <div style="display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0;flex-wrap:wrap;">
+        <label style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Year</label>
+        <select id="hsYear" onchange="renderHours()" style="padding:6px 10px;border:1px solid var(--border);border-radius:3px;font-size:13px;color:var(--text);"></select>
+        <label style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Month</label>
+        <select id="hsMonth" onchange="renderHours()" style="padding:6px 10px;border:1px solid var(--border);border-radius:3px;font-size:13px;color:var(--text);">
+          <option value="">All</option>
+        </select>
+        <label style="font-size:12px;display:flex;align-items:center;gap:5px;color:var(--muted)">
+          <input type="checkbox" id="hsInactive" onchange="loadHours()"> Include inactive
+        </label>
+        <button onclick="loadHours()" style="padding:7px 16px;background:var(--primary);color:#fff;border:none;border-radius:3px;font-size:12px;font-weight:700;cursor:pointer;letter-spacing:.5px;">RELOAD</button>
+        <button onclick="exportHoursCSV()" style="padding:7px 14px;background:var(--surface);color:var(--muted);border:1px solid var(--border);border-radius:3px;font-size:12px;font-weight:600;cursor:pointer;">↓ Export CSV</button>
+        <button onclick="rebuildHoursSheet(this)" title="Write/refresh the HoursSummary sheet tab" style="padding:7px 14px;background:var(--surface);color:var(--muted);border:1px solid var(--border);border-radius:3px;font-size:12px;font-weight:600;cursor:pointer;">⟳ Rebuild Sheet</button>
+        <span id="hsStatus" style="margin-left:auto;font-size:11px;color:var(--muted);font-family:var(--mono)"></span>
+      </div>
+
+      <!-- KPI snapshot -->
+      <div id="hsKpiBlock" style="padding:14px 16px;border-bottom:1px solid var(--border);flex-shrink:0;background:var(--bg,#f8fafc);"></div>
+
+      <!-- Collapsible detail -->
+      <div style="flex:1;overflow:auto;min-height:0;padding:8px 16px 24px;" id="hsDetail">
+        <div style="padding:40px;text-align:center;color:var(--muted);font-size:13px;">Loading…</div>
+      </div>
+
+    </div><!-- /reportsViewHours -->
+
   </div><!-- /main-content -->
 
   <!-- Mobile filter overlay -->
@@ -1227,7 +1268,7 @@
     function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
     function fmtDate(d){var mn=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];var p=String(d||'').split('-');if(p.length===3&&p[0].length===4)return p[2]+' '+mn[parseInt(p[1],10)-1]+' '+p[0];return d||'–';}
     function fmtDur(d){if(!d)return '–';var m=String(d).match(/^(\d+)h\s*(\d+)m$/);if(!m){var m2=String(d).match(/^(\d+)m$/);if(m2){var mi2=parseInt(m2[1]);return (mi2/60).toFixed(2);}return d;}var h=parseInt(m[1]),mi=parseInt(m[2]);if(h>23)return '–';return (h+mi/60).toFixed(2);}
-    function post(data,callback){var action=data.action;var onErr=function(e){callback({success:false,error:e?e.message:'Unknown error'});};if(typeof google==='undefined'||!google.script){callback({success:false,error:'Not in GAS'});return;}var r=google.script.run.withSuccessHandler(callback).withFailureHandler(onErr);if(action==='getLogs')r.getLogs(data.filters);else if(action==='exportCSV')r.exportCSV(data.filters);else if(action==='getDashboardData')r.getDashboardData();else if(action==='getAnalyticsData')r.getAnalyticsData(data.range||30);else if(action==='getMonthlyAttendance')r.getMonthlyAttendance(data.year,data.month);else callback({success:false,error:'Unknown: '+action});}
+    function post(data,callback){var action=data.action;var onErr=function(e){callback({success:false,error:e?e.message:'Unknown error'});};if(typeof google==='undefined'||!google.script){callback({success:false,error:'Not in GAS'});return;}var r=google.script.run.withSuccessHandler(callback).withFailureHandler(onErr);if(action==='getLogs')r.getLogs(data.filters);else if(action==='exportCSV')r.exportCSV(data.filters);else if(action==='getDashboardData')r.getDashboardData();else if(action==='getAnalyticsData')r.getAnalyticsData(data.range||30);else if(action==='getMonthlyAttendance')r.getMonthlyAttendance(data.year,data.month);else if(action==='getHoursSummary')r.getHoursSummary(data.opts||{});else if(action==='getHoursKpis')r.getHoursKpis(data.year,data.month);else if(action==='rebuildHoursSummarySheet')r.rebuildHoursSummarySheet();else callback({success:false,error:'Unknown: '+action});}
   </script>
 
   <script>
@@ -1291,6 +1332,7 @@
         dateFrom:   document.getElementById('dateFrom').value,
         dateTo:     document.getElementById('dateTo').value,
         type:       document.getElementById('filterType').value,
+        gender:     document.getElementById('filterGender').value,
         status:     activePresence,
         name:       document.getElementById('filterName').value.trim() || undefined,
         searchId:   document.getElementById('searchId').value.trim()   || undefined,
@@ -1304,6 +1346,7 @@
       document.getElementById('dateFrom').value = t;
       document.getElementById('dateTo').value   = t;
       document.getElementById('filterType').value = 'ALL';
+      document.getElementById('filterGender').value = 'ALL';
       document.getElementById('filterName').value = '';
       document.getElementById('searchId').value   = '';
       document.querySelectorAll('#deptChecks input').forEach(function(cb) { cb.checked = false; });
@@ -1358,6 +1401,12 @@
       var cls = { PRESENT:'b-present', ABSENT:'b-absent', PARTIAL:'b-partial',
                   VISITOR:'b-visitor', ENTRY:'b-entry' }[s] || 'b-gray';
       return '<span class="badge ' + cls + '">' + esc(s) + '</span>';
+    }
+
+    /* Gender dot color: blue male / pink female / grey other */
+    function genderColor(g) {
+      g = String(g || '').toLowerCase();
+      return g === 'male' ? '#2563EB' : g === 'female' ? '#EC4899' : '#94A3B8';
     }
 
     /* Type badge helper */
@@ -1428,7 +1477,9 @@
             '<td><div class="person-cell">' +
               '<div class="p-av" style="background:' + c + '1a;color:' + c + '">' + esc(ini) + '</div>' +
               '<div>' +
-                '<div class="p-name">' + esc(r.Name) + '</div>' +
+                '<div class="p-name">' +
+                  (r.Gender ? '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;vertical-align:middle;background:' + genderColor(r.Gender) + '" title="' + esc(r.Gender) + '"></span>' : '') +
+                  esc(r.Name) + '</div>' +
                 '<div class="p-id">'  + esc(id)      + '</div>' +
               '</div>' +
             '</div></td>' +
@@ -1436,7 +1487,7 @@
             '<td>' + typeBadge(r.Type) + '</td>' +
             '<td style="font-size:12px;color:var(--text)">'   + esc(r.Department||'–')         + '</td>' +
             '<td><span class="mono">' + esc(fmtDate(r.Date))   + '</span></td>' +
-            '<td><span class="mono">' + esc(r.TimeIN||'–')    + '</span></td>' +
+            '<td' + (r.isLate ? ' style="background:#FEF3C7"' : '') + '><span class="mono"' + (r.isLate ? ' style="color:#B45309;font-weight:800"' : '') + '>' + esc(r.TimeIN||'–') + '</span>' + (r.isLate ? ' <span style="font-size:9px;font-weight:800;color:#fff;background:#D97706;padding:1px 5px;border-radius:3px;vertical-align:middle">LATE</span>' : '') + '</td>' +
             '<td><span class="mono' + (isAbsent?' mono-muted':'') + '">' + esc(r.TimeOUT||'–')  + '</span></td>' +
             '<td><span class="mono' + (isAbsent?' mono-muted':'') + '">' + esc(fmtDur(r.Duration)) + '</span></td>' +
             '<td>' + statusBadge(r.Status) + '</td>' +
@@ -1476,6 +1527,7 @@
   <script>
     /* ── Analytics real data ── */
     var _anaLoaded = false;
+    var _hoursLoaded = false;
     function loadAnalytics() {
       post({ action: 'getAnalyticsData', range: 30 }, function(res) {
         if (!res.success) return;
@@ -1607,17 +1659,21 @@
       document.getElementById('rtabLogs').classList.toggle('active', tab === 'logs');
       document.getElementById('rtabAnalytics').classList.toggle('active', tab === 'analytics');
       document.getElementById('rtabMonthly').classList.toggle('active', tab === 'monthly');
+      document.getElementById('rtabHours').classList.toggle('active', tab === 'hours');
 
       var logsView    = document.getElementById('reportsViewLogs');
       var anaView     = document.getElementById('reportsViewAnalytics');
       var monthlyView = document.getElementById('reportsViewMonthly');
+      var hoursView   = document.getElementById('reportsViewHours');
 
       logsView.classList.toggle('hidden', tab !== 'logs');
       anaView.classList.toggle('active', tab === 'analytics');
-      // Monthly view uses display flex/none (different class pattern)
+      // Monthly + Hours views use display flex/none (different class pattern)
       monthlyView.style.display = tab === 'monthly' ? 'flex' : 'none';
+      hoursView.style.display   = tab === 'hours'   ? 'flex' : 'none';
 
       if (tab === 'analytics' && !_anaLoaded) loadAnalytics();
+      if (tab === 'hours' && !_hoursLoaded) loadHours();
     }
 
     function generateInstitutionalReport() {
@@ -1730,8 +1786,9 @@
         } else {
           totalPresent++;
           var cls = rec.status === 'PRESENT' ? 'day-present' : 'day-partial';
-          tbody += '<td class="cell-day ' + cls + '">' +
-            '<div class="mday-in">' + esc(rec.timeIn || '–') + '</div>' +
+          var inStyle = rec.late ? ' style="color:#B45309;font-weight:800;background:#FEF3C7;border-radius:3px"' : '';
+          tbody += '<td class="cell-day ' + cls + '"' + (rec.late ? ' title="Late arrival"' : '') + '>' +
+            '<div class="mday-in"' + inStyle + '>' + esc(rec.timeIn || '–') + (rec.late ? ' ⚠' : '') + '</div>' +
             '<div class="mday-out">' + esc(rec.timeOut || '–') + '</div>' +
             '<div class="mday-dur">' + esc(rec.duration || '') + '</div>' +
           '</td>';
@@ -1797,16 +1854,229 @@
 
 <script>
   (function() {
+    // Apps Script always nests user HTML in its own sandbox iframe, so
+    // window.top !== window.self even on a direct /exec visit — that comparison
+    // cannot detect an embedding portal. Reading top.location.href throws
+    // (cross-origin), so the destination comes from the server-injected appUrl
+    // and the write targets the top frame.
     var APP_URL = '<?= appUrl ?>';
-    document.querySelectorAll('[data-page]').forEach(function(a) {
-      if (a.tagName !== 'A') return;
+    function navigate(page) {
+      if (!page) return;
+      var url = APP_URL + '?page=' + encodeURIComponent(page);
+      try {
+        (window.top || window).location.href = url;
+      } catch(e) {
+        window.open(url, '_top');
+      }
+    }
+    window.qrattNav = navigate;
+    document.querySelectorAll('[data-page], a[href^="?page="]').forEach(function(a) {
       a.addEventListener('click', function(e) {
+        var page = a.dataset.page ||
+          ((a.getAttribute('href') || '').match(/[?&]page=([^&]+)/) || [])[1];
+        if (!page) return;
         e.preventDefault();
-        var url = APP_URL + '?page=' + a.dataset.page;
-        try { window.top.location.href = url; } catch(e) { try { window.parent.location.href = url; } catch(e2) { window.location.href = url; } }
+        navigate(page);
       });
     });
   })();
+</script>
+
+<script>
+  /* ── Working Hours & Attendance Summary ── */
+  var _hoursData = null;          // last getHoursSummary payload
+  var _hoursExpanded = {};        // "year" / "year-month" -> bool (expanded)
+
+  function hsEsc(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  }
+  function hsNum(n) { return (Math.round((+n || 0) * 100) / 100).toFixed(2); }
+
+  function loadHours() {
+    var inactive = document.getElementById('hsInactive').checked;
+    document.getElementById('hsDetail').innerHTML =
+      '<div style="padding:40px;text-align:center;color:var(--muted);font-size:13px;">Loading…</div>';
+    post({ action: 'getHoursSummary', opts: { includeInactive: inactive } }, function(res) {
+      if (!res.success) {
+        document.getElementById('hsDetail').innerHTML =
+          '<div style="padding:40px;text-align:center;color:#c00;font-size:13px;">Error: ' + hsEsc(res.error) + '</div>';
+        return;
+      }
+      _hoursLoaded = true;
+      _hoursData = res;
+      populateHoursFilters();
+      // Default-expand current year + current month
+      var now = new Date();
+      var cy = String(now.getFullYear()), cm = now.getMonth() + 1;
+      _hoursExpanded[cy] = true;
+      _hoursExpanded[cy + '-' + cm] = true;
+      document.getElementById('hsStatus').textContent =
+        'Generated ' + (res.generatedAt ? res.generatedAt.substring(0,16).replace('T',' ') : '');
+      renderHours();
+    });
+  }
+
+  function populateHoursFilters() {
+    var ySel = document.getElementById('hsYear');
+    var existing = ySel.value;
+    ySel.innerHTML = '<option value="">All Years</option>' +
+      _hoursData.years.map(function(y) {
+        return '<option value="' + hsEsc(y.year) + '">' + hsEsc(y.year) + '</option>';
+      }).join('');
+    // Default the year filter to current year if present
+    var cy = String(new Date().getFullYear());
+    var hasCy = _hoursData.years.some(function(y) { return String(y.year) === cy; });
+    ySel.value = existing || (hasCy ? cy : '');
+    var mSel = document.getElementById('hsMonth');
+    var months = ['','January','February','March','April','May','June','July','August','September','October','November','December'];
+    mSel.innerHTML = '<option value="">All</option>' +
+      months.slice(1).map(function(n, i) { return '<option value="' + (i+1) + '">' + n + '</option>'; }).join('');
+  }
+
+  function renderHours() {
+    if (!_hoursData) return;
+    var yFilter = document.getElementById('hsYear').value;
+    var mFilter = document.getElementById('hsMonth').value;
+
+    // KPI snapshot: requires a concrete year+month. Use filters, else current.
+    var now = new Date();
+    var kYear  = yFilter || String(now.getFullYear());
+    var kMonth = mFilter ? parseInt(mFilter, 10) : (now.getMonth() + 1);
+    loadHoursKpis(kYear, kMonth);
+
+    var years = _hoursData.years.filter(function(y) { return !yFilter || String(y.year) === yFilter; });
+    if (!years.length) {
+      document.getElementById('hsDetail').innerHTML =
+        '<div style="padding:40px;text-align:center;color:var(--muted);font-size:13px;">No data for this filter.</div>';
+      return;
+    }
+
+    var html = years.map(function(y) {
+      var yKey = String(y.year);
+      var yOpen = _hoursExpanded[yKey];
+      var months = y.months.filter(function(mo) { return !mFilter || mo.month === parseInt(mFilter, 10); });
+
+      var monthsHtml = !yOpen ? '' : months.map(function(mo) {
+        var mKey = yKey + '-' + mo.month;
+        var mOpen = _hoursExpanded[mKey];
+        var tableHtml = !mOpen ? '' :
+          '<table style="width:100%;border-collapse:collapse;font-size:12px;margin:6px 0 12px;">' +
+          '<thead><tr style="background:#f0f0f0;text-align:left;">' +
+            '<th style="padding:6px 8px">Employee</th><th style="padding:6px 8px">ID</th>' +
+            '<th style="padding:6px 8px;text-align:right">Days</th>' +
+            '<th style="padding:6px 8px;text-align:right">Pres</th>' +
+            '<th style="padding:6px 8px;text-align:right">Late</th>' +
+            '<th style="padding:6px 8px;text-align:right">Avg/Day</th>' +
+            '<th style="padding:6px 8px;text-align:right">Total H</th>' +
+            '<th style="padding:6px 8px">Flags</th>' +
+          '</tr></thead><tbody>' +
+          mo.employees.map(function(a) {
+            var flags = a.perfect ? '<span style="color:#006b5f;font-weight:700">✦ perfect</span>'
+                      : a.openSessions > 0 ? '<span style="color:#b45309">⚠ ' + a.openSessions + ' open</span>'
+                      : '—';
+            return '<tr style="border-bottom:1px solid #eee">' +
+              '<td style="padding:5px 8px">' + hsEsc(a.name) + (a.status !== 'ACTIVE' ? ' <span style="font-size:9px;color:#999">(' + hsEsc(a.status) + ')</span>' : '') + '</td>' +
+              '<td style="padding:5px 8px;font-family:var(--mono)">' + hsEsc(a.empId) + '</td>' +
+              '<td style="padding:5px 8px;text-align:right">' + a.daysWorked + '</td>' +
+              '<td style="padding:5px 8px;text-align:right">' + a.presentDays + '</td>' +
+              '<td style="padding:5px 8px;text-align:right">' + a.lateDays + '</td>' +
+              '<td style="padding:5px 8px;text-align:right">' + hsNum(a.avgPerDay) + '</td>' +
+              '<td style="padding:5px 8px;text-align:right;font-weight:700">' + hsNum(a.totalHours) + '</td>' +
+              '<td style="padding:5px 8px">' + flags + '</td>' +
+            '</tr>';
+          }).join('') +
+          '</tbody></table>';
+
+        return '<div style="margin:4px 0 4px 18px">' +
+          '<div onclick="toggleHours(\'' + mKey + '\')" style="cursor:pointer;display:flex;align-items:center;gap:8px;padding:6px 8px;background:#fafafa;border:1px solid #eee;border-radius:3px;">' +
+            '<span style="font-size:11px;color:#666">' + (mOpen ? '▼' : '▶') + '</span>' +
+            '<strong style="font-size:13px">' + hsEsc(mo.label) + '</strong>' +
+            '<span style="margin-left:auto;font-size:12px;color:#444;font-family:var(--mono)">Total: ' + hsNum(mo.totalHours) + 'h · ' + mo.totalManDays + ' days</span>' +
+          '</div>' + tableHtml +
+          (mOpen ? '<div style="margin:0 0 8px 8px;font-size:11px;color:#777">Month rollup: Present ' + mo.present + ' · Late ' + mo.late + ' · OT ' + hsNum(mo.overtime) + 'h</div>' : '') +
+        '</div>';
+      }).join('');
+
+      return '<div style="margin-bottom:10px">' +
+        '<div onclick="toggleHours(\'' + yKey + '\')" style="cursor:pointer;display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--surface);border:1px solid var(--border);border-radius:3px;">' +
+          '<span style="font-size:12px;color:#666">' + (yOpen ? '▼' : '▶') + '</span>' +
+          '<strong style="font-size:15px">' + hsEsc(y.year) + '</strong>' +
+          '<span style="margin-left:auto;font-size:12px;color:#333;font-family:var(--mono)">Total: ' + hsNum(y.totalHours) + 'h · ' + y.totalManDays + ' days</span>' +
+        '</div>' + monthsHtml +
+      '</div>';
+    }).join('');
+
+    document.getElementById('hsDetail').innerHTML = html;
+  }
+
+  function toggleHours(key) {
+    _hoursExpanded[key] = !_hoursExpanded[key];
+    renderHours();
+  }
+
+  function loadHoursKpis(year, month) {
+    post({ action: 'getHoursKpis', year: year, month: month }, function(k) {
+      if (!k || !k.success) { document.getElementById('hsKpiBlock').innerHTML = ''; return; }
+      function tile(label, val, color) {
+        return '<div style="flex:1;min-width:120px;background:#fff;border:1px solid var(--border);border-radius:4px;padding:8px 10px;">' +
+          '<div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">' + label + '</div>' +
+          '<div style="font-size:18px;font-weight:800;color:' + (color||'var(--text)') + '">' + val + '</div></div>';
+      }
+      document.getElementById('hsKpiBlock').innerHTML =
+        '<div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">KPI Snapshot — ' + hsEsc(k.monthName) + ' ' + hsEsc(k.year) + '</div>' +
+        '<div style="display:flex;flex-wrap:wrap;gap:8px">' +
+          tile('Present', k.present, '#006b5f') +
+          tile('Absent', k.absent, '#c0392b') +
+          tile('Late', k.late, '#b45309') +
+          tile('Attendance %', hsNum(k.attendancePct) + '%') +
+          tile('Still IN', k.stillIn) +
+          tile('Total Hours', hsNum(k.totalHours)) +
+          tile('Avg Hrs/Emp', hsNum(k.avgHoursPerEmp)) +
+          tile('Overtime Hrs', hsNum(k.overtimeHours)) +
+          tile('Avg Check-IN', k.avgCheckIn) +
+          tile('⚠ Missed OUT', k.missedOut, k.missedOut > 0 ? '#b45309' : 'var(--text)') +
+        '</div>' +
+        '<div style="margin-top:8px;font-size:11px;color:var(--muted)">Perfect attendance: ' + k.perfectCount +
+          ' · Late rate: ' + hsNum(k.lateRate) + '% · Active staff: ' + k.activeStaff + '</div>';
+    });
+  }
+
+  function exportHoursCSV() {
+    if (!_hoursData) return;
+    var yFilter = document.getElementById('hsYear').value;
+    var mFilter = document.getElementById('hsMonth').value;
+    var rows = [['Year','Month','EmpID','Name','Department','DaysWorked','PresentDays','LateDays','OpenSessions','TotalHours','AvgPerDay','OvertimeHours','Status']];
+    _hoursData.years.forEach(function(y) {
+      if (yFilter && String(y.year) !== yFilter) return;
+      y.months.forEach(function(mo) {
+        if (mFilter && mo.month !== parseInt(mFilter, 10)) return;
+        mo.employees.forEach(function(a) {
+          rows.push([y.year, mo.monthName, a.empId, a.name, a.department, a.daysWorked,
+            a.presentDays, a.lateDays, a.openSessions, hsNum(a.totalHours), hsNum(a.avgPerDay), hsNum(a.overtimeHours), a.status]);
+        });
+      });
+    });
+    var csv = rows.map(function(r) {
+      return r.map(function(c) { return '"' + String(c == null ? '' : c).replace(/"/g, '""') + '"'; }).join(',');
+    }).join('\n');
+    var blob = new Blob([csv], { type: 'text/csv' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'hours-summary.csv';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  }
+
+  function rebuildHoursSheet(btn) {
+    var old = btn.textContent;
+    btn.textContent = '⟳ Rebuilding…'; btn.disabled = true;
+    post({ action: 'rebuildHoursSummarySheet' }, function(res) {
+      btn.textContent = old; btn.disabled = false;
+      if (!res || !res.success) { alert('Rebuild failed: ' + (res && res.error || 'unknown')); return; }
+      document.getElementById('hsStatus').textContent = 'Sheet rebuilt: ' + res.rowsWritten + ' rows';
+    });
+  }
 </script>
 </body>
 </html>

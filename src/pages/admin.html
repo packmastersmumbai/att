@@ -477,6 +477,12 @@
       .sidebar { display: none; }
       body { padding-bottom: 56px; }
       .mob-admin-bar { display: flex !important; }
+      /* Card header actions wrap instead of overflowing the card edge */
+      .card-header { flex-wrap: wrap; }
+      .card-header > .btn { margin-left: 0 !important; }
+      /* Employee table scrolls horizontally so Edit/Status stay reachable */
+      .table-wrap { -webkit-overflow-scrolling: touch; }
+      #empTable { min-width: 620px; }
     }
     .mob-admin-bar {
       display: none;
@@ -656,6 +662,9 @@
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                 Add Employee
               </button>
+              <button class="btn btn-ghost" onclick="importGenderBlood()" id="importGBBtn" style="margin-left:8px" title="Import Gender & Blood Group from the HR master sheet">
+                ⬇ Import Gender/Blood
+              </button>
               <button class="btn btn-danger" onclick="openBlacklistModal()" style="margin-left:8px">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
                 Security Watchlist
@@ -673,6 +682,7 @@
                       <th>Employee</th>
                       <th>Emp ID</th>
                       <th>Department</th>
+                      <th>Gender</th>
                       <th>Phone</th>
                       <th>Status</th>
                       <th>QR Code</th>
@@ -736,6 +746,33 @@
                 <input type="text" id="cfgCallMeBotKey" class="input" placeholder="Your CallMeBot key">
                 <div class="form-hint">Used for WhatsApp notifications</div>
               </div>
+              <div class="form-grid-2">
+                <div class="form-group">
+                  <label>Telegram Bot Token</label>
+                  <input type="text" id="cfgTelegramBotToken" class="input" placeholder="123456:ABC-DEF…">
+                  <div class="form-hint">From @BotFather</div>
+                </div>
+                <div class="form-group">
+                  <label>Telegram Channel ID</label>
+                  <input type="text" id="cfgTelegramChatID" class="input" placeholder="@mychannel or -100…">
+                  <div class="form-hint">Bot must be a channel admin. Posts visitor arrivals + daily summary.</div>
+                </div>
+              </div>
+              <div class="form-group">
+                <label>Live Check-in/out Posts</label>
+                <select id="cfgTelegramLiveScans" class="input">
+                  <option value="off">Off</option>
+                  <option value="on">On — post every IN/OUT to the channel</option>
+                </select>
+                <div class="form-hint">When On, each scan (employee &amp; visitor) posts to Telegram. Can be high volume.</div>
+              </div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">
+                <button class="btn btn-ghost btn-sm" onclick="sendTestTelegram(this)">Send Test Message</button>
+                <button class="btn btn-ghost btn-sm" onclick="sendDigestNow(this)">Send Digest Now</button>
+                <button class="btn btn-ghost btn-sm" onclick="setTelegramWebhook(this)">Enable Bot Commands</button>
+                <button class="btn btn-ghost btn-sm" onclick="installTriggers(this)">Install Daily Triggers</button>
+              </div>
+              <div class="form-hint" style="margin-top:6px">Save settings first. <b>Enable Bot Commands</b> starts 1-min polling for /today, /present, etc. — <b>message the bot directly (DM @your_bot)</b>, not the channel. <b>Install Daily Triggers</b> schedules the daily summary, auto-checkout &amp; hours rebuild.</div>
             </div>
 
             <div class="cfg-block">
@@ -743,13 +780,18 @@
               <div class="form-grid-2">
                 <div class="form-group">
                   <label>Daily Summary Hour (0–23)</label>
-                  <input type="number" id="cfgSummaryHr" class="input" min="0" max="23" placeholder="19">
-                  <div class="form-hint">Hour to send daily attendance summary</div>
+                  <input type="number" id="cfgSummaryHr" class="input" min="0" max="23" placeholder="9">
+                  <div class="form-hint">Hour to send daily attendance digest</div>
                 </div>
                 <div class="form-group">
                   <label>Auto Checkout Hour (0–23)</label>
                   <input type="number" id="cfgAutoCheckoutHr" class="input" min="0" max="23" placeholder="23">
                   <div class="form-hint">Hour to auto-checkout all present staff</div>
+                </div>
+                <div class="form-group">
+                  <label>Late After (HH:MM)</label>
+                  <input type="time" id="cfgLateAfter" class="input" placeholder="09:30">
+                  <div class="form-hint">Check-in after this time counts as late</div>
                 </div>
               </div>
             </div>
@@ -770,7 +812,7 @@
       <div class="modal-header">
         <div>
           <div class="modal-title" id="addEmpTitle">Add Employee</div>
-          <div class="modal-subtitle">A unique QR code will be generated automatically</div>
+          <div class="modal-subtitle" id="addEmpSubtitle">A unique QR code will be generated automatically</div>
         </div>
         <button class="modal-close" onclick="closeModal('addEmpOverlay')" aria-label="Close">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -781,6 +823,7 @@
           <div class="form-group">
             <label>Employee Code <span style="color:var(--danger)">*</span></label>
             <input type="text" id="eCode" class="input" placeholder="e.g. 556">
+            <div id="eCodeLockNote" style="display:none;font-size:11px;color:var(--muted,#64748b);margin-top:4px">Code is the QR identity — not editable.</div>
           </div>
           <div class="form-group">
             <label>Full Name <span style="color:var(--danger)">*</span></label>
@@ -793,20 +836,39 @@
             <input type="text" id="eDept" class="input" placeholder="e.g. Operations">
           </div>
           <div class="form-group">
-            <label>Phone</label>
-            <input type="tel" id="ePhone" class="input" placeholder="+91 ...">
+            <label>Gender</label>
+            <select id="eGender" class="input">
+              <option value="">Select…</option>
+              <option>Male</option><option>Female</option><option>Other</option>
+            </select>
           </div>
+        </div>
+        <div class="form-group">
+          <label>Blood Group</label>
+          <select id="eBlood" class="input">
+            <option value="">Select…</option>
+            <option>A+</option><option>A-</option><option>B+</option><option>B-</option>
+            <option>AB+</option><option>AB-</option><option>O+</option><option>O-</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Phone</label>
+          <input type="tel" id="ePhone" class="input" placeholder="+91 ...">
         </div>
         <div class="form-group">
           <label>Email</label>
           <input type="email" id="eEmail" class="input" placeholder="employee@company.com">
         </div>
+        <div class="form-group">
+          <label>Photo URL</label>
+          <input type="url" id="ePhoto" class="input" placeholder="https://… (shown on kiosk &amp; ID card)">
+        </div>
       </div>
       <div class="modal-footer">
         <button class="btn btn-ghost" onclick="closeModal('addEmpOverlay')">Cancel</button>
-        <button class="btn btn-success" onclick="addEmployee()">
+        <button class="btn btn-success" id="empSaveBtn" onclick="saveEmployeeForm()">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20,6 9,17 4,12"/></svg>
-          Save &amp; Generate QR
+          <span id="empSaveLbl">Save &amp; Generate QR</span>
         </button>
       </div>
     </div>
@@ -933,24 +995,35 @@
         .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
     }
 
+    // Bearer token minted by verifyPIN(). Every mutating admin action presents
+    // it; the server rejects the call without it. Kept in memory only — a
+    // reload returns to the PIN gate, which is the intended behaviour.
+    var ADMIN_TOKEN = '';
+
     function post(data, callback) {
       var action = data.action;
-      var onErr = function(e) { callback({ success: false, error: e ? e.message : 'Unknown error' }); };
+      var onErr = function(e) { callback({ success: false, error: (e && (e.message || String(e))) || 'Server error (no detail)' }); };
       if (typeof google === 'undefined' || !google.script) {
         callback({ success: false, error: 'Not in GAS' });
         return;
       }
+      var t = ADMIN_TOKEN;
       var r = google.script.run.withSuccessHandler(callback).withFailureHandler(onErr);
       if      (action === 'verifyPIN')      r.verifyPIN(data.pin);
       else if (action === 'getEmployees')      r.getEmployees();
-      else if (action === 'saveEmployee')      r.saveEmployee(data.employee);
-      else if (action === 'deleteEmployee')    r.deleteEmployee(data.empId);
-      else if (action === 'setEmployeeStatus') r.setEmployeeStatus(data.empId, data.status);
-      else if (action === 'getConfig')      r.getConfig();
-      else if (action === 'saveConfig')     r.saveConfig(data.config);
+      else if (action === 'saveEmployee')      r.saveEmployee(data.employee, t);
+      else if (action === 'importGenderBloodGroup') r.importGenderBloodGroup(t);
+      else if (action === 'deleteEmployee')    r.deleteEmployee(data.empId, t);
+      else if (action === 'setEmployeeStatus') r.setEmployeeStatus(data.empId, data.status, t);
+      else if (action === 'getConfig')      r.getConfig(t);
+      else if (action === 'saveConfig')     r.saveConfig(data.config, t);
+      else if (action === 'sendTestTelegram') r.sendTestTelegram(t);
+      else if (action === 'sendDigestNow')  r.sendDigestNow(t);
+      else if (action === 'setTelegramWebhook') r.setTelegramWebhook(t);
+      else if (action === 'installTriggers') r.installTriggers(t);
       else if (action === 'getBlacklist')   r.getBlacklist();
-      else if (action === 'addBlacklist')   r.addToBlacklist(data.entry);
-      else if (action === 'removeBlacklist') r.removeFromBlacklist(data.qrCode);
+      else if (action === 'addBlacklist')   r.addToBlacklist(data.entry, t);
+      else if (action === 'removeBlacklist') r.removeFromBlacklist(data.qrCode, t);
       else callback({ success: false, error: 'Unknown: ' + action });
     }
   </script>
@@ -971,12 +1044,34 @@
     function closeModal(id) { document.getElementById(id).classList.remove('open'); }
     function overlayClose(e, id) { if (e.target === document.getElementById(id)) closeModal(id); }
 
+    function importGenderBlood() {
+      var b = document.getElementById('importGBBtn');
+      b.textContent = 'Importing…'; b.disabled = true;
+      post({ action: 'importGenderBloodGroup' }, function(res) {
+        b.textContent = '⬇ Import Gender/Blood'; b.disabled = false;
+        if (!res || !res.success) { showToast('Import failed: ' + ((res && res.error) || 'unknown'), 'error'); return; }
+        showToast('Matched ' + res.matchedEmployees + ' · Gender +' + res.genderSet + ' · Blood +' + res.bloodGroupSet, 'success');
+        loadEmployees();
+      });
+    }
+
     function openAddEmpModal() {
       document.getElementById('eCode').value  = '';
       document.getElementById('eName').value  = '';
       document.getElementById('eDept').value  = '';
+      document.getElementById('eGender').value = '';
+      document.getElementById('eBlood').value = '';
       document.getElementById('ePhone').value = '';
       document.getElementById('eEmail').value = '';
+      document.getElementById('ePhoto').value = '';
+      // Reset to Add mode: code editable, labels restored
+      var codeInput = document.getElementById('eCode');
+      codeInput.readOnly = false;
+      codeInput.style.opacity = '';
+      document.getElementById('eCodeLockNote').style.display = 'none';
+      document.getElementById('addEmpTitle').textContent = 'Add Employee';
+      document.getElementById('addEmpSubtitle').textContent = 'A unique QR code will be generated automatically';
+      document.getElementById('empSaveLbl').textContent = 'Save & Generate QR';
       openModal('addEmpOverlay');
     }
 
@@ -1012,27 +1107,38 @@
       if (!pin) return;
       post({ action: 'verifyPIN', pin: pin }, function(res) {
         if (res.success) {
+          ADMIN_TOKEN = res.token || '';
           document.getElementById('pinGate').style.display   = 'none';
           document.getElementById('adminPanel').style.display = 'flex';
           loadEmployees();
           loadBlacklist();
           loadConfig();
         } else {
-          document.getElementById('pinError').textContent = 'Incorrect PIN — please try again';
+          document.getElementById('pinError').textContent =
+            res.error || 'Incorrect PIN — please try again';
         }
       });
     }
 
     /* ── Employees ────────────────────────────────────── */
+    /* Gender dot color: blue male / pink female / grey other */
+    function genderDotColor(g) {
+      g = String(g || '').toLowerCase();
+      return g === 'male' ? '#2563EB' : g === 'female' ? '#EC4899' : '#94A3B8';
+    }
+
+    var EMP_BY_ID = {};   // cache of loaded rows, keyed by EmpID (for edit prefill)
     function loadEmployees() {
       post({ action: 'getEmployees' }, function(res) {
         var tbody = document.getElementById('empBody');
         if (!res.success || !res.data || !res.data.length) {
-          tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state">' +
+          tbody.innerHTML = '<tr><td colspan="8"><div class="empty-state">' +
             '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>' +
             'No employees found</div></td></tr>';
           return;
         }
+        EMP_BY_ID = {};
+        res.data.forEach(function(e) { EMP_BY_ID[String(e.EmpID)] = e; });
         tbody.innerHTML = res.data.map(function(e) {
           var isActive = e.Status === 'ACTIVE';
           var badge = isActive ? 'badge-green' : 'badge-gray';
@@ -1041,12 +1147,16 @@
             '<td><strong>' + esc(e.Name) + '</strong></td>' +
             '<td class="td-mono">' + esc(e.EmpID) + '</td>' +
             '<td>' + esc(e.Department || '–') + '</td>' +
+            '<td>' + (e.Gender
+              ? '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;vertical-align:middle;background:' + genderDotColor(e.Gender) + '"></span>' + esc(e.Gender)
+              : '–') + '</td>' +
             '<td>' + esc(e.Phone || '–') + '</td>' +
             '<td><span class="badge ' + badge + '" id="badge-' + esc(e.EmpID) + '">' + esc(e.Status) + '</span></td>' +
             '<td><a class="qr-link" href="' + (e.QRImageURL || ('https://api.qrserver.com/v1/create-qr-code/?data=' + encodeURIComponent(e.QRCode) + '&size=200x200')) + '" target="_blank" rel="noopener">' +
               '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="5" height="5" rx="1"/><rect x="16" y="3" width="5" height="5" rx="1"/><rect x="3" y="16" width="5" height="5" rx="1"/><path d="M21 16h-3v3m0-3v3h-3"/></svg>' +
               (e.QRImageURL ? 'View QR' : 'View QR ⚡') + '</a></td>' +
             '<td class="td-actions">' +
+              '<button class="btn btn-ghost btn-sm" data-id="' + esc(e.EmpID) + '" onclick="editEmployeeClick(this)" style="margin-right:8px">Edit</button>' +
               '<label class="emp-toggle" title="' + (isActive ? 'Click to deactivate' : 'Click to activate') + '">' +
                 '<input type="checkbox" class="emp-tog-chk" data-id="' + esc(e.EmpID) + '" ' + (isActive ? 'checked' : '') + ' onchange="toggleEmployeeStatus(this)">' +
                 '<span class="emp-tog-slider"></span>' +
@@ -1082,23 +1192,55 @@
       deactivate(btn.getAttribute('data-id'));
     }
 
-    function addEmployee() {
+    function saveEmployeeForm() {
       var code = document.getElementById('eCode').value.trim();
       var emp = {
         EmpID:      code || undefined,
         Name:       document.getElementById('eName').value.trim(),
         Department: document.getElementById('eDept').value.trim(),
+        Gender:     document.getElementById('eGender').value,
+        BloodGroup: document.getElementById('eBlood').value,
         Phone:      document.getElementById('ePhone').value.trim(),
-        Email:      document.getElementById('eEmail').value.trim()
+        Email:      document.getElementById('eEmail').value.trim(),
+        PhotoURL:   document.getElementById('ePhoto').value.trim()
       };
       if (!code) return showToast('Employee Code is required', 'error');
       if (!emp.Name) return showToast('Name is required', 'error');
+      var editing = !!EMP_BY_ID[code];   // existing row → update
       post({ action: 'saveEmployee', employee: emp }, function(res) {
         if (!res.success) return showToast('Error: ' + res.error, 'error');
-        showToast('Employee added: ' + res.empId + ' · QR: ' + res.qrCode, 'success');
+        showToast(editing
+          ? 'Employee updated: ' + res.empId
+          : 'Employee added: ' + res.empId + ' · QR: ' + res.qrCode, 'success');
         closeModal('addEmpOverlay');
         loadEmployees();
       });
+    }
+
+    function editEmployeeClick(btn) {
+      editEmployee(btn.getAttribute('data-id'));
+    }
+
+    function editEmployee(empId) {
+      var e = EMP_BY_ID[String(empId)];
+      if (!e) return showToast('Employee not found', 'error');
+      document.getElementById('eCode').value  = e.EmpID || '';
+      document.getElementById('eName').value  = e.Name || '';
+      document.getElementById('eDept').value  = e.Department || '';
+      document.getElementById('eGender').value = e.Gender || '';
+      document.getElementById('eBlood').value = e.BloodGroup || '';
+      document.getElementById('ePhone').value = e.Phone || '';
+      document.getElementById('eEmail').value = e.Email || '';
+      document.getElementById('ePhoto').value = e.PhotoURL || '';
+      // Lock the code (it is the QR identity) and switch to edit mode
+      var codeInput = document.getElementById('eCode');
+      codeInput.readOnly = true;
+      codeInput.style.opacity = '0.6';
+      document.getElementById('eCodeLockNote').style.display = 'block';
+      document.getElementById('addEmpTitle').textContent = 'Edit Employee';
+      document.getElementById('addEmpSubtitle').textContent = 'Update employee details — QR code is unchanged';
+      document.getElementById('empSaveLbl').textContent = 'Save Changes';
+      openModal('addEmpOverlay');
     }
 
     function deactivate(empId) {
@@ -1182,7 +1324,11 @@
       document.getElementById('cfgOwnerEmail').value    = map['OwnerEmail']    || '';
       document.getElementById('cfgAdminPIN').value      = map['AdminPIN']      || '';
       document.getElementById('cfgCallMeBotKey').value  = map['CallMeBotKey']  || '';
-      document.getElementById('cfgSummaryHr').value     = map['SummaryHr']     || '19';
+      document.getElementById('cfgTelegramBotToken').value = map['TelegramBotToken'] || '';
+      document.getElementById('cfgTelegramChatID').value   = map['TelegramChatID']   || '';
+      document.getElementById('cfgTelegramLiveScans').value = (String(map['TelegramLiveScans']||'off').toLowerCase()==='on'?'on':'off');
+      document.getElementById('cfgLateAfter').value     = map['LateAfter']     || '09:30';
+      document.getElementById('cfgSummaryHr').value     = map['SummaryHr']     || '9';
       document.getElementById('cfgAutoCheckoutHr').value = map['AutoCheckoutHr'] || '23';
     }
 
@@ -1193,11 +1339,48 @@
         { Key: 'OwnerEmail',    Value: document.getElementById('cfgOwnerEmail').value },
         { Key: 'AdminPIN',      Value: document.getElementById('cfgAdminPIN').value },
         { Key: 'CallMeBotKey',  Value: document.getElementById('cfgCallMeBotKey').value },
+        { Key: 'TelegramBotToken', Value: document.getElementById('cfgTelegramBotToken').value },
+        { Key: 'TelegramChatID',   Value: document.getElementById('cfgTelegramChatID').value },
+        { Key: 'TelegramLiveScans', Value: document.getElementById('cfgTelegramLiveScans').value },
+        { Key: 'LateAfter',     Value: document.getElementById('cfgLateAfter').value },
         { Key: 'SummaryHr',     Value: document.getElementById('cfgSummaryHr').value },
         { Key: 'AutoCheckoutHr', Value: document.getElementById('cfgAutoCheckoutHr').value }
       ];
       post({ action: 'saveConfig', config: config }, function(res) {
         showToast(res.success ? 'Settings saved successfully' : 'Error: ' + res.error, res.success ? 'success' : 'error');
+      });
+    }
+
+    function sendTestTelegram(btn) {
+      var old = btn.textContent; btn.textContent = 'Sending…'; btn.disabled = true;
+      post({ action: 'sendTestTelegram' }, function(res) {
+        btn.textContent = old; btn.disabled = false;
+        showToast(res.success ? 'Test message sent to Telegram ✓' : 'Error: ' + res.error, res.success ? 'success' : 'error');
+      });
+    }
+
+    function sendDigestNow(btn) {
+      var old = btn.textContent; btn.textContent = 'Sending…'; btn.disabled = true;
+      post({ action: 'sendDigestNow' }, function(res) {
+        btn.textContent = old; btn.disabled = false;
+        showToast(res.success ? 'Digest sent ✓' : 'Error: ' + res.error, res.success ? 'success' : 'error');
+      });
+    }
+
+    function setTelegramWebhook(btn) {
+      var old = btn.textContent; btn.textContent = 'Enabling…'; btn.disabled = true;
+      post({ action: 'setTelegramWebhook' }, function(res) {
+        btn.textContent = old; btn.disabled = false;
+        if (res.success) showToast('Bot enabled (polling) ✓ DM the bot with /today', 'success');
+        else showToast('Error: ' + (res.error || res.response || 'failed'), 'error');
+      });
+    }
+
+    function installTriggers(btn) {
+      var old = btn.textContent; btn.textContent = 'Installing…'; btn.disabled = true;
+      post({ action: 'installTriggers' }, function(res) {
+        btn.textContent = old; btn.disabled = false;
+        showToast(res.success ? 'Daily triggers installed ✓' : 'Error: ' + (res.error || 'failed'), res.success ? 'success' : 'error');
       });
     }
   </script>
@@ -1242,19 +1425,35 @@
 </script>
 <script>
   function openIdCards() {
-    var url = '<?= appUrl ?>?page=idcards';
-    window.open(url, '_blank');
+    // Open the GitHub Pages wrapper (not the raw GAS URL) in a new tab
+    window.open('https://packmastersmumbai.github.io/att/?page=idcards', '_blank');
   }
 </script>
 <script>
   (function() {
+    // Apps Script always nests user HTML in its own sandbox iframe, so
+    // window.top !== window.self even on a direct /exec visit — that comparison
+    // cannot detect an embedding portal. Reading top.location.href throws
+    // (cross-origin), so the destination comes from the server-injected appUrl
+    // and the write targets the top frame.
     var APP_URL = '<?= appUrl ?>';
-    document.querySelectorAll('[data-page]').forEach(function(a) {
-      if (a.tagName !== 'A') return;
+    function navigate(page) {
+      if (!page) return;
+      var url = APP_URL + '?page=' + encodeURIComponent(page);
+      try {
+        (window.top || window).location.href = url;
+      } catch(e) {
+        window.open(url, '_top');
+      }
+    }
+    window.qrattNav = navigate;
+    document.querySelectorAll('[data-page], a[href^="?page="]').forEach(function(a) {
       a.addEventListener('click', function(e) {
+        var page = a.dataset.page ||
+          ((a.getAttribute('href') || '').match(/[?&]page=([^&]+)/) || [])[1];
+        if (!page) return;
         e.preventDefault();
-        var url = APP_URL + '?page=' + a.dataset.page;
-        try { window.top.location.href = url; } catch(e) { try { window.parent.location.href = url; } catch(e2) { window.location.href = url; } }
+        navigate(page);
       });
     });
   })();

@@ -158,8 +158,16 @@ function include(filename) {
 }
 
 function doPost(e) {
-  var params = JSON.parse(e.postData.contents);
+  try {
+    return _dispatchPost_(JSON.parse(e.postData.contents));
+  } catch (err) {
+    // _requireAdmin_ throws on an unauthorized call; without this the caller
+    // gets a 500 HTML error page instead of a JSON body.
+    return jsonResponse({ success: false, error: err.message });
+  }
+}
 
+function _dispatchPost_(params) {
   // (Telegram uses polling, not webhooks — GAS doPost 302s, which Telegram
   //  rejects. See TelegramLib.poll / telegramPoll trigger.)
 
@@ -169,20 +177,20 @@ function doPost(e) {
   if (action === 'registerVisitor')  return jsonResponse(registerVisitor(params.visitor));
   if (action === 'checkoutVisitor')  return jsonResponse(checkoutVisitor(params.visitorId));
   if (action === 'lookupVisitorByPhone') return jsonResponse(lookupVisitorByPhone(params.phone));
-  if (action === 'importGenderBloodGroup') return jsonResponse(importGenderBloodGroup());
+  if (action === 'importGenderBloodGroup') return jsonResponse(importGenderBloodGroup(params.token));
   if (action === 'getDashboardData') return jsonResponse(getDashboardData());
   if (action === 'getAnalyticsData') return jsonResponse(getAnalyticsData(params.range));
   if (action === 'getLogs')          return jsonResponse(getLogs(params.filters));
   if (action === 'getEmployees')     return jsonResponse(getEmployees());
-  if (action === 'saveEmployee')     return jsonResponse(saveEmployee(params.employee));
-  if (action === 'deleteEmployee')   return jsonResponse(deleteEmployee(params.empId));
-  if (action === 'setEmployeeStatus') return jsonResponse(setEmployeeStatus(params.empId, params.status));
+  if (action === 'saveEmployee')     return jsonResponse(saveEmployee(params.employee, params.token));
+  if (action === 'deleteEmployee')   return jsonResponse(deleteEmployee(params.empId, params.token));
+  if (action === 'setEmployeeStatus') return jsonResponse(setEmployeeStatus(params.empId, params.status, params.token));
   if (action === 'verifyPIN')        return jsonResponse(verifyPIN(params.pin));
-  if (action === 'getConfig')        return jsonResponse(getConfig());
-  if (action === 'saveConfig')       return jsonResponse(saveConfig(params.config));
+  if (action === 'getConfig')        return jsonResponse(getConfig(params.token));
+  if (action === 'saveConfig')       return jsonResponse(saveConfig(params.config, params.token));
   if (action === 'getBlacklist')     return jsonResponse(getBlacklist());
-  if (action === 'addBlacklist')     return jsonResponse(addToBlacklist(params.entry));
-  if (action === 'removeBlacklist')  return jsonResponse(removeFromBlacklist(params.qrCode));
+  if (action === 'addBlacklist')     return jsonResponse(addToBlacklist(params.entry, params.token));
+  if (action === 'removeBlacklist')  return jsonResponse(removeFromBlacklist(params.qrCode, params.token));
   if (action === 'exportCSV')            return jsonResponse(exportCSV(params.filters));
   if (action === 'getMonthlyAttendance') return jsonResponse(getMonthlyAttendance(params.year, params.month));
   if (action === 'processAndStoreScan') return jsonResponse(processAndStoreScan(params.qrCode, params.gate, params.sid));

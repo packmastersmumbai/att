@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <title>Visitor Self Registration</title>
+  <style>
+    :root{
+      --primary:#006b5f; --primary-dk:#005549; --danger:#dc2626;
+      --bg:#f1f5f4; --surface:#ffffff; --text:#0f172a; --muted:#64748b; --border:#d7e0de;
+      --radius:12px; --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:var(--font);background:var(--bg);color:var(--text);
+      min-height:100vh;padding:16px;line-height:1.4}
+    .wrap{max-width:440px;margin:0 auto}
+    .head{display:flex;align-items:center;gap:10px;margin:6px 2px 16px}
+    .head .logo{width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,#0ea5a0,#006b5f);
+      color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;flex-shrink:0}
+    .head .t1{font-size:16px;font-weight:800}
+    .head .t2{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px}
+    .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+      padding:16px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+    .sec{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;
+      letter-spacing:1.2px;margin:14px 0 8px;padding-bottom:5px;border-bottom:1px solid var(--border)}
+    .sec:first-of-type{margin-top:0}
+    .fg{margin-bottom:10px}
+    label{display:block;font-size:12px;font-weight:600;color:#334155;margin-bottom:4px}
+    label .req{color:var(--danger)}
+    .input{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;
+      font-size:14px;font-family:inherit;color:var(--text);background:#fff;outline:none;-webkit-appearance:none}
+    .input:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(0,107,95,.10)}
+    .row{display:flex;gap:10px}
+    .row .fg{flex:1}
+    .btn{width:100%;margin-top:14px;padding:14px;background:var(--primary);color:#fff;border:none;
+      border-radius:10px;font-size:15px;font-weight:700;font-family:inherit;cursor:pointer;transition:background .15s}
+    .btn:hover{background:var(--primary-dk)}
+    .btn:disabled{opacity:.6;cursor:default}
+    .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);
+      background:#0f172a;color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;
+      opacity:0;transition:opacity .2s;pointer-events:none;z-index:50;max-width:90vw}
+    .toast.show{opacity:1}
+    .toast.error{background:var(--danger)}
+    .photo{display:flex;flex-direction:column;align-items:center;justify-content:center;
+      border:2px dashed var(--border);border-radius:10px;padding:16px;text-align:center;cursor:pointer;margin-bottom:12px}
+    .photo img{max-height:120px;border-radius:8px;display:none}
+    .photo .ic{font-size:26px}
+    .photo .l{font-size:12px;font-weight:600;color:#334155;margin-top:4px}
+    .photo .s{font-size:10px;color:var(--muted)}
+    .chips{display:flex;flex-wrap:wrap;gap:8px}
+    .chip{padding:9px 14px;border:1px solid var(--border);border-radius:20px;background:#fff;
+      font-size:13px;font-weight:600;color:#334155;cursor:pointer;user-select:none;transition:all .12s}
+    .chip.on{background:var(--primary);color:#fff;border-color:var(--primary)}
+    .more-toggle{margin-top:14px;font-size:12px;font-weight:700;color:var(--primary);cursor:pointer;user-select:none;padding:4px 0}
+    .more-toggle #moreArrow{display:inline-block;transition:transform .15s}
+    .more-toggle.open #moreArrow{transform:rotate(90deg)}
+    .safety{margin-top:16px;border:1px solid #fcd34d;background:#fffbeb;border-radius:10px;padding:12px}
+    .safety-hd{font-size:13px;font-weight:800;color:#92400e;margin-bottom:9px}
+    .safety-video{position:relative;width:100%;aspect-ratio:16/9;background:#0f172a;border-radius:8px;overflow:hidden;margin-bottom:10px}
+    .safety-video iframe,.safety-video video{position:absolute;inset:0;width:100%;height:100%;border:0}
+    .safety-video .novid{display:flex;align-items:center;justify-content:center;height:100%;color:#64748b;font-size:12px;text-align:center;padding:12px}
+    .safety-ack{display:flex;gap:9px;align-items:flex-start;font-size:12px;font-weight:600;color:#78350f;cursor:pointer;line-height:1.5}
+    .safety-ack input{width:20px;height:20px;flex-shrink:0;margin-top:1px;accent-color:#b45309}
+    .safety-ack input:disabled{opacity:.4}
+    .btn:disabled{opacity:.45;cursor:not-allowed}
+    .rules-hint{display:flex;justify-content:space-between;align-items:center;font-size:11px;font-weight:700;
+      color:#92400e;margin:2px 0 8px}
+    .rules-count{background:#fde68a;color:#78350f;padding:2px 8px;border-radius:10px;font-size:11px}
+    .rules-count.done{background:#16a34a;color:#fff}
+    .rule{position:relative;background:#fff;border:1px solid #fde68a;border-radius:8px;padding:10px 11px;
+      margin-bottom:7px;cursor:pointer;overflow:hidden}
+    .rule .rtxt{font-size:12px;line-height:1.55;color:#1f2937;transition:filter .35s ease}
+    .rule .rtxt .en{color:#64748b;display:block;margin-top:2px}
+    .rule .rnum{font-weight:800;color:#b45309;margin-right:5px}
+    .rule.blurred .rtxt{filter:blur(4.5px);user-select:none}
+    .rule .tap{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+      font-size:12px;font-weight:800;color:#92400e;background:rgba(255,251,235,.35)}
+    .rule.revealed{border-color:#86efac;background:#f0fdf4;cursor:default}
+    .rule.revealed .tap{display:none}
+    .rule.revealed:after{content:'✓';position:absolute;top:8px;right:10px;color:#16a34a;font-weight:800;font-size:13px}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="head">
+      <div class="logo">QR</div>
+      <div>
+        <div class="t1"><?= orgName ?></div>
+        <div class="t2">Visitor Self Registration</div>
+      </div>
+    </div>
+
+    <!-- Fast path for frequent visitors: just enter phone, skip the form -->
+    <div class="card" id="returnCard" style="margin-bottom:12px">
+      <label style="display:block;font-size:13px;font-weight:700;margin-bottom:6px">पहले आए हैं? · Been here before?</label>
+      <div class="row" style="align-items:stretch">
+        <input type="tel" id="rPhone" class="input" placeholder="मोबाइल नंबर · Mobile number" style="flex:1" autocomplete="tel">
+        <button class="btn" id="rBtn" style="width:auto;margin:0;padding:0 18px;white-space:nowrap" onclick="lookupReturning()">खोजें · Find</button>
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-top:6px">नए विज़िटर नीचे फ़ॉर्म भरें · New visitor? Fill the form below.</div>
+    </div>
+
+    <div class="card" id="formCard">
+      <div class="fg">
+        <label>नाम · Name <span class="req">*</span></label>
+        <input type="text" id="vName" class="input" placeholder="राहुल शर्मा · Rahul Sharma" autocomplete="name">
+      </div>
+      <div class="fg">
+        <label>मोबाइल · Mobile <span class="req">*</span></label>
+        <input type="tel" id="vPhone" class="input" placeholder="98765 43210" autocomplete="tel">
+      </div>
+
+      <div class="fg">
+        <label>किससे मिलना है · Whom to meet <span class="req">*</span></label>
+        <select id="vHost" class="input">
+          <option value="">लोड हो रहा है… · Loading…</option>
+        </select>
+      </div>
+
+      <div class="fg">
+        <label>उद्देश्य · Purpose</label>
+        <div class="chips" id="purposeChips"></div>
+        <input type="hidden" id="vPurpose" value="">
+      </div>
+
+      <div class="photo" id="photoBox" onclick="document.getElementById('vPhotoFile').click()">
+        <img id="vPhotoPreview" alt="">
+        <div class="ic" id="photoIc">📷</div>
+        <div class="l" id="photoLbl">फ़ोटो लें · Add Photo (optional)</div>
+        <div class="s">कैमरा खोलने के लिए टैप करें · Tap to use camera</div>
+      </div>
+      <input type="file" id="vPhotoFile" accept="image/*" capture="user" style="display:none" onchange="previewPhoto(this)">
+
+      <!-- Optional details — collapsed by default for fast entry -->
+      <div class="more-toggle" id="moreToggle" onclick="toggleMore()">
+        <span id="moreArrow">▸</span> अधिक जानकारी · More details
+      </div>
+      <div id="moreFields" style="display:none">
+        <div class="row">
+          <div class="fg">
+            <label>प्रकार · Type</label>
+            <select id="vType" class="input">
+              <option>Guest</option><option>Courier</option><option>Supplier</option>
+              <option>Contractor</option><option>Other</option>
+            </select>
+          </div>
+          <div class="fg">
+            <label>कंपनी · Company</label>
+            <input type="text" id="vCompany" class="input" placeholder="Company">
+          </div>
+        </div>
+        <div class="row">
+          <div class="fg" style="flex:0 0 42%">
+            <label>ID प्रकार · ID Type</label>
+            <select id="vIDType" class="input">
+              <option value="">—</option>
+              <option>Aadhaar</option><option>Passport</option><option>PAN Card</option>
+              <option>Driving Licence</option><option>Voter ID</option><option>Other</option>
+            </select>
+          </div>
+          <div class="fg">
+            <label>ID नंबर · ID Number</label>
+            <input type="text" id="vIDNumber" class="input" placeholder="अंतिम 4 अंक · Last 4 digits">
+          </div>
+        </div>
+        <div class="fg">
+          <label>वाहन नंबर · Vehicle Number</label>
+          <input type="text" id="vVehicle" class="input" placeholder="MH-01-AB-1234">
+        </div>
+      </div>
+
+      <!-- Safety induction — video + every rule must be revealed, then acknowledged -->
+      <div class="safety" id="safetyBox">
+        <div class="safety-hd">🦺 सुरक्षा निर्देश · Safety Instructions <span class="req">*</span></div>
+        <div id="safetyVideoWrap" class="safety-video"></div>
+
+        <div class="rules-hint">
+          <span>हर नियम पर टैप करें · Tap each rule to reveal</span>
+          <span class="rules-count" id="rulesCount">0 / 0</span>
+        </div>
+        <div id="rulesList"></div>
+
+        <label class="safety-ack" id="ackLabel">
+          <input type="checkbox" id="vSafetyAck" onchange="onSafetyAck()" disabled>
+          <span>मैंने सभी नियम पढ़े और समझ लिए हैं ·<br>I have read and understood all the rules.</span>
+        </label>
+      </div>
+
+      <button class="btn" id="regBtn" onclick="submitReg()" style="display:none">पंजीकरण करें · Register &amp; Get Pass</button>
+    </div>
+
+    <!-- Confirmation shown after submit (replaces the form) -->
+    <div class="card" id="doneCard" style="display:none;text-align:center">
+      <div style="font-size:40px;line-height:1;margin:6px 0 4px">✅</div>
+      <div style="font-size:17px;font-weight:800">You're registered</div>
+      <div style="font-size:13px;color:var(--muted);margin-top:4px">Show this QR at the security desk to check in / out.</div>
+      <img id="doneQR" alt="Visitor QR" style="width:200px;height:200px;margin:16px auto 8px;border-radius:10px;background:#f1f5f4;display:block">
+      <div id="doneVid" style="font-size:12px;color:var(--muted);font-weight:600;letter-spacing:.5px"></div>
+      <a id="doneLink" href="#" style="display:inline-block;margin-top:10px;font-size:13px;color:var(--primary);font-weight:700">Open my pass ↗</a>
+      <button class="btn" style="margin-top:16px" onclick="closeReg()">Close</button>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    var APP_URL = '<?= appUrl ?>';
+
+    function toast(msg, type){
+      var t=document.getElementById('toast');
+      t.textContent=msg; t.className='toast show'+(type==='error'?' error':'');
+      setTimeout(function(){t.className='toast';},2600);
+    }
+
+    var vPhotoData='';   // captured photo (timestamped, downscaled) as base64 data URL
+
+    /* Burn the capture date/time into the photo. The native camera can't draw an
+       overlay, so we redraw it on a canvas: downscale (phone photos are huge as
+       base64), then stamp "DD Mon YYYY HH:MM" bottom-right on a dark strip. */
+    function _stampPhoto_(dataUrl, cb){
+      var img=new Image();
+      img.onload=function(){
+        var MAXW=900;
+        var scale=Math.min(1, MAXW/img.width);
+        var w=Math.round(img.width*scale), h=Math.round(img.height*scale);
+        var cv=document.createElement('canvas'); cv.width=w; cv.height=h;
+        var ctx=cv.getContext('2d');
+        ctx.drawImage(img,0,0,w,h);
+
+        var now=new Date();
+        var pad=function(n){return n<10?'0'+n:''+n;};
+        var MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+        var stamp=pad(now.getDate())+' '+MON[now.getMonth()]+' '+now.getFullYear()+
+                  '  '+pad(now.getHours())+':'+pad(now.getMinutes());
+
+        var fs=Math.max(13, Math.round(w*0.032));
+        ctx.font='700 '+fs+'px -apple-system,Segoe UI,Roboto,sans-serif';
+        var tw=ctx.measureText(stamp).width;
+        var padX=Math.round(fs*0.6), padY=Math.round(fs*0.45);
+        var bw=tw+padX*2, bh=fs+padY*2;
+        ctx.fillStyle='rgba(0,0,0,.62)';
+        ctx.fillRect(w-bw-8, h-bh-8, bw, bh);
+        ctx.fillStyle='#fff';
+        ctx.textBaseline='top';
+        ctx.fillText(stamp, w-bw-8+padX, h-bh-8+padY);
+
+        cb(cv.toDataURL('image/jpeg', 0.82));
+      };
+      img.onerror=function(){ cb(dataUrl); };   // fall back to the raw photo
+      img.src=dataUrl;
+    }
+
+    function previewPhoto(input){
+      if(!input.files || !input.files[0]) return;
+      var reader=new FileReader();
+      reader.onload=function(e){
+        _stampPhoto_(e.target.result, function(stamped){
+          vPhotoData=stamped;
+          var prev=document.getElementById('vPhotoPreview');
+          prev.src=stamped; prev.style.display='block';
+          document.getElementById('photoIc').style.display='none';
+          document.getElementById('photoLbl').textContent='फ़ोटो जोड़ी गई ✓ · Photo added';
+        });
+      };
+      reader.readAsDataURL(input.files[0]);
+    }
+
+    // Purpose chips — one tap to select (bilingual label, English value stored)
+    var PURPOSES=[
+      {v:'Meeting',    l:'मीटिंग · Meeting'},
+      {v:'Delivery',   l:'डिलीवरी · Delivery'},
+      {v:'Interview',  l:'इंटरव्यू · Interview'},
+      {v:'Maintenance',l:'मेंटेनेंस · Maintenance'},
+      {v:'Other',      l:'अन्य · Other'}
+    ];
+    (function renderChips(){
+      var box=document.getElementById('purposeChips');
+      box.innerHTML=PURPOSES.map(function(p){
+        return '<span class="chip" data-v="'+p.v+'" onclick="pickPurpose(this)">'+p.l+'</span>';
+      }).join('');
+    })();
+    function pickPurpose(el){
+      document.querySelectorAll('#purposeChips .chip').forEach(function(c){c.classList.remove('on');});
+      el.classList.add('on');
+      document.getElementById('vPurpose').value=el.getAttribute('data-v');
+    }
+
+    function toggleMore(){
+      var f=document.getElementById('moreFields'), t=document.getElementById('moreToggle');
+      var open=f.style.display==='none';
+      f.style.display=open?'block':'none';
+      t.classList.toggle('open',open);
+    }
+
+    /* ── Safety induction video ──────────────────────────────
+       URL comes from Config key 'SafetyVideoURL' so it can be swapped without a
+       deploy. Register stays disabled until the visitor ticks the acknowledgement. */
+    var SAFETY_DEFAULT='https://youtu.be/TJv6eO_L9LQ';
+    var vSafetyAckAt='';
+
+    function _ytId_(url){
+      var m=String(url||'').match(/(?:youtu\.be\/|v=|\/embed\/|\/shorts\/)([A-Za-z0-9_-]{6,})/);
+      return m?m[1]:'';
+    }
+    function renderSafetyVideo(url){
+      var wrap=document.getElementById('safetyVideoWrap');
+      var id=_ytId_(url||SAFETY_DEFAULT);
+      if(id){
+        wrap.innerHTML='<iframe src="https://www.youtube-nocookie.com/embed/'+id+
+          '?rel=0&playsinline=1" allow="accelerometer;encrypted-media;picture-in-picture" allowfullscreen></iframe>';
+      } else if(url){
+        var v=document.createElement('video');
+        v.src=url; v.controls=true; v.playsInline=true;
+        wrap.innerHTML=''; wrap.appendChild(v);
+      } else {
+        wrap.innerHTML='<div class="novid">वीडियो उपलब्ध नहीं · Video unavailable</div>';
+      }
+    }
+    /* Safety rules. Each starts blurred; the visitor must tap every one to reveal
+       it. Only when all are revealed does the acknowledgement checkbox unlock, and
+       only when that is ticked does the Register button appear. Bilingual. */
+    var SAFETY_RULES=[
+      { hi:'पूरा परिसर धूम्रपान निषेध क्षेत्र है।',
+        en:'The entire site is a NO SMOKING area.' },
+      { hi:'परिसर के अंदर फ़ोटोग्राफ़ी सख़्त वर्जित है।',
+        en:'Photography inside the premises is strictly prohibited.' },
+      { hi:'ऑफिस के अलावा कहीं भी मोबाइल का उपयोग न करें; बाहर मोबाइल बंद रखें।',
+        en:'No mobile phone use outside the office. Phones must be switched OFF elsewhere.' },
+      { hi:'कूड़ा न फैलाएँ। परिसर को साफ़ रखने में मदद करें।',
+        en:'Please do not litter. Help us keep the site clean.' },
+      { hi:'ऑफिस के बाहर किसी भी क्षेत्र में बिना अनुमति और बिना साथी के प्रवेश वर्जित है — आपका मेज़बान आपके साथ रहेगा।',
+        en:'Entry to any area outside the office is prohibited unless authorised and accompanied by your host.' },
+      { hi:'सुरक्षा संकेतों और आंतरिक यातायात का ध्यान रखें। किसी भी उपकरण से छेड़छाड़ न करें।',
+        en:'Be alert to safety signs and internal traffic. Do not play with any equipment.' },
+      { hi:'अलार्म बजने पर संपर्क व्यक्ति के निर्देशों का पालन करें।',
+        en:'If the alarm sounds, follow the instructions of your contact person.' }
+    ];
+    var rulesRevealed=0;
+
+    function renderRules(){
+      var list=document.getElementById('rulesList');
+      list.innerHTML=SAFETY_RULES.map(function(r,i){
+        return '<div class="rule blurred" data-i="'+i+'" onclick="revealRule(this)">'+
+                 '<div class="rtxt"><span class="rnum">'+(i+1)+'.</span>'+r.hi+
+                   '<span class="en">'+r.en+'</span></div>'+
+                 '<div class="tap">👆 टैप करें · Tap to read</div>'+
+               '</div>';
+      }).join('');
+      updateRulesCount();
+    }
+    function revealRule(el){
+      if(!el.classList.contains('blurred')) return;
+      el.classList.remove('blurred');
+      el.classList.add('revealed');
+      rulesRevealed++;
+      updateRulesCount();
+    }
+    function updateRulesCount(){
+      var n=SAFETY_RULES.length;
+      var c=document.getElementById('rulesCount');
+      c.textContent=rulesRevealed+' / '+n;
+      var all=rulesRevealed>=n;
+      c.classList.toggle('done',all);
+      var cb=document.getElementById('vSafetyAck');
+      cb.disabled=!all;                       // can't acknowledge until every rule is read
+      if(!all){ cb.checked=false; onSafetyAck(); }
+    }
+    function onSafetyAck(){
+      var ok=document.getElementById('vSafetyAck').checked && rulesRevealed>=SAFETY_RULES.length;
+      vSafetyAckAt = ok ? new Date().toISOString() : '';
+      document.getElementById('regBtn').style.display = ok ? 'block' : 'none';
+    }
+
+    /* Pull the configured video URL + rules (fall back to the built-in defaults) */
+    (function loadSafetyConfig(){
+      renderRules();
+      if(typeof google==='undefined' || !google.script){ renderSafetyVideo(SAFETY_DEFAULT); return; }
+      google.script.run
+        .withSuccessHandler(function(res){
+          var url=SAFETY_DEFAULT;
+          ((res&&res.data)||[]).forEach(function(c){ if(String(c.Key)==='SafetyVideoURL' && c.Value) url=String(c.Value); });
+          renderSafetyVideo(url);
+        })
+        .withFailureHandler(function(){ renderSafetyVideo(SAFETY_DEFAULT); })
+        .getConfig();
+    })();
+
+    // Populate the "Whom to meet" dropdown, grouped: 🏢 Office / 👤 Owner (Management).
+    function loadHosts(){
+      var sel=document.getElementById('vHost');
+      if(typeof google==='undefined' || !google.script){ sel.innerHTML='<option value="">—</option>'; return; }
+      google.script.run
+        .withSuccessHandler(function(res){
+          var emps=(res&&res.data)||res||[];
+          var active=emps.filter(function(e){ return String(e.Status||'ACTIVE').toUpperCase()==='ACTIVE'; });
+          function optsFor(deptMatch){
+            return active.filter(function(e){ return String(e.Department||'').toLowerCase()===deptMatch; })
+              .sort(function(a,b){return String(a.Name||'').localeCompare(String(b.Name||''));})
+              .map(function(e){ return '<option value="'+e.EmpID+'">'+(e.Name||e.EmpID)+'</option>'; }).join('');
+          }
+          var office=optsFor('office'), owner=optsFor('management');
+          if(!office && !owner){ sel.innerHTML='<option value="">—</option>'; return; }
+          var html='<option value="">व्यक्ति चुनें · Select person…</option>';
+          if(owner)  html+='<optgroup label="👤 मालिक · Owner">'+owner+'</optgroup>';
+          if(office) html+='<optgroup label="🏢 ऑफिस · Office">'+office+'</optgroup>';
+          sel.innerHTML=html;
+        })
+        .withFailureHandler(function(){ sel.innerHTML='<option value="">—</option>'; })
+        .getEmployees();
+    }
+    loadHosts();
+
+    function submitReg(){
+      var v={
+        Name:        document.getElementById('vName').value.trim(),
+        Phone:       document.getElementById('vPhone').value.trim(),
+        VisitorType: document.getElementById('vType').value,
+        Company:     document.getElementById('vCompany').value.trim(),
+        Purpose:     document.getElementById('vPurpose').value,
+        HostEmpID:   document.getElementById('vHost').value,
+        IDType:      document.getElementById('vIDType').value,
+        IDNumber:    document.getElementById('vIDNumber').value.trim(),
+        Vehicle:     document.getElementById('vVehicle').value.trim(),
+        PhotoData:   vPhotoData,
+        SafetyAckAt: vSafetyAckAt
+      };
+      if(!v.Name || !v.Phone){ toast('नाम और मोबाइल आवश्यक · Name and Mobile are required','error'); return; }
+      if(rulesRevealed < SAFETY_RULES.length || !document.getElementById('vSafetyAck').checked){
+        toast('कृपया सभी नियम पढ़ें · Please read all safety rules first','error'); return;
+      }
+      var btn=document.getElementById('regBtn');
+      btn.textContent='Registering…'; btn.disabled=true;
+
+      if(typeof google==='undefined' || !google.script){ toast('Not in app context','error'); btn.disabled=false; btn.textContent='Register & Get Pass'; return; }
+      google.script.run
+        .withSuccessHandler(function(res){
+          if(!res || !res.success){ toast('Error: '+((res&&res.error)||'unknown'),'error'); btn.disabled=false; btn.textContent='Register & Get Pass'; return; }
+          showDone(res.visitorId, res.returning);
+        })
+        .withFailureHandler(function(e){
+          toast('Error: '+(e&&e.message||'server error'),'error');
+          btn.disabled=false; btn.textContent='Register & Get Pass';
+        })
+        .registerVisitor(v);
+    }
+
+    // Returning visitor: look up existing pass by phone, skip the form.
+    function lookupReturning(){
+      var phone=document.getElementById('rPhone').value.trim();
+      if(!phone){ toast('Enter your mobile number','error'); return; }
+      if(typeof google==='undefined' || !google.script){ toast('Not in app context','error'); return; }
+      var b=document.getElementById('rBtn'); b.textContent='…'; b.disabled=true;
+      google.script.run
+        .withSuccessHandler(function(res){
+          b.textContent='Find my pass'; b.disabled=false;
+          if(!res || !res.success){ toast((res&&res.error)||'Not found','error'); return; }
+          document.getElementById('returnCard').style.display='none';
+          showDone(res.visitorId, true);
+        })
+        .withFailureHandler(function(e){ b.textContent='Find my pass'; b.disabled=false; toast((e&&e.message)||'error','error'); })
+        .lookupVisitorByPhone(phone);
+    }
+
+    // Confirmation: QR encodes the visitor ID (kiosk reads it as a badge).
+    function showDone(visitorId, returning){
+      document.getElementById('returnCard').style.display='none';
+      document.getElementById('formCard').style.display='none';
+      if(returning){
+        document.querySelector('#doneCard div:nth-child(2)').textContent='Welcome back';
+        document.querySelector('#doneCard div:nth-child(3)').textContent='We recognised your number — this is your existing pass. Show it at the desk to check in / out.';
+      }
+      document.getElementById('doneVid').textContent=visitorId;
+      document.getElementById('doneQR').src=
+        'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data='+encodeURIComponent(visitorId);
+      document.getElementById('doneLink').href=
+        APP_URL+'?page=vpass&id='+encodeURIComponent(visitorId);
+      document.getElementById('doneCard').style.display='block';
+      window.scrollTo(0,0);
+    }
+
+    function closeReg(){
+      // Close the tab/window; if the browser blocks it (not script-opened), blank the page.
+      window.open('','_self'); window.close();
+      document.body.innerHTML='<div style="font-family:sans-serif;text-align:center;padding:40px;color:#64748b">You may close this window.</div>';
+    }
+  </script>
+</body>
+</html>

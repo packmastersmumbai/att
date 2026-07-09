@@ -356,8 +356,8 @@
       <option value="">All Departments</option>
     </select>
     <select id="statusFilter" onchange="filterCards()">
+      <option value="ACTIVE" selected>Active</option>
       <option value="">All Status</option>
-      <option value="ACTIVE">Active</option>
       <option value="INACTIVE">Inactive</option>
     </select>
     <span class="card-count" id="cardCount"></span>
@@ -429,7 +429,7 @@
         '<div class="card-band">' +
           '<div class="card-band-logo">QR</div>' +
           '<div class="card-band-org">' + esc(ORG) + '</div>' +
-          '<div class="card-band-type">Employee</div>' +
+          '<div class="card-band-type">' + esc(emp.Department || 'Employee') + '</div>' +
         '</div>' +
 
         '<div class="card-body">' +
@@ -441,6 +441,7 @@
             '<div class="card-id-row">' +
               '<span class="card-id-lbl">ID</span>' +
               '<span class="card-id-val">' + esc(emp.EmpID || '') + '</span>' +
+              (emp.BloodGroup ? '<span class="card-id-lbl" style="margin-left:auto">BLOOD</span><span class="card-id-val" style="color:#dc2626;font-weight:800">' + esc(emp.BloodGroup) + '</span>' : '') +
             '</div>' +
             (emp.Phone ? '<div class="card-meta"><span>Ph:</span> ' + esc(emp.Phone) + '</div>' : '') +
             (emp.Email ? '<div class="card-meta"><span>Em:</span> ' + esc(emp.Email) + '</div>' : '') +
@@ -487,7 +488,7 @@
       count.textContent = _filtered.length + ' card' + (_filtered.length !== 1 ? 's' : '');
     }
 
-    renderGrid();
+    filterCards();   // applies default ACTIVE-only status filter on load
   </script>
 </body>
 </html>

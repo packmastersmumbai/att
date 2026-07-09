@@ -1007,6 +1007,9 @@
 
     function showResult(res) {
       clearTimeout(dismissTimer);
+      // A scan arrives from the camera popup, not as a DOM event on this page,
+      // so it must resume the activity feed explicitly.
+      if (typeof noteActivity === 'function') noteActivity();
       // Distinct branch: server/GAS error (success===false and no action set)
       if (res.success === false && !res.action) {
         var overlay = document.getElementById('resultOverlay');
@@ -1035,21 +1038,23 @@
       }
         var type = res.action === 'CHECK_IN'  ? 'check-in'  :
                  res.action === 'CHECK_OUT' ? 'check-out' :
-                 res.action === 'BLOCKED'   ? 'blocked'   : 'unknown';
+                 res.action === 'BLOCKED'   ? 'blocked'   :
+                 res.action === 'INACTIVE'  ? 'blocked'   : 'unknown';
       var c   = pickColor(res.name || '?');
       var ini = initials(res.name || '?');
 
       // Toast notification
       var tMsg = type === 'check-in'  ? '\u2713 ' + (res.name||'') + ' \u2014 Checked In'   :
                  type === 'check-out' ? '\u2713 ' + (res.name||'') + ' \u2014 Checked Out'  :
+                 res.action === 'INACTIVE' ? '\u26d4 ' + (res.name||'Member') + ' \u2014 INACTIVE MEMBER' :
                  type === 'blocked'   ? '\u26d4 ' + (res.name||'Access Denied') + ' \u2014 BLOCKED' :
                  '\u26a0 QR code not recognised';
       var tType = type === 'check-in' ? 'in' : type === 'check-out' ? 'out' : type === 'blocked' ? 'blk' : 'unk';
       showToast(tMsg, tType);
 
       // Badge
-      var bCls = res.action === 'BLOCKED' ? 'b-blk' : type === 'unknown' ? 'b-unk' : (res.type === 'VIS' ? 'b-vis' : 'b-emp');
-      var bLbl = res.action === 'BLOCKED' ? 'BLOCKED' : type === 'unknown' ? 'UNKNOWN' : (res.type === 'VIS' ? 'VISITOR' : 'EMPLOYEE');
+      var bCls = (res.action === 'BLOCKED' || res.action === 'INACTIVE') ? 'b-blk' : type === 'unknown' ? 'b-unk' : (res.type === 'VIS' ? 'b-vis' : 'b-emp');
+      var bLbl = res.action === 'INACTIVE' ? 'INACTIVE' : res.action === 'BLOCKED' ? 'BLOCKED' : type === 'unknown' ? 'UNKNOWN' : (res.type === 'VIS' ? 'VISITOR' : 'EMPLOYEE');
 
       var body = '';
       var btnCls = 'bd-' + (type === 'check-in' ? 'in' : type === 'check-out' ? 'out' : type === 'blocked' ? 'blk' : 'unk');
@@ -1223,10 +1228,45 @@
       });
     }
 
-    setInterval(loadActivity, 8000);
+    /* ── Activity-feed polling with idle-pause ──────────────────────────
+       30s polling still costs ~2,880 backend calls/day per terminal, and a
+       scanner tab left open overnight burns the shared daily script-runtime
+       quota for nothing. Pause the feed after IDLE_MS with no interaction;
+       any input — or a completed scan — resumes it. Scanning itself never
+       depends on this timer, so nothing is missed while paused. */
+    var ACTIVITY_IDLE_MS = 5 * 60000;
+    var activityTimer = null;
+    var lastActivityTs = Date.now();
+
+    function startActivityPolling() {
+      if (activityTimer) return;
+      activityTimer = setInterval(function() {
+        if (Date.now() - lastActivityTs > ACTIVITY_IDLE_MS) { pauseActivityPolling(); return; }
+        loadActivity();
+      }, 30000);
+    }
+
+    function pauseActivityPolling() {
+      if (!activityTimer) return;
+      clearInterval(activityTimer);
+      activityTimer = null;
+    }
+
+    function noteActivity() {
+      var wasIdle = !activityTimer;
+      lastActivityTs = Date.now();
+      if (wasIdle) { loadActivity(); startActivityPolling(); }
+    }
+    window.scannerNoteActivity = noteActivity;
+
+    ['click', 'keydown', 'touchstart', 'mousemove'].forEach(function(evt) {
+      document.addEventListener(evt, noteActivity, true);
+    });
+
     window.onload = function() {
       startScanner();
       loadActivity();
+      startActivityPolling();
     };
 
     // Update local time display
@@ -1262,21 +1302,29 @@
   </nav>
 <script>
   (function() {
+    // Apps Script always nests user HTML in its own sandbox iframe, so
+    // window.top !== window.self even on a direct /exec visit — that comparison
+    // cannot detect an embedding portal. Reading top.location.href throws
+    // (cross-origin), so the destination comes from the server-injected appUrl
+    // and the write targets the top frame.
+    var APP_URL = '<?= appUrl ?>';
     function navigate(page) {
+      if (!page) return;
+      var url = APP_URL + '?page=' + encodeURIComponent(page);
       try {
-        var top = window.top || window.parent;
-        if (top !== window.self) {
-          top.postMessage({ qratt_nav: page }, '*');
-          return;
-        }
-      } catch(e) {}
-      window.location.href = '?page=' + page;
+        (window.top || window).location.href = url;
+      } catch(e) {
+        window.open(url, '_top');
+      }
     }
-    document.querySelectorAll('[data-page]').forEach(function(a) {
-      if (a.tagName !== 'A') return;
+    window.qrattNav = navigate;
+    document.querySelectorAll('[data-page], a[href^="?page="]').forEach(function(a) {
       a.addEventListener('click', function(e) {
+        var page = a.dataset.page ||
+          ((a.getAttribute('href') || '').match(/[?&]page=([^&]+)/) || [])[1];
+        if (!page) return;
         e.preventDefault();
-        navigate(a.dataset.page);
+        navigate(page);
       });
     });
   })();

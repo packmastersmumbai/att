@@ -506,8 +506,24 @@
       <!-- ═══ REGISTER TAB ═══ -->
       <div id="panel-register" class="panel active">
 
-        <!-- Initial registration form (two-column) -->
-        <div id="regForm" class="reg-split">
+        <!-- Self-registration QR: visitors scan to fill the form on their own phone -->
+        <div id="selfRegCard" style="display:flex;align-items:center;gap:16px;background:#fff;border:1px solid var(--border,#d7e0de);border-radius:12px;padding:14px 16px;margin-bottom:16px;flex-wrap:wrap">
+          <img id="selfRegQR" alt="Self-register QR" style="width:96px;height:96px;border-radius:8px;flex-shrink:0;background:#f1f5f4">
+          <div style="flex:1;min-width:180px">
+            <div style="font-size:14px;font-weight:800;color:#0f172a">Visitor Self-Registration</div>
+            <div style="font-size:12px;color:#64748b;margin-top:3px;line-height:1.5">Let visitors scan this QR (or open the link) to register on their own phone and get a self check-in pass.</div>
+            <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;align-items:center">
+              <a id="selfRegLink" href="#" target="_blank" rel="noopener" style="font-size:12px;color:#006b5f;font-weight:700;word-break:break-all">Open registration form ↗</a>
+              <button onclick="copySelfRegLink(this)" style="font-size:11px;padding:4px 10px;border:1px solid #d7e0de;border-radius:6px;background:#f8fafc;cursor:pointer;color:#334155">Copy link</button>
+              <a href="#" onclick="showStaffForm(event)" style="font-size:11px;color:#64748b;margin-left:auto">Type it in here instead</a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Initial registration form (two-column) — hidden by default; the
+             self-register form (vreg) is the single source of truth. Staff can
+             reveal this to type a visitor in directly. -->
+        <div id="regForm" class="reg-split" style="display:none">
 
           <!-- LEFT COL: Form -->
           <div class="card">
@@ -904,6 +920,24 @@
       setTimeout(function() { if (el.parentNode) el.parentNode.removeChild(el); }, 3200);
     }
     function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+
+    /* Self-registration QR + link (visitors register on their own phone) */
+    (function(){
+      var appUrl = '<?= appUrl ?>';
+      var regUrl = appUrl + '?page=vreg';
+      var qrEl = document.getElementById('selfRegQR');
+      var linkEl = document.getElementById('selfRegLink');
+      if (qrEl) qrEl.src = 'https://api.qrserver.com/v1/create-qr-code/?size=192x192&ecc=M&data=' + encodeURIComponent(regUrl);
+      if (linkEl) linkEl.href = regUrl;
+      window.__selfRegUrl = regUrl;
+    })();
+    function copySelfRegLink(btn){
+      var url = window.__selfRegUrl || '';
+      var done = function(){ var o=btn.textContent; btn.textContent='Copied ✓'; setTimeout(function(){btn.textContent=o;},1500); };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(url).then(done, function(){ window.prompt('Copy this link:', url); });
+      } else { window.prompt('Copy this link:', url); }
+    }
     function post(data,callback){var action=data.action;var onErr=function(e){callback({success:false,error:e?e.message:'Unknown error'});};if(typeof google==='undefined'||!google.script){callback({success:false,error:'Not in GAS'});return;}var r=google.script.run.withSuccessHandler(callback).withFailureHandler(onErr);if(action==='registerVisitor')r.registerVisitor(data.visitor);else if(action==='checkoutVisitor')r.checkoutVisitor(data.visitorId);else if(action==='getLogs')r.getLogs(data.filters);else if(action==='getDashboardData')r.getDashboardData();else if(action==='exportCSV')r.exportCSV(data.filters);else callback({success:false,error:'Unknown: '+action});}
   </script>
   <script>
@@ -932,16 +966,25 @@
     function triggerPhoto() {
       document.getElementById('vPhotoFile').click();
     }
+    var vPhotoData = '';   // captured photo as base64 data URL (sent to Telegram)
     function previewPhoto(input) {
       if (!input.files || !input.files[0]) return;
       var reader = new FileReader();
       reader.onload = function(e) {
+        vPhotoData = e.target.result;
         var prev = document.getElementById('vPhotoPreview');
         prev.src = e.target.result;
         prev.style.display = 'block';
         document.getElementById('photoPlaceholder').style.display = 'none';
       };
       reader.readAsDataURL(input.files[0]);
+    }
+
+    // Reveal the in-app staff form (hidden by default in favour of vreg).
+    function showStaffForm(ev) {
+      if (ev) ev.preventDefault();
+      var f = document.getElementById('regForm');
+      if (f) { f.style.display = ''; f.scrollIntoView({ behavior: 'smooth' }); }
     }
 
     // ── Register ──────────────────────────────────────────
@@ -955,7 +998,8 @@
         ExpectedOut: document.getElementById('vExpOut').value,
         IDType:      document.getElementById('vIDType').value,
         IDNumber:    document.getElementById('vIDNumber').value.trim(),
-        Vehicle:     document.getElementById('vVehicle').value.trim()
+        Vehicle:     document.getElementById('vVehicle').value.trim(),
+        PhotoData:   vPhotoData
       };
       if (!v.Name || !v.Phone) { showToast('Name and Phone are required', 'error'); return; }
       var btn = document.getElementById('regBtn');
@@ -1276,13 +1320,29 @@
 
 <script>
   (function() {
+    // Apps Script always nests user HTML in its own sandbox iframe, so
+    // window.top !== window.self even on a direct /exec visit — that comparison
+    // cannot detect an embedding portal. Reading top.location.href throws
+    // (cross-origin), so the destination comes from the server-injected appUrl
+    // and the write targets the top frame.
     var APP_URL = '<?= appUrl ?>';
-    document.querySelectorAll('[data-page]').forEach(function(a) {
-      if (a.tagName !== 'A') return;
+    function navigate(page) {
+      if (!page) return;
+      var url = APP_URL + '?page=' + encodeURIComponent(page);
+      try {
+        (window.top || window).location.href = url;
+      } catch(e) {
+        window.open(url, '_top');
+      }
+    }
+    window.qrattNav = navigate;
+    document.querySelectorAll('[data-page], a[href^="?page="]').forEach(function(a) {
       a.addEventListener('click', function(e) {
+        var page = a.dataset.page ||
+          ((a.getAttribute('href') || '').match(/[?&]page=([^&]+)/) || [])[1];
+        if (!page) return;
         e.preventDefault();
-        var url = APP_URL + '?page=' + a.dataset.page;
-        try { window.top.location.href = url; } catch(e) { try { window.parent.location.href = url; } catch(e2) { window.location.href = url; } }
+        navigate(page);
       });
     });
   })();

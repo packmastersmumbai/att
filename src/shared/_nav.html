@@ -21,7 +21,6 @@
   <a href="?page=dashboard" data-page="dashboard">Dashboard</a>
   <a href="?page=reports"   data-page="reports">Reports</a>
   <a href="?page=visitors"  data-page="visitors">Visitors</a>
-  <a href="?page=kiosk"     data-page="kiosk">Kiosk</a>
   <a href="?page=admin"     data-page="admin">Admin</a>
 </nav>
 
@@ -49,25 +48,35 @@
 </nav>
 
 <script>
+  /**
+   * Authoritative in-app navigation. Every page must route through this.
+   *
+   * Apps Script always serves user HTML inside its own sandbox iframe, so
+   * window.top !== window.self even on a direct /exec visit — a top-vs-self
+   * comparison cannot tell "embedded in our portal" from "opened directly".
+   * Reading top.location.href throws (cross-origin), so the destination must
+   * come from the server-injected appUrl, and the write must target top.
+   */
+  var QRATT_APP_URL = '<?= appUrl ?>';
+
+  function qrattNav(page) {
+    if (!page) return;
+    var url = QRATT_APP_URL + '?page=' + encodeURIComponent(page);
+    try {
+      (window.top || window).location.href = url;
+    } catch (err) {
+      // Sandboxed without top-navigation rights — open in the top frame instead.
+      window.open(url, '_top');
+    }
+  }
+
   (function() {
     var page = (new URLSearchParams(window.location.search)).get('page') || '';
     document.querySelectorAll('#topNav a[data-page], #bottomNav a[data-page]').forEach(function(a) {
       if (a.dataset.page === page) a.classList.add('active');
       a.addEventListener('click', function(e) {
         e.preventDefault();
-        var pg = a.dataset.page;
-        try {
-          var top = window.top || window.parent;
-          if (top !== window.self) {
-            // Inside GitHub Pages wrapper — signal parent to switch iframe, no reload
-            top.postMessage({ qratt_nav: pg }, '*');
-          } else {
-            // Standalone GAS access — normal navigation
-            top.location.href = top.location.href.split('?')[0] + '?page=' + pg;
-          }
-        } catch(err) {
-          window.location.href = '?page=' + pg;
-        }
+        qrattNav(a.dataset.page);
       });
     });
   })();
