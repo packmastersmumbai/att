@@ -644,6 +644,12 @@
     <!-- Scrollable page content -->
     <div class="page-content">
 
+      <!-- Holiday banner (shown only when data.holiday === true) -->
+      <div class="card holiday-banner" id="holidayBanner" style="display:none;margin-bottom:16px;border-left:4px solid var(--color-warning);background:#FFFBEB;">
+        <div style="font-size:14px;font-weight:700;color:#92400E;">🎉 Holiday today</div>
+        <div style="font-size:12px;color:#92400E;margin-top:2px;">Low attendance is expected — today is a configured holiday.</div>
+      </div>
+
       <!-- 6 KPIs -->
       <div class="kpi-grid-6">
         <div class="kpi-chip">
@@ -778,6 +784,12 @@
     </div>
 
     <div class="mob-body">
+
+      <!-- Holiday banner (shown only when data.holiday === true) -->
+      <div class="mob-updates holiday-banner" id="mobHolidayBanner" style="display:none;border-left:4px solid var(--color-warning);background:#FFFBEB;">
+        <div style="font-size:13px;font-weight:700;color:#92400E;">🎉 Holiday today</div>
+        <div style="font-size:11px;color:#92400E;margin-top:2px;">Low attendance is expected — today is a configured holiday.</div>
+      </div>
 
       <!-- KPI tiles -->
       <div class="mob-kpi-row">
@@ -943,6 +955,12 @@
           if (el) el.textContent = '⚠ Load failed: ' + (data.error || 'unknown error');
           return;
         }
+
+        var isHoliday = data.holiday === true;
+        var banner    = document.getElementById('holidayBanner');
+        var mobBanner = document.getElementById('mobHolidayBanner');
+        if (banner)    banner.style.display    = isHoliday ? 'block' : 'none';
+        if (mobBanner) mobBanner.style.display = isHoliday ? 'block' : 'none';
 
         var present   = data.present  || 0;
         var absent    = data.absent   || 0;

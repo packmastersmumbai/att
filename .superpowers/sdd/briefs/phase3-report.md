@@ -34,3 +34,36 @@ var raw = String(getConfigValue('Holidays') || '').trim();
 - `tests/helpers/gas-mock.js` was not actually gitignored in this repo (git status showed it as a normal tracked modification, not `??`), so no `git add -f` was needed — plain `git add` covers it.
 - The holiday catalog is hardcoded for calendar year 2026 per the brief's explicit decision; the UI's "India Holidays (2026)" heading and inline hint call this out so a future admin knows to expect a refresh for 2027+.
 - Did not touch `src/Code.js`'s Config schema *comment* — I searched for one near the defaults array and found none exists (the defaults array itself is the only place Config keys are enumerated), so there was nothing separate to update.
+
+## Phase 3 follow-up — Holiday banner in dashboard UI + mock/e2e fixes
+
+`_computeDashboardData_` already returned `holiday` (see above), but nothing in the UI consumed it — dashboards looked alarming ("everyone absent") on holidays with no explanation. Fixed two review findings.
+
+### FINDING 1 — Holiday banner (`src/pages/dashboard.html`)
+
+- Desktop: `<div class="card holiday-banner" id="holidayBanner" style="display:none;...">` inserted as the first child of `.page-content`, right before the `.kpi-grid-6` block. Uses the existing `.card` class (surface/shadow/radius) plus a warning-tinted left border/background so it visually matches the app's amber warning tokens, not a new design language.
+- Mobile: `<div class="mob-updates holiday-banner" id="mobHolidayBanner" style="display:none;...">` inserted as the first child of `.mob-body`, reusing the existing `.mob-updates` card style so it renders correctly in the separate mobile layout block.
+- Both banners contain the same copy: title `🎉 Holiday today`, subline `Low attendance is expected — today is a configured holiday.`
+- Show/hide logic lives in `loadDashboard()`'s success handler (added right before the present/absent KPI computation, without touching any of that logic): `var isHoliday = data.holiday === true;` then each banner's `style.display` is toggled `'block'`/`'none'` accordingly.
+
+### FINDING 2 — Mock holiday behavior (`tests/helpers/gas-mock.js`)
+
+- Renamed the pre-seeded `MOCK_HOLIDAYS` array to a new constant `NATIONAL_HOLIDAYS` (`['2026-01-26','2026-08-15','2026-10-02']`) and reset `MOCK_HOLIDAYS` (the "saved/ticked" list) to start empty — mirrors production `src/holidays.js`, where `saveHolidays()` stores only the admin's picks and the 3 national dates are merged in on every `getHolidays()` read, never persisted.
+- `getHolidays()` mock now returns `NATIONAL_HOLIDAYS.concat(MOCK_HOLIDAYS)` deduped via the same `indexOf`-filter idiom production uses, instead of just echoing back whatever was last saved.
+- `saveHolidays()` mock is unchanged (still just replaces `MOCK_HOLIDAYS` with the admin's picks after the token check) — this already matched production's save-only-the-picks behavior; the merge-on-read behavior was the only thing missing.
+- Added `holiday: false` to `MOCK_DASHBOARD` so `getDashboardData()` returns a shape matching production's `_computeDashboardData_` (which always includes `holiday`).
+- Kept ES5 style (var/function) to match the rest of the file.
+- File is gitignored; force-staged with `git add -f tests/helpers/gas-mock.js`.
+
+### E2E test added (`e2e-sweep-6-dashboard.js`)
+
+- Added a local helper `openDashboardWithHoliday(browser, flag)` that mirrors `e2e-lib.js`'s `openPage()` html-injection pattern (strip GAS template expressions, inject the mock script into `<head>`, load via base64 data URL) since `openPage()` itself has no hook for overriding mock data — the file's previously-defined `ANALYTICS_PATCH` constant was dead code, never actually applied anywhere, so no working override convention existed to reuse. The new helper string-replaces `'holiday: false,'` → `'holiday: <flag>,'` in `GAS_MOCK_SCRIPT` before injecting.
+- New suite `6g · Dashboard — Holiday banner` with 2 checks:
+  - `holiday banner is visible when data.holiday=true` — opens the dashboard with the mock forced to `holiday:true`, asserts `#holidayBanner` is visible.
+  - `holiday banner is hidden when data.holiday=false` — opens the dashboard with the mock's default (`holiday:false`), asserts `#holidayBanner` is NOT visible.
+
+### Tests
+
+- `node --check` passed clean on `src/reports.js`, `src/holidays.js`, `tests/helpers/gas-mock.js`, `e2e-sweep-6-dashboard.js`, and on the extracted inline `<script>` blocks from `src/pages/dashboard.html` (6 blocks concatenated and checked via `node --check`).
+- `node e2e-all.js` final line: **`Total: 159/159 passed (0 failed) 86.2s`** — up from the prior 157/157 baseline; new suite `6g` contributes 2/2 passing checks, no regressions anywhere else.
+- Did not run `clasp push`/`clasp deploy` per instructions.

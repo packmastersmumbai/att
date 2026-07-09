@@ -17,9 +17,11 @@ const GAS_MOCK_SCRIPT = `
     { QRCode: 'EMP-BLOCKED', PersonName: 'Bad Actor', Reason: 'Unauthorised Entry', AddedBy: 'Admin', AddedDate: '2026-01-15' }
   ];
 
-  // National holidays start pre-selected — mirrors getHolidays() always
-  // including the 3 gazetted dates even before the admin ticks anything.
-  var MOCK_HOLIDAYS = ['2026-01-26', '2026-08-15', '2026-10-02'];
+  // Mirrors src/holidays.js: saveHolidays stores only what the admin picked;
+  // the 3 gazetted national dates are merged in on every getHolidays() read
+  // (not stored), so they're always observed even before the admin ticks them.
+  var NATIONAL_HOLIDAYS = ['2026-01-26', '2026-08-15', '2026-10-02'];
+  var MOCK_HOLIDAYS = [];
 
   var MOCK_DASHBOARD = {
     success: true,
@@ -27,6 +29,7 @@ const GAS_MOCK_SCRIPT = `
     absent: 1,
     activeVisitors: 2,
     totalEmployees: 4,
+    holiday: false,
     recentActivity: [
       { Name: 'Priya Sharma', Type: 'EMP', Department: 'Operations', TimeIN: '09:05 AM', TimeOUT: '', Status: 'PARTIAL' },
       { Name: 'Rahul Mehta',  Type: 'EMP', Department: 'Engineering', TimeIN: '09:12 AM', TimeOUT: '05:30 PM', Status: 'PRESENT' },
@@ -154,7 +157,9 @@ const GAS_MOCK_SCRIPT = `
       },
 
       getHolidays: function() {
-        respond({ success: true, dates: MOCK_HOLIDAYS.slice() });
+        var all = NATIONAL_HOLIDAYS.concat(MOCK_HOLIDAYS);
+        var uniq = all.filter(function(d, i) { return all.indexOf(d) === i; });
+        respond({ success: true, dates: uniq });
       },
 
       saveHolidays: function(dates, token) {
