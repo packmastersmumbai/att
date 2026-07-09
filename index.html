@@ -73,13 +73,10 @@
       var app = document.getElementById('app');
       var loader = document.getElementById('loader');
 
-      // ponytail: mobile once got a hard redirect to the raw GAS URL to dodge an
-      // iframe block. The iframe loads fine now, so try it first and only fall
-      // back to the raw URL if it genuinely never loads (real block returns).
+      // No auto-redirect to the raw GAS URL: in incognito the iframe can take >4s,
+      // and bouncing there exposed the ugly script.google.com URL. We always stay
+      // on the portal; the existing 12s loader timeout stops a spinner hanging.
       var iframeLoaded = false;
-      setTimeout(function() {
-        if (!iframeLoaded) window.location.replace(base + '?page=' + page + '&v=100');
-      }, 4000);
 
       function loadPage(pg) {
         loader.style.display = 'flex';
