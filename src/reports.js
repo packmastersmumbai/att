@@ -11,6 +11,36 @@ function getLogs(filters) {
   getSheetAsObjects(SHEETS.EMPLOYEES).forEach(function(e) { genderMap[String(e.EmpID)] = e.Gender || ''; });
   logs.forEach(function(row) { row.Gender = genderMap[String(row.PersonID)] || ''; });
 
+  // Visitor details live only in the Visitors sheet — the Logs row for a scan
+  // carries just Name (+ empty Department). Join Company/Purpose/Host/Vehicle/ID
+  // onto each VIS row so the report can show who the visitor is, why they came,
+  // and who they met. Host id is resolved to the employee's name for display.
+  var hasVisRows = logs.some(function(row) { return row.Type === 'VIS'; });
+  if (hasVisRows) {
+    var visMap = {};
+    getSheetAsObjects(SHEETS.VISITORS).forEach(function(v) { visMap[String(v.VisitorID)] = v; });
+    var empNameMap = {};
+    getSheetAsObjects(SHEETS.EMPLOYEES).forEach(function(e) { empNameMap[String(e.EmpID)] = e.Name || ''; });
+    logs.forEach(function(row) {
+      if (row.Type !== 'VIS') return;
+      var v = visMap[String(row.PersonID)];
+      if (!v) return;
+      row.Company = v.Company || '';
+      row.Purpose = v.Purpose || '';
+      row.Vehicle = v.Vehicle || '';
+      row.IDType  = v.IDType || '';
+      row.IDNumber = v.IDNumber || '';
+      row.Phone   = v.Phone || '';
+      // HostEmpID is what the visitors History table renders; Host is the
+      // resolved employee name for the report's richer view.
+      row.HostEmpID = v.HostEmpID || '';
+      row.Host    = empNameMap[String(v.HostEmpID)] || v.HostEmpID || '';
+      // The report's "Department" column is blank for visitors; show Company
+      // there (falling back to Purpose) so the row isn't just a bare name.
+      if (!row.Department) row.Department = v.Company || v.Purpose || '';
+    });
+  }
+
   var results = logs.filter(function(row) {
     if (filters.dateFrom && row.Date < filters.dateFrom) return false;
     if (filters.dateTo   && row.Date > filters.dateTo)   return false;

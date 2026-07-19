@@ -245,12 +245,28 @@ function getVisitorPass(visitorId) {
  * Self check-in / check-out toggle from the visitor pass link.
  * First tap = check IN, next = check OUT (same logic as a kiosk scan).
  */
+var SELF_CHECK_DEBOUNCE_SEC = 60; // ignore a repeat tap within this window
+
 function selfCheckVisitor(visitorId) {
   if (!visitorId) return { success: false, error: 'Missing visitor id' };
   var sheet = getSheet(SHEETS.VISITORS);
   if (findRowByValue(sheet, 'VisitorID', visitorId) === -1) {
     return { success: false, error: 'Visitor not found' };
   }
+
+  // Debounce: the pass page could double-fire (fast double-tap, or a retry),
+  // which was checking a visitor IN then immediately back OUT — leaving
+  // TimeIN == TimeOUT, a 0m duration, and an always-empty ActiveVisitors list.
+  // A second toggle inside the window is ignored; we just report current state.
+  var cache = CacheService.getScriptCache();
+  var key = 'SELFCHK_' + String(visitorId).replace(/[^a-z0-9]/gi, '');
+  if (cache.get(key)) {
+    var cur = getVisitorPass(visitorId);
+    return { success: true, action: 'NOOP', name: cur.name || '',
+             status: cur.status, note: 'already recorded — please wait a moment' };
+  }
+  cache.put(key, '1', SELF_CHECK_DEBOUNCE_SEC);
+
   var result = processQRScan(visitorId, 'Self Service');
   var pass = getVisitorPass(visitorId);
   result.status = pass.status;     // post-toggle status

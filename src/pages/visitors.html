@@ -1275,7 +1275,7 @@
                 '<div style="font-weight:500">' + esc(r.Name) + '</div>' +
               '</div></td>' +
               '<td>' + esc(r.Company || '–') + '</td>' +
-              '<td>' + esc(r.HostEmpID || '–') + '</td>' +
+              '<td>' + esc(r.Host || r.HostEmpID || '–') + '</td>' +
               '<td>' + (r.Purpose ? '<span class="badge badge-blue">' + esc(r.Purpose) + '</span>' : '–') + '</td>' +
               '<td>' + esc(r.Date) + '</td>' +
               '<td>' + esc(r.TimeIN) + '</td>' +
