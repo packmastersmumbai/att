@@ -194,19 +194,15 @@ function _checkoutVisitorLocked_(visitorId) {
   if (!person) return { success: false, error: 'Visitor not found' };
 
   var logsSheet = getSheet(SHEETS.LOGS);
-  var openRow = _findOpenLogRow(logsSheet, visitorId, today());
+  // Any-date open row — a visitor stuck open from a previous day must still be
+  // closeable, otherwise they can never check out and stay "in" forever.
+  var openRow = _findOpenVisitorLogRow(logsSheet, visitorId);
 
   if (openRow !== -1) {
-    // Normal case: close the open row (stamps TimeOUT + clears ActiveVisitors).
     return _checkOut(logsSheet, openRow, person, 'Manual Checkout');
   }
 
-  // Drift case: no open log row, but the Active tab still listed them. Clear the
-  // stale ActiveVisitors entry so the dashboard/present list stops showing them.
-  var activeSheet = getSheet(SHEETS.ACTIVE_VISITORS);
-  var activeRow = findRowByValue(activeSheet, 'VisitorID', visitorId);
-  if (activeRow !== -1) activeSheet.deleteRow(activeRow);
-
+  // Genuinely already checked out (no open row anywhere).
   invalidateDashboardCache();
   return { success: true, action: 'CHECK_OUT', name: person.name, empId: visitorId,
            type: 'VIS', time: formatTime(new Date()), note: 'already checked out' };
@@ -227,7 +223,10 @@ function getVisitorPass(visitorId) {
   headers.forEach(function(h, i) { rec[h] = vals[i]; });
 
   var logsSheet = getSheet(SHEETS.LOGS);
-  var openRow = _findOpenLogRow(logsSheet, visitorId, today());
+  // Any-date open row: a visitor who checked in yesterday and never checked out
+  // is still "IN" today. Date-scoping this to today() made them read as OUT and
+  // let them accumulate duplicate open rows.
+  var openRow = _findOpenVisitorLogRow(logsSheet, visitorId);
 
   return {
     success:    true,
@@ -243,34 +242,53 @@ function getVisitorPass(visitorId) {
 
 /**
  * Self check-in / check-out toggle from the visitor pass link.
- * First tap = check IN, next = check OUT (same logic as a kiosk scan).
+ * Open row (any date) → check OUT; no open row → check IN.
+ *
+ * Uses the visitor-aware open-row finder (not processQRScan's today()-scoped
+ * one) so a visitor left open from a previous day checks OUT instead of being
+ * checked in a second time. A short in-flight guard collapses an accidental
+ * fast double-tap; a genuine later toggle is always honoured.
  */
-var SELF_CHECK_DEBOUNCE_SEC = 60; // ignore a repeat tap within this window
+var SELF_CHECK_INFLIGHT_SEC = 5; // collapse only a rapid accidental re-tap
 
 function selfCheckVisitor(visitorId) {
   if (!visitorId) return { success: false, error: 'Missing visitor id' };
-  var sheet = getSheet(SHEETS.VISITORS);
-  if (findRowByValue(sheet, 'VisitorID', visitorId) === -1) {
-    return { success: false, error: 'Visitor not found' };
-  }
 
-  // Debounce: the pass page could double-fire (fast double-tap, or a retry),
-  // which was checking a visitor IN then immediately back OUT — leaving
-  // TimeIN == TimeOUT, a 0m duration, and an always-empty ActiveVisitors list.
-  // A second toggle inside the window is ignored; we just report current state.
-  var cache = CacheService.getScriptCache();
-  var key = 'SELFCHK_' + String(visitorId).replace(/[^a-z0-9]/gi, '');
-  if (cache.get(key)) {
-    var cur = getVisitorPass(visitorId);
-    return { success: true, action: 'NOOP', name: cur.name || '',
-             status: cur.status, note: 'already recorded — please wait a moment' };
-  }
-  cache.put(key, '1', SELF_CHECK_DEBOUNCE_SEC);
+  var lock = LockService.getScriptLock();
+  try { lock.waitLock(20000); }
+  catch (e) { return { success: false, error: 'Busy — please try again' }; }
 
-  var result = processQRScan(visitorId, 'Self Service');
-  var pass = getVisitorPass(visitorId);
-  result.status = pass.status;     // post-toggle status
-  return result;
+  try {
+    var vSheet = getSheet(SHEETS.VISITORS);
+    if (findRowByValue(vSheet, 'VisitorID', visitorId) === -1) {
+      return { success: false, error: 'Visitor not found' };
+    }
+
+    // Collapse an accidental fast double-tap (page double-fire / retry). A
+    // deliberate toggle seconds later is fine; a real visit lasts minutes.
+    var cache = CacheService.getScriptCache();
+    var key = 'SELFCHK_' + String(visitorId).replace(/[^a-z0-9]/gi, '');
+    if (cache.get(key)) {
+      var cur = getVisitorPass(visitorId);
+      return { success: true, action: 'NOOP', name: cur.name || '',
+               status: cur.status, note: 'just recorded — please wait a moment' };
+    }
+    cache.put(key, '1', SELF_CHECK_INFLIGHT_SEC);
+
+    var person = _lookupPerson(visitorId);
+    if (!person) return { success: false, error: 'Visitor not found' };
+
+    var logsSheet = getSheet(SHEETS.LOGS);
+    var openRow = _findOpenVisitorLogRow(logsSheet, visitorId);
+    var result = openRow === -1
+      ? _checkIn(logsSheet, person, 'Self Service')
+      : _checkOut(logsSheet, openRow, person, 'Self Service');
+
+    result.status = openRow === -1 ? 'IN' : 'OUT'; // post-toggle status
+    return result;
+  } finally {
+    lock.releaseLock();
+  }
 }
 
 function addToBlacklist(entry, token) {

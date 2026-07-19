@@ -171,6 +171,33 @@ function _findOpenLogRow(logsSheet, personId, dateStr) {
   return -1;
 }
 
+/**
+ * Finds a person's open (TimeOUT empty) Logs row on ANY date, newest first.
+ * Visitors don't reset daily like employees — someone who checked in and never
+ * checked out (e.g. autoCheckoutAll missed them, or they stayed past midnight)
+ * still needs to be found so they can check out and stop showing as "in".
+ * Returns the 1-based row number, or -1.
+ */
+function _findOpenVisitorLogRow(logsSheet, personId) {
+  var lastRow = logsSheet.getLastRow();
+  if (lastRow < 2) return -1;
+
+  var personIdCol = getColIndex(logsSheet, 'PersonID');
+  var timeOutCol  = getColIndex(logsSheet, 'TimeOUT');
+  var minCol = Math.min(personIdCol, timeOutCol);
+  var maxCol = Math.max(personIdCol, timeOutCol);
+  var block  = logsSheet.getRange(2, minCol, lastRow - 1, maxCol - minCol + 1).getValues();
+  var piOff  = personIdCol - minCol;
+  var toOff  = timeOutCol  - minCol;
+
+  for (var i = block.length - 1; i >= 0; i--) { // newest first
+    if (String(block[i][piOff]) === String(personId) && block[i][toOff] === '') {
+      return i + 2;
+    }
+  }
+  return -1;
+}
+
 function _checkIn(logsSheet, person, gate) {
   var now = new Date();
   var logId = generateID('LOG');

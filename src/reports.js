@@ -234,19 +234,27 @@ function _computeDashboardData_() {
     return r;
   });
 
-  var activeVisitors = getSheetAsObjects(SHEETS.ACTIVE_VISITORS);
-
-  // Enrich active visitors with ExpectedOut / Purpose / Company from Visitors sheet
+  // "Currently checked-in visitors" is derived from OPEN visitor Logs rows —
+  // the authoritative record — NOT the ActiveVisitors sheet. That separate
+  // sheet drifted out of sync (autoCheckoutAll wipes it nightly, a half-run
+  // checkout could clear it) leaving visitors with an open Logs row invisible
+  // in every "who's here" view. A visitor is active iff their latest Logs row
+  // has an empty TimeOUT.
   var visitorRecords = getSheetAsObjects(SHEETS.VISITORS);
   var visitorMap = {};
   visitorRecords.forEach(function(v) { visitorMap[String(v.VisitorID)] = v; });
+
+  var empNameMap = {};
+  allEmps.forEach(function(e) { empNameMap[String(e.EmpID)] = e.Name || ''; });
+
+  var openVisitorLogs = logs.filter(function(r) { return r.Type === 'VIS' && r.TimeOUT === ''; });
 
   var nowDate = new Date();
   var nowH = nowDate.getHours(), nowM = nowDate.getMinutes();
   var overdueCount = 0;
 
-  activeVisitors = activeVisitors.map(function(av) {
-    var vis = visitorMap[String(av.VisitorID)] || {};
+  var activeVisitors = openVisitorLogs.map(function(r) {
+    var vis = visitorMap[String(r.PersonID)] || {};
     var expectedOut = vis.ExpectedOut || '';
     var overdue = false;
     if (expectedOut) {
@@ -259,12 +267,18 @@ function _computeDashboardData_() {
         }
       }
     }
-    return Object.assign({}, av, {
+    return {
+      VisitorID:   r.PersonID,
+      Name:        r.Name || vis.Name || '',
+      TimeIN:      r.TimeIN,
+      Gate:        r.Gate || '',
+      HostEmpID:   vis.HostEmpID || '',
+      Host:        empNameMap[String(vis.HostEmpID)] || vis.HostEmpID || '',
       ExpectedOut: expectedOut,
       Purpose:     vis.Purpose || '',
       Company:     vis.Company || '',
       overdue:     overdue
-    });
+    };
   });
 
   return {
