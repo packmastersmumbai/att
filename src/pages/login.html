@@ -193,32 +193,48 @@
       .login-wrap { padding: 20px 14px; gap: 18px; }
       .pin-key { height: 46px; font-size: 16px; }
     }
+
+    /* Language toggle — sits above the brand, out of the way of the PIN pad */
+    .login-lang-toggle { display: flex; gap: 6px; justify-content: center; margin-bottom: -8px; }
+    .login-lang-btn {
+      min-height: 30px; padding: 5px 12px;
+      border: 1px solid var(--color-border); border-radius: 8px;
+      background: #fff; color: var(--color-muted);
+      font-size: 11px; font-weight: 700; font-family: inherit; cursor: pointer;
+    }
+    .login-lang-btn.active { background: var(--color-primary); color: #fff; border-color: var(--color-primary); }
   </style>
 </head>
 <body>
 
   <div class="login-wrap">
 
+    <!-- Language toggle -->
+    <div class="login-lang-toggle">
+      <button type="button" class="login-lang-btn" data-lang-btn="en" onclick="qrattSetLang('en')">EN</button>
+      <button type="button" class="login-lang-btn" data-lang-btn="hi" onclick="qrattSetLang('hi')">हिं</button>
+    </div>
+
     <!-- Brand -->
     <div class="brand">
       <div class="brand-mark">QR</div>
       <div>
         <div class="brand-name">Att.</div>
-        <div class="brand-sub">Attendance Management</div>
+        <div class="brand-sub" data-i18n="login_brand_sub">Attendance Management</div>
       </div>
     </div>
 
     <!-- User selector -->
     <div>
-      <div class="section-label">Who's logging in?</div>
+      <div class="section-label" data-i18n="login_who_is_logging_in">Who's logging in?</div>
       <div class="user-grid" id="userGrid">
-        <div style="font-size:12px;color:#6b7280;text-align:center;padding:12px">Loading users…</div>
+        <div style="font-size:12px;color:#6b7280;text-align:center;padding:12px" data-i18n="login_loading_users">Loading users…</div>
       </div>
     </div>
 
     <!-- PIN entry -->
     <div class="pin-card" id="pinCard">
-      <div class="pin-msg hidden" id="pinMsg">Select a user above</div>
+      <div class="pin-msg hidden" id="pinMsg" data-i18n="login_select_user_above">Select a user above</div>
       <div class="pin-dots" id="pinDots">
         <div class="pin-dot" id="pd0"></div>
         <div class="pin-dot" id="pd1"></div>
@@ -295,7 +311,7 @@
 
     function addDigit(d) {
       if (_busy) return;
-      if (!_selectedUser) { setMsg('Select a user first'); shakeDots(); return; }
+      if (!_selectedUser) { setMsg(qrattT('login_select_user_first')); shakeDots(); return; }
       if (_pin.length >= PIN_LEN) return;
       _pin.push(d);
       updateDots();
@@ -329,7 +345,7 @@
           _pin = [];
           _busy = false;
           updateDots();
-          setMsg(res.error || 'Incorrect PIN');
+          setMsg(res.error || qrattT('login_incorrect_pin'));
           shakeDots();
         }
       });

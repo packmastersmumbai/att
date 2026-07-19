@@ -109,6 +109,17 @@
     .sb-item:hover { background: #f5f0ee; color: #1b1c1c; }
     .sb-item.active { background: #000666; color: #fff; }
     .sb-icon { width: 16px; height: 16px; flex-shrink: 0; }
+
+    /* ── Language toggle (sidebar, light theme) ── */
+    .sc-lang-toggle { display: flex; gap: 6px; padding: 10px 8px 0; }
+    .sc-lang-btn {
+      flex: 1;
+      min-height: 30px; padding: 5px 8px;
+      border: 1px solid var(--color-border); border-radius: 6px;
+      background: #fff; color: #64748B;
+      font-size: 11px; font-weight: 700; font-family: inherit; cursor: pointer;
+    }
+    .sc-lang-btn.active { background: var(--color-primary); color: #fff; border-color: var(--color-primary); }
     .sb-bottom {
       padding: 12px 8px;
       border-top: 1px solid #e8e3e0;
@@ -742,25 +753,29 @@
     <nav class="sb-nav">
       <a href="?page=dashboard" class="sb-item" data-page="dashboard">
         <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-        <span>Dashboard</span>
+        <span data-i18n="nav_dashboard">Dashboard</span>
       </a>
       <a href="?page=scanner" class="sb-item" data-page="scanner">
         <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="5" height="5"/><rect x="16" y="3" width="5" height="5"/><rect x="3" y="16" width="5" height="5"/><path d="M21 16h-3v3m0-3v3h-3"/></svg>
-        <span>Scanner</span>
+        <span data-i18n="scanner_nav_scanner">Scanner</span>
       </a>
       <a href="?page=visitors" class="sb-item" data-page="visitors">
         <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-        <span>Visitor Log</span>
+        <span data-i18n="nav_visitors">Visitor Log</span>
       </a>
       <a href="?page=reports" class="sb-item" data-page="reports">
         <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>
-        <span>Reports</span>
+        <span data-i18n="nav_reports">Reports</span>
       </a>
       <a href="?page=admin" class="sb-item" data-page="admin">
         <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M12 14c-5 0-8 2-8 3v1h16v-1c0-1-3-3-8-3z"/></svg>
-        <span>Staff Directory</span>
+        <span data-i18n="scanner_nav_staff_directory">Staff Directory</span>
       </a>
     </nav>
+    <div class="sc-lang-toggle">
+      <button type="button" class="sc-lang-btn" data-lang-btn="en" onclick="qrattSetLang('en')">EN</button>
+      <button type="button" class="sc-lang-btn" data-lang-btn="hi" onclick="qrattSetLang('hi')">हिं</button>
+    </div>
     <div class="sb-bottom">
       <a href="?page=admin" class="sb-item sb-settings" data-page="admin">
         <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
@@ -804,14 +819,14 @@
       <!-- ── Left: Camera (hidden on desktop when result shows) ── -->
       <div class="scan-left" id="scanLeft">
         <div class="scan-topbar">
-          <div class="scan-status"><span class="pulse"></span>Ready to Scan</div>
+          <div class="scan-status"><span class="pulse"></span><span data-i18n="scanner_ready_to_scan">Ready to Scan</span></div>
           <div class="gate-row">
-            <label>Gate</label>
+            <label data-i18n="scanner_gate">Gate</label>
             <select id="gateSelect">
-              <option value="Main Gate">Main Gate</option>
-              <option value="Side Gate">Side Gate</option>
-              <option value="Reception">Reception</option>
-              <option value="Rear Gate">Rear Gate</option>
+              <option value="Main Gate" data-i18n="gate_main">Main Gate</option>
+              <option value="Side Gate" data-i18n="gate_side">Side Gate</option>
+              <option value="Reception" data-i18n="gate_reception">Reception</option>
+              <option value="Rear Gate" data-i18n="gate_rear">Rear Gate</option>
             </select>
           </div>
         </div>
@@ -821,23 +836,23 @@
           <div id="scanLauncher" style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:16px;padding:24px;">
             <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="#38BDF8" stroke-width="1.5"><rect x="3" y="3" width="5" height="5"/><rect x="16" y="3" width="5" height="5"/><rect x="3" y="16" width="5" height="5"/><path d="M21 16h-3v3m0-3v3h-3"/></svg>
             <div style="text-align:center">
-              <div style="font-size:14px;font-weight:700;color:#F1F5F9;margin-bottom:6px">QR Camera Scanner</div>
-              <div style="font-size:11px;color:#475569;margin-bottom:18px">Opens in a popup window · camera stays open · scan → result → continue</div>
+              <div style="font-size:14px;font-weight:700;color:#F1F5F9;margin-bottom:6px" data-i18n="scanner_camera_title">QR Camera Scanner</div>
+              <div style="font-size:11px;color:#475569;margin-bottom:18px" data-i18n="scanner_camera_hint">Opens in a popup window · camera stays open · scan → result → continue</div>
             </div>
             <button id="btnOpenScanner" onclick="openScanner()" style="background:#2563EB;color:#fff;border:none;border-radius:10px;padding:14px 32px;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;display:flex;align-items:center;gap:8px;transition:background .15s;">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-              Open Scanner
+              <span data-i18n="scanner_open_scanner">Open Scanner</span>
             </button>
             <div id="scanWaiting" style="display:none;font-size:11px;color:#475569;text-align:center;line-height:1.7">
-              <span style="color:#10B981;font-weight:700">● Scanner active</span> · waiting for scan…<br>
-              <a href="#" onclick="openScanner();return false;" style="color:#38BDF8;font-weight:600">Reopen window</a>
+              <span style="color:#10B981;font-weight:700" data-i18n="scanner_active">● Scanner active</span> · <span data-i18n="scanner_waiting_for_scan">waiting for scan…</span><br>
+              <a href="#" onclick="openScanner();return false;" style="color:#38BDF8;font-weight:600" data-i18n="scanner_reopen_window">Reopen window</a>
             </div>
           </div>
         </div>
 
         <div class="manual-row no-print">
-          <input type="text" id="manualCode" placeholder="Or type QR code manually…">
-          <button class="btn-submit" onclick="submitManual()">Submit</button>
+          <input type="text" id="manualCode" data-i18n-ph="scanner_manual_ph" placeholder="Or type QR code manually…">
+          <button class="btn-submit" onclick="submitManual()" data-i18n="scanner_submit">Submit</button>
         </div>
       </div>
 
@@ -847,18 +862,18 @@
       <div class="scan-right">
         <div class="log-hdr-row">
           <div class="log-hdr-left">
-            <div class="log-hdr">Activity Log</div>
-            <div class="log-session">Live identification stream</div>
+            <div class="log-hdr" data-i18n="scanner_activity_log">Activity Log</div>
+            <div class="log-session" data-i18n="scanner_live_stream">Live identification stream</div>
           </div>
-          <div class="log-chip"><span class="log-chip-dot"></span>Session Active</div>
+          <div class="log-chip"><span class="log-chip-dot"></span><span data-i18n="scanner_session_active">Session Active</span></div>
         </div>
         <div class="al-list" id="alList">
-          <div style="color:#1E293B;font-size:11px;padding:10px 0">Loading…</div>
+          <div style="color:#1E293B;font-size:11px;padding:10px 0" data-i18n="scanner_loading">Loading…</div>
         </div>
         <div class="throughput">
-          <div class="tp-lbl">Hourly Throughput</div>
+          <div class="tp-lbl" data-i18n="scanner_hourly_throughput">Hourly Throughput</div>
           <div class="tp-num" id="tpNum">–</div>
-          <div class="tp-sub" id="tpSub">scans today</div>
+          <div class="tp-sub" id="tpSub" data-i18n="scanner_scans_today">scans today</div>
         </div>
       </div>
     </div>
@@ -943,7 +958,7 @@
       var waiting = document.getElementById('scanWaiting');
       if (waiting) waiting.style.display = 'block';
       var btn = document.getElementById('btnOpenScanner');
-      if (btn) { btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg> Scanner Open'; }
+      if (btn) { btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg> ' + qrattT('scanner_scanner_open'); }
     }
 
     function onScannerClosed() {
@@ -951,7 +966,7 @@
       var waiting = document.getElementById('scanWaiting');
       if (waiting) waiting.style.display = 'none';
       var btn = document.getElementById('btnOpenScanner');
-      if (btn) { btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg> Open Scanner'; }
+      if (btn) { btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg> ' + qrattT('scanner_open_scanner'); }
     }
 
     function onScanCode(qrCode, sourceWindow) {
@@ -992,7 +1007,7 @@
       document.getElementById('resultCard').innerHTML =
         '<div class="rc" style="border:1px solid rgba(255,255,255,.08)">' +
         '<div class="rc-spinner"></div>' +
-        '<div style="color:#334155;font-size:12px;margin-bottom:20px">Processing scan…</div>' +
+        '<div style="color:#334155;font-size:12px;margin-bottom:20px">' + esc(qrattT('scanner_processing_scan')) + '</div>' +
         '</div>';
       var overlay = document.getElementById('resultOverlay');
       var scanLeft = document.getElementById('scanLeft');
@@ -1014,16 +1029,16 @@
       if (res.success === false && !res.action) {
         var overlay = document.getElementById('resultOverlay');
         var scanLeft = document.getElementById('scanLeft');
-        showToast('⚠ Server error', 'unk');
+        showToast('⚠ ' + qrattT('scanner_toast_server_error'), 'unk');
         document.getElementById('resultCard').innerHTML =
           '<div class="rc unknown">' +
           '<span class="rc-close" onclick="dismissResult()">×</span>' +
-          '<div class="rc-badge b-unk">ERROR</div>' +
-          '<div class="rc-name">Server Error</div>' +
-          '<div class="rc-dept">Unable to reach attendance system</div>' +
-          '<div class="rc-denied-msg">' + esc(res.error || 'An unexpected error occurred. Please try again or contact support.') + '</div>' +
+          '<div class="rc-badge b-unk">' + esc(qrattT('scanner_badge_error')) + '</div>' +
+          '<div class="rc-name">' + esc(qrattT('scanner_server_error_title')) + '</div>' +
+          '<div class="rc-dept">' + esc(qrattT('scanner_server_error_subtitle')) + '</div>' +
+          '<div class="rc-denied-msg">' + esc(res.error || qrattT('scanner_unexpected_error')) + '</div>' +
           '<div class="rc-err-code">ERR · GAS_UNREACHABLE</div>' +
-          '<button class="btn-dismiss bd-unk" onclick="dismissResult()">Dismiss</button>' +
+          '<button class="btn-dismiss bd-unk" onclick="dismissResult()">' + esc(qrattT('scanner_dismiss')) + '</button>' +
           '<div class="dismiss-bar"><div class="dismiss-fill df-unk"></div></div>' +
           '</div>';
         overlay.style.display = '';
@@ -1044,42 +1059,42 @@
       var ini = initials(res.name || '?');
 
       // Toast notification
-      var tMsg = type === 'check-in'  ? '\u2713 ' + (res.name||'') + ' \u2014 Checked In'   :
-                 type === 'check-out' ? '\u2713 ' + (res.name||'') + ' \u2014 Checked Out'  :
-                 res.action === 'INACTIVE' ? '\u26d4 ' + (res.name||'Member') + ' \u2014 INACTIVE MEMBER' :
-                 type === 'blocked'   ? '\u26d4 ' + (res.name||'Access Denied') + ' \u2014 BLOCKED' :
-                 '\u26a0 QR code not recognised';
+      var tMsg = type === 'check-in'  ? '\u2713 ' + (res.name||'') + ' \u2014 ' + qrattT('scanner_toast_checked_in')   :
+                 type === 'check-out' ? '\u2713 ' + (res.name||'') + ' \u2014 ' + qrattT('scanner_toast_checked_out')  :
+                 res.action === 'INACTIVE' ? '\u26d4 ' + (res.name|| qrattT('scanner_member_fallback')) + ' \u2014 ' + qrattT('scanner_toast_inactive_member') :
+                 type === 'blocked'   ? '\u26d4 ' + (res.name|| qrattT('scanner_access_denied_fallback')) + ' \u2014 ' + qrattT('scanner_toast_blocked') :
+                 '\u26a0 ' + qrattT('scanner_qr_not_recognised');
       var tType = type === 'check-in' ? 'in' : type === 'check-out' ? 'out' : type === 'blocked' ? 'blk' : 'unk';
       showToast(tMsg, tType);
 
       // Badge
       var bCls = (res.action === 'BLOCKED' || res.action === 'INACTIVE') ? 'b-blk' : type === 'unknown' ? 'b-unk' : (res.type === 'VIS' ? 'b-vis' : 'b-emp');
-      var bLbl = res.action === 'INACTIVE' ? 'INACTIVE' : res.action === 'BLOCKED' ? 'BLOCKED' : type === 'unknown' ? 'UNKNOWN' : (res.type === 'VIS' ? 'VISITOR' : 'EMPLOYEE');
+      var bLbl = res.action === 'INACTIVE' ? qrattT('scanner_badge_inactive') : res.action === 'BLOCKED' ? qrattT('scanner_badge_blocked') : type === 'unknown' ? qrattT('scanner_badge_unknown') : (res.type === 'VIS' ? qrattT('scanner_badge_visitor') : qrattT('scanner_badge_employee'));
 
       var body = '';
       var btnCls = 'bd-' + (type === 'check-in' ? 'in' : type === 'check-out' ? 'out' : type === 'blocked' ? 'blk' : 'unk');
       var dfCls  = 'df-' + (type === 'check-in' ? 'in' : type === 'check-out' ? 'out' : type === 'blocked' ? 'blk' : 'unk');
-      var btnLbl = type === 'check-in'  ? '✓ Checked In'   :
-                   type === 'check-out' ? '✓ Checked Out'  :
-                   type === 'blocked'   ? 'Dismiss' : 'Dismiss';
+      var btnLbl = type === 'check-in'  ? '✓ ' + qrattT('scanner_toast_checked_in')   :
+                   type === 'check-out' ? '✓ ' + qrattT('scanner_toast_checked_out')  :
+                   qrattT('scanner_dismiss');
 
       if (type === 'blocked' || type === 'unknown') {
         body =
-          '<div class="rc-denied">⚠ Access Denied</div>' +
-          '<div class="rc-denied-msg">' + esc(res.message || 'QR code not recognised or expired. Please contact the front desk.') + '</div>' +
+          '<div class="rc-denied">⚠ ' + esc(qrattT('scanner_access_denied')) + '</div>' +
+          '<div class="rc-denied-msg">' + esc(res.message || qrattT('scanner_qr_expired_msg')) + '</div>' +
           '<div class="rc-err-code">ERR · QR_UNRESOLVED_VOID</div>' +
-          '<div style="margin-top:12px"><a href="#" onclick="dismissResult();setTimeout(function(){var m=document.getElementById(\'manualCode\');if(m)m.focus();},50);return false;" style="font-size:11px;font-weight:600;color:#38BDF8;letter-spacing:.5px">\u21b5 ENTER SERIAL MANUALLY</a></div>';
+          '<div style="margin-top:12px"><a href="#" onclick="dismissResult();setTimeout(function(){var m=document.getElementById(\'manualCode\');if(m)m.focus();},50);return false;" style="font-size:11px;font-weight:600;color:#38BDF8;letter-spacing:.5px">\u21b5 ' + esc(qrattT('scanner_enter_serial_manually')) + '</a></div>';
       } else if (type === 'check-in') {
         body =
           '<div class="rc-stats">' +
-          '<div class="rc-stat"><div class="rc-stat-lbl">Action</div><div class="rc-stat-val sv-in">CHECK IN</div></div>' +
-          '<div class="rc-stat"><div class="rc-stat-lbl">Time</div><div class="rc-stat-val" style="color:#CBD5E1">' + esc(res.time || '') + '</div></div>' +
+          '<div class="rc-stat"><div class="rc-stat-lbl">' + esc(qrattT('scanner_stat_action')) + '</div><div class="rc-stat-val sv-in">' + esc(qrattT('scanner_toast_checked_in').toUpperCase()) + '</div></div>' +
+          '<div class="rc-stat"><div class="rc-stat-lbl">' + esc(qrattT('scanner_stat_time')) + '</div><div class="rc-stat-val" style="color:#CBD5E1">' + esc(res.time || '') + '</div></div>' +
           '</div>';
       } else {
         body =
           '<div class="rc-stats">' +
-          '<div class="rc-stat"><div class="rc-stat-lbl">Action</div><div class="rc-stat-val sv-out">CHECK OUT</div></div>' +
-          '<div class="rc-stat"><div class="rc-stat-lbl">Duration</div><div class="rc-stat-val" style="color:#CBD5E1">' + esc(res.duration || '–') + '</div></div>' +
+          '<div class="rc-stat"><div class="rc-stat-lbl">' + esc(qrattT('scanner_stat_action')) + '</div><div class="rc-stat-val sv-out">' + esc(qrattT('scanner_toast_checked_out').toUpperCase()) + '</div></div>' +
+          '<div class="rc-stat"><div class="rc-stat-lbl">' + esc(qrattT('scanner_stat_duration')) + '</div><div class="rc-stat-val" style="color:#CBD5E1">' + esc(res.duration || '–') + '</div></div>' +
           '</div>';
       }
 
@@ -1099,13 +1114,13 @@
           (type === 'blocked'   ? '<div class="rc-status-dot rc-dot-blk">✕</div>' : '') +
         '</div>' +
         '<div class="rc-badge ' + bCls + '">' + bLbl + '</div>' +
-        '<div class="rc-name">' + esc(res.name || 'Unknown') + '</div>' +
+        '<div class="rc-name">' + esc(res.name || qrattT('scanner_unknown')) + '</div>' +
         (res.empId ? '<div style="font-size:11px;font-weight:700;letter-spacing:1.5px;color:#38BDF8;margin-bottom:2px;font-family:monospace">#' + esc(res.empId) + '</div>' : '') +
         '<div class="rc-dept">' + esc(res.department || '') + '</div>' +
         body +
         '<button class="btn-dismiss ' + btnCls + '" onclick="dismissResult()">' + btnLbl + '</button>' +
         (type !== 'blocked' && type !== 'unknown'
-          ? '<div style="font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#5d7a9e;margin-top:10px;text-align:center">Triggered on valid scan · Auto-dismiss in 8s</div>' +
+          ? '<div style="font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#5d7a9e;margin-top:10px;text-align:center">' + esc(qrattT('scanner_auto_dismiss_hint')) + '</div>' +
             '<div class="dismiss-bar" style="margin-top:6px"><div class="dismiss-fill ' + dfCls + '"></div></div>'
           : '<div class="dismiss-bar"><div class="dismiss-fill ' + dfCls + '"></div></div>') +
         '</div>';
@@ -1128,9 +1143,9 @@
       if (window.innerWidth >= 769) {
         overlay.classList.add('desktop-active');
         if (scanLeft) scanLeft.style.display = 'none';
-        // Rename right panel header to "Live Terminal Feed"
+        // Rename right panel header while a scan result is showing
         var logHdr = document.querySelector('.log-hdr');
-        if (logHdr) logHdr.textContent = 'Live Terminal Feed';
+        if (logHdr) logHdr.textContent = qrattT('scanner_live_terminal_feed');
       } else {
         overlay.style.display = 'flex';
       }
@@ -1144,7 +1159,7 @@
         var isBlk = type === 'blocked';
         var dotCls = isBlk ? 'dot-blk' : (isOut ? 'dot-out' : 'dot-in');
         var dotArw = isBlk ? '✕' : (isOut ? '↗' : '↙');
-        var typeLabel = res.type === 'EMP' ? 'EMPLOYEE' : res.type === 'VIS' ? 'VISITOR' : (res.type || 'EMPLOYEE');
+        var typeLabel = res.type === 'EMP' ? qrattT('scanner_badge_employee') : res.type === 'VIS' ? qrattT('scanner_badge_visitor') : (res.type || qrattT('scanner_badge_employee'));
         var sub = typeLabel + (res.department ? ' · ' + res.department : '');
         var newItem = '<div class="al-item fresh">' +
           '<div class="al-av" style="background:' + c + '18;color:' + c + '">' + esc(ini) + '</div>' +
@@ -1177,7 +1192,7 @@
       overlay.classList.remove('desktop-active');
       if (scanLeft) scanLeft.style.display = '';
       var logHdr = document.querySelector('.log-hdr');
-      if (logHdr) logHdr.textContent = 'Activity Log';
+      if (logHdr) logHdr.textContent = qrattT('scanner_activity_log');
       resumeCamera();
     }
 
@@ -1195,7 +1210,7 @@
         var items = (d.recentActivity || []).slice(0, 8);
 
         if (!items.length) {
-          document.getElementById('alList').innerHTML = '<div style="color:#1E293B;font-size:11px">No activity yet today</div>';
+          document.getElementById('alList').innerHTML = '<div style="color:#1E293B;font-size:11px">' + esc(qrattT('scanner_no_activity_today')) + '</div>';
           return;
         }
         // Don't overwrite while a fresh result card is showing (instant prepend is already correct)
@@ -1208,7 +1223,7 @@
           var isBlk = r.Status === 'BLOCKED';
           var dotCls = isBlk ? 'dot-blk' : (isOut ? 'dot-out' : 'dot-in');
           var dotArw = isBlk ? '✕' : (isOut ? '↗' : '↙');
-          var typeLabel = r.Type === 'EMP' ? 'EMPLOYEE' : r.Type === 'VIS' ? 'VISITOR' : (r.Type || '');
+          var typeLabel = r.Type === 'EMP' ? qrattT('scanner_badge_employee') : r.Type === 'VIS' ? qrattT('scanner_badge_visitor') : (r.Type || '');
           var sub = esc(typeLabel + (r.Department ? ' \u00b7 ' + r.Department : ''));
           var rowCls = 'al-item' + (i === 0 ? ' fresh' : '') + (isBlk ? ' blocked-row' : '');
           return '<div class="' + rowCls + '">' +
@@ -1224,7 +1239,7 @@
 
         var total = (d.recentActivity || []).length;
         document.getElementById('tpNum').textContent = total;
-        document.getElementById('tpSub').textContent = 'scans today';
+        document.getElementById('tpSub').textContent = qrattT('scanner_scans_today');
       });
     }
 

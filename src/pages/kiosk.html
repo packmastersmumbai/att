@@ -752,6 +752,16 @@
       white-space: nowrap;
     }
     .k-manual-btn:hover { background: #2563EB; }
+
+    /* Language toggle — dark chrome to match the kiosk top bar */
+    .k-lang-toggle { display: flex; gap: 6px; margin-left: 14px; }
+    .k-lang-btn {
+      min-height: 30px; padding: 5px 10px;
+      border: 1px solid rgba(255,255,255,.14); border-radius: 8px;
+      background: rgba(255,255,255,.05); color: var(--muted);
+      font-size: 11px; font-weight: 700; font-family: inherit; cursor: pointer;
+    }
+    .k-lang-btn.active { background: var(--blue); color: #fff; border-color: var(--blue); }
   </style>
 </head>
 <body>
@@ -762,15 +772,19 @@
       <div class="k-logo-mark">QR</div>
       <div class="k-brand-text">
         <div class="k-brand">QR ATT.</div>
-        <div class="k-brand-sub">Attendance Live</div>
+        <div class="k-brand-sub" data-i18n="nav_kiosk_sub">Attendance Live</div>
       </div>
     </div>
     <nav class="k-nav">
-      <a class="k-nav-link" data-page="dashboard">&#9776; Dashboard</a>
-      <a class="k-nav-link" data-page="reports">&#9741; Reports</a>
-      <a class="k-nav-link" data-page="visitors">&#9786; Visitors</a>
-      <a class="k-nav-link" data-page="admin">&#9881; Admin</a>
+      <a class="k-nav-link" data-page="dashboard">&#9776; <span data-i18n="nav_dashboard">Dashboard</span></a>
+      <a class="k-nav-link" data-page="reports">&#9741; <span data-i18n="nav_reports">Reports</span></a>
+      <a class="k-nav-link" data-page="visitors">&#9786; <span data-i18n="nav_visitors">Visitors</span></a>
+      <a class="k-nav-link" data-page="admin">&#9881; <span data-i18n="nav_admin">Admin</span></a>
     </nav>
+    <div class="k-lang-toggle">
+      <button type="button" class="k-lang-btn" data-lang-btn="en" onclick="qrattSetLang('en')">EN</button>
+      <button type="button" class="k-lang-btn" data-lang-btn="hi" onclick="qrattSetLang('hi')">हिं</button>
+    </div>
     <div class="k-clock-wrap">
       <div class="k-time" id="kClock">--:--:--</div>
       <div class="k-date" id="kDate"></div>
@@ -785,17 +799,17 @@
 
       <div class="s-hero">
         <div class="num" id="kpiPresent">–</div>
-        <div class="lbl">Total Present</div>
+        <div class="lbl" data-i18n="kiosk_total_present">Total Present</div>
       </div>
 
       <div class="s-row">
         <div class="s-sm">
           <div class="num" id="kpiAbsent">–</div>
-          <div class="lbl">Absent</div>
+          <div class="lbl" data-i18n="kiosk_absent">Absent</div>
         </div>
         <div class="s-sm">
           <div class="num" id="kpiLate" style="color:var(--amber)">–</div>
-          <div class="lbl">Late</div>
+          <div class="lbl" data-i18n="kiosk_late">Late</div>
         </div>
       </div>
 
@@ -803,17 +817,17 @@
 
       <div class="s-eff">
         <div class="num" id="kpiOnTime">–%</div>
-        <div class="lbl">Attendance</div>
+        <div class="lbl" data-i18n="kiosk_attendance">Attendance</div>
         <div class="pct-bar"><div class="pct-fill" id="pctBar" style="width:0%"></div></div>
       </div>
 
       <div style="margin-top:10px;font-size:10px;color:var(--muted);letter-spacing:.5px">
-        Late after <span id="kLateAfter" style="color:var(--amber);font-weight:700">09:30</span>
+        <span data-i18n="kiosk_late_after">Late after</span> <span id="kLateAfter" style="color:var(--amber);font-weight:700">09:30</span>
       </div>
 
       <div class="terminals-online" style="margin-top:18px;">
         <div class="to-dot"></div>
-        <div class="to-lbl">All Terminals Online</div>
+        <div class="to-lbl" data-i18n="kiosk_terminals_online">All Terminals Online</div>
       </div>
 
     </div>
@@ -824,14 +838,14 @@
       <!-- Scan panel -->
       <div class="k-scan-panel">
         <div class="k-scan-top">
-          <div class="k-scan-status"><span class="pulse-dot"></span>Ready to Scan</div>
+          <div class="k-scan-status"><span class="pulse-dot"></span><span data-i18n="kiosk_ready_to_scan">Ready to Scan</span></div>
           <div class="k-gate-row">
-            <label style="font-size:10px;color:var(--muted);letter-spacing:1px;text-transform:uppercase">Gate</label>
+            <label style="font-size:10px;color:var(--muted);letter-spacing:1px;text-transform:uppercase" data-i18n="kiosk_gate">Gate</label>
             <select id="kioskGate" class="k-gate-select">
-              <option value="Main Gate">Main Gate</option>
-              <option value="Side Gate">Side Gate</option>
-              <option value="Reception">Reception</option>
-              <option value="Rear Gate">Rear Gate</option>
+              <option value="Main Gate" data-i18n="gate_main">Main Gate</option>
+              <option value="Side Gate" data-i18n="gate_side">Side Gate</option>
+              <option value="Reception" data-i18n="gate_reception">Reception</option>
+              <option value="Rear Gate" data-i18n="gate_rear">Rear Gate</option>
             </select>
           </div>
         </div>
@@ -841,11 +855,11 @@
           <div id="kioskScanLauncher">
             <button id="kioskBtnOpen" onclick="kioskOpenScanner()" class="k-scan-btn">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-              Open Scanner
+              <span data-i18n="kiosk_open_scanner">Open Scanner</span>
             </button>
             <div id="kioskScanWaiting" style="display:none;font-size:11px;color:var(--muted);text-align:center;margin-top:8px;line-height:1.7">
-              <span style="color:var(--green);font-weight:700">● Scanner active</span> · waiting for scan…<br>
-              <a href="#" onclick="kioskOpenScanner();return false;" style="color:var(--teal);font-weight:600">Reopen window</a>
+              <span style="color:var(--green);font-weight:700" data-i18n="kiosk_scanner_active">● Scanner active</span> · <span data-i18n="kiosk_waiting_for_scan">waiting for scan…</span><br>
+              <a href="#" onclick="kioskOpenScanner();return false;" style="color:var(--teal);font-weight:600" data-i18n="kiosk_reopen_window">Reopen window</a>
             </div>
           </div>
 
@@ -855,16 +869,16 @@
 
         <!-- Manual input -->
         <div class="k-manual-row">
-          <input type="text" id="kioskManualCode" class="k-manual-input" placeholder="Type QR code or frequent visitor's phone…"
+          <input type="text" id="kioskManualCode" class="k-manual-input" data-i18n-ph="kiosk_manual_ph" placeholder="Type QR code or frequent visitor's phone…"
             onkeydown="if(event.key==='Enter')kioskSubmitManual()">
-          <button class="k-manual-btn" onclick="kioskSubmitManual()">Submit</button>
+          <button class="k-manual-btn" onclick="kioskSubmitManual()" data-i18n="kiosk_submit">Submit</button>
         </div>
       </div>
 
       <!-- Arrivals grid below -->
-      <div class="sec-label" style="margin-top:16px">Recent Arrivals</div>
+      <div class="sec-label" style="margin-top:16px" data-i18n="kiosk_recent_arrivals">Recent Arrivals</div>
       <div class="arrivals-grid" id="arrivalsGrid">
-        <div style="color:var(--muted-dk);font-size:12px;grid-column:1/-1;text-align:center;padding:24px 0">Loading…</div>
+        <div style="color:var(--muted-dk);font-size:12px;grid-column:1/-1;text-align:center;padding:24px 0" data-i18n="kiosk_loading">Loading…</div>
       </div>
     </div>
 
@@ -874,17 +888,17 @@
   <div class="k-bottom">
     <div class="kb-left">
       <div class="kb-sys-dot"></div>
-      <div class="kb-sys-txt">System Active</div>
+      <div class="kb-sys-txt" data-i18n="kiosk_system_active">System Active</div>
     </div>
     <div class="kb-center" id="orgLabel">
       <span class="kb-scan-icon">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="5" height="5"/><rect x="16" y="3" width="5" height="5"/><rect x="3" y="16" width="5" height="5"/><path d="M21 16h-3v3m0-3v3h-3"/></svg>
       </span>
-      <span class="kb-scan-txt">SCAN YOUR QR CODE AT THE TERMINAL</span>
+      <span class="kb-scan-txt" data-i18n="kiosk_scan_prompt">SCAN YOUR QR CODE AT THE TERMINAL</span>
     </div>
     <div class="kb-right">
-      <div class="kb-stat">Last updated: <span id="kLastUpdated">—</span></div>
-      <div class="kb-stat">Auto-refresh: <span>8s</span></div>
+      <div class="kb-stat"><span data-i18n="kiosk_last_updated">Last updated:</span> <span id="kLastUpdated">—</span></div>
+      <div class="kb-stat"><span data-i18n="kiosk_auto_refresh">Auto-refresh:</span> <span>8s</span></div>
     </div>
   </div>
 
@@ -892,9 +906,9 @@
   <div id="idleOverlay" style="display:none;position:fixed;inset:0;z-index:900;background:rgba(4,10,20,.94);
        align-items:center;justify-content:center;flex-direction:column;gap:14px;cursor:pointer">
     <div style="font-size:48px">😴</div>
-    <div style="font-size:20px;font-weight:800;color:#E2E8F0">Kiosk paused</div>
-    <div style="font-size:13px;color:#64748B;text-align:center;max-width:280px;line-height:1.6">
-      Idle — live updates stopped to save quota.<br>Tap anywhere or scan to resume.
+    <div style="font-size:20px;font-weight:800;color:#E2E8F0" data-i18n="kiosk_paused">Kiosk paused</div>
+    <div style="font-size:13px;color:#64748B;text-align:center;max-width:280px;line-height:1.6" data-i18n="kiosk_idle_hint">
+      Idle — live updates stopped to save quota. Tap anywhere or scan to resume.
     </div>
     <div id="idleClock" style="font-size:34px;font-weight:800;color:#334155;margin-top:6px"></div>
   </div>
@@ -1167,7 +1181,7 @@
 
         var grid = document.getElementById('arrivalsGrid');
         if (!arrivals.length) {
-          grid.innerHTML = '<div style="color:var(--muted-dk);font-size:12px;grid-column:1/-1;text-align:center;padding:28px 0">No arrivals yet today</div>';
+          grid.innerHTML = '<div style="color:var(--muted-dk);font-size:12px;grid-column:1/-1;text-align:center;padding:28px 0">' + esc(qrattT('kiosk_no_arrivals')) + '</div>';
         } else {
           grid.innerHTML = arrivals.map(function(r, i) {
             var c      = pickColor(r.Name);
@@ -1221,22 +1235,22 @@
       document.getElementById('pmSub').textContent = '#' + empId;
       document.getElementById('pmMonth').textContent = '';
       document.getElementById('pmTotals').textContent = '';
-      document.getElementById('pmRows').innerHTML = '<div style="padding:16px 0;color:#64748B;font-size:12px">Loading…</div>';
+      document.getElementById('pmRows').innerHTML = '<div style="padding:16px 0;color:#64748B;font-size:12px">' + esc(qrattT('kiosk_loading')) + '</div>';
       var btn = document.getElementById('pmCheckoutBtn');
-      btn.disabled = false; btn.textContent = 'Check Out';
+      btn.disabled = false; btn.textContent = qrattT('kiosk_check_out');
       document.getElementById('pmBackdrop').style.display = 'flex';
 
       post({ action: 'getEmployeeMonth', empId: empId }, function(d) {
         if (!d || !d.success) {
-          document.getElementById('pmRows').innerHTML = '<div style="padding:16px 0;color:#F87171;font-size:12px">' + esc((d && d.error) || 'Failed to load') + '</div>';
+          document.getElementById('pmRows').innerHTML = '<div style="padding:16px 0;color:#F87171;font-size:12px">' + esc((d && d.error) || qrattT('kiosk_failed_to_load')) + '</div>';
           return;
         }
         var mLbl = new Date(d.month + '-01T00:00:00').toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
-        document.getElementById('pmMonth').textContent = 'THIS MONTH — ' + mLbl;
-        document.getElementById('pmTotals').textContent = d.presentDays + ' present · ' + d.lateDays + ' late';
+        document.getElementById('pmMonth').textContent = qrattT('kiosk_this_month') + ' — ' + mLbl;
+        document.getElementById('pmTotals').textContent = d.presentDays + ' ' + qrattT('kiosk_present_days') + ' · ' + d.lateDays + ' ' + qrattT('kiosk_late_days');
         pmSetCheckoutState(d.inToday, d.outToday);
         if (!d.rows.length) {
-          document.getElementById('pmRows').innerHTML = '<div style="padding:16px 0;color:#64748B;font-size:12px">No attendance this month</div>';
+          document.getElementById('pmRows').innerHTML = '<div style="padding:16px 0;color:#64748B;font-size:12px">' + esc(qrattT('kiosk_no_attendance_month')) + '</div>';
           return;
         }
         document.getElementById('pmRows').innerHTML = d.rows.map(function(r) {
@@ -1256,9 +1270,9 @@
 
     function pmSetCheckoutState(inToday, outToday) {
       var btn = document.getElementById('pmCheckoutBtn');
-      if (outToday) { btn.disabled = true; btn.textContent = '✓ Checked out'; btn.style.background = '#334155'; btn.style.cursor = 'default'; }
-      else if (!inToday) { btn.disabled = true; btn.textContent = 'Not checked in today'; btn.style.background = '#334155'; btn.style.cursor = 'default'; }
-      else { btn.disabled = false; btn.textContent = 'Check Out'; btn.style.background = '#2563EB'; btn.style.cursor = 'pointer'; }
+      if (outToday) { btn.disabled = true; btn.textContent = '✓ ' + qrattT('kiosk_checked_out'); btn.style.background = '#334155'; btn.style.cursor = 'default'; }
+      else if (!inToday) { btn.disabled = true; btn.textContent = qrattT('kiosk_not_checked_in_today'); btn.style.background = '#334155'; btn.style.cursor = 'default'; }
+      else { btn.disabled = false; btn.textContent = qrattT('kiosk_check_out'); btn.style.background = '#2563EB'; btn.style.cursor = 'pointer'; }
     }
 
     function pmClose() { document.getElementById('pmBackdrop').style.display = 'none'; pmEmpId = null; }
@@ -1267,7 +1281,7 @@
       if (!pmEmpId) return;
       var name = document.getElementById('pmName').textContent;
       pmConfirmAction = 'checkout';
-      document.getElementById('pmConfirmText').textContent = 'Check out ' + name + ' now? This records the current time as their OUT for today.';
+      document.getElementById('pmConfirmText').textContent = qrattT('kiosk_confirm_checkout_q').replace('{name}', name);
       document.getElementById('pmConfirm').style.display = 'flex';
     }
     function pmConfirmCancel() { document.getElementById('pmConfirm').style.display = 'none'; pmConfirmAction = null; }
@@ -1275,14 +1289,14 @@
       document.getElementById('pmConfirm').style.display = 'none';
       if (pmConfirmAction !== 'checkout' || !pmEmpId) return;
       var btn = document.getElementById('pmCheckoutBtn');
-      btn.disabled = true; btn.textContent = 'Checking out…';
+      btn.disabled = true; btn.textContent = qrattT('kiosk_checking_out');
       post({ action: 'checkoutEmployee', empId: pmEmpId }, function(d) {
         if (d && d.success) {
-          btn.textContent = '✓ Checked out ' + (d.time || '');
+          btn.textContent = '✓ ' + qrattT('kiosk_checked_out') + ' ' + (d.time || '');
           setTimeout(function() { pmClose(); loadData(); }, 900);
         } else {
-          btn.disabled = false; btn.textContent = 'Check Out';
-          alert((d && d.message) || (d && d.error) || 'Checkout failed');
+          btn.disabled = false; btn.textContent = qrattT('kiosk_check_out');
+          alert((d && d.message) || (d && d.error) || qrattT('kiosk_checkout_failed'));
         }
       });
     }
@@ -1428,7 +1442,7 @@
     var wt = document.getElementById('kioskScanWaiting');
     if (wt) wt.style.display = 'block';
     var btn = document.getElementById('kioskBtnOpen');
-    if (btn) btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg> Scanner Open';
+    if (btn) btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg> ' + qrattT('kiosk_scanner_open');
   }
 
   function kioskOnScannerClosed() {
@@ -1436,7 +1450,7 @@
     var wt = document.getElementById('kioskScanWaiting');
     if (wt) wt.style.display = 'none';
     var btn = document.getElementById('kioskBtnOpen');
-    if (btn) btn.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg> Open Scanner';
+    if (btn) btn.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg> ' + qrattT('kiosk_open_scanner');
   }
 
   function kioskOnScan(qrCode, sourceWin) {
@@ -1472,7 +1486,7 @@
     if (!/^(VIS|EMP)-/i.test(code) && digits.length >= 4) {
       post({ action: 'lookupVisitorByPhone', phone: code }, function(res) {
         if (res && res.success && res.visitorId) doScan(res.visitorId);
-        else kioskShowResult({ success: false, action: 'UNKNOWN', message: (res && res.error) || 'No visitor for that number', time: '' });
+        else kioskShowResult({ success: false, action: 'UNKNOWN', message: (res && res.error) || qrattT('kiosk_no_visitor_for_number'), time: '' });
       });
       return;
     }
@@ -1485,7 +1499,7 @@
     r.style.display = 'block';
     r.innerHTML = '<div class="krc" style="border:1px solid rgba(255,255,255,.08)">' +
       '<div class="krc-spinner"></div>' +
-      '<div style="font-size:11px;color:var(--muted);margin-top:4px">Processing…</div>' +
+      '<div style="font-size:11px;color:var(--muted);margin-top:4px">' + esc(qrattT('kiosk_processing')) + '</div>' +
       '</div>';
   }
 
@@ -1502,33 +1516,33 @@
     var bCls = res.action === 'BLOCKED' ? 'b-blk' :
                (res.success === false && !res.action) ? 'b-unk' :
                (res.type === 'VIS' ? 'b-vis' : 'b-emp');
-    var bLbl = res.action === 'BLOCKED' ? 'BLOCKED' :
-               (res.success === false && !res.action) ? 'ERROR' :
-               (res.type === 'VIS' ? 'VISITOR' : 'EMPLOYEE');
+    var bLbl = res.action === 'BLOCKED' ? qrattT('kiosk_badge_blocked') :
+               (res.success === false && !res.action) ? qrattT('kiosk_badge_error') :
+               (res.type === 'VIS' ? qrattT('kiosk_badge_visitor') : qrattT('kiosk_badge_employee'));
 
     var metaHtml = '';
     if (res.action === 'CHECK_IN') {
       metaHtml = '<div class="krc-meta">' +
-        '<div><div class="krc-meta-lbl">Action</div><div class="krc-meta-val" style="color:var(--green)">CHECK IN</div></div>' +
-        '<div><div class="krc-meta-lbl">Time</div><div class="krc-meta-val" style="color:var(--text-dim)">' + esc(res.time || '') + '</div></div>' +
+        '<div><div class="krc-meta-lbl">' + esc(qrattT('kiosk_meta_action')) + '</div><div class="krc-meta-val" style="color:var(--green)">' + esc(qrattT('kiosk_meta_check_in')) + '</div></div>' +
+        '<div><div class="krc-meta-lbl">' + esc(qrattT('kiosk_meta_time')) + '</div><div class="krc-meta-val" style="color:var(--text-dim)">' + esc(res.time || '') + '</div></div>' +
         '</div>';
     } else if (res.action === 'CHECK_OUT') {
       metaHtml = '<div class="krc-meta">' +
-        '<div><div class="krc-meta-lbl">Action</div><div class="krc-meta-val" style="color:var(--teal)">CHECK OUT</div></div>' +
-        '<div><div class="krc-meta-lbl">Duration</div><div class="krc-meta-val" style="color:var(--text-dim)">' + esc(res.duration || '–') + '</div></div>' +
+        '<div><div class="krc-meta-lbl">' + esc(qrattT('kiosk_meta_action')) + '</div><div class="krc-meta-val" style="color:var(--teal)">' + esc(qrattT('kiosk_meta_check_out')) + '</div></div>' +
+        '<div><div class="krc-meta-lbl">' + esc(qrattT('kiosk_meta_duration')) + '</div><div class="krc-meta-val" style="color:var(--text-dim)">' + esc(res.duration || '–') + '</div></div>' +
         '</div>';
     } else {
       metaHtml = '<div style="font-size:11px;color:var(--muted);margin-top:10px">' +
-        esc(res.message || res.error || 'QR code not recognised.') + '</div>';
+        esc(res.message || res.error || qrattT('kiosk_qr_not_recognised')) + '</div>';
     }
 
     r.innerHTML = '<div class="krc ' + type + '">' +
       '<div class="krc-av" style="background:' + c + '22;color:' + c + '">' + esc(ini) + '</div>' +
       '<span class="krc-badge ' + bCls + '">' + bLbl + '</span>' +
-      '<div class="krc-name">' + esc(res.name || 'Unknown') + '</div>' +
+      '<div class="krc-name">' + esc(res.name || qrattT('kiosk_unknown')) + '</div>' +
       '<div class="krc-dept">' + esc(res.department || '') + '</div>' +
       metaHtml +
-      '<button onclick="kioskDismissResult()" style="margin-top:12px;background:rgba(255,255,255,.06);border:1px solid var(--border-md);color:var(--muted);border-radius:6px;padding:6px 18px;font-size:11px;font-weight:600;font-family:var(--font);cursor:pointer;">Dismiss</button>' +
+      '<button onclick="kioskDismissResult()" style="margin-top:12px;background:rgba(255,255,255,.06);border:1px solid var(--border-md);color:var(--muted);border-radius:6px;padding:6px 18px;font-size:11px;font-weight:600;font-family:var(--font);cursor:pointer;">' + esc(qrattT('kiosk_dismiss')) + '</button>' +
       '</div>';
   }
 

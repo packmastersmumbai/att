@@ -123,6 +123,39 @@ async function run() {
     await context.close();
   }
 
+  // 8d — Phase 5b pages: kiosk, scanner, login, idcards each toggle Hindi/English.
+  {
+    const R = makeRunner('8d · i18n — kiosk/scanner/login/idcards toggle');
+    const CASES = [
+      { page: 'kiosk',   key: 'kiosk_total_present', hi: 'कुल उपस्थित', en: 'Total Present' },
+      { page: 'scanner', key: 'nav_dashboard',       hi: 'डैशबोर्ड',    en: 'Dashboard' },
+      { page: 'login',   key: 'login_who_is_logging_in', hi: null,      en: null },
+      { page: 'idcards', key: 'idcards_title',        hi: null,         en: null },
+    ];
+    for (const c of CASES) {
+      const { page, context } = await openPage(browser, c.page);
+      await installSessionStorageShim(page);
+      await page.addInitScript(() => sessionStorage.setItem('qratt_lang', 'hi'));
+      await page.reload();
+      await settle(page);
+
+      await R.check(`${c.page}: [${c.key}] renders under lang=hi`, async () => {
+        const loc = page.locator(`[data-i18n="${c.key}"]`).first();
+        if (await loc.count() === 0) throw new Error(`no node for ${c.key}`);
+        const hiTxt = (await loc.textContent()).trim();
+        if (!hiTxt) throw new Error('empty hi text');
+        // Flip to English and confirm the same node changes.
+        await page.evaluate(() => window.qrattSetLang('en'));
+        const enTxt = (await loc.textContent()).trim();
+        if (enTxt === hiTxt) throw new Error(`did not flip: still "${hiTxt}"`);
+        if (c.hi && !hiTxt.includes(c.hi)) throw new Error(`hi mismatch: "${hiTxt}"`);
+        if (c.en && !enTxt.includes(c.en)) throw new Error(`en mismatch: "${enTxt}"`);
+      });
+      await context.close();
+    }
+    summary.push(R.report());
+  }
+
   await browser.close();
   return summary;
 }
