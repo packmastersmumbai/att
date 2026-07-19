@@ -184,6 +184,7 @@ function _dispatchPost_(params) {
   if (action === 'processQRScan')    return jsonResponse(processQRScan(params.qrCode, params.gate));
   if (action === 'registerVisitor')  return jsonResponse(registerVisitor(params.visitor));
   if (action === 'checkoutVisitor')  return jsonResponse(checkoutVisitor(params.visitorId));
+  if (action === 'getVisitorDetail') return jsonResponse(getVisitorDetail(params.visitorId));
   if (action === 'lookupVisitorByPhone') return jsonResponse(lookupVisitorByPhone(params.phone));
   if (action === 'importGenderBloodGroup') return jsonResponse(importGenderBloodGroup(params.token));
   if (action === 'getDashboardData') return jsonResponse(getDashboardData());

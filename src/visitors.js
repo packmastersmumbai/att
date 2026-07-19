@@ -241,6 +241,59 @@ function getVisitorPass(visitorId) {
 }
 
 /**
+ * Full profile + complete visit log for one visitor, for the History detail
+ * popup. Returns the whole Visitors record (name, mobile, company, host,
+ * purpose, vehicle, ID, safety-ack) with the host id resolved to a name, plus
+ * every Logs row for that visitor across all dates (newest first).
+ */
+function getVisitorDetail(visitorId) {
+  if (!visitorId) return { success: false, error: 'Missing visitor id' };
+  var sheet = getSheet(SHEETS.VISITORS);
+  var row = findRowByValue(sheet, 'VisitorID', visitorId);
+  if (row === -1) return { success: false, error: 'Visitor not found' };
+
+  var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  var vals    = sheet.getRange(row, 1, 1, headers.length).getValues()[0];
+  var rec = {};
+  headers.forEach(function(h, i) { rec[h] = vals[i]; });
+
+  var hostName = '';
+  if (rec.HostEmpID) {
+    var empRow = findRowByValue(getSheet(SHEETS.EMPLOYEES), 'EmpID', rec.HostEmpID);
+    if (empRow !== -1) hostName = getCell(getSheet(SHEETS.EMPLOYEES), empRow, 'Name');
+  }
+
+  var visits = getSheetAsObjects(SHEETS.LOGS).filter(function(r) {
+    return r.Type === 'VIS' && String(r.PersonID) === String(visitorId);
+  }).map(function(r) {
+    return { date: String(r.Date), timeIn: r.TimeIN || '', timeOut: r.TimeOUT || '',
+             duration: r.Duration || '', gate: r.Gate || '', status: r.Status || '' };
+  }).reverse(); // newest first
+
+  var openRow = _findOpenVisitorLogRow(getSheet(SHEETS.LOGS), visitorId);
+
+  return {
+    success:     true,
+    visitorId:   visitorId,
+    name:        rec.Name || '',
+    phone:       rec.Phone != null ? String(rec.Phone) : '',
+    company:     rec.Company || '',
+    hostEmpId:   rec.HostEmpID || '',
+    hostName:    hostName || rec.HostEmpID || '',
+    purpose:     rec.Purpose || '',
+    vehicle:     rec.Vehicle || '',
+    idType:      rec.IDType || '',
+    idNumber:    rec.IDNumber || '',
+    visitorType: rec.VisitorType || '',
+    safetyAckAt: rec.SafetyAckAt || '',
+    blacklisted: String(rec.BlacklistFlag || '').toUpperCase() === 'YES',
+    status:      openRow === -1 ? 'OUT' : 'IN',
+    visits:      visits,
+    visitCount:  visits.length
+  };
+}
+
+/**
  * Self check-in / check-out toggle from the visitor pass link.
  * Open row (any date) → check OUT; no open row → check IN.
  *

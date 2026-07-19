@@ -938,7 +938,7 @@
         navigator.clipboard.writeText(url).then(done, function(){ window.prompt('Copy this link:', url); });
       } else { window.prompt('Copy this link:', url); }
     }
-    function post(data,callback){var action=data.action;var onErr=function(e){callback({success:false,error:e?e.message:'Unknown error'});};if(typeof google==='undefined'||!google.script){callback({success:false,error:'Not in GAS'});return;}var r=google.script.run.withSuccessHandler(callback).withFailureHandler(onErr);if(action==='registerVisitor')r.registerVisitor(data.visitor);else if(action==='checkoutVisitor')r.checkoutVisitor(data.visitorId);else if(action==='getLogs')r.getLogs(data.filters);else if(action==='getDashboardData')r.getDashboardData();else if(action==='exportCSV')r.exportCSV(data.filters);else callback({success:false,error:'Unknown: '+action});}
+    function post(data,callback){var action=data.action;var onErr=function(e){callback({success:false,error:e?e.message:'Unknown error'});};if(typeof google==='undefined'||!google.script){callback({success:false,error:'Not in GAS'});return;}var r=google.script.run.withSuccessHandler(callback).withFailureHandler(onErr);if(action==='registerVisitor')r.registerVisitor(data.visitor);else if(action==='checkoutVisitor')r.checkoutVisitor(data.visitorId);else if(action==='getLogs')r.getLogs(data.filters);else if(action==='getDashboardData')r.getDashboardData();else if(action==='exportCSV')r.exportCSV(data.filters);else if(action==='getVisitorDetail')r.getVisitorDetail(data.visitorId);else callback({success:false,error:'Unknown: '+action});}
   </script>
   <script>
     var COLORS = ['#3B82F6','#8B5CF6','#EC4899','#F59E0B','#10B981','#06B6D4','#EF4444','#6366F1','#84CC16','#F97316'];
@@ -1269,7 +1269,8 @@
           '<thead><tr><th>Visitor</th><th>Company</th><th>Host</th><th>Purpose</th><th>Date</th><th>Time IN</th><th>Time OUT</th><th>Duration</th></tr></thead><tbody>' +
           rows.map(function(r) {
             var c = pickColor(r.Name), ini = initials(r.Name);
-            return '<tr>' +
+            var vid = r.PersonID || r.VisitorID || '';
+            return '<tr' + (vid ? ' class="vh-row" data-vid="' + esc(vid) + '" style="cursor:pointer"' : '') + '>' +
               '<td><div style="display:flex;align-items:center;gap:8px">' +
                 '<div style="width:28px;height:28px;border-radius:50%;background:' + c + '18;color:' + c + ';display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0">' + esc(ini) + '</div>' +
                 '<div style="font-weight:500">' + esc(r.Name) + '</div>' +
@@ -1284,8 +1285,69 @@
               '</tr>';
           }).join('') +
           '</tbody></table></div>';
+
+        // Row click → open full visitor detail (profile + complete visit log).
+        el.querySelectorAll('.vh-row').forEach(function(tr) {
+          tr.addEventListener('click', function() { openVisitorDetail(tr.getAttribute('data-vid')); });
+        });
       });
     }
+
+    /* ── Visitor detail modal ── */
+    function openVisitorDetail(vid) {
+      if (!vid) return;
+      var back = document.getElementById('vdBackdrop');
+      var body = document.getElementById('vdBody');
+      document.getElementById('vdName').textContent = 'Loading…';
+      document.getElementById('vdId').textContent = vid;
+      body.innerHTML = '<p style="padding:16px 0;color:var(--color-text-muted);font-size:13px">Loading…</p>';
+      back.style.display = 'flex';
+
+      post({ action: 'getVisitorDetail', visitorId: vid }, function(d) {
+        if (!d || !d.success) {
+          body.innerHTML = '<p style="padding:16px 0;color:#DC2626;font-size:13px">' + esc((d && d.error) || 'Failed to load') + '</p>';
+          return;
+        }
+        document.getElementById('vdName').textContent = d.name || vid;
+
+        function field(label, val) {
+          if (!val) return '';
+          return '<div style="display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px solid var(--color-border)">' +
+            '<span style="color:var(--color-text-muted);font-size:12px">' + esc(label) + '</span>' +
+            '<span style="font-weight:500;font-size:13px;text-align:right">' + esc(val) + '</span></div>';
+        }
+
+        var status = d.status === 'IN'
+          ? '<span class="badge badge-green">Currently inside</span>'
+          : '<span class="badge" style="background:#e5e7eb;color:#374151">Checked out</span>';
+
+        var info =
+          '<div style="margin-bottom:6px">' + status +
+            (d.blacklisted ? ' <span class="badge" style="background:#fee2e2;color:#991b1b">Blacklisted</span>' : '') + '</div>' +
+          field('Mobile', d.phone) +
+          field('Company', d.company) +
+          field('Host', d.hostName) +
+          field('Purpose', d.purpose) +
+          field('Vehicle', d.vehicle) +
+          field('ID', d.idType ? (d.idType + (d.idNumber ? ' · ' + d.idNumber : '')) : d.idNumber) +
+          field('Type', d.visitorType) +
+          field('Safety acknowledged', d.safetyAckAt ? new Date(d.safetyAckAt).toLocaleString() : '');
+
+        var logHd = '<div style="margin:16px 0 8px;font-size:12px;font-weight:700;color:var(--color-text-muted);text-transform:uppercase;letter-spacing:.5px">Visit Log (' + d.visitCount + ')</div>';
+        var logTbl = d.visits.length
+          ? '<div style="overflow-x:auto"><table style="width:100%"><thead><tr>' +
+              '<th>Date</th><th>In</th><th>Out</th><th>Duration</th><th>Gate</th></tr></thead><tbody>' +
+              d.visits.map(function(v) {
+                return '<tr><td>' + esc(v.date) + '</td><td>' + esc(v.timeIn || '–') + '</td><td>' +
+                  esc(v.timeOut || '–') + '</td><td>' + esc(v.duration || '–') + '</td><td>' + esc(v.gate || '–') + '</td></tr>';
+              }).join('') +
+              '</tbody></table></div>'
+          : '<p style="color:var(--color-text-muted);font-size:13px">No visits recorded.</p>';
+
+        body.innerHTML = info + logHd + logTbl;
+      });
+    }
+    function closeVisitorDetail() { document.getElementById('vdBackdrop').style.display = 'none'; }
 
     function exportHistoryCSV() {
       post({ action: 'exportCSV', filters: { type: 'VIS' } }, function(res) {
@@ -1347,5 +1409,21 @@
     });
   })();
 </script>
+
+<!-- ═══════════ Visitor detail modal (History row click) ═══════════ -->
+<div id="vdBackdrop" onclick="if(event.target===this)closeVisitorDetail()"
+     style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(2,6,16,.72);align-items:center;justify-content:center;padding:16px">
+  <div style="background:var(--color-surface);border-radius:12px;max-width:460px;width:100%;max-height:85vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.35)">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 18px;border-bottom:1px solid var(--color-border);position:sticky;top:0;background:var(--color-surface)">
+      <div style="min-width:0">
+        <div id="vdName" style="font-weight:700;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>
+        <div id="vdId" style="font-size:11px;color:var(--color-text-muted);font-family:monospace;word-break:break-all"></div>
+      </div>
+      <button onclick="closeVisitorDetail()" aria-label="Close"
+              style="flex-shrink:0;width:32px;height:32px;border:none;background:var(--color-bg);border-radius:8px;font-size:18px;cursor:pointer;color:var(--color-text-muted)">&times;</button>
+    </div>
+    <div id="vdBody" style="padding:16px 18px"></div>
+  </div>
+</div>
 </body>
 </html>
