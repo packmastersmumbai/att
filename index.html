@@ -153,37 +153,51 @@
 
       var app = document.getElementById('app');
       var loader = document.getElementById('loader');
+      var blocked = document.getElementById('blocked');
 
-      // No auto-redirect to the raw GAS URL: in incognito the iframe can take >4s,
-      // and bouncing there exposed the ugly script.google.com URL. We always stay
-      // on the portal; the existing 12s loader timeout stops a spinner hanging.
-      var iframeLoaded = false;
+      // Try to embed the app in the iframe so the github.io URL stays. The
+      // fallback panel ("Open the app") stays ON TOP until the app proves it
+      // rendered by posting qratt_ready — a BLOCKED cross-origin iframe can't
+      // post that and (crucially) must never sit above the panel and swallow
+      // the button's taps (an earlier bug). So: panel on top by default; only a
+      // real ready-ping lifts the iframe above it.
+      var framedOk = false;
 
-      function loadPage(pg) {
-        loader.style.display = 'flex';
-        loader.style.opacity = '1';
-        app.classList.remove('ready');
-        app.src = appUrl(pg);
+      function setActivePage(pg) {
+        document.getElementById('blockedLink').href = appUrl(pg);
         history.replaceState(null, '', '?page=' + pg);
       }
 
-      // Deliberately NOT loading the iframe. Google refuses to frame the web app
-      // (its auth interstitial sends X-Frame-Options: SAMEORIGIN) and a blocked
-      // cross-origin iframe is undetectable from the parent — it fires no usable
-      // event, exposes no child frames, and its postMessages never arrive. So the
-      // portal acts as a launcher and opens the app directly.
-      document.getElementById('blockedLink').href = appUrl(page);
-      history.replaceState(null, '', '?page=' + page);
-      loader.style.display = 'none';
+      function loadPage(pg) {
+        app.src = appUrl(pg);
+        setActivePage(pg);
+      }
 
-      // If Google ever allows framing again, the app's nav ping proves it rendered;
-      // lift the iframe above the launcher at that point.
+      function revealApp() {
+        framedOk = true;
+        app.classList.add('ready');   // lifts iframe above panel + enables input
+        blocked.style.display = 'none';
+        loader.style.display = 'none';
+      }
+
+      // Kick off the iframe load AND set the fallback link, both pointing at the
+      // requested page.
+      setActivePage(page);
+      loader.style.display = 'none';   // panel is the resting state; no spinner hang
+      app.src = appUrl(page);
+
       window.addEventListener('message', function(e) {
-        if (e.data && e.data.qratt_nav && valid.indexOf(e.data.qratt_nav) !== -1) {
+        if (!e || !e.data) return;
+        // App rendered inside the frame → show it.
+        if (e.data.qratt_ready) { revealApp(); return; }
+        // In-app nav ping (only meaningful once framed): swap the iframe page.
+        if (framedOk && e.data.qratt_nav && valid.indexOf(e.data.qratt_nav) !== -1) {
           loadPage(e.data.qratt_nav);
-          document.getElementById('blockedLink').href = appUrl(e.data.qratt_nav);
         }
       });
+
+      // If no ready-ping arrives, framing is blocked — stay on the launcher
+      // panel (already visible). Nothing to do; the button opens the app.
     })();
   </script>
 </body>
