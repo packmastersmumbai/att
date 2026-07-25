@@ -201,7 +201,8 @@ function sendVisitorPassToChannel(visitorId, photoDataUrl) {
     if (hr !== -1) hostName = getCell(empSheet, hr, 'Name') || '';
   }
 
-  var checkInUrl = ScriptApp.getService().getUrl() + '?page=vpass&id=' + encodeURIComponent(visitorId);
+  // Pretty public URL (GitHub Pages), not the raw script.google.com/exec link.
+  var checkInUrl = publicPassUrl(visitorId);
   var type = rec.VisitorType || 'Guest';
   var icon = type === 'Courier' ? '📦' : type === 'Supplier' ? '🚚' : type === 'Contractor' ? '🔧' : '🧑';
 

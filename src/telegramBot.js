@@ -92,10 +92,11 @@ function _tgVisitorLink_(name, visitorId) {
   var id = String(visitorId || '').trim();
   var nm = _tgEsc_(name || 'Visitor');
   if (!id) return nm;
-  var base = '';
-  try { base = ScriptApp.getService().getUrl() || ''; } catch (e) {}
-  if (!base) return nm;
-  return '<a href="' + base + '?page=vpass&id=' + encodeURIComponent(id) + '">' + nm + '</a>';
+  // Pretty public URL (GitHub Pages), not the raw script.google.com/exec link.
+  var href = '';
+  try { href = publicPassUrl(id); } catch (e) {}
+  if (!href) return nm;
+  return '<a href="' + href + '">' + nm + '</a>';
 }
 
 function _tgVisitors_() {

@@ -5,10 +5,10 @@
 // Config (Script Properties): taskflow_hmac_secret (shared w/ DWM), dwm_create_url.
 // ============================================================
 
-var ATT_PUBLIC_BASE_ = 'https://packmastersmumbai.github.io/qratt';
-
 function _attSourceUrl(visitorId) {
-  return ATT_PUBLIC_BASE_ + '/?page=vpass&id=' + encodeURIComponent(String(visitorId || ''));
+  // Uses the shared public base (Config PublicUrl) — was a stale hardcoded
+  // '/qratt' URL that 404'd; the real Pages path is '/att'.
+  return publicPassUrl(visitorId);
 }
 
 // Sign params to match DWM _canonicalCreateString byte-for-byte.

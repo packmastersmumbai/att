@@ -32,6 +32,7 @@ function doGet(e) {
   var template = HtmlService.createTemplateFromFile('pages/' + page);
   template.page = page;
   template.appUrl = ScriptApp.getService().getUrl();
+  template.publicUrl = publicBaseUrl();   // pretty GitHub Pages base for in-app nav + shared links
   // For ID cards page inject employee data server-side (no extra round-trip)
   if (page === 'idcards') {
     var emps = [], orgName = 'My Organisation', idcardsError = '';
@@ -143,7 +144,8 @@ function _bootstrapIfNeeded() {
       ['TelegramBotToken',   ''],
       ['TelegramChatID',     ''],
       ['TelegramLiveScans',  'off'],
-      ['Holidays',           '']
+      ['Holidays',           ''],
+      ['PublicUrl',          'https://packmastersmumbai.github.io/att']
     ];
     configSheet.getRange(2, 1, defaults.length, 2).setValues(defaults);
   }

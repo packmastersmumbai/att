@@ -1491,15 +1491,18 @@
 </script>
 <script>
   (function() {
-    // Apps Script always nests user HTML in its own sandbox iframe, so
-    // window.top !== window.self even on a direct /exec visit — that comparison
-    // cannot detect an embedding portal. Reading top.location.href throws
-    // (cross-origin), so the destination comes from the server-injected appUrl
-    // and the write targets the top frame.
+    // In-app navigation targets the PRETTY GitHub Pages URL, so a user who came
+    // in through the portal keeps a github.io address on every hop instead of
+    // being dropped onto script.google.com. The Pages launcher re-opens the
+    // requested page. (There is no live iframe to postMessage — GAS refuses to
+    // be framed — so we navigate the top frame directly; PUBLIC_URL is the
+    // Config-driven public base, APP_URL is the raw GAS fallback.)
     var APP_URL = '<?= appUrl ?>';
+    var PUBLIC_URL = '<?= publicUrl ?>';
     function navigate(page) {
       if (!page) return;
-      var url = APP_URL + '?page=' + encodeURIComponent(page);
+      var base = /^https?:\/\//.test(PUBLIC_URL) ? PUBLIC_URL + '/' : (APP_URL + '?');
+      var url = base + (base.slice(-1) === '/' ? '?page=' : 'page=') + encodeURIComponent(page);
       try {
         (window.top || window).location.href = url;
       } catch(e) {
