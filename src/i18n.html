@@ -280,6 +280,14 @@ var QRATT_I18N = {
     var u = new URLSearchParams(location.search).get('lang');
     if (u === 'hi' || u === 'en') sessionStorage.setItem('qratt_lang', u);
     qrattApplyLang();
+    // Tell an embedding portal (GitHub Pages launcher) that the app actually
+    // rendered inside the iframe. A blocked cross-origin frame can't post this,
+    // so its arrival is the ONLY reliable proof framing works — the launcher
+    // lifts the iframe above its fallback panel only after receiving it.
+    try {
+      var current = new URLSearchParams(location.search).get('page') || '';
+      (window.top || window.parent).postMessage({ qratt_ready: true, page: current }, '*');
+    } catch (e) {}
   });
 })();
 </script>
