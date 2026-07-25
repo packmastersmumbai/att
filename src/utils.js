@@ -149,6 +149,23 @@ function getConfigValue(key) {
 }
 
 /**
+ * Canonical PUBLIC base URL for links shown to people (visitor pass, register).
+ * This is the GitHub Pages launcher, NOT the raw script.google.com/exec URL, so
+ * links stay on the pretty domain. Config key 'PublicUrl' overrides the default
+ * without a redeploy. Always returned WITHOUT a trailing slash.
+ */
+function publicBaseUrl() {
+  var configured = String(getConfigValue('PublicUrl') || '').trim();
+  var base = configured || 'https://packmastersmumbai.github.io/att';
+  return base.replace(/\/+$/, '');
+}
+
+/** Public visitor-pass URL on the pretty domain. */
+function publicPassUrl(visitorId) {
+  return publicBaseUrl() + '/?page=vpass&id=' + encodeURIComponent(String(visitorId || ''));
+}
+
+/**
  * Generates a unique ID with a given prefix, e.g. "EMP-004217"
  */
 function generateID(prefix) {

@@ -210,6 +210,7 @@
 
   <script>
     var APP_URL = '<?= appUrl ?>';
+    var PUBLIC_URL = '<?= publicUrl ?>';   // pretty base for the shareable pass link
 
     function toast(msg, type){
       var t=document.getElementById('toast');
@@ -479,7 +480,8 @@
       document.getElementById('doneQR').src=
         'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data='+encodeURIComponent(visitorId);
       document.getElementById('doneLink').href=
-        APP_URL+'?page=vpass&id='+encodeURIComponent(visitorId);
+        (/^https?:\/\//.test(PUBLIC_URL) ? PUBLIC_URL+'/?page=vpass&id=' : APP_URL+'?page=vpass&id=')
+        +encodeURIComponent(visitorId);
       document.getElementById('doneCard').style.display='block';
       window.scrollTo(0,0);
     }
