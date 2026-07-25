@@ -802,6 +802,8 @@
     .monthly-table td.cell-day.day-partial  { background: #fffbeb; }
     .monthly-table td.cell-day.day-absent   { background: #fef2f2; }
     .monthly-table td.cell-day.day-weekend  { background: #f8fafc; }
+    /* Worked a weekend: still clearly "present", flagged with a weekend accent. */
+    .monthly-table td.cell-day.day-weekend-worked { box-shadow: inset 3px 0 0 #94a3b8; }
     .mday-in  { font-size: 10px; font-weight: 600; color: #166534; font-family: var(--mono); }
     .mday-out { font-size: 10px; color: #0f766e; font-family: var(--mono); }
     .mday-dur { font-size: 9px; color: var(--muted); margin-top: 1px; font-family: var(--mono); }
@@ -1778,20 +1780,25 @@
       dayMeta.forEach(function(dm) {
         var isWkd = dm.dow === 0 || dm.dow === 6;
         var rec = emp.days[dm.d];
-        if (isWkd) {
-          tbody += '<td class="cell-day day-weekend"><span class="mday-wkd">—</span></td>';
-        } else if (!rec) {
-          totalAbsent++;
-          tbody += '<td class="cell-day day-absent"><span class="mday-abs">A</span></td>';
-        } else {
+        // Presence wins over the weekend marker: someone who actually worked a
+        // Sat/Sun must show their attendance, not a blank "—". Only an EMPTY
+        // weekend day renders as a (non-absent) weekend cell; an empty WEEKDAY
+        // counts as absent.
+        if (rec) {
           totalPresent++;
           var cls = rec.status === 'PRESENT' ? 'day-present' : 'day-partial';
           var inStyle = rec.late ? ' style="color:#B45309;font-weight:800;background:#FEF3C7;border-radius:3px"' : '';
-          tbody += '<td class="cell-day ' + cls + '"' + (rec.late ? ' title="Late arrival"' : '') + '>' +
+          tbody += '<td class="cell-day ' + cls + (isWkd ? ' day-weekend-worked' : '') + '"' + (rec.late ? ' title="Late arrival"' : '') + '>' +
             '<div class="mday-in"' + inStyle + '>' + esc(rec.timeIn || '–') + (rec.late ? ' ⚠' : '') + '</div>' +
             '<div class="mday-out">' + esc(rec.timeOut || '–') + '</div>' +
             '<div class="mday-dur">' + esc(rec.duration || '') + '</div>' +
           '</td>';
+        } else if (isWkd) {
+          // Empty weekend: not counted as absent (weekends aren't working days).
+          tbody += '<td class="cell-day day-weekend"><span class="mday-wkd">—</span></td>';
+        } else {
+          totalAbsent++;
+          tbody += '<td class="cell-day day-absent"><span class="mday-abs">A</span></td>';
         }
       });
 
