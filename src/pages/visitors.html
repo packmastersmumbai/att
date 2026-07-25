@@ -1329,7 +1329,7 @@
           field('Host', d.hostName) +
           field('Purpose', d.purpose) +
           field('Vehicle', d.vehicle) +
-          field('ID', d.idType ? (d.idType + (d.idNumber ? ' · ' + d.idNumber : '')) : d.idNumber) +
+          field('ID Type', d.idType) +
           field('Type', d.visitorType) +
           field('Safety acknowledged', d.safetyAckAt ? new Date(d.safetyAckAt).toLocaleString() : '');
 

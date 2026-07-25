@@ -282,8 +282,12 @@ function getVisitorDetail(visitorId) {
     hostName:    hostName || rec.HostEmpID || '',
     purpose:     rec.Purpose || '',
     vehicle:     rec.Vehicle || '',
+    // The ID TYPE (e.g. "Aadhaar") is shown, but the ID NUMBER is deliberately
+    // withheld from this endpoint. getVisitorDetail is reachable anonymously
+    // (the visitors page has no auth gate yet), so a leaked/replayed pass id
+    // must not expose a government ID number. Restore idNumber once the page is
+    // behind an admin token. See the deferred auth-gate task.
     idType:      rec.IDType || '',
-    idNumber:    rec.IDNumber || '',
     visitorType: rec.VisitorType || '',
     safetyAckAt: rec.SafetyAckAt || '',
     blacklisted: String(rec.BlacklistFlag || '').toUpperCase() === 'YES',
