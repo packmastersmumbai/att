@@ -4,7 +4,7 @@
  * Loads every page and asserts: no JS errors, key structural elements visible.
  */
 
-const { launch, openPage, settle, unlockVisitors, makeRunner, PAGES } = require('./e2e-lib');
+const { launch, openPage, settle, makeRunner, PAGES } = require('./e2e-lib');
 
 const CHECKS = {
   kiosk: {
@@ -72,7 +72,6 @@ async function run() {
     const R = makeRunner(`1 · Render smoke — ${cfg.label}`);
     const { page, context, errors } = await openPage(browser, pageName);
     await settle(page);
-    if (pageName === 'visitors') await unlockVisitors(page);
 
     await R.check('no JS errors on load', async () => {
       if (errors.length) throw new Error(errors.join(' | '));

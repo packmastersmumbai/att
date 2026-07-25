@@ -312,7 +312,7 @@ function getVisitorPass(visitorId) {
  * purpose, vehicle, ID, safety-ack) with the host id resolved to a name, plus
  * every Logs row for that visitor across all dates (newest first).
  */
-function getVisitorDetail(visitorId, token) {
+function getVisitorDetail(visitorId) {
   if (!visitorId) return { success: false, error: 'Missing visitor id' };
   var sheet = getSheet(SHEETS.VISITORS);
   var row = findRowByValue(sheet, 'VisitorID', visitorId);
@@ -349,12 +349,11 @@ function getVisitorDetail(visitorId, token) {
     purpose:     rec.Purpose || '',
     vehicle:     rec.Vehicle || '',
     photoUrl:    _normalizePhotoUrl_(rec.PhotoURL || ''),
-    // The ID TYPE (e.g. "Aadhaar") is always returned. The ID NUMBER is a
-    // government identifier and is returned ONLY to an authenticated admin
-    // caller — the visitors page is now behind a PIN gate that mints the token,
-    // so a leaked/replayed pass id alone (no token) can never expose it.
+    // The ID TYPE (e.g. "Aadhaar") is returned, but the ID NUMBER is deliberately
+    // withheld: getVisitorDetail is reachable anonymously (the visitors page has
+    // no auth gate), so a leaked/replayed pass id must not expose a government ID
+    // number.
     idType:      rec.IDType || '',
-    idNumber:    _isAdminCaller_(token) ? (rec.IDNumber != null ? String(rec.IDNumber) : '') : '',
     visitorType: rec.VisitorType || '',
     safetyAckAt: rec.SafetyAckAt || '',
     blacklisted: String(rec.BlacklistFlag || '').toUpperCase() === 'YES',

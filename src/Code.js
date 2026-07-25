@@ -32,7 +32,7 @@ function doGet(e) {
   var template = HtmlService.createTemplateFromFile('pages/' + page);
   template.page = page;
   template.appUrl = ScriptApp.getService().getUrl();
-  template.publicUrl = publicBaseUrl();   // pretty GitHub Pages base for in-app nav + shared links
+  template.publicUrl = publicBaseUrl();   // GAS app base for in-app nav + shared links (direct, no launcher)
   // For ID cards page inject employee data server-side (no extra round-trip)
   if (page === 'idcards') {
     var emps = [], orgName = 'My Organisation', idcardsError = '';
@@ -145,7 +145,7 @@ function _bootstrapIfNeeded() {
       ['TelegramChatID',     ''],
       ['TelegramLiveScans',  'off'],
       ['Holidays',           ''],
-      ['PublicUrl',          'https://packmastersmumbai.github.io/att']
+      ['PublicUrl',          '']   // blank → publicBaseUrl() falls back to the raw GAS app URL (links open the app directly)
     ];
     configSheet.getRange(2, 1, defaults.length, 2).setValues(defaults);
   }
@@ -186,7 +186,7 @@ function _dispatchPost_(params) {
   if (action === 'processQRScan')    return jsonResponse(processQRScan(params.qrCode, params.gate));
   if (action === 'registerVisitor')  return jsonResponse(registerVisitor(params.visitor));
   if (action === 'checkoutVisitor')  return jsonResponse(checkoutVisitor(params.visitorId));
-  if (action === 'getVisitorDetail') return jsonResponse(getVisitorDetail(params.visitorId, params.token));
+  if (action === 'getVisitorDetail') return jsonResponse(getVisitorDetail(params.visitorId));
   if (action === 'lookupVisitorByPhone') return jsonResponse(lookupVisitorByPhone(params.phone));
   if (action === 'importGenderBloodGroup') return jsonResponse(importGenderBloodGroup(params.token));
   if (action === 'getDashboardData') return jsonResponse(getDashboardData());

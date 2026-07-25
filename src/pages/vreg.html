@@ -482,9 +482,9 @@
       document.getElementById('doneVid').textContent=visitorId;
       document.getElementById('doneQR').src=
         'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data='+encodeURIComponent(visitorId);
+      var passBase = /^https?:\/\//.test(PUBLIC_URL) ? PUBLIC_URL : APP_URL;
       document.getElementById('doneLink').href=
-        (/^https?:\/\//.test(PUBLIC_URL) ? PUBLIC_URL+'/?page=vpass&id=' : APP_URL+'?page=vpass&id=')
-        +encodeURIComponent(visitorId);
+        passBase+'?page=vpass&id='+encodeURIComponent(visitorId);
       document.getElementById('doneCard').style.display='block';
       window.scrollTo(0,0);
     }

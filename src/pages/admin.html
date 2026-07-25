@@ -1485,8 +1485,10 @@
 </script>
 <script>
   function openIdCards() {
-    // Open the GitHub Pages wrapper (not the raw GAS URL) in a new tab
-    window.open('https://packmastersmumbai.github.io/att/?page=idcards', '_blank');
+    // Open the idcards page directly on the GAS app (no launcher landing hop).
+    var base = (typeof PUBLIC_URL !== 'undefined' && /^https?:\/\//.test(PUBLIC_URL)) ? PUBLIC_URL
+             : (typeof APP_URL !== 'undefined' ? APP_URL : '');
+    window.open(base + '?page=idcards', '_blank');
   }
 </script>
 <script>

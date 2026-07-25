@@ -416,23 +416,6 @@
 </head>
 <body>
 
-  <!-- ═══ PIN GATE (guards the visitors page; mints the admin token) ═══ -->
-  <div id="visPinGate" style="display:none;position:fixed;inset:0;z-index:2000;background:var(--color-bg,#0b1220);align-items:center;justify-content:center;padding:20px">
-    <div style="background:var(--color-surface,#fff);border-radius:14px;max-width:360px;width:100%;padding:32px 28px;box-shadow:0 20px 60px rgba(0,0,0,.35);text-align:center">
-      <div style="width:52px;height:52px;margin:0 auto 14px;border-radius:12px;background:var(--color-bg,#0b1220);display:flex;align-items:center;justify-content:center;color:var(--color-primary,#3B82F6)">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="26" height="26"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-      </div>
-      <h2 data-i18n="visitors_gate_title" style="margin:0 0 6px;font-size:18px">Visitors Access</h2>
-      <p data-i18n="visitors_gate_sub" style="margin:0 0 16px;font-size:13px;color:var(--color-text-muted,#64748b)">Enter your PIN to view visitor records</p>
-      <input type="password" id="visPinInput" placeholder="• • • •" maxlength="6" autocomplete="off"
-             onkeydown="if(event.key==='Enter')visCheckPIN()"
-             style="width:100%;box-sizing:border-box;text-align:center;font-size:20px;letter-spacing:6px;padding:12px;border:1px solid var(--color-border,#e2e8f0);border-radius:10px;background:var(--color-bg,#fff);color:var(--color-text,#0f172a)">
-      <div id="visPinError" style="min-height:18px;margin:8px 0;font-size:12px;color:#DC2626"></div>
-      <button onclick="visCheckPIN()" data-i18n="visitors_gate_unlock"
-              style="width:100%;padding:12px;border:none;border-radius:10px;background:var(--color-primary,#3B82F6);color:#fff;font-size:14px;font-weight:600;cursor:pointer">Unlock</button>
-    </div>
-  </div>
-
   <!-- ═══ LEFT SIDEBAR ═══ -->
   <aside class="sidebar">
     <div class="sb-top">
@@ -941,8 +924,9 @@
     /* Self-registration QR + link (visitors register on their own phone) */
     (function(){
       var appUrl = '<?= appUrl ?>';
-      var publicUrl = '<?= publicUrl ?>';   // pretty base for the shareable register link
-      var regUrl = (/^https?:\/\//.test(publicUrl) ? publicUrl + '/?page=vreg' : appUrl + '?page=vreg');
+      var publicUrl = '<?= publicUrl ?>';   // GAS app base for the shareable register link (direct, no launcher)
+      var regBase = /^https?:\/\//.test(publicUrl) ? publicUrl : appUrl;
+      var regUrl = regBase + '?page=vreg';
       var qrEl = document.getElementById('selfRegQR');
       var linkEl = document.getElementById('selfRegLink');
       if (qrEl) qrEl.src = 'https://api.qrserver.com/v1/create-qr-code/?size=192x192&ecc=M&data=' + encodeURIComponent(regUrl);
@@ -956,32 +940,7 @@
         navigator.clipboard.writeText(url).then(done, function(){ window.prompt('Copy this link:', url); });
       } else { window.prompt('Copy this link:', url); }
     }
-    // Bearer token minted by verifyPIN() at the visitors-page PIN gate. Kept in
-    // sessionStorage so a reload does not re-prompt the guard within a session,
-    // but clears when the browser session ends. getVisitorDetail presents it so
-    // the server returns the government ID number only to an authenticated admin.
-    function visToken(){ try { return sessionStorage.getItem('qratt_vis_token') || ''; } catch(e){ return ''; } }
-    function post(data,callback){var action=data.action;var onErr=function(e){callback({success:false,error:e?e.message:'Unknown error'});};if(typeof google==='undefined'||!google.script){callback({success:false,error:'Not in GAS'});return;}var r=google.script.run.withSuccessHandler(callback).withFailureHandler(onErr);if(action==='verifyPIN')r.verifyPIN(data.pin);else if(action==='registerVisitor')r.registerVisitor(data.visitor);else if(action==='checkoutVisitor')r.checkoutVisitor(data.visitorId);else if(action==='getLogs')r.getLogs(data.filters);else if(action==='getDashboardData')r.getDashboardData();else if(action==='exportCSV')r.exportCSV(data.filters);else if(action==='getVisitorDetail')r.getVisitorDetail(data.visitorId,visToken());else callback({success:false,error:'Unknown: '+action});}
-
-    /* ── PIN gate ── */
-    function visLockGate(){ var g=document.getElementById('visPinGate'); if(g) g.style.display='flex'; var i=document.getElementById('visPinInput'); if(i){ i.value=''; i.focus(); } }
-    function visUnlockGate(){ var g=document.getElementById('visPinGate'); if(g) g.style.display='none'; }
-    function visCheckPIN(){
-      var pin=(document.getElementById('visPinInput')||{}).value;
-      if(!pin) return;
-      var err=document.getElementById('visPinError');
-      if(err) err.textContent='';
-      post({action:'verifyPIN',pin:pin},function(res){
-        if(res&&res.success){
-          try{ sessionStorage.setItem('qratt_vis_token', res.token||''); }catch(e){}
-          visUnlockGate();
-        } else if(err){
-          err.textContent=(res&&res.error)||(typeof qrattT==='function'?qrattT('login_incorrect_pin'):'Incorrect PIN');
-        }
-      });
-    }
-    // Gate on load unless a token is already held this browser session.
-    if(!visToken()) visLockGate();
+    function post(data,callback){var action=data.action;var onErr=function(e){callback({success:false,error:e?e.message:'Unknown error'});};if(typeof google==='undefined'||!google.script){callback({success:false,error:'Not in GAS'});return;}var r=google.script.run.withSuccessHandler(callback).withFailureHandler(onErr);if(action==='registerVisitor')r.registerVisitor(data.visitor);else if(action==='checkoutVisitor')r.checkoutVisitor(data.visitorId);else if(action==='getLogs')r.getLogs(data.filters);else if(action==='getDashboardData')r.getDashboardData();else if(action==='exportCSV')r.exportCSV(data.filters);else if(action==='getVisitorDetail')r.getVisitorDetail(data.visitorId);else callback({success:false,error:'Unknown: '+action});}
   </script>
   <script>
     var COLORS = ['#3B82F6','#8B5CF6','#EC4899','#F59E0B','#10B981','#06B6D4','#EF4444','#6366F1','#84CC16','#F97316'];
