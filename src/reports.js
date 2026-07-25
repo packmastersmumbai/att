@@ -177,6 +177,11 @@ function _computeDashboardData_() {
     if (e.PhotoURL) photoMap[String(e.EmpID)] = e.PhotoURL;
     genderMap[String(e.EmpID)] = e.Gender || '';
   });
+  // Visitor photos live in the Visitors sheet, keyed by VisitorID — join them
+  // so visitor arrival cards show the captured photo, not just initials.
+  getSheetAsObjects(SHEETS.VISITORS).forEach(function(vv) {
+    if (vv.PhotoURL) photoMap[String(vv.VisitorID)] = vv.PhotoURL;
+  });
 
   // Monthly stats — count present/absent/late days this month per employee
   var nowDate2   = new Date();
@@ -402,7 +407,7 @@ function getAnalyticsData(range) {
 // ── Monthly attendance matrix ──────────────────────────────
 // Returns per-employee rows with TimeIN, TimeOUT, Duration for each day of the month.
 // year: "2025", month: "06" (1-indexed, zero-padded)
-function getMonthlyAttendance(year, month) {
+function getMonthlyAttendance(year, month, includeInactive) {
   var ym = year + '-' + (String(month).length === 1 ? '0' + month : month);
   // Note: getSheetAsObjects still reads the full Logs sheet — GAS has no
   // server-side range filter on header objects — but bounding the rows to
@@ -412,8 +417,11 @@ function getMonthlyAttendance(year, month) {
   var monthLogs = getSheetAsObjects(SHEETS.LOGS).filter(function(r) {
     return r.Type === 'EMP' && r.Date && String(r.Date).indexOf(ym) === 0;
   });
+  // Active employees only by default — ex-workers (INACTIVE) otherwise fill the
+  // grid with rows of "A". Pass includeInactive to show them (parity with the
+  // Hours tab's "Include inactive" toggle).
   var employees = getSheetAsObjects(SHEETS.EMPLOYEES).filter(function(e) {
-    return e.Status === 'ACTIVE' || e.Status === 'INACTIVE';
+    return e.Status === 'ACTIVE' || (includeInactive && e.Status === 'INACTIVE');
   });
 
   var lateThreshMin = _hoursThresholds_().lateThreshMin;  // shared threshold
