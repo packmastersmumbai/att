@@ -407,7 +407,7 @@ function getAnalyticsData(range) {
 // ── Monthly attendance matrix ──────────────────────────────
 // Returns per-employee rows with TimeIN, TimeOUT, Duration for each day of the month.
 // year: "2025", month: "06" (1-indexed, zero-padded)
-function getMonthlyAttendance(year, month) {
+function getMonthlyAttendance(year, month, includeInactive) {
   var ym = year + '-' + (String(month).length === 1 ? '0' + month : month);
   // Note: getSheetAsObjects still reads the full Logs sheet — GAS has no
   // server-side range filter on header objects — but bounding the rows to
@@ -417,8 +417,11 @@ function getMonthlyAttendance(year, month) {
   var monthLogs = getSheetAsObjects(SHEETS.LOGS).filter(function(r) {
     return r.Type === 'EMP' && r.Date && String(r.Date).indexOf(ym) === 0;
   });
+  // Active employees only by default — ex-workers (INACTIVE) otherwise fill the
+  // grid with rows of "A". Pass includeInactive to show them (parity with the
+  // Hours tab's "Include inactive" toggle).
   var employees = getSheetAsObjects(SHEETS.EMPLOYEES).filter(function(e) {
-    return e.Status === 'ACTIVE' || e.Status === 'INACTIVE';
+    return e.Status === 'ACTIVE' || (includeInactive && e.Status === 'INACTIVE');
   });
 
   var lateThreshMin = _hoursThresholds_().lateThreshMin;  // shared threshold

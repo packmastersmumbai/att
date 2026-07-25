@@ -203,7 +203,7 @@ function _dispatchPost_(params) {
   if (action === 'addBlacklist')     return jsonResponse(addToBlacklist(params.entry, params.token));
   if (action === 'removeBlacklist')  return jsonResponse(removeFromBlacklist(params.qrCode, params.token));
   if (action === 'exportCSV')            return jsonResponse(exportCSV(params.filters));
-  if (action === 'getMonthlyAttendance') return jsonResponse(getMonthlyAttendance(params.year, params.month));
+  if (action === 'getMonthlyAttendance') return jsonResponse(getMonthlyAttendance(params.year, params.month, params.includeInactive));
   if (action === 'processAndStoreScan') return jsonResponse(processAndStoreScan(params.qrCode, params.gate, params.sid));
   if (action === 'getPendingResult')    return jsonResponse(getPendingResult(params.sid));
   if (action === 'getHolidayCatalog') return jsonResponse(getHolidayCatalog());

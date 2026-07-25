@@ -1184,6 +1184,7 @@
         <label style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Month</label>
         <input type="month" id="monthPicker" style="padding:6px 10px;border:1px solid var(--border);border-radius:3px;font-family:inherit;font-size:13px;color:var(--text);">
         <button onclick="loadMonthly()" style="padding:7px 18px;background:var(--primary);color:#fff;border:none;border-radius:3px;font-size:12px;font-weight:700;cursor:pointer;letter-spacing:.5px;">LOAD</button>
+        <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--muted);cursor:pointer;white-space:nowrap"><input type="checkbox" id="monthInactive" onchange="loadMonthly()"> Include inactive</label>
         <button onclick="exportMonthlyCSV()" id="monthExportBtn" style="padding:7px 14px;background:var(--surface);color:var(--muted);border:1px solid var(--border);border-radius:3px;font-size:12px;font-weight:600;cursor:pointer;display:none;">↓ Export CSV</button>
         <span id="monthlyKpi" style="margin-left:auto;font-size:12px;color:var(--muted);font-family:var(--mono)"></span>
       </div>
@@ -1270,7 +1271,7 @@
     function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
     function fmtDate(d){var mn=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];var p=String(d||'').split('-');if(p.length===3&&p[0].length===4)return p[2]+' '+mn[parseInt(p[1],10)-1]+' '+p[0];return d||'–';}
     function fmtDur(d){if(!d)return '–';var m=String(d).match(/^(\d+)h\s*(\d+)m$/);if(!m){var m2=String(d).match(/^(\d+)m$/);if(m2){var mi2=parseInt(m2[1]);return (mi2/60).toFixed(2);}return d;}var h=parseInt(m[1]),mi=parseInt(m[2]);if(h>23)return '–';return (h+mi/60).toFixed(2);}
-    function post(data,callback){var action=data.action;var onErr=function(e){callback({success:false,error:e?e.message:'Unknown error'});};if(typeof google==='undefined'||!google.script){callback({success:false,error:'Not in GAS'});return;}var r=google.script.run.withSuccessHandler(callback).withFailureHandler(onErr);if(action==='getLogs')r.getLogs(data.filters);else if(action==='exportCSV')r.exportCSV(data.filters);else if(action==='getDashboardData')r.getDashboardData();else if(action==='getAnalyticsData')r.getAnalyticsData(data.range||30);else if(action==='getMonthlyAttendance')r.getMonthlyAttendance(data.year,data.month);else if(action==='getHoursSummary')r.getHoursSummary(data.opts||{});else if(action==='getHoursKpis')r.getHoursKpis(data.year,data.month);else if(action==='rebuildHoursSummarySheet')r.rebuildHoursSummarySheet();else callback({success:false,error:'Unknown: '+action});}
+    function post(data,callback){var action=data.action;var onErr=function(e){callback({success:false,error:e?e.message:'Unknown error'});};if(typeof google==='undefined'||!google.script){callback({success:false,error:'Not in GAS'});return;}var r=google.script.run.withSuccessHandler(callback).withFailureHandler(onErr);if(action==='getLogs')r.getLogs(data.filters);else if(action==='exportCSV')r.exportCSV(data.filters);else if(action==='getDashboardData')r.getDashboardData();else if(action==='getAnalyticsData')r.getAnalyticsData(data.range||30);else if(action==='getMonthlyAttendance')r.getMonthlyAttendance(data.year,data.month,data.includeInactive);else if(action==='getHoursSummary')r.getHoursSummary(data.opts||{});else if(action==='getHoursKpis')r.getHoursKpis(data.year,data.month);else if(action==='rebuildHoursSummarySheet')r.rebuildHoursSummarySheet();else callback({success:false,error:'Unknown: '+action});}
   </script>
 
   <script>
@@ -1729,7 +1730,8 @@
     document.getElementById('monthlyKpi').textContent = '';
     document.getElementById('monthExportBtn').style.display = 'none';
 
-    post({ action: 'getMonthlyAttendance', year: year, month: month }, function(res) {
+    var inc = document.getElementById('monthInactive');
+    post({ action: 'getMonthlyAttendance', year: year, month: month, includeInactive: !!(inc && inc.checked) }, function(res) {
       if (!res || !res.success) {
         wrap.innerHTML = '<div style="padding:40px;text-align:center;color:#dc2626;font-size:13px">Error loading data</div>';
         return;
