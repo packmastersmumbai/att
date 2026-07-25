@@ -177,6 +177,11 @@ function _computeDashboardData_() {
     if (e.PhotoURL) photoMap[String(e.EmpID)] = e.PhotoURL;
     genderMap[String(e.EmpID)] = e.Gender || '';
   });
+  // Visitor photos live in the Visitors sheet, keyed by VisitorID — join them
+  // so visitor arrival cards show the captured photo, not just initials.
+  getSheetAsObjects(SHEETS.VISITORS).forEach(function(vv) {
+    if (vv.PhotoURL) photoMap[String(vv.VisitorID)] = vv.PhotoURL;
+  });
 
   // Monthly stats — count present/absent/late days this month per employee
   var nowDate2   = new Date();

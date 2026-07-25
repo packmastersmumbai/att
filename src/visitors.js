@@ -2,6 +2,43 @@
 // visitors.gs — Visitor registration, checkout, blacklist
 // ============================================================
 
+/**
+ * Uploads a captured visitor photo (base64 data URL) to a public Drive folder
+ * and returns a viewable image URL — mirrors generateAndStoreQR in qr.js. Only
+ * a URL is stored in the sheet; the image itself lives in Drive (no bloat).
+ * Best-effort: returns '' on any failure so registration is never blocked.
+ */
+function _storeVisitorPhoto_(visitorId, dataUrl) {
+  try {
+    if (!dataUrl || String(dataUrl).indexOf('data:image') !== 0) return '';
+    var blob = _dataUrlToBlob_(dataUrl, visitorId);   // defined in notifications.js
+    if (!blob) return '';
+    blob.setName(visitorId + '.jpg');
+    var folders = DriveApp.getFoldersByName('VisitorPhotos');
+    var folder = folders.hasNext() ? folders.next() : DriveApp.createFolder('VisitorPhotos');
+    var existing = folder.getFilesByName(visitorId + '.jpg');
+    while (existing.hasNext()) existing.next().setTrashed(true);
+    var file = folder.createFile(blob);
+    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    return 'https://drive.google.com/uc?id=' + file.getId();
+  } catch (e) {
+    Logger.log('visitor photo store failed: ' + e.message);
+    return '';
+  }
+}
+
+/** Writes a visitor's PhotoURL cell by VisitorID. Best-effort. */
+function _setVisitorPhotoUrl_(visitorId, url) {
+  if (!url) return;
+  try {
+    var sheet = getSheet(SHEETS.VISITORS);
+    var row = findRowByValue(sheet, 'VisitorID', visitorId);
+    if (row !== -1) setCell(sheet, row, 'PhotoURL', url);
+  } catch (e) {
+    Logger.log('visitor photo url write failed: ' + e.message);
+  }
+}
+
 function registerVisitor(v) {
   if (!v.Name || !v.Phone) return { success: false, error: 'Name and Phone are required' };
 
@@ -22,14 +59,19 @@ function registerVisitor(v) {
     lock.releaseLock();
   }
 
-  // Post the pass (QR + details + check-in link, plus the captured photo if any)
-  // to the Telegram channel. Deliberately outside the lock: this uploads a photo
-  // over the network and can take seconds — holding the script lock across it
-  // would stall every gate scan. Best-effort; a failure must not fail the
-  // registration, and a returning visitor already has a pass.
+  // Persist the captured photo to Drive and post the pass to Telegram — both
+  // deliberately OUTSIDE the lock (Drive upload + network send take seconds;
+  // holding the script lock across them would stall every gate scan). Both are
+  // best-effort: a failure must never fail the registration. A returning
+  // visitor already has a record, so skip.
   if (result.success && !result.returning) {
+    var photoData = v.PhotoData || '';
+    if (photoData) {
+      var photoUrl = _storeVisitorPhoto_(result.visitorId, photoData);
+      _setVisitorPhotoUrl_(result.visitorId, photoUrl);
+    }
     try {
-      sendVisitorPassToChannel(result.visitorId, v.PhotoData || '');
+      sendVisitorPassToChannel(result.visitorId, photoData);
     } catch (e) {
       Logger.log('visitor pass Telegram failed: ' + e.message);
     }
@@ -282,6 +324,7 @@ function getVisitorDetail(visitorId) {
     hostName:    hostName || rec.HostEmpID || '',
     purpose:     rec.Purpose || '',
     vehicle:     rec.Vehicle || '',
+    photoUrl:    rec.PhotoURL || '',
     // The ID TYPE (e.g. "Aadhaar") is shown, but the ID NUMBER is deliberately
     // withheld from this endpoint. getVisitorDetail is reachable anonymously
     // (the visitors page has no auth gate yet), so a leaked/replayed pass id
