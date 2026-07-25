@@ -139,6 +139,19 @@ async function unlockAdmin(page) {
   await page.waitForSelector('#empBody tr td strong', { state: 'visible', timeout: 5000 });
 }
 
+/**
+ * Dismiss the visitors-page PIN gate. PIN '1234' is correct per gas-mock.js;
+ * verifyPIN mints the token stored in sessionStorage. No-op if the gate is
+ * absent (e.g. a token already held).
+ */
+async function unlockVisitors(page) {
+  const gate = page.locator('#visPinGate');
+  if (!(await gate.isVisible().catch(() => false))) return;
+  await page.fill('#visPinInput', '1234');
+  await page.click('#visPinGate button[onclick="visCheckPIN()"]');
+  await gate.waitFor({ state: 'hidden', timeout: 5000 });
+}
+
 // ── Assertion runner ─────────────────────────────────────────────────────────
 
 /**
@@ -200,6 +213,7 @@ module.exports = {
   installSessionStorageShim,
   settle,
   unlockAdmin,
+  unlockVisitors,
   makeRunner,
   GAS_DELAY,
   PAGES,

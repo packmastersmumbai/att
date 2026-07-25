@@ -4,7 +4,7 @@
  * registerVisitor is defined natively in tests/helpers/gas-mock.js.
  */
 
-const { launch, openPage, settle, makeRunner } = require('./e2e-lib');
+const { launch, openPage, settle, unlockVisitors, makeRunner } = require('./e2e-lib');
 
 async function run() {
   const browser = await launch();
@@ -16,6 +16,7 @@ async function run() {
     const { page, context } = await openPage(browser, 'visitors');
     // Inject extra mock patches
     await settle(page);
+    await unlockVisitors(page);
 
     await R.check('Register tab is active by default', async () => {
       const cls = await page.locator('#panel-register').getAttribute('class');
@@ -69,6 +70,7 @@ async function run() {
     const R = makeRunner('4b · Visitors — Register flow → QR pass');
     const { page, context } = await openPage(browser, 'visitors');
     await settle(page);
+    await unlockVisitors(page);
 
     await R.check('fill and submit register form', async () => {
       await page.evaluate(() => window.showStaffForm());
@@ -78,6 +80,9 @@ async function run() {
       await page.fill('#vCompany', 'TestCorp');
       await page.selectOption('#vPurpose', { index: 1 });
       await page.fill('#vExpOut', '17:00');
+      // Photo is now mandatory; simulate a successful capture (the form stores
+      // the captured base64 in the vPhotoData var, which the submit reads).
+      await page.evaluate(() => { window.vPhotoData = 'data:image/jpeg;base64,/9j/AAAA'; });
       await page.click('#regBtn');
       // Wait for pass panel to appear
       await page.waitForSelector('#passPanel', { state: 'visible', timeout: 6000 });
@@ -117,6 +122,7 @@ async function run() {
     const R = makeRunner('4c · Visitors — Active tab');
     const { page, context } = await openPage(browser, 'visitors');
     await settle(page);
+    await unlockVisitors(page);
 
     await R.check('switch to Active tab', async () => {
       // Tabs use onclick="switchTab('active')" — click by text or by position
@@ -152,6 +158,7 @@ async function run() {
     const R = makeRunner('4d · Visitors — History tab');
     const { page, context } = await openPage(browser, 'visitors');
     await settle(page);
+    await unlockVisitors(page);
 
     await R.check('switch to History tab', async () => {
       await page.click('.page-tab:has-text("History"), .page-tab:nth-child(3), button[onclick*="history"]');

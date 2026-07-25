@@ -422,6 +422,9 @@
         SafetyAckAt: vSafetyAckAt
       };
       if(!v.Name || !v.Phone){ toast(qrattT('vreg_toast_required'),'error'); return; }
+      if(!v.PhotoData){ toast(qrattT('vreg_toast_photo_required'),'error');
+        var pb=document.getElementById('photoBox'); if(pb){ pb.scrollIntoView({block:'center'}); }
+        return; }
       if(rulesRevealed < SAFETY_RULE_KEYS.length || !document.getElementById('vSafetyAck').checked){
         toast(qrattT('vreg_toast_rules_pending'),'error'); return;
       }

@@ -416,6 +416,23 @@
 </head>
 <body>
 
+  <!-- ═══ PIN GATE (guards the visitors page; mints the admin token) ═══ -->
+  <div id="visPinGate" style="display:none;position:fixed;inset:0;z-index:2000;background:var(--color-bg,#0b1220);align-items:center;justify-content:center;padding:20px">
+    <div style="background:var(--color-surface,#fff);border-radius:14px;max-width:360px;width:100%;padding:32px 28px;box-shadow:0 20px 60px rgba(0,0,0,.35);text-align:center">
+      <div style="width:52px;height:52px;margin:0 auto 14px;border-radius:12px;background:var(--color-bg,#0b1220);display:flex;align-items:center;justify-content:center;color:var(--color-primary,#3B82F6)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="26" height="26"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      </div>
+      <h2 data-i18n="visitors_gate_title" style="margin:0 0 6px;font-size:18px">Visitors Access</h2>
+      <p data-i18n="visitors_gate_sub" style="margin:0 0 16px;font-size:13px;color:var(--color-text-muted,#64748b)">Enter your PIN to view visitor records</p>
+      <input type="password" id="visPinInput" placeholder="• • • •" maxlength="6" autocomplete="off"
+             onkeydown="if(event.key==='Enter')visCheckPIN()"
+             style="width:100%;box-sizing:border-box;text-align:center;font-size:20px;letter-spacing:6px;padding:12px;border:1px solid var(--color-border,#e2e8f0);border-radius:10px;background:var(--color-bg,#fff);color:var(--color-text,#0f172a)">
+      <div id="visPinError" style="min-height:18px;margin:8px 0;font-size:12px;color:#DC2626"></div>
+      <button onclick="visCheckPIN()" data-i18n="visitors_gate_unlock"
+              style="width:100%;padding:12px;border:none;border-radius:10px;background:var(--color-primary,#3B82F6);color:#fff;font-size:14px;font-weight:600;cursor:pointer">Unlock</button>
+    </div>
+  </div>
+
   <!-- ═══ LEFT SIDEBAR ═══ -->
   <aside class="sidebar">
     <div class="sb-top">
@@ -536,7 +553,7 @@
               <div id="photoPlaceholder">
                 <div class="photo-placeholder-icon">📷</div>
                 <div class="photo-label-text">Tap to capture visitor photo</div>
-                <div class="photo-sublabel-text">Optional · for identification</div>
+                <div class="photo-sublabel-text">Required · for identification</div>
               </div>
             </div>
 
@@ -939,7 +956,32 @@
         navigator.clipboard.writeText(url).then(done, function(){ window.prompt('Copy this link:', url); });
       } else { window.prompt('Copy this link:', url); }
     }
-    function post(data,callback){var action=data.action;var onErr=function(e){callback({success:false,error:e?e.message:'Unknown error'});};if(typeof google==='undefined'||!google.script){callback({success:false,error:'Not in GAS'});return;}var r=google.script.run.withSuccessHandler(callback).withFailureHandler(onErr);if(action==='registerVisitor')r.registerVisitor(data.visitor);else if(action==='checkoutVisitor')r.checkoutVisitor(data.visitorId);else if(action==='getLogs')r.getLogs(data.filters);else if(action==='getDashboardData')r.getDashboardData();else if(action==='exportCSV')r.exportCSV(data.filters);else if(action==='getVisitorDetail')r.getVisitorDetail(data.visitorId);else callback({success:false,error:'Unknown: '+action});}
+    // Bearer token minted by verifyPIN() at the visitors-page PIN gate. Kept in
+    // sessionStorage so a reload does not re-prompt the guard within a session,
+    // but clears when the browser session ends. getVisitorDetail presents it so
+    // the server returns the government ID number only to an authenticated admin.
+    function visToken(){ try { return sessionStorage.getItem('qratt_vis_token') || ''; } catch(e){ return ''; } }
+    function post(data,callback){var action=data.action;var onErr=function(e){callback({success:false,error:e?e.message:'Unknown error'});};if(typeof google==='undefined'||!google.script){callback({success:false,error:'Not in GAS'});return;}var r=google.script.run.withSuccessHandler(callback).withFailureHandler(onErr);if(action==='verifyPIN')r.verifyPIN(data.pin);else if(action==='registerVisitor')r.registerVisitor(data.visitor);else if(action==='checkoutVisitor')r.checkoutVisitor(data.visitorId);else if(action==='getLogs')r.getLogs(data.filters);else if(action==='getDashboardData')r.getDashboardData();else if(action==='exportCSV')r.exportCSV(data.filters);else if(action==='getVisitorDetail')r.getVisitorDetail(data.visitorId,visToken());else callback({success:false,error:'Unknown: '+action});}
+
+    /* ── PIN gate ── */
+    function visLockGate(){ var g=document.getElementById('visPinGate'); if(g) g.style.display='flex'; var i=document.getElementById('visPinInput'); if(i){ i.value=''; i.focus(); } }
+    function visUnlockGate(){ var g=document.getElementById('visPinGate'); if(g) g.style.display='none'; }
+    function visCheckPIN(){
+      var pin=(document.getElementById('visPinInput')||{}).value;
+      if(!pin) return;
+      var err=document.getElementById('visPinError');
+      if(err) err.textContent='';
+      post({action:'verifyPIN',pin:pin},function(res){
+        if(res&&res.success){
+          try{ sessionStorage.setItem('qratt_vis_token', res.token||''); }catch(e){}
+          visUnlockGate();
+        } else if(err){
+          err.textContent=(res&&res.error)||(typeof qrattT==='function'?qrattT('login_incorrect_pin'):'Incorrect PIN');
+        }
+      });
+    }
+    // Gate on load unless a token is already held this browser session.
+    if(!visToken()) visLockGate();
   </script>
   <script>
     var COLORS = ['#3B82F6','#8B5CF6','#EC4899','#F59E0B','#10B981','#06B6D4','#EF4444','#6366F1','#84CC16','#F97316'];
@@ -1003,6 +1045,7 @@
         PhotoData:   vPhotoData
       };
       if (!v.Name || !v.Phone) { showToast('Name and Phone are required', 'error'); return; }
+      if (!v.PhotoData) { showToast('A photo is required — tap the photo box to capture one', 'error'); return; }
       var btn = document.getElementById('regBtn');
       btn.textContent = 'Registering…'; btn.disabled = true;
       post({ action: 'registerVisitor', visitor: v }, function(res) {
@@ -1299,14 +1342,14 @@
       if (!vid) return;
       var back = document.getElementById('vdBackdrop');
       var body = document.getElementById('vdBody');
-      document.getElementById('vdName').textContent = 'Loading…';
+      document.getElementById('vdName').textContent = qrattT('vd_loading');
       document.getElementById('vdId').textContent = vid;
-      body.innerHTML = '<p style="padding:16px 0;color:var(--color-text-muted);font-size:13px">Loading…</p>';
+      body.innerHTML = '<p style="padding:16px 0;color:var(--color-text-muted);font-size:13px">' + qrattT('vd_loading') + '</p>';
       back.style.display = 'flex';
 
       post({ action: 'getVisitorDetail', visitorId: vid }, function(d) {
         if (!d || !d.success) {
-          body.innerHTML = '<p style="padding:16px 0;color:#DC2626;font-size:13px">' + esc((d && d.error) || 'Failed to load') + '</p>';
+          body.innerHTML = '<p style="padding:16px 0;color:#DC2626;font-size:13px">' + esc((d && d.error) || qrattT('vd_failed_to_load')) + '</p>';
           return;
         }
         document.getElementById('vdName').textContent = d.name || vid;
@@ -1319,8 +1362,8 @@
         }
 
         var status = d.status === 'IN'
-          ? '<span class="badge badge-green">Currently inside</span>'
-          : '<span class="badge" style="background:#e5e7eb;color:#374151">Checked out</span>';
+          ? '<span class="badge badge-green">' + qrattT('vd_currently_inside') + '</span>'
+          : '<span class="badge" style="background:#e5e7eb;color:#374151">' + qrattT('vd_checked_out') + '</span>';
 
         var photo = d.photoUrl
           ? '<div style="text-align:center;margin-bottom:12px"><img src="' + esc(d.photoUrl) +
@@ -1330,26 +1373,28 @@
 
         var info = photo +
           '<div style="margin-bottom:6px">' + status +
-            (d.blacklisted ? ' <span class="badge" style="background:#fee2e2;color:#991b1b">Blacklisted</span>' : '') + '</div>' +
-          field('Mobile', d.phone) +
-          field('Company', d.company) +
-          field('Host', d.hostName) +
-          field('Purpose', d.purpose) +
-          field('Vehicle', d.vehicle) +
-          field('ID Type', d.idType) +
-          field('Type', d.visitorType) +
-          field('Safety acknowledged', d.safetyAckAt ? new Date(d.safetyAckAt).toLocaleString() : '');
+            (d.blacklisted ? ' <span class="badge" style="background:#fee2e2;color:#991b1b">' + qrattT('vd_blacklisted') + '</span>' : '') + '</div>' +
+          field(qrattT('vd_mobile'), d.phone) +
+          field(qrattT('vd_company'), d.company) +
+          field(qrattT('vd_host'), d.hostName) +
+          field(qrattT('vd_purpose'), d.purpose) +
+          field(qrattT('vd_vehicle'), d.vehicle) +
+          field(qrattT('vd_id_type'), d.idType) +
+          field(qrattT('vd_id_number'), d.idNumber) +
+          field(qrattT('vd_type'), d.visitorType) +
+          field(qrattT('vd_safety_acknowledged'), d.safetyAckAt ? new Date(d.safetyAckAt).toLocaleString() : '');
 
-        var logHd = '<div style="margin:16px 0 8px;font-size:12px;font-weight:700;color:var(--color-text-muted);text-transform:uppercase;letter-spacing:.5px">Visit Log (' + d.visitCount + ')</div>';
+        var logHd = '<div style="margin:16px 0 8px;font-size:12px;font-weight:700;color:var(--color-text-muted);text-transform:uppercase;letter-spacing:.5px">' + qrattT('vd_visit_log') + ' (' + d.visitCount + ')</div>';
         var logTbl = d.visits.length
           ? '<div style="overflow-x:auto"><table style="width:100%"><thead><tr>' +
-              '<th>Date</th><th>In</th><th>Out</th><th>Duration</th><th>Gate</th></tr></thead><tbody>' +
+              '<th>' + qrattT('vd_col_date') + '</th><th>' + qrattT('vd_col_in') + '</th><th>' + qrattT('vd_col_out') +
+              '</th><th>' + qrattT('vd_col_duration') + '</th><th>' + qrattT('vd_col_gate') + '</th></tr></thead><tbody>' +
               d.visits.map(function(v) {
                 return '<tr><td>' + esc(v.date) + '</td><td>' + esc(v.timeIn || '–') + '</td><td>' +
                   esc(v.timeOut || '–') + '</td><td>' + esc(v.duration || '–') + '</td><td>' + esc(v.gate || '–') + '</td></tr>';
               }).join('') +
               '</tbody></table></div>'
-          : '<p style="color:var(--color-text-muted);font-size:13px">No visits recorded.</p>';
+          : '<p style="color:var(--color-text-muted);font-size:13px">' + qrattT('vd_no_visits') + '</p>';
 
         body.innerHTML = info + logHd + logTbl;
       });
@@ -1399,8 +1444,13 @@
     var PUBLIC_URL = '<?= publicUrl ?>';
     function navigate(page) {
       if (!page) return;
-      var base = /^https?:\/\//.test(PUBLIC_URL) ? PUBLIC_URL + '/' : (APP_URL + '?');
-      var url = base + (base.slice(-1) === '/' ? '?page=' : 'page=') + encodeURIComponent(page);
+      // In-app page→page nav must land ON the working GAS app, not the GitHub
+      // Pages launcher. The launcher (PUBLIC_URL) is a manual landing page — it
+      // cannot frame the app, so routing nav through it dropped the user on the
+      // launcher home every time. APP_URL is the raw GAS /exec that renders the
+      // requested page directly. Shared/external entry links stay pretty via the
+      // launcher; navigation between pages, once inside, stays inside the app.
+      var url = APP_URL + '?page=' + encodeURIComponent(page);
       try {
         (window.top || window).location.href = url;
       } catch(e) {

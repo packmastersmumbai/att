@@ -26,7 +26,7 @@ var QRATT_I18N = {
   vreg_whom:           { en: 'Whom to meet',                          hi: 'किससे मिलना है' },
   vreg_loading:        { en: 'Loading…',                              hi: 'लोड हो रहा है…' },
   vreg_purpose:        { en: 'Purpose',                               hi: 'उद्देश्य' },
-  vreg_add_photo:      { en: 'Add Photo (optional)',                  hi: 'फ़ोटो लें' },
+  vreg_add_photo:      { en: 'Add Photo (required)',                  hi: 'फ़ोटो लें (आवश्यक)' },
   vreg_photo_added:    { en: 'Photo added ✓',                         hi: 'फ़ोटो जोड़ी गई ✓' },
   vreg_tap_camera:      { en: 'Tap to use camera',                    hi: 'कैमरा खोलने के लिए टैप करें' },
   vreg_more_details:   { en: 'More details',                          hi: 'अधिक जानकारी' },
@@ -60,6 +60,7 @@ var QRATT_I18N = {
 
   // ── vreg.html — toasts ─────────────────────────────────────────────────
   vreg_toast_required:      { en: 'Name and Mobile are required',        hi: 'नाम और मोबाइल आवश्यक' },
+  vreg_toast_photo_required:{ en: 'A photo is required — tap "Add Photo" to capture one', hi: 'फ़ोटो आवश्यक है — फ़ोटो लेने के लिए "फ़ोटो लें" पर टैप करें' },
   vreg_toast_rules_pending: { en: 'Please read all safety rules first',  hi: 'कृपया सभी नियम पढ़ें' },
 
   // ── Shared safety rules (identical text on vreg + vpass) ──────────────
@@ -260,7 +261,36 @@ var QRATT_I18N = {
   scanner_stat_duration:         { en: 'Duration',                 hi: 'अवधि' },
   scanner_unknown:               { en: 'Unknown',                  hi: 'अज्ञात' },
   scanner_auto_dismiss_hint:     { en: 'Triggered on valid scan · Auto-dismiss in 8s',
-                                   hi: 'मान्य स्कैन पर सक्रिय · 8 सेकंड में अपने आप बंद होगा' }
+                                   hi: 'मान्य स्कैन पर सक्रिय · 8 सेकंड में अपने आप बंद होगा' },
+
+  // ── visitors.html — PIN gate ─────────────────────────────────────────────
+  visitors_gate_title:   { en: 'Visitors Access',      hi: 'विज़िटर एक्सेस' },
+  visitors_gate_sub:     { en: 'Enter your PIN to view visitor records',
+                           hi: 'विज़िटर रिकॉर्ड देखने के लिए अपना PIN दर्ज करें' },
+  visitors_gate_unlock:  { en: 'Unlock',               hi: 'अनलॉक करें' },
+
+  // ── visitors.html — history detail modal ─────────────────────────────────
+  vd_loading:            { en: 'Loading…',              hi: 'लोड हो रहा है…' },
+  vd_failed_to_load:     { en: 'Failed to load',        hi: 'लोड नहीं हो सका' },
+  vd_currently_inside:   { en: 'Currently inside',      hi: 'अभी अंदर है' },
+  vd_checked_out:        { en: 'Checked out',           hi: 'चेक आउट हो गया' },
+  vd_blacklisted:        { en: 'Blacklisted',           hi: 'ब्लैकलिस्टेड' },
+  vd_mobile:             { en: 'Mobile',                hi: 'मोबाइल' },
+  vd_company:            { en: 'Company',               hi: 'कंपनी' },
+  vd_host:               { en: 'Host',                  hi: 'होस्ट' },
+  vd_purpose:            { en: 'Purpose',               hi: 'उद्देश्य' },
+  vd_vehicle:            { en: 'Vehicle',               hi: 'वाहन' },
+  vd_id_type:            { en: 'ID Type',               hi: 'ID प्रकार' },
+  vd_id_number:          { en: 'ID Number',             hi: 'ID नंबर' },
+  vd_type:              { en: 'Type',                  hi: 'प्रकार' },
+  vd_safety_acknowledged:{ en: 'Safety acknowledged',   hi: 'सुरक्षा स्वीकृत' },
+  vd_visit_log:          { en: 'Visit Log',             hi: 'विज़िट लॉग' },
+  vd_no_visits:          { en: 'No visits recorded.',   hi: 'कोई विज़िट दर्ज नहीं।' },
+  vd_col_date:           { en: 'Date',                  hi: 'तारीख' },
+  vd_col_in:             { en: 'In',                    hi: 'इन' },
+  vd_col_out:            { en: 'Out',                   hi: 'आउट' },
+  vd_col_duration:       { en: 'Duration',              hi: 'अवधि' },
+  vd_col_gate:           { en: 'Gate',                  hi: 'गेट' }
 };
 
 (function(){

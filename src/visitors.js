@@ -20,11 +20,35 @@ function _storeVisitorPhoto_(visitorId, dataUrl) {
     while (existing.hasNext()) existing.next().setTrashed(true);
     var file = folder.createFile(blob);
     file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-    return 'https://drive.google.com/uc?id=' + file.getId();
+    return _drivePhotoUrl_(file.getId());
   } catch (e) {
     Logger.log('visitor photo store failed: ' + e.message);
     return '';
   }
+}
+
+/**
+ * Canonical embeddable URL for a Drive image, given a file id. Uses the
+ * `thumbnail` endpoint, which serves the image bytes directly — reliable both
+ * in an <img> tag AND as a CSS background-image (the kiosk arrival cards use a
+ * background). The older `uc?id=` form 302-redirects to an interstitial that
+ * loads in <img> but is flaky as a background, which is why kiosk photos showed
+ * only initials. `sz=w400` is ample for the ~96–200px cards.
+ */
+function _drivePhotoUrl_(fileId) {
+  return 'https://drive.google.com/thumbnail?id=' + fileId + '&sz=w400';
+}
+
+/**
+ * Normalises any previously-stored Drive photo URL to the canonical embeddable
+ * form, so existing `uc?id=` rows render without a data migration. Non-Drive or
+ * empty URLs pass through unchanged.
+ */
+function _normalizePhotoUrl_(url) {
+  if (!url) return '';
+  var m = String(url).match(/[?&]id=([^&]+)/);
+  if (m && String(url).indexOf('drive.google.com') !== -1) return _drivePhotoUrl_(m[1]);
+  return url;
 }
 
 /** Writes a visitor's PhotoURL cell by VisitorID. Best-effort. */
@@ -288,7 +312,7 @@ function getVisitorPass(visitorId) {
  * purpose, vehicle, ID, safety-ack) with the host id resolved to a name, plus
  * every Logs row for that visitor across all dates (newest first).
  */
-function getVisitorDetail(visitorId) {
+function getVisitorDetail(visitorId, token) {
   if (!visitorId) return { success: false, error: 'Missing visitor id' };
   var sheet = getSheet(SHEETS.VISITORS);
   var row = findRowByValue(sheet, 'VisitorID', visitorId);
@@ -324,13 +348,13 @@ function getVisitorDetail(visitorId) {
     hostName:    hostName || rec.HostEmpID || '',
     purpose:     rec.Purpose || '',
     vehicle:     rec.Vehicle || '',
-    photoUrl:    rec.PhotoURL || '',
-    // The ID TYPE (e.g. "Aadhaar") is shown, but the ID NUMBER is deliberately
-    // withheld from this endpoint. getVisitorDetail is reachable anonymously
-    // (the visitors page has no auth gate yet), so a leaked/replayed pass id
-    // must not expose a government ID number. Restore idNumber once the page is
-    // behind an admin token. See the deferred auth-gate task.
+    photoUrl:    _normalizePhotoUrl_(rec.PhotoURL || ''),
+    // The ID TYPE (e.g. "Aadhaar") is always returned. The ID NUMBER is a
+    // government identifier and is returned ONLY to an authenticated admin
+    // caller — the visitors page is now behind a PIN gate that mints the token,
+    // so a leaked/replayed pass id alone (no token) can never expose it.
     idType:      rec.IDType || '',
+    idNumber:    _isAdminCaller_(token) ? (rec.IDNumber != null ? String(rec.IDNumber) : '') : '',
     visitorType: rec.VisitorType || '',
     safetyAckAt: rec.SafetyAckAt || '',
     blacklisted: String(rec.BlacklistFlag || '').toUpperCase() === 'YES',

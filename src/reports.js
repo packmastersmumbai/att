@@ -174,13 +174,15 @@ function _computeDashboardData_() {
   // Build photo + gender lookups from Employees sheet
   var photoMap = {}, genderMap = {};
   allEmps.forEach(function(e) {
-    if (e.PhotoURL) photoMap[String(e.EmpID)] = e.PhotoURL;
+    if (e.PhotoURL) photoMap[String(e.EmpID)] = _normalizePhotoUrl_(e.PhotoURL);
     genderMap[String(e.EmpID)] = e.Gender || '';
   });
   // Visitor photos live in the Visitors sheet, keyed by VisitorID — join them
   // so visitor arrival cards show the captured photo, not just initials.
+  // Normalise to the embeddable thumbnail form so the kiosk's CSS-background
+  // cards render them (the raw uc?id= form is flaky as a background image).
   getSheetAsObjects(SHEETS.VISITORS).forEach(function(vv) {
-    if (vv.PhotoURL) photoMap[String(vv.VisitorID)] = vv.PhotoURL;
+    if (vv.PhotoURL) photoMap[String(vv.VisitorID)] = _normalizePhotoUrl_(vv.PhotoURL);
   });
 
   // Monthly stats — count present/absent/late days this month per employee
