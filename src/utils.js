@@ -93,25 +93,59 @@ function getCell(sheet, rowNum, columnName) {
   return sheet.getRange(rowNum, col).getValue();
 }
 
+var PIN_MAX_ATTEMPTS = 5;
+var PIN_LOCKOUT_SEC  = 900; // 15 min
+
 /**
- * Verifies an admin PIN server-side.
- * Never exposes the stored PIN to the client.
+ * Verifies an admin PIN server-side and, on success, mints the bearer token
+ * that every mutating admin action requires. Never exposes the stored PIN.
+ *
+ * Rate-limited: the PIN is 4 digits and this endpoint is publicly reachable,
+ * so unmetered guessing would exhaust the keyspace in minutes.
+ *
  * @param {string} pin  PIN entered by user
- * @returns {{success: boolean}}
+ * @returns {{success: boolean, token: (string|undefined), error: (string|undefined)}}
  */
 function verifyPIN(pin) {
+  var cache = CacheService.getScriptCache();
+  var fails = parseInt(cache.get('PIN_FAILS') || '0', 10) || 0;
+  if (fails >= PIN_MAX_ATTEMPTS) {
+    return { success: false, error: 'Too many attempts. Try again in 15 minutes.' };
+  }
+
   var stored = getConfigValue('AdminPIN');
-  return { success: String(pin) === String(stored) };
+  if (String(pin) !== String(stored)) {
+    cache.put('PIN_FAILS', String(fails + 1), PIN_LOCKOUT_SEC);
+    return { success: false };
+  }
+
+  cache.remove('PIN_FAILS');
+  return { success: true, token: _issueAdminToken_() };
 }
+
+// Per-execution memo of the Config sheet, keyed by Key column.
+// GAS re-evaluates global vars on every invocation, so this naturally
+// resets between executions — no explicit reset needed on cold start.
+// saveConfig() clears it explicitly so a write is visible within the
+// same execution that made it.
+var _CONFIG_MEMO = null;
 
 /**
  * Reads a value from the Config tab by key.
+ * Reads the whole sheet once per execution (memoized) instead of once
+ * per call, since callers often ask for several keys in one request.
  */
 function getConfigValue(key) {
-  var sheet = getSheet(SHEETS.CONFIG);
-  var row = findRowByValue(sheet, 'Key', key);
-  if (row === -1) return null;
-  return getCell(sheet, row, 'Value');
+  if (_CONFIG_MEMO === null) {
+    _CONFIG_MEMO = {};
+    getSheetAsObjects(SHEETS.CONFIG).forEach(function(r) {
+      _CONFIG_MEMO[String(r.Key).trim()] = r.Value;
+    });
+  }
+  // hasOwnProperty (not a falsy check) so an existing key whose Value is
+  // an empty string still returns '', matching the pre-memo behavior of
+  // getCell() — only a genuinely absent key returns null.
+  return _CONFIG_MEMO.hasOwnProperty(key) ? _CONFIG_MEMO[key] : null;
 }
 
 /**

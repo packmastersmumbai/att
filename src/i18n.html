@@ -1,0 +1,285 @@
+<script>
+/**
+ * QRATT_I18N — shared i18n dictionary for the public-facing pages
+ * (vreg, vpass). Keys map to {en, hi} pairs; hi is simple spoken Hindi
+ * (Devanagari) suitable for a guard or visitor reading on a phone.
+ *
+ * This file is injected verbatim into <head> of every served page by
+ * doGet() (see src/Code.js) and by the e2e test harness (see e2e-lib.js),
+ * so it must stay pure ES5 script — no template placeholders.
+ */
+var QRATT_I18N = {
+  // ── Language toggle ───────────────────────────────────────────────────
+  lang_en: { en: 'English', hi: 'English' },
+  lang_hi: { en: 'हिंदी',   hi: 'हिंदी' },
+
+  // ── vreg.html — returning-visitor fast path ───────────────────────────
+  vreg_been_here:      { en: 'Been here before?',                    hi: 'पहले आए हैं?' },
+  vreg_mobile_ph:      { en: 'Mobile number',                        hi: 'मोबाइल नंबर' },
+  vreg_find:           { en: 'Find',                                 hi: 'खोजें' },
+  vreg_new_visitor_hint:{ en: 'New visitor? Fill the form below.',   hi: 'नए विज़िटर नीचे फ़ॉर्म भरें' },
+
+  // ── vreg.html — main form ─────────────────────────────────────────────
+  vreg_name:           { en: 'Name',                                 hi: 'नाम' },
+  vreg_name_ph:        { en: 'Rahul Sharma',                         hi: 'राहुल शर्मा' },
+  vreg_mobile:         { en: 'Mobile',                                hi: 'मोबाइल' },
+  vreg_whom:           { en: 'Whom to meet',                          hi: 'किससे मिलना है' },
+  vreg_loading:        { en: 'Loading…',                              hi: 'लोड हो रहा है…' },
+  vreg_purpose:        { en: 'Purpose',                               hi: 'उद्देश्य' },
+  vreg_add_photo:      { en: 'Add Photo (optional)',                  hi: 'फ़ोटो लें' },
+  vreg_photo_added:    { en: 'Photo added ✓',                         hi: 'फ़ोटो जोड़ी गई ✓' },
+  vreg_tap_camera:      { en: 'Tap to use camera',                    hi: 'कैमरा खोलने के लिए टैप करें' },
+  vreg_more_details:   { en: 'More details',                          hi: 'अधिक जानकारी' },
+  vreg_type:           { en: 'Type',                                  hi: 'प्रकार' },
+  vreg_company:        { en: 'Company',                               hi: 'कंपनी' },
+  vreg_id_type:        { en: 'ID Type',                               hi: 'ID प्रकार' },
+  vreg_id_number:      { en: 'ID Number',                             hi: 'ID नंबर' },
+  vreg_id_number_ph:   { en: 'Last 4 digits',                         hi: 'अंतिम 4 अंक' },
+  vreg_vehicle:        { en: 'Vehicle Number',                        hi: 'वाहन नंबर' },
+
+  // ── vreg.html — purpose chips ──────────────────────────────────────────
+  vreg_purpose_meeting:    { en: 'Meeting',     hi: 'मीटिंग' },
+  vreg_purpose_delivery:   { en: 'Delivery',    hi: 'डिलीवरी' },
+  vreg_purpose_interview:  { en: 'Interview',   hi: 'इंटरव्यू' },
+  vreg_purpose_maintenance:{ en: 'Maintenance', hi: 'मेंटेनेंस' },
+  vreg_purpose_other:      { en: 'Other',       hi: 'अन्य' },
+
+  // ── vreg.html — safety induction ───────────────────────────────────────
+  vreg_safety_title:   { en: 'Safety Instructions',                   hi: 'सुरक्षा निर्देश' },
+  vreg_video_unavailable:{ en: 'Video unavailable',                   hi: 'वीडियो उपलब्ध नहीं' },
+  vreg_tap_each_rule:  { en: 'Tap each rule to reveal',                hi: 'हर नियम पर टैप करें' },
+  vreg_tap_to_read:    { en: 'Tap to read',                            hi: 'टैप करें' },
+  vreg_safety_ack:     { en: 'I have read and understood all the rules.', hi: 'मैंने सभी नियम पढ़े और समझ लिए हैं' },
+  vreg_register_btn:   { en: 'Register & Get Pass',                   hi: 'पंजीकरण करें' },
+  vreg_registering:    { en: 'Registering…',                          hi: 'पंजीकरण हो रहा है…' },
+
+  // ── vreg.html — host dropdown (JS-built) ──────────────────────────────
+  vreg_select_person:  { en: 'Select person…',                        hi: 'व्यक्ति चुनें…' },
+  vreg_owner_group:    { en: 'Owner',                                 hi: 'मालिक' },
+  vreg_office_group:   { en: 'Office',                                hi: 'ऑफिस' },
+
+  // ── vreg.html — toasts ─────────────────────────────────────────────────
+  vreg_toast_required:      { en: 'Name and Mobile are required',        hi: 'नाम और मोबाइल आवश्यक' },
+  vreg_toast_rules_pending: { en: 'Please read all safety rules first',  hi: 'कृपया सभी नियम पढ़ें' },
+
+  // ── Shared safety rules (identical text on vreg + vpass) ──────────────
+  safety_rule_1: { en: 'The entire site is a NO SMOKING area.',
+                   hi: 'पूरा परिसर धूम्रपान निषेध क्षेत्र है।' },
+  safety_rule_2: { en: 'Photography inside the premises is strictly prohibited.',
+                   hi: 'परिसर के अंदर फ़ोटोग्राफ़ी सख़्त वर्जित है।' },
+  safety_rule_3: { en: 'No mobile phone use outside the office. Phones must be switched OFF elsewhere.',
+                   hi: 'ऑफिस के अलावा कहीं भी मोबाइल का उपयोग न करें; बाहर मोबाइल बंद रखें।' },
+  safety_rule_4: { en: 'Please do not litter. Help us keep the site clean.',
+                   hi: 'कूड़ा न फैलाएँ। परिसर को साफ़ रखने में मदद करें।' },
+  safety_rule_5: { en: 'Entry to any area outside the office is prohibited unless authorised and accompanied by your host.',
+                   hi: 'ऑफिस के बाहर किसी भी क्षेत्र में बिना अनुमति और बिना साथी के प्रवेश वर्जित है — आपका मेज़बान आपके साथ रहेगा।' },
+  safety_rule_6: { en: 'Be alert to safety signs and internal traffic. Do not play with any equipment.',
+                   hi: 'सुरक्षा संकेतों और आंतरिक यातायात का ध्यान रखें। किसी भी उपकरण से छेड़छाड़ न करें।' },
+  safety_rule_7: { en: 'If the alarm sounds, follow the instructions of your contact person.',
+                   hi: 'अलार्म बजने पर संपर्क व्यक्ति के निर्देशों का पालन करें।' },
+
+  // ── vpass.html ─────────────────────────────────────────────────────────
+  vpass_exit_note:     { en: '⚠ Show this pass to security when leaving.', hi: '⚠ बाहर जाते समय यह पास सुरक्षा को दिखाएँ' },
+  vpass_emergency_title:{ en: 'Emergency Contacts',                    hi: 'आपातकालीन संपर्क' },
+  vpass_safety_rules_title:{ en: 'Safety Rules',                       hi: 'सुरक्षा नियम' },
+
+  // ── vpass.html — emergency contact defaults ───────────────────────────
+  vpass_emg_incharge:  { en: 'In-charge', hi: 'प्रभारी' },
+  vpass_emg_main_gate: { en: 'Main Gate', hi: 'मुख्य गेट' },
+  vpass_emg_office:    { en: 'Office',    hi: 'ऑफिस' },
+
+  // ── vpass.html — check-in/out status + action button (most-tapped controls) ──
+  vpass_status_in:      { en: 'Currently checked IN', hi: 'अभी अंदर दर्ज हैं' },
+  vpass_status_out:     { en: 'Not checked in',        hi: 'अभी दर्ज नहीं हैं' },
+  vpass_btn_checkin:    { en: 'Check IN',              hi: 'चेक इन करें' },
+  vpass_btn_checkout:   { en: 'Check OUT',              hi: 'चेक आउट करें' },
+  vpass_hint_checkin:   { en: 'check in',               hi: 'चेक इन' },
+  vpass_hint_checkout:  { en: 'check out',              hi: 'चेक आउट' },
+  vpass_hint_tail:      { en: 'Tap the button to {action}. Keep this page — you can check in and out from here, or show the QR at the gate.',
+                           hi: '{action} करने के लिए बटन दबाएँ। इस पेज को सुरक्षित रखें — यहाँ से चेक इन/आउट कर सकते हैं, या गेट पर QR दिखा सकते हैं।' },
+  vpass_wait:           { en: 'Please wait…', hi: 'कृपया प्रतीक्षा करें…' },
+
+  // ── vreg.html — confirmation ("doneCard") screen ──────────────────────
+  vreg_done_title:          { en: "You're registered",                                          hi: 'आपका पंजीकरण हो गया' },
+  vreg_done_subline:        { en: 'Show this QR at the security desk to check in / out.',        hi: 'चेक इन / आउट के लिए यह QR सुरक्षा डेस्क पर दिखाएँ' },
+  vreg_done_returning_title:{ en: 'Welcome back',                                                hi: 'फिर से स्वागत है' },
+  vreg_done_returning_sub:  { en: 'We recognised your number — this is your existing pass. Show it at the desk to check in / out.',
+                               hi: 'हमने आपका नंबर पहचान लिया — यह आपका मौजूदा पास है। चेक इन / आउट के लिए इसे डेस्क पर दिखाएँ' },
+  vreg_open_pass:           { en: 'Open my pass ↗', hi: 'मेरा पास खोलें ↗' },
+  vreg_close:               { en: 'Close', hi: 'बंद करें' },
+
+  // ── Shared nav labels (kiosk, scanner, dashboard, reports, visitors, admin) ──
+  nav_dashboard: { en: 'Dashboard', hi: 'डैशबोर्ड' },
+  nav_reports:   { en: 'Reports',   hi: 'रिपोर्ट' },
+  nav_visitors:  { en: 'Visitors',  hi: 'विज़िटर' },
+  nav_admin:     { en: 'Admin',     hi: 'एडमिन' },
+
+  // ── Shared gate names (kiosk + scanner gate selector) ─────────────────
+  gate_main:      { en: 'Main Gate',  hi: 'मुख्य गेट' },
+  gate_side:      { en: 'Side Gate',  hi: 'साइड गेट' },
+  gate_reception: { en: 'Reception',  hi: 'रिसेप्शन' },
+  gate_rear:      { en: 'Rear Gate',  hi: 'पिछला गेट' },
+
+  // ── kiosk.html — top bar + KPIs ────────────────────────────────────────
+  nav_kiosk_sub:          { en: 'Attendance Live',   hi: 'अटेंडेंस लाइव' },
+  kiosk_total_present:    { en: 'Total Present',     hi: 'कुल उपस्थित' },
+  kiosk_absent:           { en: 'Absent',            hi: 'अनुपस्थित' },
+  kiosk_late:             { en: 'Late',              hi: 'देर से' },
+  kiosk_attendance:       { en: 'Attendance',        hi: 'उपस्थिति' },
+  kiosk_late_after:       { en: 'Late after',        hi: 'इसके बाद देर' },
+  kiosk_terminals_online: { en: 'All Terminals Online', hi: 'सभी टर्मिनल चालू हैं' },
+
+  // ── kiosk.html — scan panel ────────────────────────────────────────────
+  kiosk_ready_to_scan:   { en: 'Ready to Scan',        hi: 'स्कैन के लिए तैयार' },
+  kiosk_gate:            { en: 'Gate',                 hi: 'गेट' },
+  kiosk_open_scanner:    { en: 'Open Scanner',          hi: 'स्कैनर खोलें' },
+  kiosk_scanner_active:  { en: '● Scanner active',      hi: '● स्कैनर चालू है' },
+  kiosk_waiting_for_scan:{ en: 'waiting for scan…',     hi: 'स्कैन का इंतज़ार…' },
+  kiosk_reopen_window:   { en: 'Reopen window',         hi: 'विंडो फिर खोलें' },
+  kiosk_manual_ph:       { en: "Type QR code or frequent visitor's phone…", hi: 'QR कोड या मोबाइल नंबर टाइप करें…' },
+  kiosk_submit:          { en: 'Submit',                hi: 'सबमिट करें' },
+  kiosk_recent_arrivals: { en: 'Recent Arrivals',       hi: 'हाल की आमद' },
+  kiosk_loading:         { en: 'Loading…',              hi: 'लोड हो रहा है…' },
+  kiosk_no_arrivals:     { en: 'No arrivals yet today', hi: 'आज तक कोई आमद नहीं' },
+  kiosk_processing:      { en: 'Processing…',           hi: 'प्रोसेस हो रहा है…' },
+  kiosk_dismiss:         { en: 'Dismiss',               hi: 'बंद करें' },
+  kiosk_unknown:         { en: 'Unknown',               hi: 'अज्ञात' },
+  kiosk_qr_not_recognised:{ en: 'QR code not recognised.', hi: 'QR कोड पहचान में नहीं आया।' },
+  kiosk_scanner_open:      { en: 'Scanner Open',      hi: 'स्कैनर खुला है' },
+  kiosk_no_visitor_for_number: { en: 'No visitor for that number', hi: 'इस नंबर के लिए कोई विज़िटर नहीं मिला' },
+
+  // ── kiosk.html — scan-result badges + meta labels ──────────────────────
+  kiosk_badge_blocked:  { en: 'BLOCKED',  hi: 'रोका गया' },
+  kiosk_badge_error:    { en: 'ERROR',    hi: 'त्रुटि' },
+  kiosk_badge_visitor:  { en: 'VISITOR',  hi: 'विज़िटर' },
+  kiosk_badge_employee: { en: 'EMPLOYEE', hi: 'कर्मचारी' },
+  kiosk_meta_action:    { en: 'Action',   hi: 'कार्य' },
+  kiosk_meta_check_in:  { en: 'CHECK IN', hi: 'चेक इन' },
+  kiosk_meta_time:      { en: 'Time',     hi: 'समय' },
+  kiosk_meta_check_out: { en: 'CHECK OUT',hi: 'चेक आउट' },
+  kiosk_meta_duration:  { en: 'Duration', hi: 'अवधि' },
+
+  // ── kiosk.html — bottom bar ─────────────────────────────────────────────
+  kiosk_system_active: { en: 'System Active', hi: 'सिस्टम चालू है' },
+  kiosk_scan_prompt:   { en: 'SCAN YOUR QR CODE AT THE TERMINAL', hi: 'टर्मिनल पर अपना QR कोड स्कैन करें' },
+  kiosk_last_updated:  { en: 'Last updated:', hi: 'आख़िरी अपडेट:' },
+  kiosk_auto_refresh:  { en: 'Auto-refresh:', hi: 'ऑटो-रिफ्रेश:' },
+
+  // ── kiosk.html — idle overlay ────────────────────────────────────────────
+  kiosk_paused:    { en: 'Kiosk paused', hi: 'कियोस्क रुका हुआ है' },
+  kiosk_idle_hint: { en: 'Idle — live updates stopped to save quota. Tap anywhere or scan to resume.',
+                     hi: 'निष्क्रिय — कोटा बचाने के लिए लाइव अपडेट रोक दिए गए हैं। जारी रखने के लिए कहीं भी टैप करें या स्कैन करें।' },
+
+  // ── kiosk.html — person detail modal ────────────────────────────────────
+  kiosk_check_out:            { en: 'Check Out',                 hi: 'चेक आउट करें' },
+  kiosk_checking_out:         { en: 'Checking out…',              hi: 'चेक आउट हो रहा है…' },
+  kiosk_checked_out:          { en: 'Checked out',                hi: 'चेक आउट हो गया' },
+  kiosk_not_checked_in_today: { en: 'Not checked in today',       hi: 'आज चेक इन नहीं किया' },
+  kiosk_failed_to_load:       { en: 'Failed to load',             hi: 'लोड नहीं हो सका' },
+  kiosk_this_month:           { en: 'THIS MONTH',                 hi: 'इस महीने' },
+  kiosk_present_days:         { en: 'present',                    hi: 'उपस्थित' },
+  kiosk_late_days:            { en: 'late',                       hi: 'देर से' },
+  kiosk_no_attendance_month:  { en: 'No attendance this month',   hi: 'इस महीने कोई उपस्थिति नहीं' },
+  kiosk_confirm_checkout_q:   { en: 'Check out {name} now? This records the current time as their OUT for today.',
+                                hi: 'क्या अभी {name} को चेक आउट करें? इससे आज के लिए उनका OUT समय दर्ज हो जाएगा।' },
+  kiosk_checkout_failed:      { en: 'Checkout failed',            hi: 'चेक आउट विफल रहा' },
+
+  // ── idcards.html ────────────────────────────────────────────────────────
+  idcards_title:            { en: 'Employee ID Cards',  hi: 'कर्मचारी ID कार्ड' },
+  idcards_back_to_admin:    { en: '← Back to Admin',    hi: '← एडमिन पर वापस जाएँ' },
+  idcards_print_save_pdf:   { en: 'Print / Save PDF',   hi: 'प्रिंट करें / PDF सेव करें' },
+  idcards_search_ph:        { en: 'Search name or ID…', hi: 'नाम या ID खोजें…' },
+  idcards_all_departments:  { en: 'All Departments',    hi: 'सभी विभाग' },
+  idcards_active:           { en: 'Active',             hi: 'सक्रिय' },
+  idcards_all_status:       { en: 'All Status',         hi: 'सभी स्थिति' },
+  idcards_inactive:         { en: 'Inactive',           hi: 'निष्क्रिय' },
+  idcards_no_match:         { en: 'No employees match the current filter.', hi: 'इस फ़िल्टर से कोई कर्मचारी नहीं मिला।' },
+  idcards_cards_label:      { en: 'cards',              hi: 'कार्ड' },
+
+  // ── login.html ──────────────────────────────────────────────────────────
+  login_brand_sub:          { en: 'Attendance Management', hi: 'अटेंडेंस प्रबंधन' },
+  login_who_is_logging_in:  { en: "Who's logging in?",     hi: 'कौन लॉगिन कर रहा है?' },
+  login_loading_users:      { en: 'Loading users…',        hi: 'यूज़र लोड हो रहे हैं…' },
+  login_select_user_above:  { en: 'Select a user above',   hi: 'ऊपर से एक यूज़र चुनें' },
+  login_select_user_first:  { en: 'Select a user first',   hi: 'पहले एक यूज़र चुनें' },
+  login_incorrect_pin:      { en: 'Incorrect PIN',         hi: 'गलत PIN' },
+
+  // ── scanner.html — top bar + camera panel ────────────────────────────────
+  scanner_gate:               { en: 'Gate',                   hi: 'गेट' },
+  scanner_ready_to_scan:      { en: 'Ready to Scan',           hi: 'स्कैन के लिए तैयार' },
+  scanner_camera_title:       { en: 'QR Camera Scanner',       hi: 'QR कैमरा स्कैनर' },
+  scanner_camera_hint:        { en: 'Opens in a popup window · camera stays open · scan → result → continue',
+                                hi: 'पॉपअप विंडो में खुलता है · कैमरा चालू रहता है · स्कैन → परिणाम → जारी रखें' },
+  scanner_open_scanner:       { en: 'Open Scanner',           hi: 'स्कैनर खोलें' },
+  scanner_scanner_open:       { en: 'Scanner Open',           hi: 'स्कैनर खुला है' },
+  scanner_active:             { en: '● Scanner active',        hi: '● स्कैनर चालू है' },
+  scanner_waiting_for_scan:   { en: 'waiting for scan…',       hi: 'स्कैन का इंतज़ार…' },
+  scanner_reopen_window:      { en: 'Reopen window',          hi: 'विंडो फिर खोलें' },
+  scanner_manual_ph:          { en: 'Or type QR code manually…', hi: 'या QR कोड टाइप करें…' },
+  scanner_submit:             { en: 'Submit',                 hi: 'सबमिट करें' },
+  scanner_loading:            { en: 'Loading…',                hi: 'लोड हो रहा है…' },
+
+  // ── scanner.html — activity log + nav ────────────────────────────────────
+  scanner_activity_log:       { en: 'Activity Log',            hi: 'गतिविधि लॉग' },
+  scanner_live_terminal_feed: { en: 'Live Terminal Feed',       hi: 'लाइव टर्मिनल फ़ीड' },
+  scanner_live_stream:        { en: 'Live identification stream', hi: 'लाइव पहचान स्ट्रीम' },
+  scanner_session_active:     { en: 'Session Active',           hi: 'सेशन सक्रिय है' },
+  scanner_hourly_throughput:  { en: 'Hourly Throughput',        hi: 'प्रति घंटा थ्रूपुट' },
+  scanner_scans_today:        { en: 'scans today',              hi: 'आज के स्कैन' },
+  scanner_no_activity_today:  { en: 'No activity yet today',    hi: 'आज तक कोई गतिविधि नहीं' },
+  scanner_nav_scanner:        { en: 'Scanner',                  hi: 'स्कैनर' },
+  scanner_nav_staff_directory:{ en: 'Staff Directory',          hi: 'स्टाफ़ डायरेक्टरी' },
+
+  // ── scanner.html — result card + toasts ──────────────────────────────────
+  scanner_processing_scan:       { en: 'Processing scan…',        hi: 'स्कैन प्रोसेस हो रहा है…' },
+  scanner_toast_server_error:    { en: 'Server error',            hi: 'सर्वर त्रुटि' },
+  scanner_badge_error:           { en: 'ERROR',                   hi: 'त्रुटि' },
+  scanner_server_error_title:    { en: 'Server Error',             hi: 'सर्वर त्रुटि' },
+  scanner_server_error_subtitle: { en: 'Unable to reach attendance system', hi: 'अटेंडेंस सिस्टम तक नहीं पहुँच सका' },
+  scanner_unexpected_error:      { en: 'An unexpected error occurred. Please try again or contact support.',
+                                   hi: 'एक अनपेक्षित त्रुटि हुई। कृपया फिर से प्रयास करें या सहायता से संपर्क करें।' },
+  scanner_dismiss:               { en: 'Dismiss',                  hi: 'बंद करें' },
+  scanner_toast_checked_in:      { en: 'Checked In',               hi: 'चेक इन हुआ' },
+  scanner_toast_checked_out:     { en: 'Checked Out',              hi: 'चेक आउट हुआ' },
+  scanner_member_fallback:       { en: 'Member',                   hi: 'सदस्य' },
+  scanner_toast_inactive_member: { en: 'INACTIVE MEMBER',          hi: 'निष्क्रिय सदस्य' },
+  scanner_access_denied_fallback:{ en: 'Access Denied',            hi: 'प्रवेश अस्वीकृत' },
+  scanner_toast_blocked:         { en: 'BLOCKED',                  hi: 'रोका गया' },
+  scanner_qr_not_recognised:     { en: 'QR code not recognised',   hi: 'QR कोड पहचान में नहीं आया' },
+  scanner_badge_inactive:        { en: 'INACTIVE',                 hi: 'निष्क्रिय' },
+  scanner_badge_blocked:         { en: 'BLOCKED',                  hi: 'रोका गया' },
+  scanner_badge_unknown:         { en: 'UNKNOWN',                  hi: 'अज्ञात' },
+  scanner_badge_visitor:         { en: 'VISITOR',                  hi: 'विज़िटर' },
+  scanner_badge_employee:        { en: 'EMPLOYEE',                 hi: 'कर्मचारी' },
+  scanner_access_denied:         { en: 'Access Denied',            hi: 'प्रवेश अस्वीकृत' },
+  scanner_qr_expired_msg:        { en: 'QR code not recognised or expired. Please contact the front desk.',
+                                   hi: 'QR कोड पहचान में नहीं आया या समाप्त हो गया है। कृपया फ्रंट डेस्क से संपर्क करें।' },
+  scanner_enter_serial_manually: { en: 'ENTER SERIAL MANUALLY',    hi: 'सीरियल मैन्युअल रूप से दर्ज करें' },
+  scanner_stat_action:           { en: 'Action',                   hi: 'कार्य' },
+  scanner_stat_time:             { en: 'Time',                     hi: 'समय' },
+  scanner_stat_duration:         { en: 'Duration',                 hi: 'अवधि' },
+  scanner_unknown:               { en: 'Unknown',                  hi: 'अज्ञात' },
+  scanner_auto_dismiss_hint:     { en: 'Triggered on valid scan · Auto-dismiss in 8s',
+                                   hi: 'मान्य स्कैन पर सक्रिय · 8 सेकंड में अपने आप बंद होगा' }
+};
+
+(function(){
+  function lang(){ return sessionStorage.getItem('qratt_lang') === 'hi' ? 'hi' : 'en'; }
+  window.qrattLang = lang;
+  window.qrattT = function(key){ var e = QRATT_I18N[key]; if(!e) return key; return e[lang()] != null ? e[lang()] : e.en; };
+  window.qrattApplyLang = function(){
+    document.querySelectorAll('[data-i18n]').forEach(function(n){ n.textContent = qrattT(n.getAttribute('data-i18n')); });
+    document.querySelectorAll('[data-i18n-ph]').forEach(function(n){ n.setAttribute('placeholder', qrattT(n.getAttribute('data-i18n-ph'))); });
+    document.documentElement.setAttribute('lang', lang());
+    document.querySelectorAll('[data-lang-btn]').forEach(function(b){
+      b.classList.toggle('active', b.getAttribute('data-lang-btn') === lang());
+    });
+  };
+  window.qrattSetLang = function(code){ sessionStorage.setItem('qratt_lang', code === 'hi' ? 'hi' : 'en'); qrattApplyLang(); };
+  document.addEventListener('DOMContentLoaded', function(){
+    var u = new URLSearchParams(location.search).get('lang');
+    if (u === 'hi' || u === 'en') sessionStorage.setItem('qratt_lang', u);
+    qrattApplyLang();
+  });
+})();
+</script>

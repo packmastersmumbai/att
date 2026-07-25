@@ -68,6 +68,15 @@
       font-size: 15px; font-weight: 700; text-decoration: none;
     }
     .bk-hint { font-size: 11px; color: #475569; margin-top: 14px; line-height: 1.6; }
+
+    /* First-run language picker — tap targets kept >=44px for easy thumb taps. */
+    .bk-lang { display: flex; gap: 10px; justify-content: center; margin-bottom: 18px; }
+    .bk-lang-btn {
+      min-width: 96px; min-height: 44px; padding: 10px 18px; border-radius: 10px;
+      border: 1px solid #334155; background: #0f172a; color: #cbd5e1;
+      font-size: 14px; font-weight: 700; cursor: pointer;
+    }
+    .bk-lang-btn.active { background: #2563eb; border-color: #2563eb; color: #fff; }
   </style>
 </head>
 <body>
@@ -94,6 +103,10 @@
     <div class="bk-card">
       <div class="bk-mark">QR</div>
       <div class="bk-title">QR Attendance</div>
+      <div class="bk-lang" id="langPicker">
+        <button type="button" class="bk-lang-btn" data-lang-choice="en">English</button>
+        <button type="button" class="bk-lang-btn" data-lang-choice="hi">हिंदी</button>
+      </div>
       <div class="bk-text">Tap below to open the attendance app.</div>
       <a id="blockedLink" class="bk-btn" href="#">Open the app →</a>
       <div class="bk-hint">Add this page to your home screen for quick access.</div>
@@ -107,6 +120,37 @@
       var page = new URLSearchParams(location.search).get('page') || 'kiosk';
       if (valid.indexOf(page) === -1) page = 'kiosk';
 
+      // Cache-buster that rotates DAILY. The GAS app already sends no-store, but
+      // Chrome mobile still served a stale copy of the exact app URL because the
+      // old buster was a hardcoded '&v=100' that never changed — so a deploy left
+      // users on yesterday's cached page until they cleared history. A per-day
+      // token means every day's first open fetches fresh, without busting the
+      // cache on every single tap (which would slow every launch).
+      var appVer = 'd' + Math.floor(Date.now() / 86400000); // days since epoch
+
+      // Language choice persists across launcher visits (own origin only —
+      // script.google.com can't read this localStorage, so it's forwarded
+      // via ?lang= on every app URL instead).
+      var chosenLang = localStorage.getItem('qratt_lang') === 'hi' ? 'hi' : 'en';
+      function appUrl(pg) { return base + '?page=' + pg + '&v=' + appVer + '&lang=' + chosenLang; }
+
+      // Reflect the current choice on the picker buttons, and re-point the
+      // "Open the app" link whenever the visitor taps a different language.
+      function renderLangPicker() {
+        document.querySelectorAll('.bk-lang-btn').forEach(function(btn) {
+          btn.classList.toggle('active', btn.getAttribute('data-lang-choice') === chosenLang);
+        });
+      }
+      document.getElementById('langPicker').addEventListener('click', function(e) {
+        var btn = e.target.closest('.bk-lang-btn');
+        if (!btn) return;
+        chosenLang = btn.getAttribute('data-lang-choice') === 'hi' ? 'hi' : 'en';
+        localStorage.setItem('qratt_lang', chosenLang);
+        renderLangPicker();
+        document.getElementById('blockedLink').href = appUrl(page);
+      });
+      renderLangPicker();
+
       var app = document.getElementById('app');
       var loader = document.getElementById('loader');
 
@@ -119,7 +163,7 @@
         loader.style.display = 'flex';
         loader.style.opacity = '1';
         app.classList.remove('ready');
-        app.src = base + '?page=' + pg + '&v=100';
+        app.src = appUrl(pg);
         history.replaceState(null, '', '?page=' + pg);
       }
 
@@ -128,7 +172,7 @@
       // cross-origin iframe is undetectable from the parent — it fires no usable
       // event, exposes no child frames, and its postMessages never arrive. So the
       // portal acts as a launcher and opens the app directly.
-      document.getElementById('blockedLink').href = base + '?page=' + page + '&v=100';
+      document.getElementById('blockedLink').href = appUrl(page);
       history.replaceState(null, '', '?page=' + page);
       loader.style.display = 'none';
 
@@ -137,7 +181,7 @@
       window.addEventListener('message', function(e) {
         if (e.data && e.data.qratt_nav && valid.indexOf(e.data.qratt_nav) !== -1) {
           loadPage(e.data.qratt_nav);
-          document.getElementById('blockedLink').href = base + '?page=' + e.data.qratt_nav + '&v=100';
+          document.getElementById('blockedLink').href = appUrl(e.data.qratt_nav);
         }
       });
     })();

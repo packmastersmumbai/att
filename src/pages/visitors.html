@@ -506,8 +506,24 @@
       <!-- ═══ REGISTER TAB ═══ -->
       <div id="panel-register" class="panel active">
 
-        <!-- Initial registration form (two-column) -->
-        <div id="regForm" class="reg-split">
+        <!-- Self-registration QR: visitors scan to fill the form on their own phone -->
+        <div id="selfRegCard" style="display:flex;align-items:center;gap:16px;background:#fff;border:1px solid var(--border,#d7e0de);border-radius:12px;padding:14px 16px;margin-bottom:16px;flex-wrap:wrap">
+          <img id="selfRegQR" alt="Self-register QR" style="width:96px;height:96px;border-radius:8px;flex-shrink:0;background:#f1f5f4">
+          <div style="flex:1;min-width:180px">
+            <div style="font-size:14px;font-weight:800;color:#0f172a">Visitor Self-Registration</div>
+            <div style="font-size:12px;color:#64748b;margin-top:3px;line-height:1.5">Let visitors scan this QR (or open the link) to register on their own phone and get a self check-in pass.</div>
+            <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;align-items:center">
+              <a id="selfRegLink" href="#" target="_blank" rel="noopener" style="font-size:12px;color:#006b5f;font-weight:700;word-break:break-all">Open registration form ↗</a>
+              <button onclick="copySelfRegLink(this)" style="font-size:11px;padding:4px 10px;border:1px solid #d7e0de;border-radius:6px;background:#f8fafc;cursor:pointer;color:#334155">Copy link</button>
+              <a href="#" onclick="showStaffForm(event)" style="font-size:11px;color:#64748b;margin-left:auto">Type it in here instead</a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Initial registration form (two-column) — hidden by default; the
+             self-register form (vreg) is the single source of truth. Staff can
+             reveal this to type a visitor in directly. -->
+        <div id="regForm" class="reg-split" style="display:none">
 
           <!-- LEFT COL: Form -->
           <div class="card">
@@ -904,7 +920,25 @@
       setTimeout(function() { if (el.parentNode) el.parentNode.removeChild(el); }, 3200);
     }
     function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
-    function post(data,callback){var action=data.action;var onErr=function(e){callback({success:false,error:e?e.message:'Unknown error'});};if(typeof google==='undefined'||!google.script){callback({success:false,error:'Not in GAS'});return;}var r=google.script.run.withSuccessHandler(callback).withFailureHandler(onErr);if(action==='registerVisitor')r.registerVisitor(data.visitor);else if(action==='checkoutVisitor')r.checkoutVisitor(data.visitorId);else if(action==='getLogs')r.getLogs(data.filters);else if(action==='getDashboardData')r.getDashboardData();else if(action==='exportCSV')r.exportCSV(data.filters);else callback({success:false,error:'Unknown: '+action});}
+
+    /* Self-registration QR + link (visitors register on their own phone) */
+    (function(){
+      var appUrl = '<?= appUrl ?>';
+      var regUrl = appUrl + '?page=vreg';
+      var qrEl = document.getElementById('selfRegQR');
+      var linkEl = document.getElementById('selfRegLink');
+      if (qrEl) qrEl.src = 'https://api.qrserver.com/v1/create-qr-code/?size=192x192&ecc=M&data=' + encodeURIComponent(regUrl);
+      if (linkEl) linkEl.href = regUrl;
+      window.__selfRegUrl = regUrl;
+    })();
+    function copySelfRegLink(btn){
+      var url = window.__selfRegUrl || '';
+      var done = function(){ var o=btn.textContent; btn.textContent='Copied ✓'; setTimeout(function(){btn.textContent=o;},1500); };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(url).then(done, function(){ window.prompt('Copy this link:', url); });
+      } else { window.prompt('Copy this link:', url); }
+    }
+    function post(data,callback){var action=data.action;var onErr=function(e){callback({success:false,error:e?e.message:'Unknown error'});};if(typeof google==='undefined'||!google.script){callback({success:false,error:'Not in GAS'});return;}var r=google.script.run.withSuccessHandler(callback).withFailureHandler(onErr);if(action==='registerVisitor')r.registerVisitor(data.visitor);else if(action==='checkoutVisitor')r.checkoutVisitor(data.visitorId);else if(action==='getLogs')r.getLogs(data.filters);else if(action==='getDashboardData')r.getDashboardData();else if(action==='exportCSV')r.exportCSV(data.filters);else if(action==='getVisitorDetail')r.getVisitorDetail(data.visitorId);else callback({success:false,error:'Unknown: '+action});}
   </script>
   <script>
     var COLORS = ['#3B82F6','#8B5CF6','#EC4899','#F59E0B','#10B981','#06B6D4','#EF4444','#6366F1','#84CC16','#F97316'];
@@ -932,16 +966,25 @@
     function triggerPhoto() {
       document.getElementById('vPhotoFile').click();
     }
+    var vPhotoData = '';   // captured photo as base64 data URL (sent to Telegram)
     function previewPhoto(input) {
       if (!input.files || !input.files[0]) return;
       var reader = new FileReader();
       reader.onload = function(e) {
+        vPhotoData = e.target.result;
         var prev = document.getElementById('vPhotoPreview');
         prev.src = e.target.result;
         prev.style.display = 'block';
         document.getElementById('photoPlaceholder').style.display = 'none';
       };
       reader.readAsDataURL(input.files[0]);
+    }
+
+    // Reveal the in-app staff form (hidden by default in favour of vreg).
+    function showStaffForm(ev) {
+      if (ev) ev.preventDefault();
+      var f = document.getElementById('regForm');
+      if (f) { f.style.display = ''; f.scrollIntoView({ behavior: 'smooth' }); }
     }
 
     // ── Register ──────────────────────────────────────────
@@ -955,7 +998,8 @@
         ExpectedOut: document.getElementById('vExpOut').value,
         IDType:      document.getElementById('vIDType').value,
         IDNumber:    document.getElementById('vIDNumber').value.trim(),
-        Vehicle:     document.getElementById('vVehicle').value.trim()
+        Vehicle:     document.getElementById('vVehicle').value.trim(),
+        PhotoData:   vPhotoData
       };
       if (!v.Name || !v.Phone) { showToast('Name and Phone are required', 'error'); return; }
       var btn = document.getElementById('regBtn');
@@ -1225,13 +1269,14 @@
           '<thead><tr><th>Visitor</th><th>Company</th><th>Host</th><th>Purpose</th><th>Date</th><th>Time IN</th><th>Time OUT</th><th>Duration</th></tr></thead><tbody>' +
           rows.map(function(r) {
             var c = pickColor(r.Name), ini = initials(r.Name);
-            return '<tr>' +
+            var vid = r.PersonID || r.VisitorID || '';
+            return '<tr' + (vid ? ' class="vh-row" data-vid="' + esc(vid) + '" style="cursor:pointer"' : '') + '>' +
               '<td><div style="display:flex;align-items:center;gap:8px">' +
                 '<div style="width:28px;height:28px;border-radius:50%;background:' + c + '18;color:' + c + ';display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0">' + esc(ini) + '</div>' +
                 '<div style="font-weight:500">' + esc(r.Name) + '</div>' +
               '</div></td>' +
               '<td>' + esc(r.Company || '–') + '</td>' +
-              '<td>' + esc(r.HostEmpID || '–') + '</td>' +
+              '<td>' + esc(r.Host || r.HostEmpID || '–') + '</td>' +
               '<td>' + (r.Purpose ? '<span class="badge badge-blue">' + esc(r.Purpose) + '</span>' : '–') + '</td>' +
               '<td>' + esc(r.Date) + '</td>' +
               '<td>' + esc(r.TimeIN) + '</td>' +
@@ -1240,8 +1285,69 @@
               '</tr>';
           }).join('') +
           '</tbody></table></div>';
+
+        // Row click → open full visitor detail (profile + complete visit log).
+        el.querySelectorAll('.vh-row').forEach(function(tr) {
+          tr.addEventListener('click', function() { openVisitorDetail(tr.getAttribute('data-vid')); });
+        });
       });
     }
+
+    /* ── Visitor detail modal ── */
+    function openVisitorDetail(vid) {
+      if (!vid) return;
+      var back = document.getElementById('vdBackdrop');
+      var body = document.getElementById('vdBody');
+      document.getElementById('vdName').textContent = 'Loading…';
+      document.getElementById('vdId').textContent = vid;
+      body.innerHTML = '<p style="padding:16px 0;color:var(--color-text-muted);font-size:13px">Loading…</p>';
+      back.style.display = 'flex';
+
+      post({ action: 'getVisitorDetail', visitorId: vid }, function(d) {
+        if (!d || !d.success) {
+          body.innerHTML = '<p style="padding:16px 0;color:#DC2626;font-size:13px">' + esc((d && d.error) || 'Failed to load') + '</p>';
+          return;
+        }
+        document.getElementById('vdName').textContent = d.name || vid;
+
+        function field(label, val) {
+          if (!val) return '';
+          return '<div style="display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px solid var(--color-border)">' +
+            '<span style="color:var(--color-text-muted);font-size:12px">' + esc(label) + '</span>' +
+            '<span style="font-weight:500;font-size:13px;text-align:right">' + esc(val) + '</span></div>';
+        }
+
+        var status = d.status === 'IN'
+          ? '<span class="badge badge-green">Currently inside</span>'
+          : '<span class="badge" style="background:#e5e7eb;color:#374151">Checked out</span>';
+
+        var info =
+          '<div style="margin-bottom:6px">' + status +
+            (d.blacklisted ? ' <span class="badge" style="background:#fee2e2;color:#991b1b">Blacklisted</span>' : '') + '</div>' +
+          field('Mobile', d.phone) +
+          field('Company', d.company) +
+          field('Host', d.hostName) +
+          field('Purpose', d.purpose) +
+          field('Vehicle', d.vehicle) +
+          field('ID Type', d.idType) +
+          field('Type', d.visitorType) +
+          field('Safety acknowledged', d.safetyAckAt ? new Date(d.safetyAckAt).toLocaleString() : '');
+
+        var logHd = '<div style="margin:16px 0 8px;font-size:12px;font-weight:700;color:var(--color-text-muted);text-transform:uppercase;letter-spacing:.5px">Visit Log (' + d.visitCount + ')</div>';
+        var logTbl = d.visits.length
+          ? '<div style="overflow-x:auto"><table style="width:100%"><thead><tr>' +
+              '<th>Date</th><th>In</th><th>Out</th><th>Duration</th><th>Gate</th></tr></thead><tbody>' +
+              d.visits.map(function(v) {
+                return '<tr><td>' + esc(v.date) + '</td><td>' + esc(v.timeIn || '–') + '</td><td>' +
+                  esc(v.timeOut || '–') + '</td><td>' + esc(v.duration || '–') + '</td><td>' + esc(v.gate || '–') + '</td></tr>';
+              }).join('') +
+              '</tbody></table></div>'
+          : '<p style="color:var(--color-text-muted);font-size:13px">No visits recorded.</p>';
+
+        body.innerHTML = info + logHd + logTbl;
+      });
+    }
+    function closeVisitorDetail() { document.getElementById('vdBackdrop').style.display = 'none'; }
 
     function exportHistoryCSV() {
       post({ action: 'exportCSV', filters: { type: 'VIS' } }, function(res) {
@@ -1276,16 +1382,48 @@
 
 <script>
   (function() {
+    // Apps Script always nests user HTML in its own sandbox iframe, so
+    // window.top !== window.self even on a direct /exec visit — that comparison
+    // cannot detect an embedding portal. Reading top.location.href throws
+    // (cross-origin), so the destination comes from the server-injected appUrl
+    // and the write targets the top frame.
     var APP_URL = '<?= appUrl ?>';
-    document.querySelectorAll('[data-page]').forEach(function(a) {
-      if (a.tagName !== 'A') return;
+    function navigate(page) {
+      if (!page) return;
+      var url = APP_URL + '?page=' + encodeURIComponent(page);
+      try {
+        (window.top || window).location.href = url;
+      } catch(e) {
+        window.open(url, '_top');
+      }
+    }
+    window.qrattNav = navigate;
+    document.querySelectorAll('[data-page], a[href^="?page="]').forEach(function(a) {
       a.addEventListener('click', function(e) {
+        var page = a.dataset.page ||
+          ((a.getAttribute('href') || '').match(/[?&]page=([^&]+)/) || [])[1];
+        if (!page) return;
         e.preventDefault();
-        var url = APP_URL + '?page=' + a.dataset.page;
-        try { window.top.location.href = url; } catch(e) { try { window.parent.location.href = url; } catch(e2) { window.location.href = url; } }
+        navigate(page);
       });
     });
   })();
 </script>
+
+<!-- ═══════════ Visitor detail modal (History row click) ═══════════ -->
+<div id="vdBackdrop" onclick="if(event.target===this)closeVisitorDetail()"
+     style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(2,6,16,.72);align-items:center;justify-content:center;padding:16px">
+  <div style="background:var(--color-surface);border-radius:12px;max-width:460px;width:100%;max-height:85vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.35)">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 18px;border-bottom:1px solid var(--color-border);position:sticky;top:0;background:var(--color-surface)">
+      <div style="min-width:0">
+        <div id="vdName" style="font-weight:700;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>
+        <div id="vdId" style="font-size:11px;color:var(--color-text-muted);font-family:monospace;word-break:break-all"></div>
+      </div>
+      <button onclick="closeVisitorDetail()" aria-label="Close"
+              style="flex-shrink:0;width:32px;height:32px;border:none;background:var(--color-bg);border-radius:8px;font-size:18px;cursor:pointer;color:var(--color-text-muted)">&times;</button>
+    </div>
+    <div id="vdBody" style="padding:16px 18px"></div>
+  </div>
+</div>
 </body>
 </html>

@@ -32,6 +32,24 @@ function processQRScan(qrCode, gate) {
   if (!qrCode) return { success: false, action: 'ERROR', message: 'No QR code received' };
   gate = gate || 'Main Gate';
 
+  // Serialise the scan. Choosing IN-vs-OUT is a read-check-write against Logs:
+  // two near-simultaneous scans of the same badge (a double-tap, or two gates
+  // at once) would otherwise both see "no open row" and both append a check-in,
+  // or both find the same open row and clobber each other's TimeOUT.
+  var lock = LockService.getScriptLock();
+  try {
+    lock.waitLock(20000);
+  } catch (e) {
+    return { success: false, action: 'ERROR', message: 'Scanner busy — please scan again' };
+  }
+  try {
+    return _processQRScanLocked_(qrCode, gate);
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function _processQRScanLocked_(qrCode, gate) {
   // 1. Check blacklist
   var blacklistSheet = getSheet(SHEETS.BLACKLIST);
   var blacklistRow = findRowByValue(blacklistSheet, 'QRCode', qrCode);
@@ -60,7 +78,20 @@ function processQRScan(qrCode, gate) {
     };
   }
 
-  // 3. Check for open check-in today
+  // 3. Reject deactivated employees — no attendance log written
+  if (person.type === 'EMP' && person.status === 'INACTIVE') {
+    return {
+      success: false,
+      action: 'INACTIVE',
+      message: 'INACTIVE MEMBER',
+      name: person.name,
+      qrCode: qrCode,
+      gate: gate,
+      time: formatTime(new Date())
+    };
+  }
+
+  // 4. Check for open check-in today
   var logsSheet = getSheet(SHEETS.LOGS);
   var openRow = _findOpenLogRow(logsSheet, person.id, today());
 
@@ -85,6 +116,7 @@ function _lookupPerson(qrCode) {
       phone:      getCell(empSheet, empRow, 'Phone'),
       photoUrl:   getCell(empSheet, empRow, 'PhotoURL') || '',
       qrImageUrl: getCell(empSheet, empRow, 'QRImageURL') || '',
+      status:     String(getCell(empSheet, empRow, 'Status') || 'ACTIVE').toUpperCase(),
       type:       'EMP',
       qrCode:     qrCode
     };
@@ -139,6 +171,33 @@ function _findOpenLogRow(logsSheet, personId, dateStr) {
   return -1;
 }
 
+/**
+ * Finds a person's open (TimeOUT empty) Logs row on ANY date, newest first.
+ * Visitors don't reset daily like employees — someone who checked in and never
+ * checked out (e.g. autoCheckoutAll missed them, or they stayed past midnight)
+ * still needs to be found so they can check out and stop showing as "in".
+ * Returns the 1-based row number, or -1.
+ */
+function _findOpenVisitorLogRow(logsSheet, personId) {
+  var lastRow = logsSheet.getLastRow();
+  if (lastRow < 2) return -1;
+
+  var personIdCol = getColIndex(logsSheet, 'PersonID');
+  var timeOutCol  = getColIndex(logsSheet, 'TimeOUT');
+  var minCol = Math.min(personIdCol, timeOutCol);
+  var maxCol = Math.max(personIdCol, timeOutCol);
+  var block  = logsSheet.getRange(2, minCol, lastRow - 1, maxCol - minCol + 1).getValues();
+  var piOff  = personIdCol - minCol;
+  var toOff  = timeOutCol  - minCol;
+
+  for (var i = block.length - 1; i >= 0; i--) { // newest first
+    if (String(block[i][piOff]) === String(personId) && block[i][toOff] === '') {
+      return i + 2;
+    }
+  }
+  return -1;
+}
+
 function _checkIn(logsSheet, person, gate) {
   var now = new Date();
   var logId = generateID('LOG');
@@ -163,6 +222,9 @@ function _checkIn(logsSheet, person, gate) {
     activeSheet.appendRow([person.id, person.name, formatTime(now), person.hostId || '', gate]);
     sendVisitorAlert(person);
   }
+
+  invalidateDashboardCache();
+  sendScanAlert('IN', person, gate, formatTime(now));
 
   return {
     success:    true,
@@ -196,6 +258,9 @@ function _checkOut(logsSheet, openRow, person, gate) {
     var activeRow = findRowByValue(activeSheet, 'VisitorID', person.id);
     if (activeRow !== -1) activeSheet.deleteRow(activeRow);
   }
+
+  invalidateDashboardCache();
+  sendScanAlert('OUT', person, gate, formatTime(now), duration);
 
   return {
     success:  true,

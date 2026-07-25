@@ -34,7 +34,7 @@
     else if (action === 'getEmployees')      runner.getEmployees();
     else if (action === 'saveEmployee')      runner.saveEmployee(data.employee);
     else if (action === 'deleteEmployee')    runner.deleteEmployee(data.empId);
-    else if (action === 'getConfig')         runner.getConfig();
+    else if (action === 'getConfig')         runner.getConfig(data.token);
     else if (action === 'saveConfig')        runner.saveConfig(data.config);
     else if (action === 'registerVisitor')   runner.registerVisitor(data.visitor);
     else if (action === 'checkoutVisitor')   runner.checkoutVisitor(data.visitorId);

@@ -332,33 +332,47 @@
       size: A4 portrait;
       margin: 8mm;
     }
+
+    /* Language toggle — sits beside the print/back buttons */
+    .idcards-lang-toggle { display: flex; gap: 6px; }
+    .idcards-lang-btn {
+      min-height: 32px; padding: 5px 12px;
+      border: 1px solid #cbd5e1; border-radius: 4px;
+      background: #fff; color: var(--primary);
+      font-size: 12px; font-weight: 700; font-family: inherit; cursor: pointer;
+    }
+    .idcards-lang-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
   </style>
 </head>
 <body>
 
   <!-- Screen-only controls -->
   <div class="controls no-print">
-    <h1>Employee ID Cards — <?= orgName ?></h1>
-    <a class="btn-back" href="?page=admin">← Back to Admin</a>
+    <h1><span data-i18n="idcards_title">Employee ID Cards</span> — <?= orgName ?></h1>
+    <div class="idcards-lang-toggle">
+      <button type="button" class="idcards-lang-btn" data-lang-btn="en" onclick="qrattSetLang('en')">EN</button>
+      <button type="button" class="idcards-lang-btn" data-lang-btn="hi" onclick="qrattSetLang('hi')">हिं</button>
+    </div>
+    <a class="btn-back" href="?page=admin" data-i18n="idcards_back_to_admin">← Back to Admin</a>
     <button class="btn-print" onclick="window.print()">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
         <polyline points="6,9 6,2 18,2 18,9"/>
         <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
         <rect x="6" y="14" width="12" height="8"/>
       </svg>
-      Print / Save PDF
+      <span data-i18n="idcards_print_save_pdf">Print / Save PDF</span>
     </button>
   </div>
 
   <div class="filter-bar no-print">
-    <input type="text" id="searchInput" placeholder="Search name or ID…" oninput="filterCards()">
+    <input type="text" id="searchInput" data-i18n-ph="idcards_search_ph" placeholder="Search name or ID…" oninput="filterCards()">
     <select id="deptFilter" onchange="filterCards()">
-      <option value="">All Departments</option>
+      <option value="" data-i18n="idcards_all_departments">All Departments</option>
     </select>
     <select id="statusFilter" onchange="filterCards()">
-      <option value="">All Status</option>
-      <option value="ACTIVE">Active</option>
-      <option value="INACTIVE">Inactive</option>
+      <option value="ACTIVE" selected data-i18n="idcards_active">Active</option>
+      <option value="" data-i18n="idcards_all_status">All Status</option>
+      <option value="INACTIVE" data-i18n="idcards_inactive">Inactive</option>
     </select>
     <span class="card-count" id="cardCount"></span>
   </div>
@@ -429,7 +443,7 @@
         '<div class="card-band">' +
           '<div class="card-band-logo">QR</div>' +
           '<div class="card-band-org">' + esc(ORG) + '</div>' +
-          '<div class="card-band-type">Employee</div>' +
+          '<div class="card-band-type">' + esc(emp.Department || 'Employee') + '</div>' +
         '</div>' +
 
         '<div class="card-body">' +
@@ -441,6 +455,7 @@
             '<div class="card-id-row">' +
               '<span class="card-id-lbl">ID</span>' +
               '<span class="card-id-val">' + esc(emp.EmpID || '') + '</span>' +
+              (emp.BloodGroup ? '<span class="card-id-lbl" style="margin-left:auto">BLOOD</span><span class="card-id-val" style="color:#dc2626;font-weight:800">' + esc(emp.BloodGroup) + '</span>' : '') +
             '</div>' +
             (emp.Phone ? '<div class="card-meta"><span>Ph:</span> ' + esc(emp.Phone) + '</div>' : '') +
             (emp.Email ? '<div class="card-meta"><span>Em:</span> ' + esc(emp.Email) + '</div>' : '') +
@@ -479,15 +494,15 @@
       var grid = document.getElementById('cardGrid');
       var count = document.getElementById('cardCount');
       if (!_filtered.length) {
-        grid.innerHTML = '<div class="empty">No employees match the current filter.</div>';
-        count.textContent = '0 cards';
+        grid.innerHTML = '<div class="empty">' + esc(qrattT('idcards_no_match')) + '</div>';
+        count.textContent = '0 ' + qrattT('idcards_cards_label');
         return;
       }
       grid.innerHTML = _filtered.map(renderCard).join('');
-      count.textContent = _filtered.length + ' card' + (_filtered.length !== 1 ? 's' : '');
+      count.textContent = _filtered.length + ' ' + qrattT('idcards_cards_label');
     }
 
-    renderGrid();
+    filterCards();   // applies default ACTIVE-only status filter on load
   </script>
 </body>
 </html>

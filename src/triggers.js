@@ -3,12 +3,15 @@
 // Run installTriggers() ONCE manually after first deployment.
 // ============================================================
 
-function installTriggers() {
+function installTriggers(authToken) {
+  _requireAdmin_(authToken);
   // Remove existing triggers to avoid duplicates
   ScriptApp.getProjectTriggers().forEach(function(t) { ScriptApp.deleteTrigger(t); });
 
-  var summaryHr  = parseInt(getConfigValue('SummaryHr')     || '19');
+  var summaryHr  = parseInt(getConfigValue('SummaryHr')      || '9');
   var checkoutHr = parseInt(getConfigValue('AutoCheckoutHr') || '23');
+  var hoursHr    = parseInt(getConfigValue('HoursRebuildHr') || '1'); // after auto-checkout closes the day
+  var backupHr   = parseInt(getConfigValue('BackupHr')       || '23'); // end of day, after checkout
 
   ScriptApp.newTrigger('sendDailySummary')
     .timeBased()
@@ -22,7 +25,89 @@ function installTriggers() {
     .everyDays(1)
     .create();
 
-  Logger.log('Triggers installed: summary at ' + summaryHr + 'h, auto-checkout at ' + checkoutHr + 'h');
+  // Refresh the HoursSummary sheet daily (after sessions are closed for the day)
+  ScriptApp.newTrigger('rebuildHoursSummarySheet')
+    .timeBased()
+    .atHour(hoursHr)
+    .everyDays(1)
+    .create();
+
+  // Daily backup of Logs to the external backup spreadsheet (Config: BackupSheetId)
+  ScriptApp.newTrigger('backupDailyLogs')
+    .timeBased()
+    .atHour(backupHr)
+    .everyDays(1)
+    .create();
+
+  Logger.log('Triggers installed: summary at ' + summaryHr + 'h, auto-checkout at ' + checkoutHr + 'h, hours-rebuild at ' + hoursHr + 'h, backup at ' + backupHr + 'h');
+  return { success: true };
+}
+
+/** Lists installed trigger handler function names (for verifying setup). */
+function listInstalledTriggers() {
+  return { success: true, handlers: ScriptApp.getProjectTriggers().map(function(t) { return t.getHandlerFunction(); }) };
+}
+
+/**
+ * Core backup: appends Logs rows to the backup spreadsheet (Config 'BackupSheetId').
+ * Copies exact displayed strings (times "6:51 AM", dates "2026-07-03") as plain text
+ * so the backup mirrors the source format. Deduped by LogID — re-runs never duplicate.
+ * @param {boolean} allDates  true = every date (backfill); false = today only (daily).
+ */
+function _backupLogs_(allDates) {
+  var backupId = getConfigValue('BackupSheetId');
+  if (!backupId) { Logger.log('backup: no BackupSheetId configured — skipped'); return { success: false, skipped: true }; }
+
+  var src = getSheet(SHEETS.LOGS);
+  var values = src.getDataRange().getDisplayValues();
+  if (values.length < 2) return { success: true, appended: 0 };
+  var headers = values[0];
+  var logIdIdx = headers.indexOf('LogID');
+  var dateIdx  = headers.indexOf('Date');
+  var todayStr = today();
+
+  var rows = values.slice(1).filter(function(r) {
+    if (allDates || dateIdx === -1) return true;
+    return String(r[dateIdx]) === todayStr;
+  });
+  if (!rows.length) return { success: true, appended: 0 };
+
+  var backupSs = SpreadsheetApp.openById(backupId);
+  var dest = backupSs.getSheetByName('Logs') || backupSs.insertSheet('Logs');
+  if (dest.getLastRow() === 0) {
+    dest.appendRow(headers);
+    dest.getRange(1, 1, 1, headers.length).setFontWeight('bold');
+  }
+
+  var already = {};
+  if (logIdIdx !== -1 && dest.getLastRow() > 1) {
+    var col = dest.getRange(2, logIdIdx + 1, dest.getLastRow() - 1, 1).getValues();
+    col.forEach(function(c) { already[String(c[0])] = true; });
+  }
+  var fresh = rows.filter(function(r) {
+    return logIdIdx === -1 || !already[String(r[logIdIdx])];
+  });
+  if (!fresh.length) return { success: true, appended: 0 };
+
+  var writeRange = dest.getRange(dest.getLastRow() + 1, 1, fresh.length, headers.length);
+  writeRange.setNumberFormat('@');   // plain text — keep the copied strings verbatim
+  writeRange.setValues(fresh);
+  Logger.log('backup: appended ' + fresh.length + ' rows (allDates=' + !!allDates + ')');
+  return { success: true, appended: fresh.length };
+}
+
+/** Daily trigger — backs up today's Logs. */
+function backupDailyLogs() { return _backupLogs_(false); }
+
+/** One-off backfill — copies ALL dates into the backup (deduped). */
+function backupAllLogs() { return _backupLogs_(true); }
+
+/** Wipes the backup 'Logs' tab (header + data). Use before a clean re-backfill. */
+function clearBackupLogs() {
+  var backupId = getConfigValue('BackupSheetId');
+  if (!backupId) return { success: false, skipped: true };
+  var dest = SpreadsheetApp.openById(backupId).getSheetByName('Logs');
+  if (dest) dest.clear();
   return { success: true };
 }
 
@@ -31,6 +116,24 @@ function installTriggers() {
  * Runs at 11 PM by default.
  */
 function autoCheckoutAll() {
+  // Runs at 11 PM, when people may still be scanning out. Without the lock this
+  // sweep's stale in-memory snapshot can overwrite a checkout written a moment
+  // earlier by processQRScan, resetting PRESENT back to PARTIAL.
+  var lock = LockService.getScriptLock();
+  try {
+    lock.waitLock(30000);
+  } catch (e) {
+    Logger.log('autoCheckoutAll: could not acquire lock, skipping this run');
+    return;
+  }
+  try {
+    _autoCheckoutAllLocked_();
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function _autoCheckoutAllLocked_() {
   var logsSheet = getSheet(SHEETS.LOGS);
   var todayStr  = today();
   var lastRow   = logsSheet.getLastRow();
@@ -39,28 +142,38 @@ function autoCheckoutAll() {
   var dateCol     = getColIndex(logsSheet, 'Date');
   var timeInCol   = getColIndex(logsSheet, 'TimeIN');
   var timeOutCol  = getColIndex(logsSheet, 'TimeOUT');
-  var durationCol = getColIndex(logsSheet, 'Duration');
   var statusCol   = getColIndex(logsSheet, 'Status');
 
   var dataRange = lastRow - 1;
   var dates    = logsSheet.getRange(2, dateCol,    dataRange, 1).getValues();
   var timeIns  = logsSheet.getRange(2, timeInCol,  dataRange, 1).getValues();
-  var timeOuts = logsSheet.getRange(2, timeOutCol, dataRange, 1).getValues();
+  var statuses = logsSheet.getRange(2, statusCol,  dataRange, 1).getValues();
+  // TimeOUT and Duration are contiguous — read them as one 2-wide block so the
+  // untouched rows are written back with their own existing values.
+  var outBlock = logsSheet.getRange(2, timeOutCol, dataRange, 2).getValues();
 
   var now = new Date();
   var nowTimeStr = formatTime(now);
+  var closed = 0;
 
+  // Mutate the in-memory images, then write each range once. The previous loop
+  // issued two range writes per open session.
   for (var i = 0; i < dates.length; i++) {
     var storedDate = dates[i][0];
     var formattedDate = storedDate instanceof Date ? formatDate(storedDate) : String(storedDate);
-    if (formattedDate === todayStr && timeOuts[i][0] === '') {
-      var rowNum = i + 2;
-      var timeIn = parseTimeToday(timeIns[i][0]);
-      var duration = timeIn ? calcDuration(timeIn, now) : '';
-      // TimeOUT+Duration are contiguous — one write; Status is separate
-      logsSheet.getRange(rowNum, timeOutCol, 1, 2).setValues([[nowTimeStr, duration]]);
-      logsSheet.getRange(rowNum, statusCol).setValue('PARTIAL');
-    }
+    if (formattedDate !== todayStr || outBlock[i][0] !== '') continue;
+
+    var timeIn = parseTimeToday(timeIns[i][0]);
+    outBlock[i][0] = nowTimeStr;                              // TimeOUT
+    outBlock[i][1] = timeIn ? calcDuration(timeIn, now) : ''; // Duration
+    statuses[i][0] = 'PARTIAL';
+    closed++;
+  }
+
+  if (closed) {
+    logsSheet.getRange(2, timeOutCol, dataRange, 2).setValues(outBlock);
+    logsSheet.getRange(2, statusCol,  dataRange, 1).setValues(statuses);
+    invalidateDashboardCache();
   }
 
   // Clear ActiveVisitors tab
