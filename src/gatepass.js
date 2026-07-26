@@ -179,17 +179,36 @@ function notifyHostForApproval(visitorId) {
     var link  = publicBaseUrl() + '?page=gatepass_approve&id=' + encodeURIComponent(visitorId) +
                 '&t=' + encodeURIComponent(token);
 
-    var lines = gp.items.filter(function(i) { return i.status !== 'VOID'; }).map(function(i) {
-      return '• ' + i.direction + ' ' + i.qty + '× ' + i.itemDesc + (i.returnable ? ' (returnable)' : '');
-    }).join('\n');
-    var msg = 'Gatepass approval for visitor *' + visitorName + '*:\n' + lines + '\n\nApprove: ' + link;
-
+    var hostName = '';
     if (hostEmpId) {
       var empSheet = getSheet(SHEETS.EMPLOYEES);
       var hr = findRowByValue(empSheet, 'EmpID', hostEmpId);
+      if (hr !== -1) hostName = getCell(empSheet, hr, 'Name') || '';
       var hostPhone = hr === -1 ? '' : getCell(empSheet, hr, 'Phone');
-      if (hostPhone) { try { _sendWhatsApp(hostPhone, msg); } catch (e) { Logger.log('gp host wa: ' + e.message); } }
     }
+
+    var lines = gp.items.filter(function(i) { return i.status !== 'VOID'; }).map(function(i) {
+      return '• ' + i.direction + ' ' + i.qty + '× ' + i.itemDesc + (i.returnable ? ' (returnable)' : '');
+    }).join('\n');
+
+    // Primary channel: Telegram (HTML), which the app already uses for passes.
+    // Secondary: WhatsApp to the host via CallMeBot (only if that key is set).
+    function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+    var tgMsg =
+      '📦 <b>Gatepass approval needed</b>\n' +
+      'Visitor: <b>' + esc(visitorName) + '</b>' + (hostName ? ' → host ' + esc(hostName) : '') + '\n' +
+      esc(lines) + '\n\n' +
+      '▶️ <a href="' + link + '">Approve gatepass</a>';
+
+    var sent = false;
+    try { if (_sendTelegram(tgMsg)) sent = true; } catch (e) { Logger.log('gp telegram: ' + e.message); }
+
+    if (typeof hostPhone !== 'undefined' && hostPhone) {
+      var waMsg = 'Gatepass approval for visitor *' + visitorName + '*:\n' + lines + '\n\nApprove: ' + link;
+      try { if (_sendWhatsApp(hostPhone, waMsg)) sent = true; } catch (e) { Logger.log('gp host wa: ' + e.message); }
+    }
+
+    if (!sent) return { success: false, error: 'No notification channel is configured (set Telegram or CallMeBot in Config).' };
     return { success: true };
   } catch (e) {
     Logger.log('notifyHostForApproval failed: ' + e.message);
