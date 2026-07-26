@@ -1062,6 +1062,17 @@
       var phone = v.Phone.replace(/\D/g, '');
       document.getElementById('waShareBtn').href  = 'https://wa.me/' + phone + '?text=' + encodeURIComponent(msg);
       document.getElementById('smsShareBtn').href = 'sms:' + phone + '?body=' + encodeURIComponent(msg);
+
+      // Let the guard log gate-pass items for this visitor right after
+      // registration — reuses the shared gatepass card, mounted in the pass panel.
+      var gpMount = document.getElementById('passGpCard');
+      if (!gpMount) {
+        gpMount = document.createElement('div');
+        gpMount.id = 'passGpCard';
+        gpMount.style.marginTop = '18px';
+        document.getElementById('passPanel').appendChild(gpMount);
+      }
+      loadGatepassCard(qrCode, 'passGpCard');
     }
 
     function resetForm() {
@@ -1173,9 +1184,10 @@
               '</td>' +
               '<td>' + activeStatusBadge(v) + '</td>' +
               '<td>' +
+                '<button class="link-btn" onclick="openVisitorDetail(\'' + esc(v.VisitorID || v.ID || '') + '\')">' + qrattT('gp_items') + '</button>' +
                 (v.TimeOUT
-                  ? '<span style="color:#6b7280;font-size:11px">Done</span>'
-                  : '<button class="btn-checkout-teal" data-vid="' + esc(v.VisitorID || v.ID || '') + '" onclick="checkoutClick(this)">CHECKOUT</button>') +
+                  ? ' <span style="color:#6b7280;font-size:11px">Done</span>'
+                  : ' <button class="btn-checkout-teal" data-vid="' + esc(v.VisitorID || v.ID || '') + '" onclick="checkoutClick(this)">CHECKOUT</button>') +
               '</td>' +
               '</tr>';
           }).join('') +
@@ -1375,14 +1387,20 @@
     }
     function closeVisitorDetail() { document.getElementById('vdBackdrop').style.display = 'none'; }
 
-    /* ── Item gatepass card (inside the visitor detail modal) ── */
+    /* ── Item gatepass card — reusable; mounts into any element by id ──
+       Rendered in the visitor detail modal, the staff-form pass screen, and
+       (via the modal) from the Active tab. Only one card is visible at a time,
+       so it keeps single element ids and just parameterizes the mount + a
+       remembered mountId so the action handlers reload the right card. ── */
     var GP_MATERIALS = null;
-    function loadGatepassCard(vid) {
+    var GP_MOUNT = 'gpCard';   // element id the current card is rendered into
+    var GP_PHOTO = '';         // captured (compressed) photo for the item being added
+
+    function loadGatepassCard(vid, mountId) {
+      GP_MOUNT = mountId || 'gpCard';
       if (GP_MATERIALS === null) {
         post({ action:'getMaterialList' }, function(m){
           GP_MATERIALS = (m && m.materials) || [];
-          // Materials may arrive after the card first rendered — refresh the
-          // datalist so the picklist is populated even on a late response.
           var dl = document.getElementById('gpMatList');
           if (dl) {
             dl.innerHTML = GP_MATERIALS.slice(0,500).map(function(mm){
@@ -1403,27 +1421,63 @@
       return '<span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;background:'+c[1]+';color:'+c[2]+'">'+qrattT(c[0])+'</span>';
     }
 
+    // Compress a captured photo to a small thumbnail (downscale + JPEG) so a
+    // gatepass with several item photos stays well within google.script.run
+    // limits and Drive stays lean.
+    function _gpCompressPhoto_(dataUrl, cb){
+      try{
+        var img=new Image();
+        img.onload=function(){
+          var max=320, w=img.width, h=img.height;
+          if(w>h && w>max){ h=Math.round(h*max/w); w=max; }
+          else if(h>=w && h>max){ w=Math.round(w*max/h); h=max; }
+          var cv=document.createElement('canvas'); cv.width=w; cv.height=h;
+          cv.getContext('2d').drawImage(img,0,0,w,h);
+          cb(cv.toDataURL('image/jpeg',0.5));
+        };
+        img.onerror=function(){ cb(dataUrl); };
+        img.src=dataUrl;
+      }catch(e){ cb(dataUrl); }
+    }
+    function gpPreviewPhoto(input){
+      if(!input.files || !input.files[0]) return;
+      var reader=new FileReader();
+      reader.onload=function(e){
+        _gpCompressPhoto_(e.target.result, function(small){
+          GP_PHOTO=small;
+          var lbl=document.getElementById('gpPhotoLbl');
+          if(lbl) lbl.textContent='📷 ✓';
+        });
+      };
+      reader.readAsDataURL(input.files[0]);
+    }
+
     function renderGatepassCard(vid, d){
+      GP_PHOTO='';   // reset per render
       var items = d.items || [];
       var rows = items.map(function(i){
+        var thumb = i.photoUrl ? '<img src="'+esc(i.photoUrl)+'" alt="" style="width:28px;height:28px;border-radius:5px;object-fit:cover;vertical-align:middle;margin-right:6px" onerror="this.style.display=\'none\'">' : '';
         var act = i.status==='OUT_PENDING'
           ? '<button class="link-btn" onclick="gpReturn(\''+i.gatepassId+'\',\''+vid+'\')">'+qrattT('gp_mark_returned')+'</button>'
           : (i.status!=='VOID' ? '<button class="link-btn" onclick="gpVoid(\''+i.gatepassId+'\',\''+vid+'\')">'+qrattT('gp_void')+'</button>' : '');
-        return '<tr><td style="padding:6px 8px">'+esc(i.itemDesc)+(i.unit?' <span style="color:#94a3b8">'+esc(i.unit)+'</span>':'')+'</td>'+
+        return '<tr><td style="padding:6px 8px">'+thumb+esc(i.itemDesc)+(i.unit?' <span style="color:#94a3b8">'+esc(i.unit)+'</span>':'')+'</td>'+
           '<td style="padding:6px 8px">'+esc(i.direction)+'</td><td style="padding:6px 8px">'+esc(i.qty)+'</td>'+
           '<td style="padding:6px 8px">'+gpChip(i.status)+'</td><td style="padding:6px 8px;text-align:right">'+act+'</td></tr>';
       }).join('');
       var outstanding = d.returnableOutstanding||0;
       var mats = GP_MATERIALS||[];
-      document.getElementById('gpCard').innerHTML =
+      var mount = document.getElementById(GP_MOUNT);
+      if(!mount) return;
+      mount.innerHTML =
         '<div style="border:1px solid var(--color-border);border-radius:12px;overflow:hidden">'+
         '<div style="padding:11px 13px;background:var(--color-bg);border-bottom:1px solid var(--color-border);font-weight:800;font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--color-text-muted)">'+qrattT('gp_title')+'</div>'+
         '<div style="display:flex;gap:10px;padding:10px 12px 4px"><label style="font-size:12px"><input type="radio" name="gpDir" value="IN" checked> '+qrattT('gp_bringing_in')+'</label>'+
           '<label style="font-size:12px"><input type="radio" name="gpDir" value="OUT"> '+qrattT('gp_taking_out')+'</label></div>'+
-        '<div style="display:grid;grid-template-columns:1fr 64px auto auto;gap:8px;padding:6px 12px 12px;align-items:center">'+
+        '<div style="display:grid;grid-template-columns:1fr 60px auto auto auto;gap:8px;padding:6px 12px 12px;align-items:center">'+
           '<input id="gpDesc" list="gpMatList" placeholder="'+qrattT('gp_item_desc')+'" style="width:100%;padding:8px;border:1px solid var(--color-border);border-radius:8px">'+
           '<datalist id="gpMatList">'+mats.slice(0,500).map(function(m){return '<option value="'+esc(m.desc||m.code)+'">'+esc(m.code)+'</option>';}).join('')+'</datalist>'+
           '<input id="gpQty" type="number" value="1" min="1" style="width:100%;padding:8px;border:1px solid var(--color-border);border-radius:8px">'+
+          '<label id="gpPhotoLbl" title="'+qrattT('gp_add_photo')+'" style="font-size:14px;cursor:pointer;padding:6px;border:1px solid var(--color-border);border-radius:8px">📷<input type="file" accept="image/*" capture="environment" style="display:none" onchange="gpPreviewPhoto(this)"></label>'+
           '<label style="font-size:12px;display:flex;gap:5px;align-items:center;white-space:nowrap"><input type="checkbox" id="gpRet" checked>'+qrattT('gp_returnable')+'</label>'+
           '<button class="btn btn-primary" style="white-space:nowrap" onclick="gpAdd(\''+vid+'\')">'+qrattT('gp_add_item')+'</button>'+
         '</div>'+
@@ -1445,11 +1499,12 @@
       post({action:'addGatepassItem',visitorId:vid,item:{
         direction:dir, materialCode:mat.code||'', itemDesc:desc, unit:mat.unit||'',
         qty:Number(document.getElementById('gpQty').value)||1,
-        returnable:document.getElementById('gpRet').checked
-      }},function(res){ if(res&&res.success) loadGatepassCard(vid); });
+        returnable:document.getElementById('gpRet').checked,
+        photoData:GP_PHOTO
+      }},function(res){ if(res&&res.success) loadGatepassCard(vid, GP_MOUNT); });
     }
-    function gpReturn(id,vid){ post({action:'markItemReturned',gatepassId:id},function(res){ if(res&&res.success) loadGatepassCard(vid); }); }
-    function gpVoid(id,vid){ post({action:'voidGatepassItem',gatepassId:id,reason:''},function(res){ if(res&&res.success) loadGatepassCard(vid); }); }
+    function gpReturn(id,vid){ post({action:'markItemReturned',gatepassId:id},function(res){ if(res&&res.success) loadGatepassCard(vid, GP_MOUNT); }); }
+    function gpVoid(id,vid){ post({action:'voidGatepassItem',gatepassId:id,reason:''},function(res){ if(res&&res.success) loadGatepassCard(vid, GP_MOUNT); }); }
     function gpNotify(vid,btn){ if(btn){btn.disabled=true;} post({action:'notifyHostForApproval',visitorId:vid},function(res){ if(btn){btn.disabled=false; btn.textContent=(res&&res.success)?'✓':qrattT('gp_notify_host');} }); }
     window.openVisitorDetail = openVisitorDetail;
 

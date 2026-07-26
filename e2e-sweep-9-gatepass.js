@@ -53,8 +53,42 @@ async function run() {
     if (rows < 1) throw new Error('row disappeared unexpectedly');
   });
 
+  await R.check('item photo capture sends photoData', async () => {
+    // Simulate a captured photo, then add — the mock echoes items so we only
+    // need to confirm the add path accepts photoData without error.
+    await page.evaluate(() => { window.GP_PHOTO = 'data:image/jpeg;base64,/9j/AAAA'; });
+    await page.fill('#gpDesc', 'Free-text tool');
+    await page.click('#gpCard .btn-primary');
+    await settle(page, 300);
+    const rows = await page.locator('#gpCard table tbody tr').count();
+    if (rows < 2) throw new Error('photo item not added');
+  });
+
   summary.push(R.report());
   await context.close();
+
+  // 9b: gatepass card also appears on the staff-form pass screen
+  {
+    const R2 = makeRunner('9b · Gatepass — pass-screen mount after registration');
+    const { page: p2, context: c2 } = await openPage(browser, 'visitors');
+    await settle(p2);
+
+    await R2.check('gatepass card mounts in the pass panel', async () => {
+      await p2.evaluate(() => window.showStaffForm());
+      await p2.waitForSelector('#regForm', { state: 'visible', timeout: 3000 });
+      await p2.fill('#vName', 'GP Pass Visitor');
+      await p2.fill('#vPhone', '9876500011');
+      await p2.selectOption('#vPurpose', { index: 1 });
+      await p2.evaluate(() => { window.vPhotoData = 'data:image/jpeg;base64,/9j/AAAA'; });
+      await p2.click('#regBtn');
+      await p2.waitForSelector('#passPanel', { state: 'visible', timeout: 6000 });
+      await p2.waitForSelector('#passGpCard #gpDesc', { timeout: 4000 });
+    });
+
+    summary.push(R2.report());
+    await c2.close();
+  }
+
   await browser.close();
   return summary;
 }
