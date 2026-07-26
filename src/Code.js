@@ -8,7 +8,8 @@ var SHEETS = {
   LOGS:            'Logs',
   ACTIVE_VISITORS: 'ActiveVisitors',
   BLACKLIST:       'Blacklist',
-  CONFIG:          'Config'
+  CONFIG:          'Config',
+  GATEPASS:        'Gatepass'
 };
 
 function doGet(e) {
@@ -101,7 +102,8 @@ function _bootstrapIfNeeded() {
     'ActiveVisitors': ['VisitorID','Name','TimeIN','HostEmpID','Gate'],
     'Blacklist':      ['QRCode','PersonName','Reason','AddedDate','AddedBy'],
     'HoursSummary':   ['Year','Month','EmpID','Name','Department','DaysWorked','PresentDays','LateDays','OpenSessions','TotalMinutes','TotalHours','AvgPerDay','OvertimeHours','Status'],
-    'Config':         ['Key','Value']
+    'Config':         ['Key','Value'],
+    'Gatepass':       ['GatepassID','VisitorID','Direction','MaterialCode','ItemDesc','Unit','Qty','Returnable','Status','PhotoURL','HostEmpID','HostApproved','LoggedBy','LoggedAt','SettledAt','Note']
   };
 
   // Create tabs and headers (safe: never fails if tab already exists)
