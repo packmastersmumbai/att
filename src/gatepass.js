@@ -158,3 +158,41 @@ function approveGatepass(visitorId, token) {
   });
   return { success: true, approved: approved };
 }
+
+/**
+ * Notify the host (WhatsApp — host is a pre-authorized number) with the item
+ * list and a one-tap approve link. Explicit guard action, fired once when the
+ * item list is complete (not per item). Best-effort: never throws.
+ */
+function notifyHostForApproval(visitorId) {
+  try {
+    var gp = getGatepass(visitorId);
+    if (!gp.success || !gp.items.length) return { success: false, error: 'No items to approve' };
+
+    var visSheet = getSheet(SHEETS.VISITORS);
+    var vRow = findRowByValue(visSheet, 'VisitorID', visitorId);
+    if (vRow === -1) return { success: false, error: 'Visitor not found' };
+    var visitorName = getCell(visSheet, vRow, 'Name') || visitorId;
+    var hostEmpId   = getCell(visSheet, vRow, 'HostEmpID') || '';
+
+    var token = _issueGatepassToken_(visitorId);
+    var link  = publicBaseUrl() + '?page=gatepass_approve&id=' + encodeURIComponent(visitorId) +
+                '&t=' + encodeURIComponent(token);
+
+    var lines = gp.items.filter(function(i) { return i.status !== 'VOID'; }).map(function(i) {
+      return '• ' + i.direction + ' ' + i.qty + '× ' + i.itemDesc + (i.returnable ? ' (returnable)' : '');
+    }).join('\n');
+    var msg = 'Gatepass approval for visitor *' + visitorName + '*:\n' + lines + '\n\nApprove: ' + link;
+
+    if (hostEmpId) {
+      var empSheet = getSheet(SHEETS.EMPLOYEES);
+      var hr = findRowByValue(empSheet, 'EmpID', hostEmpId);
+      var hostPhone = hr === -1 ? '' : getCell(empSheet, hr, 'Phone');
+      if (hostPhone) { try { _sendWhatsApp(hostPhone, msg); } catch (e) { Logger.log('gp host wa: ' + e.message); } }
+    }
+    return { success: true };
+  } catch (e) {
+    Logger.log('notifyHostForApproval failed: ' + e.message);
+    return { success: false, error: e.message };
+  }
+}
