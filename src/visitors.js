@@ -248,11 +248,19 @@ function checkoutVisitor(visitorId) {
   } catch (e) {
     return { success: false, error: 'Busy — please try again' };
   }
+  var result;
   try {
-    return _checkoutVisitorLocked_(visitorId);
+    result = _checkoutVisitorLocked_(visitorId);
   } finally {
     lock.releaseLock();
   }
+  // Surface any still-out returnable gatepass items so the client can warn the
+  // guard before finalising the check-out (warn-and-override, never a block).
+  if (result && result.success) {
+    try { result.returnableOutstanding = getVisitorReturnablesOutstanding(visitorId); }
+    catch (e) { result.returnableOutstanding = 0; }
+  }
+  return result;
 }
 
 function _checkoutVisitorLocked_(visitorId) {

@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Gatepass Approval</title>
+  <style>
+    body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+      background:#f1f5f4;color:#0f172a;margin:0;padding:16px;line-height:1.4}
+    .card{max-width:440px;margin:24px auto;background:#fff;border:1px solid #d7e0de;
+      border-radius:12px;padding:22px;box-shadow:0 1px 3px rgba(0,0,0,.05)}
+    h2{margin:0 0 2px;font-size:18px}
+    .sub{color:#64748b;font-size:13px;margin-bottom:14px}
+    .item{padding:9px 0;border-bottom:1px solid #eef2f1;font-size:14px}
+    .item:last-child{border-bottom:none}
+    .ret{color:#9a5b00;font-weight:700}
+    .btn{width:100%;margin-top:16px;padding:13px;border:none;border-radius:10px;
+      background:#000666;color:#fff;font-weight:700;font-size:15px;cursor:pointer}
+    .btn:disabled{opacity:.55;cursor:default}
+    #gpMsg{margin-top:12px;font-size:13px}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>Gatepass approval</h2>
+    <div class="sub" id="gpVisitor"></div>
+    <div id="gpItems"></div>
+    <button id="gpApproveBtn" class="btn" onclick="doApprove()">Approve</button>
+    <div id="gpMsg"></div>
+  </div>
+  <script>
+    var GP = <?= gpJson ?>; var GP_VID = '<?= gpVid ?>'; var GP_TOK = '<?= gpTok ?>';
+    function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+    (function render(){
+      document.getElementById('gpVisitor').textContent = 'Visitor: ' + GP_VID;
+      var el = document.getElementById('gpItems');
+      var items = (GP && GP.success && GP.items) ? GP.items.filter(function(i){return i.status!=='VOID';}) : [];
+      if (!items.length){ el.innerHTML='<p>No items to approve.</p>'; document.getElementById('gpApproveBtn').style.display='none'; return; }
+      el.innerHTML = items.map(function(i){
+        return '<div class="item">'+esc(i.direction)+' · '+esc(i.qty)+'× '+esc(i.itemDesc)+
+          (i.returnable?' <span class="ret">(returnable)</span>':'')+'</div>';
+      }).join('');
+    })();
+    function doApprove(){
+      var b=document.getElementById('gpApproveBtn'); b.disabled=true; b.textContent='Approving…';
+      google.script.run.withSuccessHandler(function(res){
+        document.getElementById('gpMsg').textContent = res && res.success ? '✓ Approved.' : ('Error: '+((res&&res.error)||'failed'));
+        if(res&&res.success){ b.style.display='none'; }
+        else { b.disabled=false; b.textContent='Approve'; }
+      }).withFailureHandler(function(e){
+        document.getElementById('gpMsg').textContent='Error: '+((e&&e.message)||'server error');
+        b.disabled=false; b.textContent='Approve';
+      }).approveGatepass(GP_VID, GP_TOK);
+    }
+  </script>
+</body>
+</html>

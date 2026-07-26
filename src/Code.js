@@ -27,7 +27,7 @@ function doGet(e) {
   }
 
   var page = (e && e.parameter && e.parameter.page) ? e.parameter.page : 'scanner';
-  var validPages = ['scanner', 'scanner_popup', 'dashboard', 'reports', 'visitors', 'kiosk', 'admin', 'idcards', 'e2e', 'vreg', 'vpass'];
+  var validPages = ['scanner', 'scanner_popup', 'dashboard', 'reports', 'visitors', 'kiosk', 'admin', 'idcards', 'e2e', 'vreg', 'vpass', 'gatepass_approve'];
   if (validPages.indexOf(page) === -1) page = 'scanner';
 
   var template = HtmlService.createTemplateFromFile('pages/' + page);
@@ -70,6 +70,18 @@ function doGet(e) {
     template.passJson = passJson;
   } else {
     template.passJson = '{}';
+  }
+
+  // Host gatepass-approval page: inject the visitor's item list + token so the
+  // host sees the list without a round-trip (the Approve button still calls back).
+  if (page === 'gatepass_approve') {
+    var gpVid = String((e && e.parameter && e.parameter.id) || '');
+    var gpTok = String((e && e.parameter && e.parameter.t) || '');
+    var gpJson = '{}';
+    try { gpJson = JSON.stringify(getGatepass(gpVid)); } catch(ex) { gpJson = JSON.stringify({ success: false, error: ex.message }); }
+    template.gpJson = gpJson; template.gpVid = gpVid; template.gpTok = gpTok;
+  } else {
+    template.gpJson = '{}'; template.gpVid = ''; template.gpTok = '';
   }
 
   // Inject the shared i18n runtime (dictionary + qrattT/qrattApplyLang/etc.)
@@ -191,6 +203,13 @@ function _dispatchPost_(params) {
   if (action === 'registerVisitor')  return jsonResponse(registerVisitor(params.visitor));
   if (action === 'checkoutVisitor')  return jsonResponse(checkoutVisitor(params.visitorId));
   if (action === 'getVisitorDetail') return jsonResponse(getVisitorDetail(params.visitorId));
+  if (action === 'getGatepass')      return jsonResponse(getGatepass(params.visitorId));
+  if (action === 'addGatepassItem')  return jsonResponse(addGatepassItem(params.visitorId, params.item));
+  if (action === 'markItemReturned') return jsonResponse(markItemReturned(params.gatepassId));
+  if (action === 'voidGatepassItem') return jsonResponse(voidGatepassItem(params.gatepassId, params.reason));
+  if (action === 'approveGatepass')  return jsonResponse(approveGatepass(params.visitorId, params.token));
+  if (action === 'notifyHostForApproval') return jsonResponse(notifyHostForApproval(params.visitorId));
+  if (action === 'getMaterialList')  return jsonResponse(getMaterialList());
   if (action === 'lookupVisitorByPhone') return jsonResponse(lookupVisitorByPhone(params.phone));
   if (action === 'importGenderBloodGroup') return jsonResponse(importGenderBloodGroup(params.token));
   if (action === 'getDashboardData') return jsonResponse(getDashboardData());
