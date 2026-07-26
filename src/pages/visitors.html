@@ -113,6 +113,9 @@
     }
     .btn-primary { background: var(--color-primary); color: #fff; }
     .btn-primary:hover { background: var(--color-primary-dk); }
+    .link-btn { border: none; background: none; color: var(--color-primary);
+      font-weight: 700; font-size: 12.5px; cursor: pointer; padding: 4px 6px; border-radius: 6px; font-family: inherit; }
+    .link-btn:hover { background: var(--color-bg); }
     .btn-success { background: var(--color-success); color: #fff; }
     .btn-success:hover { background: #005a50; }
     .btn-danger { background: var(--color-danger); color: #fff; }
@@ -941,7 +944,7 @@
         navigator.clipboard.writeText(url).then(done, function(){ window.prompt('Copy this link:', url); });
       } else { window.prompt('Copy this link:', url); }
     }
-    function post(data,callback){var action=data.action;var onErr=function(e){callback({success:false,error:e?e.message:'Unknown error'});};if(typeof google==='undefined'||!google.script){callback({success:false,error:'Not in GAS'});return;}var r=google.script.run.withSuccessHandler(callback).withFailureHandler(onErr);if(action==='registerVisitor')r.registerVisitor(data.visitor);else if(action==='checkoutVisitor')r.checkoutVisitor(data.visitorId);else if(action==='getLogs')r.getLogs(data.filters);else if(action==='getDashboardData')r.getDashboardData();else if(action==='exportCSV')r.exportCSV(data.filters);else if(action==='getVisitorDetail')r.getVisitorDetail(data.visitorId);else callback({success:false,error:'Unknown: '+action});}
+    function post(data,callback){var action=data.action;var onErr=function(e){callback({success:false,error:e?e.message:'Unknown error'});};if(typeof google==='undefined'||!google.script){callback({success:false,error:'Not in GAS'});return;}var r=google.script.run.withSuccessHandler(callback).withFailureHandler(onErr);if(action==='registerVisitor')r.registerVisitor(data.visitor);else if(action==='checkoutVisitor')r.checkoutVisitor(data.visitorId);else if(action==='getLogs')r.getLogs(data.filters);else if(action==='getDashboardData')r.getDashboardData();else if(action==='exportCSV')r.exportCSV(data.filters);else if(action==='getVisitorDetail')r.getVisitorDetail(data.visitorId);else if(action==='getGatepass')r.getGatepass(data.visitorId);else if(action==='addGatepassItem')r.addGatepassItem(data.visitorId,data.item);else if(action==='markItemReturned')r.markItemReturned(data.gatepassId);else if(action==='voidGatepassItem')r.voidGatepassItem(data.gatepassId,data.reason);else if(action==='notifyHostForApproval')r.notifyHostForApproval(data.visitorId);else if(action==='getMaterialList')r.getMaterialList();else callback({success:false,error:'Unknown: '+action});}
   </script>
   <script>
     var COLORS = ['#3B82F6','#8B5CF6','#EC4899','#F59E0B','#10B981','#06B6D4','#EF4444','#6366F1','#84CC16','#F97316'];
@@ -1359,10 +1362,80 @@
               '</tbody></table></div>'
           : '<p style="color:var(--color-text-muted);font-size:13px">' + qrattT('vd_no_visits') + '</p>';
 
-        body.innerHTML = info + logHd + logTbl;
+        body.innerHTML = info + logHd + logTbl +
+          '<div id="gpCard" style="margin-top:18px"></div>';
+        loadGatepassCard(vid);
       });
     }
     function closeVisitorDetail() { document.getElementById('vdBackdrop').style.display = 'none'; }
+
+    /* ── Item gatepass card (inside the visitor detail modal) ── */
+    var GP_MATERIALS = null;
+    function loadGatepassCard(vid) {
+      if (GP_MATERIALS === null) {
+        post({ action:'getMaterialList' }, function(m){ GP_MATERIALS = (m && m.materials) || []; });
+      }
+      post({ action:'getGatepass', visitorId: vid }, function(d){
+        renderGatepassCard(vid, d || { items:[], returnableOutstanding:0 });
+      });
+    }
+
+    function gpChip(status){
+      var map = { OUT_PENDING:['gp_st_awaiting','#fbeed6','#9a5b00'], RETURNED:['gp_st_returned','#e4f4ec','#0f7a4d'],
+                  LEFT:['gp_st_left','#e8ecf1','#334155'], VOID:['gp_st_void','#fbe9e7','#b42318'] };
+      var c = map[status] || map.LEFT;
+      return '<span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;background:'+c[1]+';color:'+c[2]+'">'+qrattT(c[0])+'</span>';
+    }
+
+    function renderGatepassCard(vid, d){
+      var items = d.items || [];
+      var rows = items.map(function(i){
+        var act = i.status==='OUT_PENDING'
+          ? '<button class="link-btn" onclick="gpReturn(\''+i.gatepassId+'\',\''+vid+'\')">'+qrattT('gp_mark_returned')+'</button>'
+          : (i.status!=='VOID' ? '<button class="link-btn" onclick="gpVoid(\''+i.gatepassId+'\',\''+vid+'\')">'+qrattT('gp_void')+'</button>' : '');
+        return '<tr><td style="padding:6px 8px">'+esc(i.itemDesc)+(i.unit?' <span style="color:#94a3b8">'+esc(i.unit)+'</span>':'')+'</td>'+
+          '<td style="padding:6px 8px">'+esc(i.direction)+'</td><td style="padding:6px 8px">'+esc(i.qty)+'</td>'+
+          '<td style="padding:6px 8px">'+gpChip(i.status)+'</td><td style="padding:6px 8px;text-align:right">'+act+'</td></tr>';
+      }).join('');
+      var outstanding = d.returnableOutstanding||0;
+      var mats = GP_MATERIALS||[];
+      document.getElementById('gpCard').innerHTML =
+        '<div style="border:1px solid var(--color-border);border-radius:12px;overflow:hidden">'+
+        '<div style="padding:11px 13px;background:var(--color-bg);border-bottom:1px solid var(--color-border);font-weight:800;font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--color-text-muted)">'+qrattT('gp_title')+'</div>'+
+        '<div style="display:flex;gap:10px;padding:10px 12px 4px"><label style="font-size:12px"><input type="radio" name="gpDir" value="IN" checked> '+qrattT('gp_bringing_in')+'</label>'+
+          '<label style="font-size:12px"><input type="radio" name="gpDir" value="OUT"> '+qrattT('gp_taking_out')+'</label></div>'+
+        '<div style="display:grid;grid-template-columns:1fr 64px auto auto;gap:8px;padding:6px 12px 12px;align-items:center">'+
+          '<input id="gpDesc" list="gpMatList" placeholder="'+qrattT('gp_item_desc')+'" style="width:100%;padding:8px;border:1px solid var(--color-border);border-radius:8px">'+
+          '<datalist id="gpMatList">'+mats.slice(0,500).map(function(m){return '<option value="'+esc(m.desc||m.code)+'">'+esc(m.code)+'</option>';}).join('')+'</datalist>'+
+          '<input id="gpQty" type="number" value="1" min="1" style="width:100%;padding:8px;border:1px solid var(--color-border);border-radius:8px">'+
+          '<label style="font-size:12px;display:flex;gap:5px;align-items:center;white-space:nowrap"><input type="checkbox" id="gpRet" checked>'+qrattT('gp_returnable')+'</label>'+
+          '<button class="btn btn-primary" style="white-space:nowrap" onclick="gpAdd(\''+vid+'\')">'+qrattT('gp_add_item')+'</button>'+
+        '</div>'+
+        (items.length ? '<table style="width:100%;font-size:13px;border-collapse:collapse">'+
+          '<tbody>'+rows+'</tbody></table>' :
+          '<p style="padding:8px 13px 12px;color:var(--color-text-muted);font-size:13px">'+qrattT('gp_no_items')+'</p>')+
+        (outstanding ? '<div style="padding:9px 13px;background:#fbeed6;color:#9a5b00;font-size:12px;font-weight:700">'+qrattT('gp_outstanding').replace('{n}',outstanding)+'</div>' : '')+
+        '<div style="padding:10px 13px;border-top:1px solid var(--color-border);display:flex;justify-content:flex-end">'+
+          '<button class="btn" onclick="gpNotify(\''+vid+'\',this)">'+qrattT('gp_notify_host')+'</button></div>'+
+        '</div>';
+    }
+
+    function gpAdd(vid){
+      var descEl=document.getElementById('gpDesc');
+      var desc=(descEl.value||'').trim();
+      if(!desc) return;
+      var dir=(document.querySelector('input[name=gpDir]:checked')||{}).value||'IN';
+      var mat=(GP_MATERIALS||[]).filter(function(m){return (m.desc||m.code)===desc;})[0]||{};
+      post({action:'addGatepassItem',visitorId:vid,item:{
+        direction:dir, materialCode:mat.code||'', itemDesc:desc, unit:mat.unit||'',
+        qty:Number(document.getElementById('gpQty').value)||1,
+        returnable:document.getElementById('gpRet').checked
+      }},function(res){ if(res&&res.success) loadGatepassCard(vid); });
+    }
+    function gpReturn(id,vid){ post({action:'markItemReturned',gatepassId:id},function(res){ if(res&&res.success) loadGatepassCard(vid); }); }
+    function gpVoid(id,vid){ post({action:'voidGatepassItem',gatepassId:id,reason:''},function(res){ if(res&&res.success) loadGatepassCard(vid); }); }
+    function gpNotify(vid,btn){ if(btn){btn.disabled=true;} post({action:'notifyHostForApproval',visitorId:vid},function(res){ if(btn){btn.disabled=false; btn.textContent=(res&&res.success)?'✓':qrattT('gp_notify_host');} }); }
+    window.openVisitorDetail = openVisitorDetail;
 
     function exportHistoryCSV() {
       post({ action: 'exportCSV', filters: { type: 'VIS' } }, function(res) {
