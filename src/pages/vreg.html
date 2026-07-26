@@ -202,8 +202,6 @@
       <img id="doneQR" alt="Visitor QR" style="width:200px;height:200px;margin:16px auto 8px;border-radius:10px;background:#f1f5f4;display:block">
       <div id="doneVid" style="font-size:12px;color:var(--muted);font-weight:600;letter-spacing:.5px"></div>
       <a id="doneLink" href="#" data-i18n="vreg_open_pass" style="display:inline-block;margin-top:10px;font-size:13px;color:var(--primary);font-weight:700">Open my pass ↗</a>
-      <a id="waPassBtn" target="_blank" rel="noopener"
-         style="display:none;margin-top:12px;padding:11px 16px;border-radius:10px;background:#25D366;color:#fff;font-weight:700;text-decoration:none;text-align:center"></a>
       <button class="btn" style="margin-top:16px" data-i18n="vreg_close" onclick="closeReg()">Close</button>
     </div>
   </div>
@@ -213,6 +211,7 @@
   <script>
     var APP_URL = '<?= appUrl ?>';
     var PUBLIC_URL = '<?= publicUrl ?>';   // pretty base for the shareable pass link
+    var HOST_DEPTS = '<?= hostDepartments ?>';   // comma-separated depts for "Whom to meet"; blank = all active
 
     function toast(msg, type){
       var t=document.getElementById('toast');
@@ -384,7 +383,11 @@
         .getConfig();
     })();
 
-    // Populate the "Whom to meet" dropdown, grouped: 🏢 Office / 👤 Owner (Management).
+    // Populate the "Whom to meet" dropdown. Which departments are selectable as
+    // hosts is Config-driven (HostDepartments, comma-separated). Each configured
+    // department becomes its own optgroup, in the configured order. If the config
+    // is blank, every active employee is shown in one group — so a new site works
+    // without any department setup.
     function loadHosts(){
       var sel=document.getElementById('vHost');
       if(typeof google==='undefined' || !google.script){ sel.innerHTML='<option value="">—</option>'; return; }
@@ -392,17 +395,26 @@
         .withSuccessHandler(function(res){
           var emps=(res&&res.data)||res||[];
           var active=emps.filter(function(e){ return String(e.Status||'ACTIVE').toUpperCase()==='ACTIVE'; });
-          function optsFor(deptMatch){
+          function opt(e){ return '<option value="'+e.EmpID+'">'+(e.Name||e.EmpID)+'</option>'; }
+          function byName(a,b){ return String(a.Name||'').localeCompare(String(b.Name||'')); }
+          function optsForDept(deptMatch){
             return active.filter(function(e){ return String(e.Department||'').toLowerCase()===deptMatch; })
-              .sort(function(a,b){return String(a.Name||'').localeCompare(String(b.Name||''));})
-              .map(function(e){ return '<option value="'+e.EmpID+'">'+(e.Name||e.EmpID)+'</option>'; }).join('');
+              .sort(byName).map(opt).join('');
           }
-          var office=optsFor('office'), owner=optsFor('management');
-          if(!office && !owner){ sel.innerHTML='<option value="">—</option>'; return; }
+          var depts=String(HOST_DEPTS||'').split(',').map(function(d){return d.trim();}).filter(Boolean);
           var html='<option value="">'+qrattT('vreg_select_person')+'</option>';
-          if(owner)  html+='<optgroup label="👤 '+qrattT('vreg_owner_group')+'">'+owner+'</optgroup>';
-          if(office) html+='<optgroup label="🏢 '+qrattT('vreg_office_group')+'">'+office+'</optgroup>';
-          sel.innerHTML=html;
+          if(!depts.length){
+            // No config → every active employee, flat.
+            var all=active.slice().sort(byName).map(opt).join('');
+            sel.innerHTML = all ? html+all : '<option value="">—</option>';
+            return;
+          }
+          var body='';
+          depts.forEach(function(d){
+            var opts=optsForDept(d.toLowerCase());
+            if(opts) body+='<optgroup label="'+d+'">'+opts+'</optgroup>';
+          });
+          sel.innerHTML = body ? html+body : '<option value="">—</option>';
         })
         .withFailureHandler(function(){ sel.innerHTML='<option value="">—</option>'; })
         .getEmployees();
@@ -471,6 +483,10 @@
     }
 
     // Confirmation: QR encodes the visitor ID (kiosk reads it as a badge).
+    // After a brief "registered" beat we take the visitor straight to their real
+    // pass page (live QR + check-in/out + rules) — no "open my pass" hop, and it
+    // is the actual pass, not a copy. If the top-frame navigation is blocked, the
+    // done card stays visible with its QR + link as a fallback.
     function showDone(visitorId, returning){
       document.getElementById('returnCard').style.display='none';
       document.getElementById('formCard').style.display='none';
@@ -485,27 +501,17 @@
       document.getElementById('doneQR').src=
         'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data='+encodeURIComponent(visitorId);
       var passBase = /^https?:\/\//.test(PUBLIC_URL) ? PUBLIC_URL : APP_URL;
-      var passLink = passBase+'?page=vpass&id='+encodeURIComponent(visitorId);
-      document.getElementById('doneLink').href = passLink;
-
-      // WhatsApp pass delivery: one-tap wa.me prefill so the visitor gets the
-      // pass link and can flash the QR on arrival. Works for any number (no
-      // CallMeBot pre-auth needed). AUTO_WA_PASS (Config) optionally auto-opens.
-      var vPhone = (document.getElementById('vPhone').value || '').replace(/[^0-9]/g,'');
-      var waBtn  = document.getElementById('waPassBtn');
-      if (vPhone && vPhone.length >= 10) {
-        var org = (document.querySelector('.head .t1') || {}).textContent || 'us';
-        var msg = qrattT('vreg_wa_pass_msg').replace('{org}', org).replace('{link}', passLink);
-        waBtn.href = 'https://wa.me/' + vPhone + '?text=' + encodeURIComponent(msg);
-        waBtn.textContent = '💬 ' + qrattT('vreg_send_pass_wa');
-        waBtn.style.display = 'block';
-        if (window.AUTO_WA_PASS === true) { try { window.open(waBtn.href, '_blank'); } catch(e){} }
-      } else {
-        waBtn.style.display = 'none';
-      }
-
+      var passUrl = passBase+'?page=vpass&id='+encodeURIComponent(visitorId);
+      document.getElementById('doneLink').href=passUrl;
+      // The card auto-redirects to the real pass (below), which carries its own
+      // WhatsApp share — so no separate share button is wired on the card here.
       document.getElementById('doneCard').style.display='block';
       window.scrollTo(0,0);
+      // Open the real pass. Top frame because GAS runs the app in an iframe.
+      setTimeout(function(){
+        try { (window.top || window).location.href = passUrl; }
+        catch(e){ window.open(passUrl, '_top'); }
+      }, 1200);
     }
 
     function closeReg(){

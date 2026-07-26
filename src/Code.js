@@ -56,12 +56,18 @@ function doGet(e) {
   // Public visitor self-service pages: inject org name + (for vpass) the pass record
   if (page === 'vreg' || page === 'vpass') {
     var vOrg = 'My Organisation';
+    var hostDepts = '';
     try {
       getSheetAsObjects(SHEETS.CONFIG).forEach(function(c) {
-        if (String(c.Key).trim() === 'OrgName') vOrg = String(c.Value || vOrg).trim();
+        var k = String(c.Key).trim();
+        if (k === 'OrgName') vOrg = String(c.Value || vOrg).trim();
+        if (k === 'HostDepartments') hostDepts = String(c.Value || '').trim();
       });
     } catch(ex) {}
     template.orgName = vOrg;
+    template.hostDepartments = hostDepts;  // comma-separated depts shown in "Whom to meet"; blank = all active
+  } else {
+    template.hostDepartments = '';
   }
   if (page === 'vpass') {
     var vid = String((e && e.parameter && e.parameter.id) || '');
@@ -161,7 +167,8 @@ function _bootstrapIfNeeded() {
       ['Holidays',           ''],
       ['PublicUrl',          ''],  // blank → publicBaseUrl() falls back to the raw GAS app URL (links open the app directly)
       ['AutoWhatsAppPass',   'off'],  // 'on' → vreg auto-opens the wa.me pass draft after registration
-      ['QMSMaterialSheetID', '']   // QMS spreadsheet ID for the gatepass material picklist; blank → free-text only
+      ['QMSMaterialSheetID', ''],   // QMS spreadsheet ID for the gatepass material picklist; blank → free-text only
+      ['HostDepartments',    'Office,Management']  // depts shown in vreg "Whom to meet"; blank = all active employees
     ];
     configSheet.getRange(2, 1, defaults.length, 2).setValues(defaults);
   }
