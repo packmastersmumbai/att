@@ -932,6 +932,7 @@
       if (qrEl) qrEl.src = 'https://api.qrserver.com/v1/create-qr-code/?size=192x192&ecc=M&data=' + encodeURIComponent(regUrl);
       if (linkEl) linkEl.href = regUrl;
       window.__selfRegUrl = regUrl;
+      window.__passBase = regBase;   // GAS app base for building vpass links (used by showPass)
     })();
     function copySelfRegLink(btn){
       var url = window.__selfRegUrl || '';
@@ -1051,7 +1052,10 @@
       var traceID = 'TR-' + qrCode.replace(/[^A-Z0-9]/g,'').substring(0,8) + '-' + new Date().getFullYear() + '-VNC';
       document.getElementById('passTraceID').textContent = traceID;
 
-      var msg = 'Your visitor pass for ' + (v.Purpose || 'visit') + ' has been generated.\nPass ID: ' + qrCode + '\nExpected Out: ' + (v.ExpectedOut || 'N/A');
+      // Include the tappable pass link so the visitor can flash the QR on
+      // arrival (not just the text pass id). Direct-to-GAS, no launcher.
+      var passLink = (window.__passBase || '') + '?page=vpass&id=' + encodeURIComponent(qrCode);
+      var msg = qrattT('vreg_wa_pass_msg').replace('{org}', 'us').replace('{link}', passLink);
       var phone = v.Phone.replace(/\D/g, '');
       document.getElementById('waShareBtn').href  = 'https://wa.me/' + phone + '?text=' + encodeURIComponent(msg);
       document.getElementById('smsShareBtn').href = 'sms:' + phone + '?body=' + encodeURIComponent(msg);
