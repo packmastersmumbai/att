@@ -98,7 +98,7 @@ function doGet(e) {
   var withI18n = evaluated.getContent().replace('</head>',
     HtmlService.createHtmlOutputFromFile('i18n').getContent() + '</head>');
   // Shared floating "Report an issue" widget on every page, before </body>.
-  var feedback = HtmlService.createHtmlOutputFromFile('feedback').getContent();
+  var feedback = HtmlService.createHtmlOutputFromFile('feedbackWidget').getContent();
   withI18n = withI18n.indexOf('</body>') !== -1
     ? withI18n.replace('</body>', feedback + '</body>')
     : withI18n + feedback;
