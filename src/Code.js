@@ -145,7 +145,8 @@ function _bootstrapIfNeeded() {
       ['TelegramChatID',     ''],
       ['TelegramLiveScans',  'off'],
       ['Holidays',           ''],
-      ['PublicUrl',          '']   // blank → publicBaseUrl() falls back to the raw GAS app URL (links open the app directly)
+      ['PublicUrl',          ''],  // blank → publicBaseUrl() falls back to the raw GAS app URL (links open the app directly)
+      ['AutoWhatsAppPass',   'off']  // 'on' → vreg auto-opens the wa.me pass draft after registration
     ];
     configSheet.getRange(2, 1, defaults.length, 2).setValues(defaults);
   }
