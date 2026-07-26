@@ -120,3 +120,41 @@ function voidGatepassItem(gatepassId, reason) {
   if (reason) setCell(sheet, row, 'Note', String(reason));
   return { success: true };
 }
+
+// ── Host approval ──────────────────────────────────────────────────────────
+// The host approves via a link (they are not app users). The link carries a
+// per-visitor token, cache-stored with TTL, so it cannot be forged or replayed
+// — same mechanism as the admin bearer token (adminAuth.js).
+
+var GP_TOKEN_PREFIX = 'GPTOK_';
+var GP_TOKEN_TTL = 21600; // 6h
+
+/** Mechanism: mint an approval token for this visitor's gatepass. */
+function _issueGatepassToken_(visitorId) {
+  var token = Utilities.getUuid();
+  CacheService.getScriptCache().put(GP_TOKEN_PREFIX + visitorId + '_' + token, '1', GP_TOKEN_TTL);
+  return token;
+}
+
+/** Mechanism: is this token valid for this visitor? Boolean, never throws. */
+function _isGatepassToken_(visitorId, token) {
+  if (!visitorId || !token) return false;
+  var key = GP_TOKEN_PREFIX + visitorId + '_' + String(token).replace(/[^a-z0-9-]/gi, '');
+  return CacheService.getScriptCache().get(key) === '1';
+}
+
+/** Host approves: flag this visitor's non-void gatepass rows as HostApproved. */
+function approveGatepass(visitorId, token) {
+  if (!_isGatepassToken_(visitorId, token)) return { success: false, error: 'Invalid or expired approval link' };
+  var sheet = getSheet(SHEETS.GATEPASS);
+  var data = getSheetAsObjects(SHEETS.GATEPASS);
+  var approved = 0;
+  data.forEach(function(r) {
+    if (String(r.VisitorID) === String(visitorId) && r.Status !== 'VOID' &&
+        String(r.HostApproved).toUpperCase() !== 'YES') {
+      var row = findRowByValue(sheet, 'GatepassID', r.GatepassID);
+      if (row !== -1) { setCell(sheet, row, 'HostApproved', 'YES'); approved++; }
+    }
+  });
+  return { success: true, approved: approved };
+}
