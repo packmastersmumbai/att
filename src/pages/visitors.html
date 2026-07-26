@@ -1186,6 +1186,12 @@
     function checkoutClick(btn) { checkout(btn.getAttribute('data-vid')); }
     function checkout(visitorId) {
       post({ action: 'checkoutVisitor', visitorId: visitorId }, function(res) {
+        // Warn (advisory) if returnable gatepass items were still out at
+        // check-out — the guard is alerted but the check-out is not blocked.
+        // The items stay OUT_PENDING as a true record until returned or voided.
+        if (res && res.success && res.returnableOutstanding > 0) {
+          window.alert(qrattT('gp_checkout_warn'));
+        }
         showToast(res.success ? 'Checked out successfully' : 'Error: ' + res.error, res.success ? 'success' : 'error');
         loadActive();
       });
