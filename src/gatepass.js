@@ -23,3 +23,100 @@ function _ensureGatepassSheet_() {
   }
   return sheet;
 }
+
+// Initial status: an inbound returnable item is owed back (OUT_PENDING); an
+// outbound item, or any non-returnable, has simply LEFT at creation.
+function _gatepassStatusFor_(direction, returnable) {
+  return (direction === 'IN' && returnable === 'YES') ? 'OUT_PENDING' : 'LEFT';
+}
+
+/** All gatepass items for a visitor + a count of still-out returnables. */
+function getGatepass(visitorId) {
+  if (!visitorId) return { success: false, error: 'Missing visitor id' };
+  var rows = getSheetAsObjects(SHEETS.GATEPASS).filter(function(r) {
+    return String(r.VisitorID) === String(visitorId);
+  });
+  var items = rows.map(function(r) {
+    return {
+      gatepassId:   r.GatepassID,
+      direction:    r.Direction,
+      materialCode: r.MaterialCode || '',
+      itemDesc:     r.ItemDesc || '',
+      unit:         r.Unit || '',
+      qty:          Number(r.Qty) || 0,
+      returnable:   String(r.Returnable).toUpperCase() === 'YES',
+      status:       r.Status || '',
+      photoUrl:     _normalizePhotoUrl_(r.PhotoURL || ''),
+      hostApproved: String(r.HostApproved).toUpperCase() === 'YES'
+    };
+  });
+  var outstanding = items.filter(function(i) { return i.status === 'OUT_PENDING'; }).length;
+  return { success: true, items: items, returnableOutstanding: outstanding };
+}
+
+/** Count of still-out returnable items for a visitor (pure query). */
+function getVisitorReturnablesOutstanding(visitorId) {
+  return getSheetAsObjects(SHEETS.GATEPASS).filter(function(r) {
+    return String(r.VisitorID) === String(visitorId) && r.Status === 'OUT_PENDING';
+  }).length;
+}
+
+/**
+ * Log one item movement for a visitor. item = {direction, materialCode,
+ * itemDesc, unit, qty, returnable, photoData}. Photo is best-effort. Does not
+ * notify — that is an explicit guard action (notifyHostForApproval).
+ */
+function addGatepassItem(visitorId, item) {
+  if (!visitorId || !item) return { success: false, error: 'Missing data' };
+  if (!item.itemDesc && !item.materialCode) return { success: false, error: 'Item description required' };
+  _ensureGatepassSheet_();
+
+  var direction  = item.direction === 'OUT' ? 'OUT' : 'IN';
+  var returnable = item.returnable ? 'YES' : 'NO';
+  var gatepassId = 'GP-' + today().replace(/-/g, '') + '-' +
+                   Utilities.getUuid().replace(/-/g, '').slice(0, 8).toUpperCase();
+
+  var photoUrl = '';
+  if (item.photoData) {
+    try { photoUrl = _storeVisitorPhoto_(gatepassId, item.photoData); }
+    catch (e) { Logger.log('gatepass photo store failed: ' + e.message); }
+  }
+
+  var visSheet = getSheet(SHEETS.VISITORS);
+  var vRow = findRowByValue(visSheet, 'VisitorID', visitorId);
+  var hostEmpId = vRow === -1 ? '' : (getCell(visSheet, vRow, 'HostEmpID') || '');
+
+  var sheet = getSheet(SHEETS.GATEPASS);
+  var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  var values = {
+    GatepassID: gatepassId, VisitorID: visitorId, Direction: direction,
+    MaterialCode: item.materialCode || '', ItemDesc: item.itemDesc || '',
+    Unit: item.unit || '', Qty: Number(item.qty) || 1, Returnable: returnable,
+    Status: _gatepassStatusFor_(direction, returnable), PhotoURL: photoUrl,
+    HostEmpID: hostEmpId, HostApproved: 'NO', LoggedBy: 'gate',
+    LoggedAt: new Date().toISOString(), SettledAt: '', Note: ''
+  };
+  sheet.appendRow(headers.map(function(h) { return values[h] !== undefined ? values[h] : ''; }));
+  return { success: true, gatepassId: gatepassId };
+}
+
+/** Reconcile a returnable item: OUT_PENDING → RETURNED. */
+function markItemReturned(gatepassId) {
+  var sheet = getSheet(SHEETS.GATEPASS);
+  var row = findRowByValue(sheet, 'GatepassID', gatepassId);
+  if (row === -1) return { success: false, error: 'Not found' };
+  setCell(sheet, row, 'Status', 'RETURNED');
+  setCell(sheet, row, 'SettledAt', new Date().toISOString());
+  return { success: true };
+}
+
+/** Void a mistaken entry. */
+function voidGatepassItem(gatepassId, reason) {
+  var sheet = getSheet(SHEETS.GATEPASS);
+  var row = findRowByValue(sheet, 'GatepassID', gatepassId);
+  if (row === -1) return { success: false, error: 'Not found' };
+  setCell(sheet, row, 'Status', 'VOID');
+  setCell(sheet, row, 'SettledAt', new Date().toISOString());
+  if (reason) setCell(sheet, row, 'Note', String(reason));
+  return { success: true };
+}
