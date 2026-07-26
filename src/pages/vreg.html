@@ -211,6 +211,7 @@
   <script>
     var APP_URL = '<?= appUrl ?>';
     var PUBLIC_URL = '<?= publicUrl ?>';   // pretty base for the shareable pass link
+    var HOST_DEPTS = '<?= hostDepartments ?>';   // comma-separated depts for "Whom to meet"; blank = all active
 
     function toast(msg, type){
       var t=document.getElementById('toast');
@@ -382,7 +383,11 @@
         .getConfig();
     })();
 
-    // Populate the "Whom to meet" dropdown, grouped: 🏢 Office / 👤 Owner (Management).
+    // Populate the "Whom to meet" dropdown. Which departments are selectable as
+    // hosts is Config-driven (HostDepartments, comma-separated). Each configured
+    // department becomes its own optgroup, in the configured order. If the config
+    // is blank, every active employee is shown in one group — so a new site works
+    // without any department setup.
     function loadHosts(){
       var sel=document.getElementById('vHost');
       if(typeof google==='undefined' || !google.script){ sel.innerHTML='<option value="">—</option>'; return; }
@@ -390,17 +395,26 @@
         .withSuccessHandler(function(res){
           var emps=(res&&res.data)||res||[];
           var active=emps.filter(function(e){ return String(e.Status||'ACTIVE').toUpperCase()==='ACTIVE'; });
-          function optsFor(deptMatch){
+          function opt(e){ return '<option value="'+e.EmpID+'">'+(e.Name||e.EmpID)+'</option>'; }
+          function byName(a,b){ return String(a.Name||'').localeCompare(String(b.Name||'')); }
+          function optsForDept(deptMatch){
             return active.filter(function(e){ return String(e.Department||'').toLowerCase()===deptMatch; })
-              .sort(function(a,b){return String(a.Name||'').localeCompare(String(b.Name||''));})
-              .map(function(e){ return '<option value="'+e.EmpID+'">'+(e.Name||e.EmpID)+'</option>'; }).join('');
+              .sort(byName).map(opt).join('');
           }
-          var office=optsFor('office'), owner=optsFor('management');
-          if(!office && !owner){ sel.innerHTML='<option value="">—</option>'; return; }
+          var depts=String(HOST_DEPTS||'').split(',').map(function(d){return d.trim();}).filter(Boolean);
           var html='<option value="">'+qrattT('vreg_select_person')+'</option>';
-          if(owner)  html+='<optgroup label="👤 '+qrattT('vreg_owner_group')+'">'+owner+'</optgroup>';
-          if(office) html+='<optgroup label="🏢 '+qrattT('vreg_office_group')+'">'+office+'</optgroup>';
-          sel.innerHTML=html;
+          if(!depts.length){
+            // No config → every active employee, flat.
+            var all=active.slice().sort(byName).map(opt).join('');
+            sel.innerHTML = all ? html+all : '<option value="">—</option>';
+            return;
+          }
+          var body='';
+          depts.forEach(function(d){
+            var opts=optsForDept(d.toLowerCase());
+            if(opts) body+='<optgroup label="'+d+'">'+opts+'</optgroup>';
+          });
+          sel.innerHTML = body ? html+body : '<option value="">—</option>';
         })
         .withFailureHandler(function(){ sel.innerHTML='<option value="">—</option>'; })
         .getEmployees();

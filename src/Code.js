@@ -55,12 +55,18 @@ function doGet(e) {
   // Public visitor self-service pages: inject org name + (for vpass) the pass record
   if (page === 'vreg' || page === 'vpass') {
     var vOrg = 'My Organisation';
+    var hostDepts = '';
     try {
       getSheetAsObjects(SHEETS.CONFIG).forEach(function(c) {
-        if (String(c.Key).trim() === 'OrgName') vOrg = String(c.Value || vOrg).trim();
+        var k = String(c.Key).trim();
+        if (k === 'OrgName') vOrg = String(c.Value || vOrg).trim();
+        if (k === 'HostDepartments') hostDepts = String(c.Value || '').trim();
       });
     } catch(ex) {}
     template.orgName = vOrg;
+    template.hostDepartments = hostDepts;  // comma-separated depts shown in "Whom to meet"; blank = all active
+  } else {
+    template.hostDepartments = '';
   }
   if (page === 'vpass') {
     var vid = String((e && e.parameter && e.parameter.id) || '');
@@ -145,7 +151,8 @@ function _bootstrapIfNeeded() {
       ['TelegramChatID',     ''],
       ['TelegramLiveScans',  'off'],
       ['Holidays',           ''],
-      ['PublicUrl',          '']   // blank → publicBaseUrl() falls back to the raw GAS app URL (links open the app directly)
+      ['PublicUrl',          ''],  // blank → publicBaseUrl() falls back to the raw GAS app URL (links open the app directly)
+      ['HostDepartments',    'Office,Management']  // depts shown in vreg "Whom to meet"; blank = all active employees
     ];
     configSheet.getRange(2, 1, defaults.length, 2).setValues(defaults);
   }

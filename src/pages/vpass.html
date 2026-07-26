@@ -34,6 +34,7 @@
       font-size:16px;font-weight:800;font-family:inherit;cursor:pointer;color:#fff;transition:background .15s}
     .btn.checkin{background:var(--green)} .btn.checkin:hover{background:var(--green-dk)}
     .btn.checkout{background:var(--pink)} .btn.checkout:hover{background:#9d174d}
+    .btn.share{background:#25D366;margin-top:10px} .btn.share:hover{background:#1da851}
     .btn:disabled{opacity:.6;cursor:default}
     .hint{font-size:11px;color:var(--muted);margin-top:12px;line-height:1.6}
     .err{background:rgba(220,38,38,.12);border:1px solid rgba(220,38,38,.4);color:#fca5a5;
@@ -95,6 +96,20 @@
     function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
     function toast(msg){var t=document.getElementById('toast');t.textContent=msg;t.className='toast show';setTimeout(function(){t.className='toast';},2400);}
 
+    // Share this pass on WhatsApp: forwards the current pass link (this page's
+    // own URL). The native share sheet is used when available (lets the visitor
+    // pick any contact); otherwise a wa.me link opens WhatsApp directly.
+    function sharePass(){
+      var link = window.location.href;
+      var name = (PASS && PASS.name) ? PASS.name : '';
+      var msg = qrattT('vpass_share_msg').replace('{name}', name).replace('{link}', link);
+      if (navigator.share) {
+        navigator.share({ text: msg }).catch(function(){});
+      } else {
+        window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
+      }
+    }
+
     function render(p){
       var root=document.getElementById('root');
       if(!p || !p.success){
@@ -123,6 +138,7 @@
             '<span data-i18n="'+statusKey+'">'+qrattT(statusKey)+'</span></div>'+
           '<button class="btn '+(isIn?'checkout':'checkin')+'" id="toggleBtn" onclick="toggle()" data-i18n="'+btnKey+'">'+
             qrattT(btnKey)+'</button>'+
+          '<button class="btn share" onclick="sharePass()" data-i18n="vpass_share">'+qrattT('vpass_share')+'</button>'+
           '<div class="hint">'+hint+'</div>'+
           '<div class="exit-note" data-i18n="vpass_exit_note">'+qrattT('vpass_exit_note')+'</div>'+
         '</div>'+
