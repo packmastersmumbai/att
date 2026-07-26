@@ -1,0 +1,67 @@
+<!-- Shared floating "Report an issue" widget — injected on every page by doGet.
+     Self-contained: calls google.script.run.submitFeedback directly (does not
+     depend on any page-local post() bridge). Uses qrattT for EN/HI. -->
+<style>
+  #fbFab{position:fixed;right:16px;bottom:16px;z-index:9000;width:48px;height:48px;border-radius:50%;
+    border:none;background:#000666;color:#fff;font-size:20px;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.3);
+    display:flex;align-items:center;justify-content:center}
+  #fbFab:hover{background:#000444}
+  #fbBackdrop{position:fixed;inset:0;z-index:9001;background:rgba(2,6,16,.6);display:none;
+    align-items:flex-end;justify-content:center;padding:0}
+  #fbSheet{background:#fff;color:#1b1c1c;width:100%;max-width:480px;border-radius:16px 16px 0 0;
+    padding:18px 18px calc(18px + env(safe-area-inset-bottom));box-shadow:0 -8px 30px rgba(0,0,0,.25);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+  #fbSheet h3{margin:0 0 3px;font-size:16px}
+  #fbSheet p{margin:0 0 12px;font-size:12.5px;color:#64748b}
+  #fbText{width:100%;box-sizing:border-box;min-height:90px;padding:11px;border:1px solid #d7e0de;
+    border-radius:10px;font:inherit;font-size:14px;resize:vertical}
+  #fbText:focus{outline:2px solid #000666;border-color:#000666}
+  #fbMsg{min-height:16px;margin:6px 0;font-size:12px}
+  .fb-row{display:flex;gap:10px;margin-top:6px}
+  .fb-btn{flex:1;padding:12px;border:none;border-radius:10px;font-weight:700;font-size:14px;cursor:pointer;font-family:inherit}
+  .fb-send{background:#000666;color:#fff}.fb-send:disabled{opacity:.55;cursor:default}
+  .fb-cancel{background:#eef2f1;color:#334155}
+  @media (prefers-color-scheme: dark){
+    #fbSheet{background:#161922;color:#eef0f4}
+    #fbText{background:#0e1016;color:#eef0f4;border-color:#333a49}
+    .fb-cancel{background:#20252f;color:#a2abbb}
+  }
+</style>
+<button id="fbFab" onclick="fbOpen()" title="Report an issue" aria-label="Report an issue">🛠️</button>
+<div id="fbBackdrop" onclick="if(event.target===this)fbClose()">
+  <div id="fbSheet" role="dialog" aria-modal="true">
+    <h3 data-i18n="fb_title">Report an issue</h3>
+    <p data-i18n="fb_sub">Facing a problem? Tell us — it goes straight to the team.</p>
+    <textarea id="fbText" data-i18n-ph="fb_placeholder" placeholder="Describe what went wrong…"></textarea>
+    <div id="fbMsg"></div>
+    <div class="fb-row">
+      <button class="fb-btn fb-cancel" onclick="fbClose()" data-i18n="fb_cancel">Cancel</button>
+      <button class="fb-btn fb-send" id="fbSend" onclick="fbSubmit()" data-i18n="fb_send">Send</button>
+    </div>
+  </div>
+</div>
+<script>
+  function fbT(k){ return (typeof qrattT==='function') ? qrattT(k) : k; }
+  function fbOpen(){ document.getElementById('fbBackdrop').style.display='flex';
+    document.getElementById('fbMsg').textContent='';
+    var t=document.getElementById('fbText'); t.value=''; setTimeout(function(){t.focus();},50);
+    if(typeof qrattApplyLang==='function') qrattApplyLang(); }
+  function fbClose(){ document.getElementById('fbBackdrop').style.display='none'; }
+  function fbSubmit(){
+    var text=(document.getElementById('fbText').value||'').trim();
+    var msg=document.getElementById('fbMsg');
+    if(!text){ msg.style.color='#b42318'; msg.textContent=fbT('fb_empty'); return; }
+    var btn=document.getElementById('fbSend'); btn.disabled=true; btn.textContent=fbT('fb_sending');
+    var page=(new URLSearchParams(location.search).get('page'))||document.body.getAttribute('data-page')||'app';
+    var lang=(function(){ try{ return sessionStorage.getItem('qratt_lang')||'en'; }catch(e){ return 'en'; } })();
+    function done(res){
+      btn.disabled=false; btn.textContent=fbT('fb_send');
+      if(res&&res.success){ msg.style.color='#0f7a4d'; msg.textContent=fbT('fb_thanks');
+        setTimeout(fbClose,1100); }
+      else { msg.style.color='#b42318'; msg.textContent=(res&&res.error)||fbT('fb_failed'); }
+    }
+    if(typeof google==='undefined'||!google.script){ done({success:false,error:'Not in app'}); return; }
+    google.script.run.withSuccessHandler(done).withFailureHandler(function(e){ done({success:false,error:(e&&e.message)}); })
+      .submitFeedback(text, { page:page, lang:lang });
+  }
+</script>

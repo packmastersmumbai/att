@@ -97,6 +97,11 @@ function doGet(e) {
   var evaluated = template.evaluate();
   var withI18n = evaluated.getContent().replace('</head>',
     HtmlService.createHtmlOutputFromFile('i18n').getContent() + '</head>');
+  // Shared floating "Report an issue" widget on every page, before </body>.
+  var feedback = HtmlService.createHtmlOutputFromFile('feedback').getContent();
+  withI18n = withI18n.indexOf('</body>') !== -1
+    ? withI18n.replace('</body>', feedback + '</body>')
+    : withI18n + feedback;
   return HtmlService.createHtmlOutput(withI18n)
     .setTitle('QR Attendance System')
     .addMetaTag('viewport', 'width=device-width, initial-scale=1')
@@ -206,6 +211,7 @@ function _dispatchPost_(params) {
 
   var action = params.action;
 
+  if (action === 'submitFeedback')   return jsonResponse(submitFeedback(params.text, params.meta));
   if (action === 'processQRScan')    return jsonResponse(processQRScan(params.qrCode, params.gate));
   if (action === 'registerVisitor')  return jsonResponse(registerVisitor(params.visitor));
   if (action === 'checkoutVisitor')  return jsonResponse(checkoutVisitor(params.visitorId));
