@@ -483,6 +483,10 @@
     }
 
     // Confirmation: QR encodes the visitor ID (kiosk reads it as a badge).
+    // After a brief "registered" beat we take the visitor straight to their real
+    // pass page (live QR + check-in/out + rules) — no "open my pass" hop, and it
+    // is the actual pass, not a copy. If the top-frame navigation is blocked, the
+    // done card stays visible with its QR + link as a fallback.
     function showDone(visitorId, returning){
       document.getElementById('returnCard').style.display='none';
       document.getElementById('formCard').style.display='none';
@@ -497,10 +501,15 @@
       document.getElementById('doneQR').src=
         'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data='+encodeURIComponent(visitorId);
       var passBase = /^https?:\/\//.test(PUBLIC_URL) ? PUBLIC_URL : APP_URL;
-      document.getElementById('doneLink').href=
-        passBase+'?page=vpass&id='+encodeURIComponent(visitorId);
+      var passUrl = passBase+'?page=vpass&id='+encodeURIComponent(visitorId);
+      document.getElementById('doneLink').href=passUrl;
       document.getElementById('doneCard').style.display='block';
       window.scrollTo(0,0);
+      // Open the real pass. Top frame because GAS runs the app in an iframe.
+      setTimeout(function(){
+        try { (window.top || window).location.href = passUrl; }
+        catch(e){ window.open(passUrl, '_top'); }
+      }, 1200);
     }
 
     function closeReg(){
