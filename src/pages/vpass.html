@@ -92,15 +92,19 @@
 
   <script>
     var PASS = <?!= passJson ?>;
+    var APP_URL = '<?= appUrl ?>';
+    var PUBLIC_URL = '<?= publicUrl ?>';
 
     function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
     function toast(msg){var t=document.getElementById('toast');t.textContent=msg;t.className='toast show';setTimeout(function(){t.className='toast';},2400);}
 
-    // Share this pass on WhatsApp: forwards the current pass link (this page's
-    // own URL). The native share sheet is used when available (lets the visitor
-    // pick any contact); otherwise a wa.me link opens WhatsApp directly.
+    // Share this pass on WhatsApp. The link MUST be built from the injected app
+    // URL + visitorId — NOT window.location.href: inside GAS the page runs in a
+    // sandbox iframe whose location is a userCodeAppPanel URL that only works in
+    // the original session and is useless to a recipient.
     function sharePass(){
-      var link = window.location.href;
+      var base = /^https?:\/\//.test(PUBLIC_URL) ? PUBLIC_URL : APP_URL;
+      var link = base + '?page=vpass&id=' + encodeURIComponent((PASS && PASS.visitorId) || '');
       var name = (PASS && PASS.name) ? PASS.name : '';
       var msg = qrattT('vpass_share_msg').replace('{name}', name).replace('{link}', link);
       if (navigator.share) {
