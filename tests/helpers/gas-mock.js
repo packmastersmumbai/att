@@ -17,6 +17,9 @@ const GAS_MOCK_SCRIPT = `
     { QRCode: 'EMP-BLOCKED', PersonName: 'Bad Actor', Reason: 'Unauthorised Entry', AddedBy: 'Admin', AddedDate: '2026-01-15' }
   ];
 
+  // Gatepass items keyed by visitorId, seeded fresh per page load.
+  var MOCK_GP = {};
+
   // Mirrors src/holidays.js: saveHolidays stores only what the admin picked;
   // the 3 gazetted national dates are merged in on every getHolidays() read
   // (not stored), so they're always observed even before the admin ticks them.
@@ -213,8 +216,47 @@ const GAS_MOCK_SCRIPT = `
       },
 
       checkoutVisitor: function(visitorId) {
-        respond({ success: true, visitorId: visitorId });
+        respond({ success: true, visitorId: visitorId, returnableOutstanding: 0 });
       },
+
+      getVisitorDetail: function(visitorId) {
+        respond({ success: true, visitorId: visitorId, name: 'Test Visitor',
+          phone: '9876543210', company: 'TestCorp', hostName: 'Host', purpose: 'Meeting',
+          vehicle: '', idType: '', visitorType: 'Guest', safetyAckAt: '',
+          blacklisted: false, status: 'IN', visits: [], visitCount: 0 });
+      },
+
+      // ── Gatepass mocks ──
+      getMaterialList: function() {
+        respond({ success: true, materials: [
+          { code: 'RM-001', desc: 'HDPE Granules', unit: 'KG' },
+          { code: 'PK-020', desc: 'Carton Box 12x8', unit: 'NOS' }
+        ]});
+      },
+      getGatepass: function(vid) {
+        var items = MOCK_GP[vid] || [];
+        respond({ success: true, items: items,
+          returnableOutstanding: items.filter(function(i){ return i.status === 'OUT_PENDING'; }).length });
+      },
+      addGatepassItem: function(vid, item) {
+        MOCK_GP[vid] = MOCK_GP[vid] || [];
+        MOCK_GP[vid].push({ gatepassId: 'GP-TEST-' + MOCK_GP[vid].length,
+          direction: item.direction, materialCode: item.materialCode || '', itemDesc: item.itemDesc,
+          unit: item.unit || '', qty: item.qty, returnable: !!item.returnable,
+          status: (item.direction === 'IN' && item.returnable) ? 'OUT_PENDING' : 'LEFT',
+          photoUrl: '', hostApproved: false });
+        respond({ success: true, gatepassId: 'GP-TEST' });
+      },
+      markItemReturned: function(id) {
+        Object.keys(MOCK_GP).forEach(function(k){ (MOCK_GP[k]||[]).forEach(function(i){ if(i.gatepassId===id) i.status='RETURNED'; }); });
+        respond({ success: true });
+      },
+      voidGatepassItem: function(id) {
+        Object.keys(MOCK_GP).forEach(function(k){ (MOCK_GP[k]||[]).forEach(function(i){ if(i.gatepassId===id) i.status='VOID'; }); });
+        respond({ success: true });
+      },
+      notifyHostForApproval: function() { respond({ success: true }); },
+      approveGatepass: function() { respond({ success: true, approved: 1 }); },
 
       // vreg.html's "returning visitor" fast path: known test number
       // (ending 9999) hits an existing pass, anything else misses.

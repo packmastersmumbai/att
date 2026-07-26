@@ -20,6 +20,7 @@ const SUITES = [
   { n: 6, label: 'Dashboard',      mod: './e2e-sweep-6-dashboard'  },
   { n: 7, label: 'Login',          mod: './e2e-sweep-7-login'      },
   { n: 8, label: 'i18n toggle',    mod: './e2e-sweep-8-i18n'       },
+  { n: 9, label: 'Gatepass',       mod: './e2e-sweep-9-gatepass'   },
 ];
 
 async function main() {

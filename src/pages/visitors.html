@@ -1373,7 +1373,17 @@
     var GP_MATERIALS = null;
     function loadGatepassCard(vid) {
       if (GP_MATERIALS === null) {
-        post({ action:'getMaterialList' }, function(m){ GP_MATERIALS = (m && m.materials) || []; });
+        post({ action:'getMaterialList' }, function(m){
+          GP_MATERIALS = (m && m.materials) || [];
+          // Materials may arrive after the card first rendered — refresh the
+          // datalist so the picklist is populated even on a late response.
+          var dl = document.getElementById('gpMatList');
+          if (dl) {
+            dl.innerHTML = GP_MATERIALS.slice(0,500).map(function(mm){
+              return '<option value="'+esc(mm.desc||mm.code)+'">'+esc(mm.code)+'</option>';
+            }).join('');
+          }
+        });
       }
       post({ action:'getGatepass', visitorId: vid }, function(d){
         renderGatepassCard(vid, d || { items:[], returnableOutstanding:0 });
