@@ -299,6 +299,13 @@
       transition: background .15s;
     }
     .btn-checkout-teal:hover { background: #0F766E; }
+    .btn-items {
+      background: #fff; color: var(--color-primary); border: 1px solid var(--color-primary);
+      border-radius: 3px; padding: 5px 12px; font-size: 11px; font-weight: 700;
+      cursor: pointer; letter-spacing: .5px; font-family: inherit; transition: background .15s;
+      margin-right: 6px;
+    }
+    .btn-items:hover { background: var(--color-bg); }
     .purpose-pill {
       display: inline-block;
       padding: 2px 8px;
@@ -1184,10 +1191,10 @@
               '</td>' +
               '<td>' + activeStatusBadge(v) + '</td>' +
               '<td>' +
-                '<button class="link-btn" onclick="openVisitorDetail(\'' + esc(v.VisitorID || v.ID || '') + '\')">' + qrattT('gp_items') + '</button>' +
+                '<button class="btn-items" onclick="openVisitorDetail(\'' + esc(v.VisitorID || v.ID || '') + '\')">📦 ' + qrattT('gp_items') + '</button>' +
                 (v.TimeOUT
-                  ? ' <span style="color:#6b7280;font-size:11px">Done</span>'
-                  : ' <button class="btn-checkout-teal" data-vid="' + esc(v.VisitorID || v.ID || '') + '" onclick="checkoutClick(this)">CHECKOUT</button>') +
+                  ? '<span style="color:#6b7280;font-size:11px">Done</span>'
+                  : '<button class="btn-checkout-teal" data-vid="' + esc(v.VisitorID || v.ID || '') + '" onclick="checkoutClick(this)">CHECKOUT</button>') +
               '</td>' +
               '</tr>';
           }).join('') +
@@ -1473,13 +1480,18 @@
         '<div style="padding:11px 13px;background:var(--color-bg);border-bottom:1px solid var(--color-border);font-weight:800;font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--color-text-muted)">'+qrattT('gp_title')+'</div>'+
         '<div style="display:flex;gap:10px;padding:10px 12px 4px"><label style="font-size:12px"><input type="radio" name="gpDir" value="IN" checked> '+qrattT('gp_bringing_in')+'</label>'+
           '<label style="font-size:12px"><input type="radio" name="gpDir" value="OUT"> '+qrattT('gp_taking_out')+'</label></div>'+
-        '<div style="display:grid;grid-template-columns:1fr 60px auto auto auto;gap:8px;padding:6px 12px 12px;align-items:center">'+
-          '<input id="gpDesc" list="gpMatList" placeholder="'+qrattT('gp_item_desc')+'" style="width:100%;padding:8px;border:1px solid var(--color-border);border-radius:8px">'+
+        // Adder: item name on its own full-width row (datalist needs room and is
+        // flaky when squeezed on mobile); qty / photo / returnable / Add wrap
+        // below via flex so nothing overflows a narrow phone screen.
+        '<div style="padding:6px 12px 12px">'+
+          '<input id="gpDesc" list="gpMatList" placeholder="'+qrattT('gp_item_desc')+'" style="width:100%;box-sizing:border-box;padding:9px;border:1px solid var(--color-border);border-radius:8px;margin-bottom:8px">'+
           '<datalist id="gpMatList">'+mats.slice(0,500).map(function(m){return '<option value="'+esc(m.desc||m.code)+'">'+esc(m.code)+'</option>';}).join('')+'</datalist>'+
-          '<input id="gpQty" type="number" value="1" min="1" style="width:100%;padding:8px;border:1px solid var(--color-border);border-radius:8px">'+
-          '<label id="gpPhotoLbl" title="'+qrattT('gp_add_photo')+'" style="font-size:14px;cursor:pointer;padding:6px;border:1px solid var(--color-border);border-radius:8px">📷<input type="file" accept="image/*" capture="environment" style="display:none" onchange="gpPreviewPhoto(this)"></label>'+
-          '<label style="font-size:12px;display:flex;gap:5px;align-items:center;white-space:nowrap"><input type="checkbox" id="gpRet" checked>'+qrattT('gp_returnable')+'</label>'+
-          '<button class="btn btn-primary" style="white-space:nowrap" onclick="gpAdd(\''+vid+'\')">'+qrattT('gp_add_item')+'</button>'+
+          '<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">'+
+            '<input id="gpQty" type="number" value="1" min="1" style="width:64px;padding:8px;border:1px solid var(--color-border);border-radius:8px" title="'+qrattT('gp_qty')+'">'+
+            '<label id="gpPhotoLbl" title="'+qrattT('gp_add_photo')+'" style="font-size:15px;cursor:pointer;padding:7px 10px;border:1px solid var(--color-border);border-radius:8px">📷<input type="file" accept="image/*" capture="environment" style="display:none" onchange="gpPreviewPhoto(this)"></label>'+
+            '<label style="font-size:12px;display:flex;gap:5px;align-items:center;white-space:nowrap"><input type="checkbox" id="gpRet" checked>'+qrattT('gp_returnable')+'</label>'+
+            '<button class="btn btn-primary" style="white-space:nowrap;margin-left:auto" onclick="gpAdd(\''+vid+'\')">'+qrattT('gp_add_item')+'</button>'+
+          '</div>'+
         '</div>'+
         (items.length ? '<table style="width:100%;font-size:13px;border-collapse:collapse">'+
           '<tbody>'+rows+'</tbody></table>' :

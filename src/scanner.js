@@ -91,9 +91,17 @@ function _processQRScanLocked_(qrCode, gate) {
     };
   }
 
-  // 4. Check for open check-in today
+  // 4. Check for an open check-in.
+  // Employees reset daily, so a today-scoped open row is correct for them.
+  // Visitors do NOT reset daily — a visitor left open from a previous day (or
+  // checked in via the self-service pass toggle, which writes an any-date open
+  // row) must be found here too, or the gate scan opens a SECOND IN row and the
+  // visitor shows two check-ins the same day. Use the visitor-aware any-date
+  // finder for visitors so both check-in paths agree on "already inside".
   var logsSheet = getSheet(SHEETS.LOGS);
-  var openRow = _findOpenLogRow(logsSheet, person.id, today());
+  var openRow = person.type === 'VIS'
+    ? _findOpenVisitorLogRow(logsSheet, person.id)
+    : _findOpenLogRow(logsSheet, person.id, today());
 
   if (openRow === -1) {
     return _checkIn(logsSheet, person, gate);
