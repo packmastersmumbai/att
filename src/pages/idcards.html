@@ -354,7 +354,7 @@
       <button type="button" class="idcards-lang-btn" data-lang-btn="hi" onclick="qrattSetLang('hi')">हिं</button>
     </div>
     <a class="btn-back" href="?page=admin" data-i18n="idcards_back_to_admin">← Back to Admin</a>
-    <button class="btn-print" onclick="window.print()">
+    <button class="btn-print" onclick="printCards()">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
         <polyline points="6,9 6,2 18,2 18,9"/>
         <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
@@ -500,6 +500,61 @@
       }
       grid.innerHTML = _filtered.map(renderCard).join('');
       count.textContent = _filtered.length + ' ' + qrattT('idcards_cards_label');
+    }
+
+
+    // GAS serves this page inside a nested cross-origin iframe, so window.print()
+    // targets Google's top document, not our cards (and @media print never applies).
+    // Open a blank top-level window and build it via the DOM, then print from here.
+    // NOTE: never document.write() raw markup strings on this page — GAS's own loader
+    // re-parses the served source, and a literal doctype or closing script tag inside
+    // a JS string makes its document.write throw a SyntaxError and kills the page.
+    function printCards() {
+      if (!_filtered.length) { alert(qrattT('idcards_no_match')); return; }
+
+      var css = '';
+      var sheets = document.getElementsByTagName('style');
+      for (var i = 0; i < sheets.length; i++) css += sheets[i].innerHTML;
+
+      var win = window.open('', '_blank');
+      if (!win) { alert('Please allow pop-ups for this site to print ID cards.'); return; }
+
+      var d = win.document;
+      d.title = esc(ORG) + ' — ID Cards';
+
+      var st = d.createElement('style');
+      st.appendChild(d.createTextNode(
+        css +
+        'body{background:#fff;padding:0;margin:0}' +
+        '.card-grid{display:flex;flex-wrap:wrap;gap:4mm;padding:6mm;align-content:flex-start}'
+      ));
+      d.head.appendChild(st);
+
+      var grid = d.createElement('div');
+      grid.className = 'card-grid';
+      grid.innerHTML = _filtered.map(renderCard).join('');
+      d.body.appendChild(grid);
+
+      // Print once every image has settled, with a hard fallback.
+      var imgs = Array.prototype.slice.call(d.images);
+      var pending = imgs.filter(function(i) { return !i.complete; });
+      var done = 0, fired = false;
+      function go() {
+        if (fired) return;
+        fired = true;
+        try { win.focus(); } catch (e) {}
+        win.print();
+      }
+      if (!pending.length) {
+        go();
+      } else {
+        pending.forEach(function(i) {
+          function tick() { if (++done >= pending.length) go(); }
+          i.addEventListener('load', tick);
+          i.addEventListener('error', tick);
+        });
+        setTimeout(go, 5000);
+      }
     }
 
     filterCards();   // applies default ACTIVE-only status filter on load
