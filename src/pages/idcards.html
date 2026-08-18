@@ -503,24 +503,37 @@
     }
 
 
-    // GAS serves this page inside a nested cross-origin iframe, so window.print()
-    // targets Google's top document, not our cards (and @media print never applies).
-    // Open a blank top-level window and build it via the DOM, then print from here.
-    // NOTE: never document.write() raw markup strings on this page — GAS's own loader
-    // re-parses the served source, and a literal doctype or closing script tag inside
-    // a JS string makes its document.write throw a SyntaxError and kills the page.
+    // GAS serves this page inside a nested cross-origin iframe, so a plain
+    // window.print() targets Google's top document, not our cards, and the
+    // @media print rules never apply.
+    //
+    // A popup window works in theory but prints blank in real Chrome: an
+    // about:blank window written by script has no committed document to print.
+    // Instead render the cards into a hidden same-document iframe and print
+    // that frame. Same-origin, no popup blocker, and it has a real document.
+    //
+    // NOTE: never document.write() raw markup strings on this page — GAS's own
+    // loader re-parses the served source, and a literal doctype or closing
+    // script tag inside a JS string makes its document.write throw and blank
+    // the whole page. Build everything through the DOM.
+    var _printFrame = null;
+
     function printCards() {
       if (!_filtered.length) { alert(qrattT('idcards_no_match')); return; }
 
+      if (_printFrame && _printFrame.parentNode) _printFrame.parentNode.removeChild(_printFrame);
+
+      var fr = document.createElement('iframe');
+      fr.setAttribute('aria-hidden', 'true');
+      // Off-screen rather than display:none — a hidden frame may not lay out.
+      fr.style.cssText = 'position:fixed;right:0;bottom:0;width:210mm;height:297mm;border:0;opacity:0;z-index:-1';
+      document.body.appendChild(fr);
+      _printFrame = fr;
+
+      var d = fr.contentDocument;
       var css = '';
       var sheets = document.getElementsByTagName('style');
       for (var i = 0; i < sheets.length; i++) css += sheets[i].innerHTML;
-
-      var win = window.open('', '_blank');
-      if (!win) { alert('Please allow pop-ups for this site to print ID cards.'); return; }
-
-      var d = win.document;
-      d.title = esc(ORG) + ' — ID Cards';
 
       var st = d.createElement('style');
       st.appendChild(d.createTextNode(
@@ -535,25 +548,30 @@
       grid.innerHTML = _filtered.map(renderCard).join('');
       d.body.appendChild(grid);
 
-      // Print once every image has settled, with a hard fallback.
+      // Print once every image has settled, with a hard fallback so the user
+      // never clicks Print and gets nothing.
       var imgs = Array.prototype.slice.call(d.images);
       var pending = imgs.filter(function(i) { return !i.complete; });
       var done = 0, fired = false;
       function go() {
         if (fired) return;
         fired = true;
-        try { win.focus(); } catch (e) {}
-        win.print();
+        try {
+          fr.contentWindow.focus();
+          fr.contentWindow.print();
+        } catch (e) {
+          alert('Could not open the print dialog: ' + e.message);
+        }
       }
       if (!pending.length) {
-        go();
+        setTimeout(go, 100);   // let layout settle before printing
       } else {
         pending.forEach(function(i) {
-          function tick() { if (++done >= pending.length) go(); }
+          function tick() { if (++done >= pending.length) setTimeout(go, 100); }
           i.addEventListener('load', tick);
           i.addEventListener('error', tick);
         });
-        setTimeout(go, 5000);
+        setTimeout(go, 8000);
       }
     }
 
