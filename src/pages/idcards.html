@@ -523,56 +523,69 @@
 
       if (_printFrame && _printFrame.parentNode) _printFrame.parentNode.removeChild(_printFrame);
 
-      var fr = document.createElement('iframe');
-      fr.setAttribute('aria-hidden', 'true');
-      // Off-screen rather than display:none — a hidden frame may not lay out.
-      fr.style.cssText = 'position:fixed;right:0;bottom:0;width:210mm;height:297mm;border:0;opacity:0;z-index:-1';
-      document.body.appendChild(fr);
-      _printFrame = fr;
-
-      var d = fr.contentDocument;
       var css = '';
       var sheets = document.getElementsByTagName('style');
       for (var i = 0; i < sheets.length; i++) css += sheets[i].innerHTML;
+      css += 'body{background:#fff;padding:0;margin:0}' +
+             '.card-grid{display:flex;flex-wrap:wrap;gap:4mm;padding:6mm;align-content:flex-start}';
 
-      var st = d.createElement('style');
-      st.appendChild(d.createTextNode(
-        css +
-        'body{background:#fff;padding:0;margin:0}' +
-        '.card-grid{display:flex;flex-wrap:wrap;gap:4mm;padding:6mm;align-content:flex-start}'
-      ));
-      d.head.appendChild(st);
+      // Assemble the frame source. The doctype matters: a script-built document
+      // without one lands in quirks mode (compatMode BackCompat) and Chrome's
+      // print layout then yields blank pages. Inserting a doctype afterwards is
+      // too late — the mode is fixed when the document is parsed — so the frame
+      // is given a full source document up front via srcdoc.
+      // The tag strings are assembled from fragments on purpose: GAS's loader
+      // re-parses this file's source and throws on a literal doctype or closing
+      // script tag inside a JS string, which blanks the whole page.
+      var LT = String.fromCharCode(60);      // "<"
+      var GT = String.fromCharCode(62);      // ">"
+      var doctype = LT + '!DOCTYPE html' + GT;
+      var src = doctype +
+        LT + 'html' + GT +
+        LT + 'head' + GT + LT + 'meta charset="utf-8"' + GT +
+        LT + 'style' + GT + css + LT + '/style' + GT +
+        LT + '/head' + GT +
+        LT + 'body' + GT +
+        LT + 'div class="card-grid"' + GT + _filtered.map(renderCard).join('') + LT + '/div' + GT +
+        LT + '/body' + GT + LT + '/html' + GT;
 
-      var grid = d.createElement('div');
-      grid.className = 'card-grid';
-      grid.innerHTML = _filtered.map(renderCard).join('');
-      d.body.appendChild(grid);
+      var fr = document.createElement('iframe');
+      fr.setAttribute('aria-hidden', 'true');
+      // Stays opaque and visible — Chrome honours opacity/visibility when printing
+      // a frame, so a transparent frame prints blank. Park it off-screen instead.
+      fr.style.cssText = 'position:fixed;left:-10000px;top:0;width:210mm;height:297mm;border:0';
 
-      // Print once every image has settled, with a hard fallback so the user
-      // never clicks Print and gets nothing.
-      var imgs = Array.prototype.slice.call(d.images);
-      var pending = imgs.filter(function(i) { return !i.complete; });
-      var done = 0, fired = false;
-      function go() {
-        if (fired) return;
-        fired = true;
-        try {
-          fr.contentWindow.focus();
-          fr.contentWindow.print();
-        } catch (e) {
-          alert('Could not open the print dialog: ' + e.message);
+      fr.onload = function() {
+        var win = fr.contentWindow;
+        var d = fr.contentDocument;
+        var imgs = Array.prototype.slice.call(d.images);
+        var pending = imgs.filter(function(i) { return !i.complete; });
+        var done = 0, fired = false;
+        function go() {
+          if (fired) return;
+          fired = true;
+          try {
+            win.focus();
+            win.print();
+          } catch (e) {
+            alert('Could not open the print dialog: ' + e.message);
+          }
         }
-      }
-      if (!pending.length) {
-        setTimeout(go, 100);   // let layout settle before printing
-      } else {
-        pending.forEach(function(i) {
-          function tick() { if (++done >= pending.length) setTimeout(go, 100); }
-          i.addEventListener('load', tick);
-          i.addEventListener('error', tick);
-        });
-        setTimeout(go, 8000);
-      }
+        if (!pending.length) {
+          setTimeout(go, 150);
+        } else {
+          pending.forEach(function(i) {
+            function tick() { if (++done >= pending.length) setTimeout(go, 150); }
+            i.addEventListener('load', tick);
+            i.addEventListener('error', tick);
+          });
+          setTimeout(go, 8000);
+        }
+      };
+
+      fr.srcdoc = src;
+      document.body.appendChild(fr);
+      _printFrame = fr;
     }
 
     filterCards();   // applies default ACTIVE-only status filter on load
