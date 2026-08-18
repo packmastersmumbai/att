@@ -101,10 +101,13 @@ function getDashboardData() {
   // runtime quota (→ "refused to connect" for everyone until reset). CacheService
   // costs no quota; rapid polls now reuse one computation.
   var cache = CacheService.getScriptCache();
-  var hit = cache.get('dashData');
+  // Stamped so a deploy that changes the payload shape cannot keep serving
+  // the old one; _v1 tracks deliberate shape changes.
+  var key = buildScopedKey_('dashData_v1');
+  var hit = cache.get(key);
   if (hit) { try { return JSON.parse(hit); } catch(e) {} }
   var result = _computeDashboardData_();
-  try { cache.put('dashData', JSON.stringify(result), 15); } catch(e) {}
+  try { cache.put(key, JSON.stringify(result), 15); } catch(e) {}
   return result;
 }
 
@@ -114,7 +117,7 @@ function getDashboardData() {
  * up to 15s — which prompts staff to scan again and race the first write.
  */
 function invalidateDashboardCache() {
-  try { CacheService.getScriptCache().remove('dashData'); } catch(e) {}
+  try { CacheService.getScriptCache().remove(buildScopedKey_('dashData_v1')); } catch(e) {}
 }
 
 function _computeDashboardData_() {

@@ -26,6 +26,26 @@ function doGet(e) {
     return ContentService.createTextOutput('OK').setMimeType(ContentService.MimeType.TEXT);
   }
 
+  // Cache diagnostics. bumpbuild rotates the build stamp: one property write
+  // that retires every stamped cache entry at once, and returns instantly.
+  // Deliberately the primary cache-clearing command — sweeping and deleting
+  // keys is O(keys) and can exceed the request timeout, which fails silently
+  // and blocks new code from reaching users.
+  if (e && e.parameter && e.parameter.diag) {
+    var diag = String(e.parameter.diag);
+    if (diag === 'bumpbuild') {
+      var stamp = bumpBuildStamp_();
+      return ContentService
+        .createTextOutput(JSON.stringify({ ok: !!stamp, stamp: stamp }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    if (diag === 'build') {
+      return ContentService
+        .createTextOutput(JSON.stringify({ ok: true, stamp: getBuildStamp_() }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+  }
+
   var page = (e && e.parameter && e.parameter.page) ? e.parameter.page : 'scanner';
   var validPages = ['scanner', 'scanner_popup', 'dashboard', 'reports', 'visitors', 'kiosk', 'admin', 'idcards', 'e2e', 'vreg', 'vpass', 'gatepass_approve'];
   if (validPages.indexOf(page) === -1) page = 'scanner';

@@ -10,12 +10,17 @@
 // per 6h across all users. The gatepass card loads this once on open and does
 // its autocomplete client-side (no per-keystroke server calls).
 
-var MATERIAL_CACHE_KEY = 'qms_materials_v1';
+// _v1 is the PAYLOAD SHAPE version — bump it by hand when the {code,desc,unit}
+// record shape changes. buildScopedKey_ adds the build stamp on top, so a
+// deploy also retires this entry; without that a shape fix stays invisible
+// behind a 6h TTL.
+var MATERIAL_CACHE_NAME = 'qms_materials_v1';
 var MATERIAL_CACHE_TTL = 21600; // 6h
 
 function getMaterialList() {
   var cache = CacheService.getScriptCache();
-  var hit = cache.get(MATERIAL_CACHE_KEY);
+  var key = buildScopedKey_(MATERIAL_CACHE_NAME);
+  var hit = cache.get(key);
   if (hit) { try { return { success: true, materials: JSON.parse(hit) }; } catch (e) {} }
 
   var id = String(getConfigValue('QMSMaterialSheetID') || '').trim();
@@ -35,6 +40,6 @@ function getMaterialList() {
     Logger.log('getMaterialList failed: ' + e.message);
     return { success: true, materials: [] };
   }
-  try { cache.put(MATERIAL_CACHE_KEY, JSON.stringify(materials), MATERIAL_CACHE_TTL); } catch (e) {}
+  try { cache.put(key, JSON.stringify(materials), MATERIAL_CACHE_TTL); } catch (e) {}
   return { success: true, materials: materials };
 }
