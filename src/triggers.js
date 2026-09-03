@@ -176,10 +176,45 @@ function _autoCheckoutAllLocked_() {
     invalidateDashboardCache();
   }
 
+  // Before wiping ActiveVisitors, flag anyone being auto-closed who still holds
+  // returnable gatepass items. This sweep runs at 11 PM with nobody watching,
+  // so an unreturned item would otherwise vanish from view entirely — the
+  // visitor is marked out, the item stays OUT_PENDING, and no human is ever
+  // told. Best-effort: a notification failure must not abort the sweep.
+  try { _alertUnreturnedAtAutoCheckout_(); }
+  catch (e) { Logger.log('unreturned-items alert failed: ' + e.message); }
+
   // Clear ActiveVisitors tab
   var activeSheet  = getSheet(SHEETS.ACTIVE_VISITORS);
   var activeLastRow = activeSheet.getLastRow();
   if (activeLastRow > 1) {
     activeSheet.getRange(2, 1, activeLastRow - 1, activeSheet.getLastColumn()).clearContent();
   }
+}
+
+/**
+ * Sends one summary alert naming the still-inside visitors who are being
+ * auto-checked-out while holding OUT_PENDING gatepass items. Silent when there
+ * are none.
+ */
+function _alertUnreturnedAtAutoCheckout_() {
+  var activeSheet = getSheet(SHEETS.ACTIVE_VISITORS);
+  if (activeSheet.getLastRow() < 2) return;
+  var active = getSheetAsObjects(SHEETS.ACTIVE_VISITORS);
+  if (!active.length) return;
+
+  var lines = [];
+  active.forEach(function(a) {
+    var id = String(a.VisitorID || '');
+    if (!id) return;
+    var n = 0;
+    try { n = getVisitorReturnablesOutstanding(id); } catch (e) { return; }
+    if (n > 0) lines.push('• ' + (a.Name || id) + ' — ' + n + ' item(s) not returned');
+  });
+  if (!lines.length) return;
+
+  var msg = '⚠️ <b>Auto-checkout: unreturned items</b>\n' +
+            'These visitors were closed out by the nightly sweep while still holding returnable items:\n' +
+            lines.join('\n');
+  try { _sendTelegram(msg); } catch (e) { Logger.log('unreturned alert telegram: ' + e.message); }
 }

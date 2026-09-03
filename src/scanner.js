@@ -270,6 +270,17 @@ function _checkOut(logsSheet, openRow, person, gate) {
   invalidateDashboardCache();
   sendScanAlert('OUT', person, gate, formatTime(now), duration);
 
+  // A visitor leaving through the gate is exactly when an unreturned item must
+  // be raised. The Visitors-page checkout warned about this; the gate scan —
+  // the path actually used — did not, so items walked out unnoticed. Advisory
+  // only: the scan still succeeds (never trap a person at the gate over a
+  // bookkeeping flag), but the guard sees it.
+  var outstanding = 0;
+  if (person.type === 'VIS') {
+    try { outstanding = getVisitorReturnablesOutstanding(person.id); }
+    catch (e) { Logger.log('returnables check failed: ' + e.message); }
+  }
+
   return {
     success:  true,
     action:   'CHECK_OUT',
@@ -279,7 +290,8 @@ function _checkOut(logsSheet, openRow, person, gate) {
     photoUrl: person.photoUrl || person.qrImageUrl || '',
     time:     formatTime(now),
     duration: duration,
-    gate:     gate
+    gate:     gate,
+    returnableOutstanding: outstanding
   };
 }
 

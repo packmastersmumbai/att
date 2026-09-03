@@ -1469,7 +1469,11 @@
           : (i.status!=='VOID' ? '<button class="link-btn" onclick="gpVoid(\''+i.gatepassId+'\',\''+vid+'\')">'+qrattT('gp_void')+'</button>' : '');
         return '<tr><td style="padding:6px 8px">'+thumb+esc(i.itemDesc)+(i.unit?' <span style="color:#94a3b8">'+esc(i.unit)+'</span>':'')+'</td>'+
           '<td style="padding:6px 8px">'+esc(i.direction)+'</td><td style="padding:6px 8px">'+esc(i.qty)+'</td>'+
-          '<td style="padding:6px 8px">'+gpChip(i.status)+'</td><td style="padding:6px 8px;text-align:right">'+act+'</td></tr>';
+          '<td style="padding:6px 8px">'+gpChip(i.status)+
+            // HostApproved was written on every row and read by nothing, so the
+            // approval loop was invisible. Show it next to the status.
+            (i.hostApproved ? ' <span title="Host approved" style="color:#0f7a4d;font-weight:800">✓</span>' : '')+
+          '</td><td style="padding:6px 8px;text-align:right">'+act+'</td></tr>';
       }).join('');
       var outstanding = d.returnableOutstanding||0;
       var mats = GP_MATERIALS||[];

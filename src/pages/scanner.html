@@ -735,6 +735,31 @@
       .ms-meta-label { font-size: 8px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: #5d7a9e; }
       .ms-meta-value { font-size: 11px; font-weight: 600; color: #475569; font-family: 'Roboto Mono', monospace; margin-top: 1px; }
     }
+
+    /* Gatepass block inside the dark scan-result card. Deliberately compact:
+       it sits between the scan stats and the dismiss button, so it must not
+       push the button off a phone screen. */
+    .sc-gp{margin:12px 0 4px;padding:10px;border:1px solid rgba(148,163,184,.25);
+      border-radius:8px;background:rgba(15,23,42,.45);text-align:left}
+    .sc-gp-hd{font-size:9px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;
+      color:#94a3b8;margin-bottom:7px}
+    .sc-gp-row{display:flex;align-items:center;justify-content:space-between;gap:8px;
+      font-size:12px;color:#cbd5e1;padding:3px 0}
+    .sc-gp-st{font-size:10px;color:#64748b;font-weight:700}
+    .sc-gp-ret{background:none;border:1px solid rgba(148,163,184,.4);color:#7dd3fc;
+      font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;cursor:pointer}
+    .sc-gp-form{margin-top:8px}
+    .sc-gp-form input,.sc-gp-form select{background:rgba(2,6,23,.6);border:1px solid rgba(148,163,184,.3);
+      color:#e2e8f0;border-radius:6px;padding:7px 8px;font-size:12px;font-family:inherit}
+    #scGpDesc{width:100%;box-sizing:border-box;margin-bottom:6px}
+    .sc-gp-ctl{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+    #scGpQty{width:52px}
+    .sc-gp-ctl label{font-size:11px;color:#94a3b8;display:flex;align-items:center;gap:3px}
+    .sc-gp-add{margin-left:auto;background:#38BDF8;border:none;color:#04283a;font-weight:800;
+      font-size:12px;padding:7px 14px;border-radius:6px;cursor:pointer}
+    .sc-gp-add:disabled{opacity:.5;cursor:default}
+    .sc-gp-warn{margin:10px 0 2px;padding:8px 10px;border-radius:7px;background:rgba(180,83,9,.22);
+      border:1px solid rgba(251,191,36,.45);color:#FCD34D;font-size:12px;font-weight:700;text-align:center}
   </style>
 </head>
 <body>
@@ -907,7 +932,7 @@
 
   <script>
     function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
-    function post(data,callback){var action=data.action;var onErr=function(e){callback({success:false,error:e?e.message:'Unknown error'});};if(typeof google==='undefined'||!google.script){callback({success:false,error:'Not in GAS'});return;}var r=google.script.run.withFailureHandler(onErr).withSuccessHandler(callback);if(action==='processQRScan')r.processQRScan(data.qrCode,data.gate);else if(action==='getDashboardData')r.getDashboardData();else if(action==='getPendingResult')r.getPendingResult(data.sid);else callback({success:false,error:'Unknown: '+action});}
+    function post(data,callback){var action=data.action;var onErr=function(e){callback({success:false,error:e?e.message:'Unknown error'});};if(typeof google==='undefined'||!google.script){callback({success:false,error:'Not in GAS'});return;}var r=google.script.run.withFailureHandler(onErr).withSuccessHandler(callback);if(action==='processQRScan')r.processQRScan(data.qrCode,data.gate);else if(action==='getDashboardData')r.getDashboardData();else if(action==='getPendingResult')r.getPendingResult(data.sid);else if(action==='getGatepass')r.getGatepass(data.visitorId);else if(action==='addGatepassItem')r.addGatepassItem(data.visitorId,data.item);else if(action==='markItemReturned')r.markItemReturned(data.gatepassId);else if(action==='getMaterialList')r.getMaterialList();else callback({success:false,error:'Unknown: '+action});}
   </script>
   <script>
     var COLORS = ['#3B82F6','#8B5CF6','#EC4899','#F59E0B','#10B981','#06B6D4','#EF4444','#6366F1','#84CC16','#F97316'];
@@ -1122,6 +1147,12 @@
         (res.empId ? '<div style="font-size:11px;font-weight:700;letter-spacing:1.5px;color:#38BDF8;margin-bottom:2px;font-family:monospace">#' + esc(res.empId) + '</div>' : '') +
         '<div class="rc-dept">' + esc(res.department || '') + '</div>' +
         body +
+        // The gate guard is the person who physically sees material cross the
+        // gate, but the card lived only on the Visitors page — a different
+        // screen they had to leave the scanner to reach, which is why item
+        // logging went unused. Mounted inline on a visitor scan, it is where
+        // the custody actually happens.
+        (res.type === 'VIS' && res.empId ? '<div id="scGpMount" class="sc-gp"></div>' : '') +
         '<button class="btn-dismiss ' + btnCls + '" onclick="dismissResult()">' + btnLbl + '</button>' +
         (type !== 'blocked' && type !== 'unknown'
           ? '<div style="font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#5d7a9e;margin-top:10px;text-align:center">' + esc(qrattT('scanner_auto_dismiss_hint')) + '</div>' +
@@ -1182,10 +1213,115 @@
       // Background refresh to sync with server state
       loadActivity();
 
+      // A visitor leaving while still holding a returnable item is the moment
+      // that must be raised. Advisory only — the scan already succeeded.
+      if (res.type === 'VIS' && type === 'check-out' && res.returnableOutstanding > 0) {
+        var warn = document.createElement('div');
+        warn.className = 'sc-gp-warn';
+        warn.textContent = '\u26a0 ' + res.returnableOutstanding + ' returnable item(s) NOT returned';
+        var rcEl = document.querySelector('#resultCard .rc');
+        if (rcEl) rcEl.insertBefore(warn, rcEl.querySelector('.btn-dismiss'));
+        holdResult();   // do not auto-dismiss a warning the guard must read
+      }
+
+      if (res.type === 'VIS' && res.empId) scGpLoad(res.empId);
+
       // Auto-dismiss after 8s
       dismissTimer = setTimeout(function() {
         dismissResult();
       }, 8100);
+    }
+
+    /* ── Gatepass on the scan result ────────────────────────────────────────
+       The result card auto-dismisses after 8.1s. That is right for a bare
+       scan, but it would yank the card away mid-typing while a guard enters an
+       item. Any interaction with the gatepass cancels the timer; the guard
+       then closes the card themselves. ── */
+    function holdResult() {
+      clearTimeout(dismissTimer);
+      var bar = document.querySelector('#resultCard .dismiss-bar');
+      if (bar) bar.style.display = 'none';
+      var hint = document.querySelector('#resultCard .rc > div[style*="auto_dismiss"]');
+      if (hint) hint.style.display = 'none';
+    }
+
+    var SC_GP_MATERIALS = null;
+    var SC_GP_VID = '';
+
+    function scGpLoad(vid) {
+      SC_GP_VID = vid;
+      if (SC_GP_MATERIALS === null) {
+        post({ action: 'getMaterialList' }, function(m) {
+          SC_GP_MATERIALS = (m && m.materials) || [];
+          var dl = document.getElementById('scGpMatList');
+          if (dl) dl.innerHTML = scGpOptions();
+        });
+      }
+      post({ action: 'getGatepass', visitorId: vid }, function(d) {
+        scGpRender(vid, d || { items: [], returnableOutstanding: 0 });
+      });
+    }
+
+    function scGpOptions() {
+      return (SC_GP_MATERIALS || []).slice(0, 500).map(function(m) {
+        return '<option value="' + esc(m.desc || m.code) + '">' + esc(m.code) + '</option>';
+      }).join('');
+    }
+
+    function scGpRender(vid, d) {
+      var mount = document.getElementById('scGpMount');
+      if (!mount) return;
+      var items = (d.items || []).filter(function(i) { return i.status !== 'VOID'; });
+      var outstanding = d.returnableOutstanding || 0;
+
+      var rows = items.map(function(i) {
+        return '<div class="sc-gp-row">' +
+          '<span>' + esc(i.direction) + ' · ' + esc(i.qty) + '× ' + esc(i.itemDesc) + '</span>' +
+          (i.status === 'OUT_PENDING'
+            ? '<button class="sc-gp-ret" onclick="scGpReturn(\'' + esc(i.gatepassId) + '\')">returned</button>'
+            : '<span class="sc-gp-st">' + esc(i.status) + '</span>') +
+          '</div>';
+      }).join('');
+
+      mount.innerHTML =
+        '<div class="sc-gp-hd">Gatepass items' + (outstanding ? ' · ' + outstanding + ' out' : '') + '</div>' +
+        (rows || '') +
+        '<div class="sc-gp-form">' +
+          '<input id="scGpDesc" list="scGpMatList" placeholder="Item description" onfocus="holdResult()" oninput="holdResult()">' +
+          '<datalist id="scGpMatList">' + scGpOptions() + '</datalist>' +
+          '<div class="sc-gp-ctl">' +
+            '<select id="scGpDir" onchange="holdResult()"><option value="IN">In</option><option value="OUT">Out</option></select>' +
+            '<input id="scGpQty" type="number" value="1" min="1" onfocus="holdResult()">' +
+            '<label><input type="checkbox" id="scGpRet" checked onchange="holdResult()"> ret</label>' +
+            '<button class="sc-gp-add" onclick="scGpAdd()">Add</button>' +
+          '</div>' +
+        '</div>';
+    }
+
+    function scGpAdd() {
+      holdResult();
+      var descEl = document.getElementById('scGpDesc');
+      var desc = (descEl && descEl.value || '').trim();
+      if (!desc) return;
+      var mat = (SC_GP_MATERIALS || []).filter(function(m) { return (m.desc || m.code) === desc; })[0] || {};
+      var btn = document.querySelector('.sc-gp-add');
+      if (btn) { btn.disabled = true; btn.textContent = '…'; }
+      post({ action: 'addGatepassItem', visitorId: SC_GP_VID, item: {
+        direction: (document.getElementById('scGpDir') || {}).value || 'IN',
+        materialCode: mat.code || '', itemDesc: desc, unit: mat.unit || '',
+        qty: Number((document.getElementById('scGpQty') || {}).value) || 1,
+        returnable: !!(document.getElementById('scGpRet') || {}).checked
+      }}, function(res) {
+        if (btn) { btn.disabled = false; btn.textContent = 'Add'; }
+        if (res && res.success) scGpLoad(SC_GP_VID);
+      });
+    }
+
+    function scGpReturn(gatepassId) {
+      holdResult();
+      post({ action: 'markItemReturned', gatepassId: gatepassId }, function(res) {
+        if (res && res.success) scGpLoad(SC_GP_VID);
+      });
     }
 
     function dismissResult() {

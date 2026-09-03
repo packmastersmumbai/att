@@ -86,6 +86,12 @@ function addGatepassItem(visitorId, item) {
   var vRow = findRowByValue(visSheet, 'VisitorID', visitorId);
   var hostEmpId = vRow === -1 ? '' : (getCell(visSheet, vRow, 'HostEmpID') || '');
 
+  // Did this visitor already have items? Decides whether this add is the one
+  // that triggers the host notification (see below).
+  var wasExisting = getSheetAsObjects(SHEETS.GATEPASS).some(function(r) {
+    return String(r.VisitorID) === String(visitorId) && r.Status !== 'VOID';
+  });
+
   var sheet = getSheet(SHEETS.GATEPASS);
   var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
   var values = {
@@ -97,7 +103,20 @@ function addGatepassItem(visitorId, item) {
     LoggedAt: new Date().toISOString(), SettledAt: '', Note: ''
   };
   sheet.appendRow(headers.map(function(h) { return values[h] !== undefined ? values[h] : ''; }));
-  return { success: true, gatepassId: gatepassId };
+
+  // Notify the host automatically on the FIRST item of a visitor's gatepass.
+  // The old design required the guard to press "Notify host" — an unprompted
+  // button nobody pressed, which left HostApproved permanently 'NO'. Firing on
+  // the first item only (not every item) keeps it to one message per gatepass
+  // while the guard is still adding to the list; the guard can re-send later
+  // from the card once the list is complete. Best-effort: a notification
+  // failure must never fail the logging of the item itself.
+  var notified = false;
+  if (!wasExisting) {
+    try { notified = !!(notifyHostForApproval(visitorId) || {}).success; }
+    catch (e) { Logger.log('gatepass auto-notify failed: ' + e.message); }
+  }
+  return { success: true, gatepassId: gatepassId, hostNotified: notified };
 }
 
 /** Reconcile a returnable item: OUT_PENDING → RETURNED. */
@@ -127,7 +146,10 @@ function voidGatepassItem(gatepassId, reason) {
 // — same mechanism as the admin bearer token (adminAuth.js).
 
 var GP_TOKEN_PREFIX = 'GPTOK_';
-var GP_TOKEN_TTL = 21600; // 6h
+// 48h, not 6h: a host notified late in the shift routinely approves the next
+// morning. A 6h link was expired by then, and an expired approval link is
+// indistinguishable from a broken feature to the host.
+var GP_TOKEN_TTL = 172800; // 48h
 
 /** Mechanism: mint an approval token for this visitor's gatepass. */
 function _issueGatepassToken_(visitorId) {
@@ -214,4 +236,73 @@ function notifyHostForApproval(visitorId) {
     Logger.log('notifyHostForApproval failed: ' + e.message);
     return { success: false, error: e.message };
   }
+}
+
+
+// ── Outstanding returnables register ───────────────────────────────────────
+// The gatepass was write-only: rows went into the sheet and were readable only
+// by re-opening one visitor's detail modal. Nobody could answer "what is still
+// out?", which is the entire purpose of a returnable register. This is the
+// read side, consumed by the Reports → Gatepass tab and the dashboard tile.
+
+/**
+ * Every item still OUT_PENDING, across all visitors, newest first.
+ * Joins the visitor + host name so the caller needs no second lookup.
+ */
+function getOutstandingGatepass() {
+  var rows = getSheetAsObjects(SHEETS.GATEPASS).filter(function(r) {
+    return r.Status === 'OUT_PENDING';
+  });
+  if (!rows.length) return { success: true, items: [], count: 0 };
+
+  // Build id→name maps once rather than a findRowByValue per row (that is a
+  // full sheet scan each time and this list is rendered on every tab open).
+  var visName = {};
+  getSheetAsObjects(SHEETS.VISITORS).forEach(function(v) {
+    visName[String(v.VisitorID)] = { name: v.Name || '', company: v.Company || '', phone: v.Phone || '' };
+  });
+  var empName = {};
+  getSheetAsObjects(SHEETS.EMPLOYEES).forEach(function(e) { empName[String(e.EmpID)] = e.Name || ''; });
+
+  var now = new Date();
+  var items = rows.map(function(r) {
+    var logged = r.LoggedAt ? new Date(r.LoggedAt) : null;
+    var days = logged && !isNaN(logged) ? Math.floor((now - logged) / 86400000) : '';
+    var v = visName[String(r.VisitorID)] || {};
+    return {
+      gatepassId:   r.GatepassID,
+      visitorId:    r.VisitorID,
+      visitorName:  v.name || String(r.VisitorID),
+      company:      v.company || '',
+      phone:        v.phone || '',
+      hostName:     empName[String(r.HostEmpID)] || '',
+      itemDesc:     r.ItemDesc || '',
+      materialCode: r.MaterialCode || '',
+      unit:         r.Unit || '',
+      qty:          Number(r.Qty) || 0,
+      photoUrl:     _normalizePhotoUrl_(r.PhotoURL || ''),
+      hostApproved: String(r.HostApproved).toUpperCase() === 'YES',
+      loggedAt:     r.LoggedAt || '',
+      daysOut:      days
+    };
+  });
+  // Oldest first — the longest-outstanding item is the one that needs chasing.
+  items.sort(function(a, b) { return String(a.loggedAt).localeCompare(String(b.loggedAt)); });
+  return { success: true, items: items, count: items.length };
+}
+
+/** Compact counts for the dashboard tile. */
+function getGatepassKpis() {
+  var rows = getSheetAsObjects(SHEETS.GATEPASS);
+  var outstanding = 0, unapproved = 0, overdue = 0;
+  var now = new Date();
+  rows.forEach(function(r) {
+    if (r.Status === 'OUT_PENDING') {
+      outstanding++;
+      var logged = r.LoggedAt ? new Date(r.LoggedAt) : null;
+      if (logged && !isNaN(logged) && (now - logged) > 86400000) overdue++;
+    }
+    if (r.Status !== 'VOID' && String(r.HostApproved).toUpperCase() !== 'YES') unapproved++;
+  });
+  return { success: true, outstanding: outstanding, overdue: overdue, unapproved: unapproved };
 }

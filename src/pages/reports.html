@@ -983,6 +983,7 @@
       <button class="rtab" id="rtabAnalytics" onclick="switchReportTab('analytics')">Analytics</button>
       <button class="rtab" id="rtabMonthly" onclick="switchReportTab('monthly')">Monthly View</button>
       <button class="rtab" id="rtabHours" onclick="switchReportTab('hours')">Hours Summary</button>
+      <button class="rtab" id="rtabGatepass" onclick="switchReportTab('gatepass')">Gatepass</button>
       <button class="filter-toggle-btn" onclick="openFilterDrawer()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/></svg>
         Filters
@@ -1228,6 +1229,23 @@
 
     </div><!-- /reportsViewHours -->
 
+    <!-- ── Outstanding Gatepass Items ──
+         The read side of the gatepass. Items were previously visible only by
+         opening one visitor's detail modal, so "what is still out?" could not
+         be answered at all. Oldest-first, because the longest-outstanding item
+         is the one that needs chasing. ── -->
+    <div class="analytics-view" id="reportsViewGatepass" style="padding:0;display:none;flex-direction:column;overflow:hidden;">
+      <div style="display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0;flex-wrap:wrap;">
+        <span style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Returnable items still out</span>
+        <button onclick="loadOutstandingGatepass()" style="padding:7px 16px;background:var(--primary);color:#fff;border:none;border-radius:3px;font-size:12px;font-weight:700;cursor:pointer;letter-spacing:.5px;">RELOAD</button>
+        <button onclick="exportGatepassCSV()" style="padding:7px 14px;background:var(--surface);color:var(--muted);border:1px solid var(--border);border-radius:3px;font-size:12px;font-weight:600;cursor:pointer;">&#8595; Export CSV</button>
+        <span id="gpOutKpi" style="margin-left:auto;font-size:12px;color:var(--muted);font-family:var(--mono)"></span>
+      </div>
+      <div style="flex:1;overflow:auto;min-height:0;padding:0;" id="gpOutWrap">
+        <div style="padding:40px;text-align:center;color:var(--muted);font-size:13px;">Loading&#8230;</div>
+      </div>
+    </div><!-- /reportsViewGatepass -->
+
   </div><!-- /main-content -->
 
   <!-- Mobile filter overlay -->
@@ -1271,7 +1289,7 @@
     function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
     function fmtDate(d){var mn=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];var p=String(d||'').split('-');if(p.length===3&&p[0].length===4)return p[2]+' '+mn[parseInt(p[1],10)-1]+' '+p[0];return d||'–';}
     function fmtDur(d){if(!d)return '–';var m=String(d).match(/^(\d+)h\s*(\d+)m$/);if(!m){var m2=String(d).match(/^(\d+)m$/);if(m2){var mi2=parseInt(m2[1]);return (mi2/60).toFixed(2);}return d;}var h=parseInt(m[1]),mi=parseInt(m[2]);if(h>23)return '–';return (h+mi/60).toFixed(2);}
-    function post(data,callback){var action=data.action;var onErr=function(e){callback({success:false,error:e?e.message:'Unknown error'});};if(typeof google==='undefined'||!google.script){callback({success:false,error:'Not in GAS'});return;}var r=google.script.run.withSuccessHandler(callback).withFailureHandler(onErr);if(action==='getLogs')r.getLogs(data.filters);else if(action==='exportCSV')r.exportCSV(data.filters);else if(action==='getDashboardData')r.getDashboardData();else if(action==='getAnalyticsData')r.getAnalyticsData(data.range||30);else if(action==='getMonthlyAttendance')r.getMonthlyAttendance(data.year,data.month,data.includeInactive);else if(action==='getHoursSummary')r.getHoursSummary(data.opts||{});else if(action==='getHoursKpis')r.getHoursKpis(data.year,data.month);else if(action==='rebuildHoursSummarySheet')r.rebuildHoursSummarySheet();else callback({success:false,error:'Unknown: '+action});}
+    function post(data,callback){var action=data.action;var onErr=function(e){callback({success:false,error:e?e.message:'Unknown error'});};if(typeof google==='undefined'||!google.script){callback({success:false,error:'Not in GAS'});return;}var r=google.script.run.withSuccessHandler(callback).withFailureHandler(onErr);if(action==='getLogs')r.getLogs(data.filters);else if(action==='exportCSV')r.exportCSV(data.filters);else if(action==='getDashboardData')r.getDashboardData();else if(action==='getAnalyticsData')r.getAnalyticsData(data.range||30);else if(action==='getMonthlyAttendance')r.getMonthlyAttendance(data.year,data.month,data.includeInactive);else if(action==='getHoursSummary')r.getHoursSummary(data.opts||{});else if(action==='getHoursKpis')r.getHoursKpis(data.year,data.month);else if(action==='rebuildHoursSummarySheet')r.rebuildHoursSummarySheet();else if(action==='getOutstandingGatepass')r.getOutstandingGatepass();else if(action==='markItemReturned')r.markItemReturned(data.gatepassId);else if(action==='notifyHostForApproval')r.notifyHostForApproval(data.visitorId);else callback({success:false,error:'Unknown: '+action});}
   </script>
 
   <script>
@@ -1663,20 +1681,24 @@
       document.getElementById('rtabAnalytics').classList.toggle('active', tab === 'analytics');
       document.getElementById('rtabMonthly').classList.toggle('active', tab === 'monthly');
       document.getElementById('rtabHours').classList.toggle('active', tab === 'hours');
+      document.getElementById('rtabGatepass').classList.toggle('active', tab === 'gatepass');
 
       var logsView    = document.getElementById('reportsViewLogs');
       var anaView     = document.getElementById('reportsViewAnalytics');
       var monthlyView = document.getElementById('reportsViewMonthly');
       var hoursView   = document.getElementById('reportsViewHours');
+      var gpView      = document.getElementById('reportsViewGatepass');
 
       logsView.classList.toggle('hidden', tab !== 'logs');
       anaView.classList.toggle('active', tab === 'analytics');
       // Monthly + Hours views use display flex/none (different class pattern)
       monthlyView.style.display = tab === 'monthly' ? 'flex' : 'none';
       hoursView.style.display   = tab === 'hours'   ? 'flex' : 'none';
+      gpView.style.display      = tab === 'gatepass' ? 'flex' : 'none';
 
       if (tab === 'analytics' && !_anaLoaded) loadAnalytics();
       if (tab === 'hours' && !_hoursLoaded) loadHours();
+      if (tab === 'gatepass') loadOutstandingGatepass();
     }
 
     function generateInstitutionalReport() {
@@ -1861,6 +1883,107 @@
     var outT = outMin !== null ? _hhmm(outMin) : (rec.timeOut || '');
     var mins = (inMin !== null && outMin !== null && outMin >= inMin) ? outMin - inMin : null;
     return { inT: inT, outT: outT, dur: _decHours(mins), mins: mins };
+  }
+
+  /* Outstanding gatepass register --------------------------------------- */
+  var _gpOutData = null;
+
+  function loadOutstandingGatepass() {
+    var wrap = document.getElementById('gpOutWrap');
+    wrap.innerHTML = '<div style="padding:40px;text-align:center;color:var(--muted);font-size:13px;">Loading…</div>';
+    post({ action: 'getOutstandingGatepass' }, function(res) {
+      if (!res || !res.success) {
+        wrap.innerHTML = '<div style="padding:40px;text-align:center;color:#b42318;font-size:13px;">' +
+          esc((res && res.error) || 'Failed to load') + '</div>';
+        return;
+      }
+      _gpOutData = res;
+      renderOutstandingGatepass(res);
+    });
+  }
+
+  function renderOutstandingGatepass(res) {
+    var wrap = document.getElementById('gpOutWrap');
+    var items = res.items || [];
+    var kpi = document.getElementById('gpOutKpi');
+
+    if (!items.length) {
+      wrap.innerHTML = '<div style="padding:48px;text-align:center;color:var(--muted);font-size:13px;">' +
+        '✓ Nothing outstanding — every returnable item has come back.</div>';
+      if (kpi) kpi.textContent = '0 outstanding';
+      return;
+    }
+
+    // An item out for a day or more is overdue: a visitor gatepass is meant to
+    // settle within the visit.
+    var overdue = items.filter(function(i){ return i.daysOut !== '' && i.daysOut >= 1; }).length;
+    if (kpi) kpi.textContent = items.length + ' outstanding' + (overdue ? ' · ' + overdue + ' overdue' : '');
+
+    var rows = items.map(function(i) {
+      var od = i.daysOut !== '' && i.daysOut >= 1;
+      var ageTxt = i.daysOut === '' ? '–' : (i.daysOut === 0 ? 'today' : i.daysOut + 'd');
+      var thumb = i.photoUrl
+        ? '<img src="' + esc(i.photoUrl) + '" alt="" style="width:30px;height:30px;border-radius:5px;object-fit:cover;vertical-align:middle;margin-right:7px" onerror="this.style.display=&quot;none&quot;">'
+        : '';
+      return '<tr' + (od ? ' style="background:#fffbeb"' : '') + '>' +
+        '<td style="padding:9px 12px">' + thumb + esc(i.itemDesc) +
+          (i.materialCode ? ' <span style="color:var(--muted);font-family:var(--mono);font-size:11px">' + esc(i.materialCode) + '</span>' : '') + '</td>' +
+        '<td style="padding:9px 12px;text-align:right;font-family:var(--mono)">' + esc(i.qty) + (i.unit ? ' ' + esc(i.unit) : '') + '</td>' +
+        '<td style="padding:9px 12px">' + esc(i.visitorName) +
+          (i.company ? '<div style="font-size:11px;color:var(--muted)">' + esc(i.company) + '</div>' : '') + '</td>' +
+        '<td style="padding:9px 12px">' + esc(i.hostName || '–') + '</td>' +
+        '<td style="padding:9px 12px;text-align:center">' +
+          (i.hostApproved
+            ? '<span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;background:#e4f4ec;color:#0f7a4d">Approved</span>'
+            : '<span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;background:#fbeed6;color:#9a5b00">Unapproved</span>') +
+        '</td>' +
+        '<td style="padding:9px 12px;text-align:center;font-family:var(--mono);' + (od ? 'color:#b45309;font-weight:800' : 'color:var(--muted)') + '">' + esc(ageTxt) + '</td>' +
+        '<td style="padding:9px 12px;text-align:right;white-space:nowrap">' +
+          '<button onclick="gpOutReturn(\'' + esc(i.gatepassId) + '\')" style="padding:5px 10px;background:var(--primary);color:#fff;border:none;border-radius:3px;font-size:11px;font-weight:700;cursor:pointer">Returned</button>' +
+          (i.hostApproved ? '' : ' <button onclick="gpOutNudge(\'' + esc(i.visitorId) + '\',this)" title="Re-send the host approval link" style="padding:5px 10px;background:var(--surface);color:var(--muted);border:1px solid var(--border);border-radius:3px;font-size:11px;font-weight:700;cursor:pointer">Nudge host</button>') +
+        '</td></tr>';
+    }).join('');
+
+    wrap.innerHTML =
+      '<table style="width:100%;border-collapse:collapse;font-size:13px">' +
+      '<thead><tr style="background:var(--surface);position:sticky;top:0">' +
+        '<th style="padding:9px 12px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)">Item</th>' +
+        '<th style="padding:9px 12px;text-align:right;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)">Qty</th>' +
+        '<th style="padding:9px 12px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)">Visitor</th>' +
+        '<th style="padding:9px 12px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)">Host</th>' +
+        '<th style="padding:9px 12px;text-align:center;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)">Approval</th>' +
+        '<th style="padding:9px 12px;text-align:center;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)">Out for</th>' +
+        '<th></th>' +
+      '</tr></thead><tbody>' + rows + '</tbody></table>';
+  }
+
+  function gpOutReturn(gatepassId) {
+    post({ action: 'markItemReturned', gatepassId: gatepassId }, function(res) {
+      if (res && res.success) loadOutstandingGatepass();
+    });
+  }
+
+  function gpOutNudge(visitorId, btn) {
+    if (btn) { btn.disabled = true; btn.textContent = '…'; }
+    post({ action: 'notifyHostForApproval', visitorId: visitorId }, function(res) {
+      if (btn) { btn.disabled = false; btn.textContent = (res && res.success) ? '✓ Sent' : 'Nudge host'; }
+    });
+  }
+
+  function exportGatepassCSV() {
+    if (!_gpOutData || !_gpOutData.items) return;
+    function q(v){ return '"' + String(v == null ? '' : v).replace(/"/g,'""') + '"'; }
+    var rows = [['Gatepass ID','Item','Material Code','Qty','Unit','Visitor','Company','Phone','Host','Approved','Logged At','Days Out'].map(q).join(',')];
+    _gpOutData.items.forEach(function(i) {
+      rows.push([q(i.gatepassId), q(i.itemDesc), q(i.materialCode), i.qty, q(i.unit),
+        q(i.visitorName), q(i.company), q(i.phone), q(i.hostName),
+        q(i.hostApproved ? 'YES' : 'NO'), q(i.loggedAt), i.daysOut].join(','));
+    });
+    var blob = new Blob([rows.join('\n')], { type: 'text/csv' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'gatepass-outstanding.csv';
+    a.click();
   }
 
   function exportMonthlyCSV() {
