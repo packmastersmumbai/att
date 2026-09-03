@@ -1820,6 +1820,49 @@
     document.getElementById('monthExportBtn').style.display = '';
   }
 
+  /* ── Monthly CSV export ───────────────────────────────────────────────────
+     Two deliberate differences from the on-screen grid:
+       1. In-times before 08:00 are floored to 08:00 (payroll counts the shift
+          from 8 a.m.; early arrival is not paid time). The grid keeps the raw
+          punch so supervisors still see who actually came at 07:20.
+       2. Each day occupies three columns (In / Out / Hrs) instead of one
+          "in/out/dur" string, so the sheet is sortable and summable.
+     Because the in-time moves, the per-day duration and the employee's total
+     hours must both be recomputed from the floored time — otherwise the day
+     columns would not add up to the Total Hours column. */
+  var MONTH_IN_FLOOR_MIN = 8 * 60;   // 08:00
+
+  function _minutesOf(hhmm) {
+    var m = String(hhmm || '').match(/^(\d{1,2}):(\d{2})/);
+    if (!m) return null;
+    return parseInt(m[1], 10) * 60 + parseInt(m[2], 10);
+  }
+  function _hhmm(mins) {
+    var h = Math.floor(mins / 60), m = mins % 60;
+    return (h < 10 ? '0' : '') + h + ':' + (m < 10 ? '0' : '') + m;
+  }
+  /* CSV cells must be values Excel/Sheets can calculate on, not labels.
+     Times go out as bare HH:MM (unquoted) which both parse as a time serial;
+     hours go out as a decimal number (9.5) rather than "9h 30m", so a column
+     SUM works without any re-keying. Only the machine format changes here —
+     the on-screen grid keeps the human "9h 30m" wording. */
+  function _decHours(mins) {
+    if (mins === null || mins < 0) return '';
+    return (mins / 60).toFixed(2);
+  }
+
+  /* Applies the 8 a.m. floor and returns {inT, outT, dur, mins} for export.
+     Falls back to the stored duration when either punch is unparseable. */
+  function _exportDay(rec) {
+    var inMin  = _minutesOf(rec.timeIn);
+    var outMin = _minutesOf(rec.timeOut);
+    if (inMin !== null && inMin < MONTH_IN_FLOOR_MIN) inMin = MONTH_IN_FLOOR_MIN;
+    var inT  = inMin  !== null ? _hhmm(inMin)  : (rec.timeIn || '');
+    var outT = outMin !== null ? _hhmm(outMin) : (rec.timeOut || '');
+    var mins = (inMin !== null && outMin !== null && outMin >= inMin) ? outMin - inMin : null;
+    return { inT: inT, outT: outT, dur: _decHours(mins), mins: mins };
+  }
+
   function exportMonthlyCSV() {
     if (!_monthlyData) return;
     var res = _monthlyData;
@@ -1834,22 +1877,43 @@
       dayMeta.push({ d: d, dow: dt.getDay() });
     }
 
-    var header = ['Emp ID','Name','Department'];
-    dayMeta.forEach(function(dm) { header.push(dm.d + '/' + month); });
-    header.push('Days Present','Total Hours');
+    function q(v) { return '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"'; }
 
-    var csvRows = [header.join(',')];
+    // Two header rows: the day number spans its three sub-columns, the second
+    // row names them. Excel/Sheets read this as a normal 2-row header.
+    var h1 = ['', '', ''];
+    var h2 = ['Emp ID', 'Name', 'Department'];
+    dayMeta.forEach(function(dm) {
+      var isWkd = dm.dow === 0 || dm.dow === 6;
+      var label = dm.d + '/' + month + (isWkd ? ' (WO)' : '');
+      h1.push(q(label), '', '');
+      h2.push('In', 'Out', 'Hours');
+    });
+    h1.push('', '');
+    h2.push('Days Present', 'Total Hours');
+
+    var csvRows = [h1.join(','), h2.join(',')];
+
     rows.forEach(function(emp) {
-      var row = ['"'+emp.empId+'"', '"'+emp.name.replace(/"/g,'""')+'"', '"'+(emp.department||'').replace(/"/g,'""')+'"'];
-      var isWkd;
+      var row = [q(emp.empId), q(emp.name), q(emp.department || '')];
+      var totalMins = 0, presentDays = 0;
       dayMeta.forEach(function(dm) {
-        isWkd = dm.dow === 0 || dm.dow === 6;
+        var isWkd = dm.dow === 0 || dm.dow === 6;
         var rec = emp.days[dm.d];
-        if (isWkd) { row.push('WD'); }
-        else if (!rec) { row.push('A'); }
-        else { row.push('"'+(rec.timeIn||'')+'/'+(rec.timeOut||'')+'/'+(rec.duration||'')+'"'); }
+        if (rec) {
+          // Presence wins over the weekend marker — a worked Sat/Sun shows its
+          // real punches, matching the on-screen grid.
+          var e = _exportDay(rec);
+          row.push(e.inT, e.outT, e.dur);
+          presentDays++;
+          if (e.mins !== null) totalMins += e.mins;
+        } else if (isWkd) {
+          row.push('WO', '', '');
+        } else {
+          row.push('A', '', '');
+        }
       });
-      row.push(emp.presentDays, emp.totalHours);
+      row.push(presentDays, (totalMins / 60).toFixed(1));
       csvRows.push(row.join(','));
     });
 
