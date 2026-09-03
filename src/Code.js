@@ -243,6 +243,7 @@ function _dispatchPost_(params) {
   if (action === 'approveGatepass')  return jsonResponse(approveGatepass(params.visitorId, params.token));
   if (action === 'getOutstandingGatepass') return jsonResponse(getOutstandingGatepass());
   if (action === 'getGatepassKpis')        return jsonResponse(getGatepassKpis());
+  if (action === 'settleVisitorGatepass')  return jsonResponse(settleVisitorGatepass(params.visitorId, params.mode, params.reason));
   if (action === 'notifyHostForApproval') return jsonResponse(notifyHostForApproval(params.visitorId));
   if (action === 'getMaterialList')  return jsonResponse(getMaterialList());
   if (action === 'lookupVisitorByPhone') return jsonResponse(lookupVisitorByPhone(params.phone));

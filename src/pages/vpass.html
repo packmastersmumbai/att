@@ -200,14 +200,36 @@
       if(!live.length){ el.innerHTML=''; return; }
       el.innerHTML=live.map(function(i){
         var pending=i.status==='OUT_PENDING';
+        // Age marks an item carried over from an earlier visit — the visitor
+        // keeps one pass for life, so old rows would otherwise look current.
+        var old=(pending && i.daysOut!=='' && i.daysOut>=1);
         return '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;'+
           'padding:8px 0;border-bottom:1px solid #eef2f1;font-size:14px">'+
-          '<span>'+esc(i.direction)+' · '+esc(i.qty)+'× '+esc(i.itemDesc)+'</span>'+
-          '<span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;'+
-            (pending?'background:#fbeed6;color:#9a5b00':'background:#e8ecf1;color:#334155')+'">'+
-            esc(pending?qrattT('vpass_gp_pending'):i.status)+'</span>'+
+          '<span>'+esc(i.direction)+' · '+esc(i.qty)+'× '+esc(i.itemDesc)+
+            (old?' <span style="font-size:11px;color:#b42318;font-weight:700">('+i.daysOut+'d)</span>':'')+'</span>'+
+          '<span style="display:flex;align-items:center;gap:6px">'+
+            '<span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;'+
+              (pending?'background:#fbeed6;color:#9a5b00':'background:#e8ecf1;color:#334155')+'">'+
+              esc(pending?qrattT('vpass_gp_pending'):i.status)+'</span>'+
+            // Remove is for a mistyped entry the visitor just added. It voids
+            // the row rather than deleting it, so the gate record stays intact.
+            '<button onclick="gpRemove(\''+esc(i.gatepassId)+'\')" title="'+qrattT('vpass_gp_remove')+'" '+
+              'style="border:none;background:none;color:#94a3b8;font-size:17px;line-height:1;cursor:pointer;padding:0 2px">×</button>'+
+          '</span>'+
         '</div>';
       }).join('')+'<div style="height:10px"></div>';
+    }
+
+    function gpRemove(gatepassId){
+      if(!window.confirm(qrattT('vpass_gp_remove_confirm'))) return;
+      if(typeof google==='undefined'||!google.script) return;
+      google.script.run
+        .withSuccessHandler(function(res){
+          if(res&&res.success){ toast(qrattT('vpass_gp_removed')); loadGp(); }
+          else toast('Error: '+((res&&res.error)||'failed'));
+        })
+        .withFailureHandler(function(e){ toast('Error: '+(e&&e.message||'server')); })
+        .voidGatepassItem(gatepassId, 'Removed by visitor');
     }
 
     function gpAdd(){
@@ -297,7 +319,15 @@
         .withSuccessHandler(function(res){
           if(!res||!res.success){ toast('Error: '+((res&&res.message)||(res&&res.error)||'failed')); render(PASS); return; }
           PASS.status = res.status;       // updated by selfCheckVisitor
-          toast(res.status==='IN'?'Checked in ✓':'Checked out ✓');
+          // The server has always returned this on a check-out, but the pass
+          // discarded it — so a visitor self-checking-out walked away with
+          // unreturned items and no prompt at all. Advisory: the check-out has
+          // already happened, this only tells them.
+          if(res.status==='OUT' && res.returnableOutstanding>0){
+            toast(qrattT('vpass_gp_warn').replace('{n}', res.returnableOutstanding));
+          } else {
+            toast(res.status==='IN'?'Checked in ✓':'Checked out ✓');
+          }
           render(PASS);
         })
         .withFailureHandler(function(e){ toast('Error: '+(e&&e.message||'server')); render(PASS); })

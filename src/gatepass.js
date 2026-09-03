@@ -36,7 +36,13 @@ function getGatepass(visitorId) {
   var rows = getSheetAsObjects(SHEETS.GATEPASS).filter(function(r) {
     return String(r.VisitorID) === String(visitorId);
   });
+  var nowMs = Date.now();
   var items = rows.map(function(r) {
+    // daysOut separates "declared this visit" from a stale row carried over
+    // from an earlier one — a returning visitor keeps the same VisitorID, so
+    // without an age the two are indistinguishable in the UI.
+    var logged = r.LoggedAt ? new Date(r.LoggedAt) : null;
+    var days = (logged && !isNaN(logged)) ? Math.floor((nowMs - logged.getTime()) / 86400000) : '';
     return {
       gatepassId:   r.GatepassID,
       direction:    r.Direction,
@@ -47,11 +53,18 @@ function getGatepass(visitorId) {
       returnable:   String(r.Returnable).toUpperCase() === 'YES',
       status:       r.Status || '',
       photoUrl:     _normalizePhotoUrl_(r.PhotoURL || ''),
-      hostApproved: String(r.HostApproved).toUpperCase() === 'YES'
+      hostApproved: String(r.HostApproved).toUpperCase() === 'YES',
+      loggedAt:     r.LoggedAt || '',
+      daysOut:      days
     };
   });
   var outstanding = items.filter(function(i) { return i.status === 'OUT_PENDING'; }).length;
-  return { success: true, items: items, returnableOutstanding: outstanding };
+  // Stale = outstanding from a previous day, i.e. carried over from an earlier
+  // visit rather than declared on this one.
+  var stale = items.filter(function(i) {
+    return i.status === 'OUT_PENDING' && i.daysOut !== '' && i.daysOut >= 1;
+  }).length;
+  return { success: true, items: items, returnableOutstanding: outstanding, staleOutstanding: stale };
 }
 
 /** Count of still-out returnable items for a visitor (pure query). */
@@ -138,6 +151,39 @@ function voidGatepassItem(gatepassId, reason) {
   setCell(sheet, row, 'SettledAt', new Date().toISOString());
   if (reason) setCell(sheet, row, 'Note', String(reason));
   return { success: true };
+}
+
+/**
+ * Settle every still-out item for a visitor in one action.
+ *
+ * A returning visitor keeps one VisitorID for life and gatepass rows are keyed
+ * on that id alone, so anything never marked returned follows them into every
+ * future visit — three or four stale OUT_PENDING rows accumulate and the
+ * check-out warning cries wolf on every arrival until someone clears them.
+ * Clearing them one by one was the only option; this does the lot.
+ *
+ * mode 'RETURNED' = the items genuinely came back (the honest default).
+ * mode 'VOID'     = the rows were wrong and should never have been raised.
+ * Both write SettledAt, so the item leaves the outstanding register either way.
+ */
+function settleVisitorGatepass(visitorId, mode, reason) {
+  if (!visitorId) return { success: false, error: 'Missing visitor id' };
+  var status = mode === 'VOID' ? 'VOID' : 'RETURNED';
+  var sheet = getSheet(SHEETS.GATEPASS);
+  var rows = getSheetAsObjects(SHEETS.GATEPASS).filter(function(r) {
+    return String(r.VisitorID) === String(visitorId) && r.Status === 'OUT_PENDING';
+  });
+  var now = new Date().toISOString();
+  var settled = 0;
+  rows.forEach(function(r) {
+    var row = findRowByValue(sheet, 'GatepassID', r.GatepassID);
+    if (row === -1) return;
+    setCell(sheet, row, 'Status', status);
+    setCell(sheet, row, 'SettledAt', now);
+    if (reason) setCell(sheet, row, 'Note', String(reason));
+    settled++;
+  });
+  return { success: true, settled: settled, status: status };
 }
 
 // ── Host approval ──────────────────────────────────────────────────────────
