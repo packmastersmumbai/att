@@ -117,9 +117,18 @@
 
       <div class="fg">
         <label><span data-i18n="vreg_whom">Whom to meet</span> <span class="req">*</span></label>
-        <select id="vHost" class="input">
+        <!-- Type-to-filter above the picker. The select stays (a datalist
+             cannot render the department optgroups this list relies on), so a
+             visitor can either scroll the grouped list or type a few letters
+             of the name to narrow it. -->
+        <input type="text" id="vHostFilter" class="input" oninput="filterHosts()"
+               data-i18n-ph="vreg_host_filter" placeholder="Type to search…"
+               autocomplete="off" style="margin-bottom:8px">
+        <select id="vHost" class="input" size="1">
           <option value="" data-i18n="vreg_loading">Loading…</option>
         </select>
+        <div id="vHostEmpty" style="display:none;font-size:12px;color:#b45309;margin-top:6px"
+             data-i18n="vreg_host_none">No one matches that name.</div>
       </div>
 
       <div class="fg">
@@ -420,6 +429,30 @@
         .getEmployees();
     }
     loadHosts();
+
+    /* Type-to-filter over the host <select>. Hides non-matching options and
+       any optgroup left with nothing visible, so the department headings do
+       not linger over an empty section. Keeps the current pick if it still
+       matches, clears it otherwise so a hidden option cannot stay selected. */
+    function filterHosts(){
+      var q=(document.getElementById('vHostFilter').value||'').trim().toLowerCase();
+      var sel=document.getElementById('vHost');
+      var shown=0;
+      Array.prototype.forEach.call(sel.querySelectorAll('option'),function(o){
+        if(!o.value){ o.hidden=false; return; }              // keep the placeholder
+        var hit=!q || o.textContent.toLowerCase().indexOf(q)!==-1;
+        o.hidden=!hit;
+        if(hit) shown++;
+      });
+      Array.prototype.forEach.call(sel.querySelectorAll('optgroup'),function(g){
+        var any=Array.prototype.some.call(g.querySelectorAll('option'),function(o){ return !o.hidden; });
+        g.hidden=!any;
+      });
+      var cur=sel.selectedOptions&&sel.selectedOptions[0];
+      if(cur&&cur.hidden) sel.value='';
+      var empty=document.getElementById('vHostEmpty');
+      if(empty) empty.style.display=(q&&!shown)?'block':'none';
+    }
 
     function submitReg(){
       var v={

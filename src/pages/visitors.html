@@ -583,8 +583,13 @@
             <!-- HOST INFORMATION -->
             <div class="form-section-label">Host Information</div>
             <div class="form-group">
-              <label>Host Official (Employee ID)</label>
-              <input type="text" id="vHost" class="input" placeholder="EMP-000001">
+              <label>Host Official (type a name or pick)</label>
+              <!-- Was a bare text box demanding a raw "EMP-000001", which a guard
+                   cannot know from memory. A datalist lets them type a name to
+                   filter or open the full list; resolveHostId() maps whatever
+                   they land on back to the EmpID the server expects. -->
+              <input type="text" id="vHost" class="input" list="vHostList" placeholder="Type a name…" autocomplete="off">
+              <datalist id="vHostList"></datalist>
             </div>
             <div class="form-group">
               <label>Scheduled Arrival / Expected Out (time)</label>
@@ -951,7 +956,7 @@
         navigator.clipboard.writeText(url).then(done, function(){ window.prompt('Copy this link:', url); });
       } else { window.prompt('Copy this link:', url); }
     }
-    function post(data,callback){var action=data.action;var onErr=function(e){callback({success:false,error:e?e.message:'Unknown error'});};if(typeof google==='undefined'||!google.script){callback({success:false,error:'Not in GAS'});return;}var r=google.script.run.withSuccessHandler(callback).withFailureHandler(onErr);if(action==='registerVisitor')r.registerVisitor(data.visitor);else if(action==='checkoutVisitor')r.checkoutVisitor(data.visitorId);else if(action==='getLogs')r.getLogs(data.filters);else if(action==='getDashboardData')r.getDashboardData();else if(action==='exportCSV')r.exportCSV(data.filters);else if(action==='getVisitorDetail')r.getVisitorDetail(data.visitorId);else if(action==='getGatepass')r.getGatepass(data.visitorId);else if(action==='addGatepassItem')r.addGatepassItem(data.visitorId,data.item);else if(action==='markItemReturned')r.markItemReturned(data.gatepassId);else if(action==='voidGatepassItem')r.voidGatepassItem(data.gatepassId,data.reason);else if(action==='notifyHostForApproval')r.notifyHostForApproval(data.visitorId);else if(action==='getMaterialList')r.getMaterialList();else callback({success:false,error:'Unknown: '+action});}
+    function post(data,callback){var action=data.action;var onErr=function(e){callback({success:false,error:e?e.message:'Unknown error'});};if(typeof google==='undefined'||!google.script){callback({success:false,error:'Not in GAS'});return;}var r=google.script.run.withSuccessHandler(callback).withFailureHandler(onErr);if(action==='registerVisitor')r.registerVisitor(data.visitor);else if(action==='checkoutVisitor')r.checkoutVisitor(data.visitorId);else if(action==='getLogs')r.getLogs(data.filters);else if(action==='getDashboardData')r.getDashboardData();else if(action==='exportCSV')r.exportCSV(data.filters);else if(action==='getVisitorDetail')r.getVisitorDetail(data.visitorId);else if(action==='getGatepass')r.getGatepass(data.visitorId);else if(action==='addGatepassItem')r.addGatepassItem(data.visitorId,data.item);else if(action==='markItemReturned')r.markItemReturned(data.gatepassId);else if(action==='voidGatepassItem')r.voidGatepassItem(data.gatepassId,data.reason);else if(action==='notifyHostForApproval')r.notifyHostForApproval(data.visitorId);else if(action==='getMaterialList')r.getMaterialList();else if(action==='getEmployees')r.getEmployees();else callback({success:false,error:'Unknown: '+action});}
   </script>
   <script>
     var COLORS = ['#3B82F6','#8B5CF6','#EC4899','#F59E0B','#10B981','#06B6D4','#EF4444','#6366F1','#84CC16','#F97316'];
@@ -998,6 +1003,45 @@
       if (ev) ev.preventDefault();
       var f = document.getElementById('regForm');
       if (f) { f.style.display = ''; f.scrollIntoView({ behavior: 'smooth' }); }
+      if (!_HOSTS.length) loadHostList();
+    }
+
+    /* ── Host picker ────────────────────────────────────────────────────────
+       The host field accepts a typed name OR a pick from the list, but the
+       server stores an EmpID. Options are labelled "Name — EMP-000001" so the
+       id stays visible and two people with the same name remain separable;
+       resolveHostId maps whatever the guard leaves in the box back to an id,
+       and passes an unrecognised value through untouched so a raw EmpID typed
+       from memory still works. */
+    var _HOSTS = [];
+
+    function loadHostList() {
+      post({ action: 'getEmployees' }, function(res) {
+        var emps = (res && res.data) || [];
+        _HOSTS = emps.filter(function(e) {
+          return String(e.Status || 'ACTIVE').toUpperCase() === 'ACTIVE';
+        }).sort(function(a, b) { return String(a.Name || '').localeCompare(String(b.Name || '')); });
+        var dl = document.getElementById('vHostList');
+        if (!dl) return;
+        dl.innerHTML = _HOSTS.map(function(e) {
+          return '<option value="' + esc((e.Name || e.EmpID) + ' — ' + e.EmpID) + '"></option>';
+        }).join('');
+      });
+    }
+
+    function resolveHostId(raw) {
+      var v = String(raw || '').trim();
+      if (!v) return '';
+      // "Name — EMP-000001" (the datalist label) → the id after the dash.
+      var m = v.match(/([A-Za-z0-9_-]+)\s*$/);
+      var tail = m ? m[1] : v;
+      var byId = _HOSTS.filter(function(e) { return String(e.EmpID) === tail; })[0];
+      if (byId) return byId.EmpID;
+      var byName = _HOSTS.filter(function(e) {
+        return String(e.Name || '').toLowerCase() === v.toLowerCase();
+      })[0];
+      if (byName) return byName.EmpID;
+      return v;   // unrecognised — let the server judge it
     }
 
     // ── Register ──────────────────────────────────────────
@@ -1007,7 +1051,7 @@
         Phone:       document.getElementById('vPhone').value.trim(),
         Company:     document.getElementById('vCompany').value.trim(),
         Purpose:     document.getElementById('vPurpose').value,
-        HostEmpID:   document.getElementById('vHost').value.trim(),
+        HostEmpID:   resolveHostId(document.getElementById('vHost').value),
         ExpectedOut: document.getElementById('vExpOut').value,
         IDType:      document.getElementById('vIDType').value,
         IDNumber:    document.getElementById('vIDNumber').value.trim(),

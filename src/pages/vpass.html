@@ -146,9 +146,96 @@
           '<div class="hint">'+hint+'</div>'+
           '<div class="exit-note" data-i18n="vpass_exit_note">'+qrattT('vpass_exit_note')+'</div>'+
         '</div>'+
+        renderGatepass()+
         renderEmergency()+
         renderSafetyRules();
       qrattApplyLang();   // re-apply i18n + toggle active-state after the DOM was rebuilt
+      loadGp();
+    }
+
+    /* ── Self-declared items ────────────────────────────────────────────────
+       This flow is self-registration and self-check-in, so the visitor is the
+       only person at the gate — there is no guard to open the Visitors page
+       and log what they carried in. Without this, a self-registered visitor
+       had no way to declare items at all. They declare here; the guard or host
+       can still correct it later from the Visitors page, and the returnable
+       count still drives the unreturned-items warning at check-out. ── */
+    var GP_ITEMS = [];
+
+    function renderGatepass(){
+      return '<div class="card" id="gpCard" style="margin-top:14px;text-align:left">'+
+        '<div style="font-size:11px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;color:#64748b;margin-bottom:10px">'+
+          qrattT('vpass_gp_title')+'</div>'+
+        '<div id="gpList"></div>'+
+        '<input type="text" id="gpDesc" placeholder="'+qrattT('vpass_gp_item')+'" autocomplete="off" '+
+          'style="width:100%;box-sizing:border-box;padding:11px;border:1px solid #d7e0de;border-radius:10px;font-size:15px;margin-bottom:8px">'+
+        '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">'+
+          '<input type="number" id="gpQty" value="1" min="1" '+
+            'style="width:64px;padding:10px;border:1px solid #d7e0de;border-radius:10px;font-size:15px">'+
+          '<label style="font-size:13px;display:flex;align-items:center;gap:5px;color:#475569">'+
+            '<input type="checkbox" id="gpRet" checked> '+qrattT('vpass_gp_returnable')+'</label>'+
+          '<button class="btn" id="gpAddBtn" onclick="gpAdd()" '+
+            'style="margin:0 0 0 auto;width:auto;padding:11px 18px;font-size:14px;background:var(--primary)">'+
+            qrattT('vpass_gp_add')+'</button>'+
+        '</div>'+
+        '<div style="font-size:12px;color:#94a3b8;margin-top:9px">'+qrattT('vpass_gp_hint')+'</div>'+
+      '</div>';
+    }
+
+    function loadGp(){
+      if(typeof google==='undefined'||!google.script) return;
+      google.script.run
+        .withSuccessHandler(function(res){
+          GP_ITEMS=(res&&res.items)||[];
+          paintGp();
+        })
+        .withFailureHandler(function(){})
+        .getGatepass(PASS.visitorId);
+    }
+
+    function paintGp(){
+      var el=document.getElementById('gpList');
+      if(!el) return;
+      var live=GP_ITEMS.filter(function(i){ return i.status!=='VOID'; });
+      if(!live.length){ el.innerHTML=''; return; }
+      el.innerHTML=live.map(function(i){
+        var pending=i.status==='OUT_PENDING';
+        return '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;'+
+          'padding:8px 0;border-bottom:1px solid #eef2f1;font-size:14px">'+
+          '<span>'+esc(i.direction)+' · '+esc(i.qty)+'× '+esc(i.itemDesc)+'</span>'+
+          '<span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;'+
+            (pending?'background:#fbeed6;color:#9a5b00':'background:#e8ecf1;color:#334155')+'">'+
+            esc(pending?qrattT('vpass_gp_pending'):i.status)+'</span>'+
+        '</div>';
+      }).join('')+'<div style="height:10px"></div>';
+    }
+
+    function gpAdd(){
+      var descEl=document.getElementById('gpDesc');
+      var desc=(descEl&&descEl.value||'').trim();
+      if(!desc){ toast(qrattT('vpass_gp_need_item')); return; }
+      var btn=document.getElementById('gpAddBtn');
+      if(btn){ btn.disabled=true; btn.textContent=qrattT('vpass_wait'); }
+      function done(msg){
+        if(btn){ btn.disabled=false; btn.textContent=qrattT('vpass_gp_add'); }
+        if(msg) toast(msg);
+      }
+      if(typeof google==='undefined'||!google.script){ done('Not in app context'); return; }
+      google.script.run
+        .withSuccessHandler(function(res){
+          if(!res||!res.success){ done('Error: '+((res&&res.error)||'failed')); return; }
+          descEl.value=''; document.getElementById('gpQty').value='1';
+          done(qrattT('vpass_gp_added'));
+          loadGp();
+        })
+        .withFailureHandler(function(e){ done('Error: '+(e&&e.message||'server')); })
+        .addGatepassItem(PASS.visitorId, {
+          // A visitor declares what they are bringing IN; anything leaving is
+          // the guard's call, so this surface only writes IN.
+          direction:'IN', materialCode:'', itemDesc:desc, unit:'',
+          qty:Number(document.getElementById('gpQty').value)||1,
+          returnable:!!document.getElementById('gpRet').checked
+        });
     }
 
     /* ── Emergency contacts — tap to call. Always visible, above the rules,
