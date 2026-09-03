@@ -1854,10 +1854,22 @@
      columns would not add up to the Total Hours column. */
   var MONTH_IN_FLOOR_MIN = 8 * 60;   // 08:00
 
-  function _minutesOf(hhmm) {
-    var m = String(hhmm || '').match(/^(\d{1,2}):(\d{2})/);
-    if (!m) return null;
-    return parseInt(m[1], 10) * 60 + parseInt(m[2], 10);
+  /* Logs store times in 12-hour form ("9:14 AM") — see formatTime() in
+     utils.gs — so a bare HH:MM match parses nothing and every hours cell comes
+     out blank. Accepts both forms, mirroring _parseTimeMinutes_ server-side. */
+  function _minutesOf(t) {
+    if (!t) return null;
+    var s = String(t).trim();
+    var m12 = s.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+    if (m12) {
+      var h = parseInt(m12[1], 10), mn = parseInt(m12[2], 10), ap = m12[3].toUpperCase();
+      if (ap === 'PM' && h !== 12) h += 12;
+      if (ap === 'AM' && h === 12) h = 0;
+      return h * 60 + mn;
+    }
+    var m24 = s.match(/^(\d{1,2}):(\d{2})$/);
+    if (m24) return parseInt(m24[1], 10) * 60 + parseInt(m24[2], 10);
+    return null;
   }
   function _hhmm(mins) {
     var h = Math.floor(mins / 60), m = mins % 60;
@@ -1876,12 +1888,16 @@
   /* Applies the 8 a.m. floor and returns {inT, outT, dur, mins} for export.
      Falls back to the stored duration when either punch is unparseable. */
   function _exportDay(rec) {
-    var inMin  = _minutesOf(rec.timeIn);
+    var rawIn  = _minutesOf(rec.timeIn);
     var outMin = _minutesOf(rec.timeOut);
-    if (inMin !== null && inMin < MONTH_IN_FLOOR_MIN) inMin = MONTH_IN_FLOOR_MIN;
+    var inMin  = (rawIn !== null && rawIn < MONTH_IN_FLOOR_MIN) ? MONTH_IN_FLOOR_MIN : rawIn;
     var inT  = inMin  !== null ? _hhmm(inMin)  : (rec.timeIn || '');
     var outT = outMin !== null ? _hhmm(outMin) : (rec.timeOut || '');
-    var mins = (inMin !== null && outMin !== null && outMin >= inMin) ? outMin - inMin : null;
+    // An out-time at or before the floored in-time cannot yield real hours.
+    // Report it as blank rather than 0.00 — a zero reads as "worked nothing",
+    // which is a claim about the day; blank correctly says "not computable"
+    // and keeps a bad punch visible instead of silently averaging it in.
+    var mins = (inMin !== null && outMin !== null && outMin > inMin) ? outMin - inMin : null;
     return { inT: inT, outT: outT, dur: _decHours(mins), mins: mins };
   }
 
