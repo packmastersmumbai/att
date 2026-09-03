@@ -93,7 +93,16 @@ const GAS_MOCK_SCRIPT = `
         } else if (qrCode === 'EMP002') {
           res = { success: true, action: 'CHECK_OUT', name: 'Rahul Mehta', empId: 'EMP002', type: 'EMP', time: '05:30 PM', duration: '8h 18m', gate: gate };
         } else if (qrCode === 'VIS001') {
-          res = { success: true, action: 'CHECK_IN', name: 'Visitor One', type: 'VIS', time: '10:30 AM', gate: gate };
+          // empId carries the VisitorID for a VIS scan — the scanner's inline
+          // gatepass card keys off it.
+          res = { success: true, action: 'CHECK_IN', name: 'Visitor One', empId: 'VIS001', type: 'VIS', time: '10:30 AM', gate: gate };
+        } else if (qrCode === 'VIS-OUT-CLEAN') {
+          res = { success: true, action: 'CHECK_OUT', name: 'Clean Exit', empId: 'VIS-OUT-CLEAN', type: 'VIS',
+                  time: '05:00 PM', duration: '6h 30m', gate: gate, returnableOutstanding: 0 };
+        } else if (qrCode === 'VIS-OUT-OWING') {
+          // Visitor leaving while still holding returnable items.
+          res = { success: true, action: 'CHECK_OUT', name: 'Owing Exit', empId: 'VIS-OUT-OWING', type: 'VIS',
+                  time: '05:00 PM', duration: '6h 30m', gate: gate, returnableOutstanding: 2 };
         } else {
           res = { success: false, action: 'UNKNOWN', message: 'QR code not recognised' };
         }
@@ -256,6 +265,32 @@ const GAS_MOCK_SCRIPT = `
         respond({ success: true });
       },
       notifyHostForApproval: function() { respond({ success: true }); },
+
+      // Outstanding-returnables register (Reports → Gatepass tab). Mirrors the
+      // server shape: joined visitor/host names, daysOut, approval flag.
+      getOutstandingGatepass: function() {
+        var items = [];
+        Object.keys(MOCK_GP).forEach(function(vid) {
+          (MOCK_GP[vid] || []).forEach(function(i) {
+            if (i.status !== 'OUT_PENDING') return;
+            items.push({ gatepassId: i.gatepassId, visitorId: vid, visitorName: 'Visitor ' + vid,
+              company: 'ACME', phone: '900', hostName: 'Host One', itemDesc: i.itemDesc,
+              materialCode: i.materialCode || '', unit: i.unit || '', qty: i.qty, photoUrl: '',
+              hostApproved: !!i.hostApproved, loggedAt: '2026-09-01T09:00:00.000Z', daysOut: 2 });
+          });
+        });
+        // Seed one row so the tab has content even before any add.
+        if (!items.length) {
+          items.push({ gatepassId: 'GP-SEED-1', visitorId: 'VIS-SEED', visitorName: 'Seed Visitor',
+            company: 'Bolt Ltd', phone: '901', hostName: 'Host Two', itemDesc: 'Calibration Jig',
+            materialCode: 'TL-007', unit: 'NOS', qty: 1, photoUrl: '', hostApproved: false,
+            loggedAt: '2026-08-30T09:00:00.000Z', daysOut: 4 });
+        }
+        respond({ success: true, items: items, count: items.length });
+      },
+      getGatepassKpis: function() {
+        respond({ success: true, outstanding: 1, overdue: 1, unapproved: 1 });
+      },
       approveGatepass: function() { respond({ success: true, approved: 1 }); },
 
       // vreg.html's "returning visitor" fast path: known test number
@@ -282,18 +317,26 @@ const GAS_MOCK_SCRIPT = `
       // -> per-employee rows, since the page reads res.years directly (not a
       // flat rows array).
       getHoursSummary: function(opts) {
+        // renderHours() default-expands the CURRENT year+month, so a fixture
+        // pinned to a fixed month renders collapsed once that month passes and
+        // the "shows summary rows" check fails with no app defect. Track the
+        // clock instead of hardcoding a date.
+        var _now = new Date();
+        var _y = _now.getFullYear(), _m = _now.getMonth() + 1;
+        var _MN = ['January','February','March','April','May','June','July',
+                   'August','September','October','November','December'];
         respond({
           success: true,
           generatedAt: '2026-07-10T09:00:00.000Z',
           years: [
             {
-              year: 2026,
+              year: _y,
               totalHours: 304,
               totalManDays: 38,
               months: [
                 {
-                  month: 7,
-                  label: 'July 2026',
+                  month: _m,
+                  label: _MN[_m - 1] + ' ' + _y,
                   totalHours: 304,
                   totalManDays: 38,
                   present: 38,

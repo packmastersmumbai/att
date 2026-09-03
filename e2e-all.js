@@ -21,6 +21,7 @@ const SUITES = [
   { n: 7, label: 'Login',          mod: './e2e-sweep-7-login'      },
   { n: 8, label: 'i18n toggle',    mod: './e2e-sweep-8-i18n'       },
   { n: 9, label: 'Gatepass',       mod: './e2e-sweep-9-gatepass'   },
+  { n: 10, label: 'Gatepass wiring', mod: './e2e-sweep-10-gatepass-connect' },
 ];
 
 async function main() {
