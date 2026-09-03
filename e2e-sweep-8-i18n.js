@@ -114,9 +114,17 @@ async function run() {
       if (!txt.includes('प्रभारी')) throw new Error(`label: "${txt}"`);
     });
 
-    await R.check('check-in button label is Hindi when lang=hi', async () => {
-      const txt = await page.locator('#toggleBtn').textContent();
-      if (!txt.includes('चेक आउट करें')) throw new Error(`button label: "${txt}"`);
+    // The pass no longer carries a self check-in/out button — presence is
+    // recorded only by the gate scanner — so the gate instruction that
+    // replaced it is what must translate here.
+    await R.check('gate instruction is Hindi when lang=hi', async () => {
+      const txt = await page.locator('[data-i18n="vpass_show_at_gate"]').textContent();
+      if (!txt.includes('गेट पर')) throw new Error(`instruction: "${txt}"`);
+    });
+
+    await R.check('no self check-in/out control on the pass', async () => {
+      const n = await page.locator('#toggleBtn').count();
+      if (n !== 0) throw new Error('self check-in/out button is still rendered');
     });
 
     summary.push(R.report());

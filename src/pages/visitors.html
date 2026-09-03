@@ -1431,12 +1431,34 @@
               '</tbody></table></div>'
           : '<p style="color:var(--color-text-muted);font-size:13px">' + qrattT('vd_no_visits') + '</p>';
 
-        body.innerHTML = info + logHd + logTbl +
-          '<div id="gpCard" style="margin-top:18px"></div>';
+        // Gatepass sits ABOVE the visit log. Mounted last it landed after ten
+        // info fields and the whole visit history, below the fold of an
+        // 85vh modal — present, but invisible on exactly the returning
+        // visitors whose items most need settling. Items are the actionable
+        // part of this modal; the visit log is reference.
+        // Checking the items and checking the visitor out are one job, so the
+        // action lives with the items rather than only on the Active-tab row.
+        var checkoutBar = d.status === 'IN'
+          ? '<div style="margin-top:14px;display:flex;justify-content:flex-end">' +
+              '<button class="btn-checkout-teal" onclick="checkoutFromDetail(\'' + esc(vid) + '\')">' +
+                qrattT('vd_checkout_btn') + '</button></div>'
+          : '';
+
+        body.innerHTML = info +
+          '<div id="gpCard" style="margin-top:16px"></div>' +
+          checkoutBar + logHd + logTbl;
         loadGatepassCard(vid);
       });
     }
     function closeVisitorDetail() { document.getElementById('vdBackdrop').style.display = 'none'; }
+
+    /* Check out from inside the detail modal. Reuses checkout(), so the
+       unreturned-items warning fires here exactly as it does on the Active
+       tab, then closes the modal and refreshes the list behind it. */
+    function checkoutFromDetail(vid) {
+      checkout(vid);
+      closeVisitorDetail();
+    }
 
     /* ── Item gatepass card — reusable; mounts into any element by id ──
        Rendered in the visitor detail modal, the staff-form pass screen, and

@@ -129,9 +129,12 @@
       // carries a state-specific data-i18n key — a later qrattApplyLang() (triggered by
       // the language toggle) re-translates it correctly without needing a full re-render.
       var statusKey = isIn ? 'vpass_status_in' : 'vpass_status_out';
-      var btnKey = isIn ? 'vpass_btn_checkout' : 'vpass_btn_checkin';
-      var actionKey = isIn ? 'vpass_hint_checkout' : 'vpass_hint_checkin';
-      var hint = qrattT('vpass_hint_tail').replace('{action}', qrattT(actionKey));
+      // No self check-in/out button. The pass URL is a bearer link — anyone it
+      // is forwarded to could have toggled the visitor's presence from
+      // anywhere, which is exactly the control the gate exists to hold. The
+      // visitor presents this QR at the gate and the scanner records the
+      // movement, so the person letting them in owns the decision. The pass is
+      // now identity + declaration; presence is recorded by the gate alone.
       root.innerHTML=
         '<div class="card">'+
           '<div class="name">'+esc(p.name)+'</div>'+
@@ -140,10 +143,8 @@
           '<div class="vid">'+esc(p.visitorId)+'</div>'+
           '<div class="status '+(isIn?'in':'out')+'"><span class="dot"></span>'+
             '<span data-i18n="'+statusKey+'">'+qrattT(statusKey)+'</span></div>'+
-          '<button class="btn '+(isIn?'checkout':'checkin')+'" id="toggleBtn" onclick="toggle()" data-i18n="'+btnKey+'">'+
-            qrattT(btnKey)+'</button>'+
+          '<div class="hint" data-i18n="vpass_show_at_gate">'+qrattT('vpass_show_at_gate')+'</div>'+
           '<button class="btn share" onclick="sharePass()" data-i18n="vpass_share">'+qrattT('vpass_share')+'</button>'+
-          '<div class="hint">'+hint+'</div>'+
           '<div class="exit-note" data-i18n="vpass_exit_note">'+qrattT('vpass_exit_note')+'</div>'+
         '</div>'+
         renderGatepass()+
@@ -309,30 +310,9 @@
       a.textContent=open?'▸':'▾';
     }
 
-    function toggle(){
-      var btn=document.getElementById('toggleBtn');
-      btn.disabled=true;
-      btn.removeAttribute('data-i18n');   // showing transient "please wait" state, not the static label
-      btn.textContent=qrattT('vpass_wait');
-      if(typeof google==='undefined'||!google.script){ toast('Not in app context'); btn.disabled=false; return; }
-      google.script.run
-        .withSuccessHandler(function(res){
-          if(!res||!res.success){ toast('Error: '+((res&&res.message)||(res&&res.error)||'failed')); render(PASS); return; }
-          PASS.status = res.status;       // updated by selfCheckVisitor
-          // The server has always returned this on a check-out, but the pass
-          // discarded it — so a visitor self-checking-out walked away with
-          // unreturned items and no prompt at all. Advisory: the check-out has
-          // already happened, this only tells them.
-          if(res.status==='OUT' && res.returnableOutstanding>0){
-            toast(qrattT('vpass_gp_warn').replace('{n}', res.returnableOutstanding));
-          } else {
-            toast(res.status==='IN'?'Checked in ✓':'Checked out ✓');
-          }
-          render(PASS);
-        })
-        .withFailureHandler(function(e){ toast('Error: '+(e&&e.message||'server')); render(PASS); })
-        .selfCheckVisitor(PASS.visitorId);
-    }
+    /* No toggle() any more — the gate scanner is the only thing that records
+       a visitor's presence. selfCheckVisitor() is left in place server-side so
+       an already-open pass link cannot break mid-visit, but nothing calls it. */
 
     render(PASS);
   </script>

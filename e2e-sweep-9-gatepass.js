@@ -20,6 +20,24 @@ async function run() {
     await page.waitForSelector('#gpDesc', { timeout: 4000 });
   });
 
+  await R.check('gatepass card sits ABOVE the visit log', async () => {
+    // Mounted after the log it fell below the fold of an 85vh modal, which is
+    // why it read as "no gatepass details on the record".
+    const order = await page.evaluate(() => {
+      const body = document.getElementById('vdBody');
+      const gp = document.getElementById('gpCard');
+      if (!gp) return 'missing';
+      const kids = Array.prototype.slice.call(body.children);
+      const gpIdx = kids.indexOf(gp);
+      const tbl = body.querySelector('table');
+      if (!tbl) return gpIdx >= 0 ? 'ok-no-log' : 'missing';
+      let node = tbl; while (node.parentNode !== body) node = node.parentNode;
+      return gpIdx < kids.indexOf(node) ? 'ok' : 'below';
+    });
+    if (order === 'missing') throw new Error('gatepass card not in the modal at all');
+    if (order === 'below') throw new Error('gatepass card renders below the visit log');
+  });
+
   await R.check('material picklist is populated', async () => {
     // <datalist> options are not in the layout tree, so count them via the DOM
     // rather than a visibility-based locator.

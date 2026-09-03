@@ -222,7 +222,9 @@ function sendVisitorPassToChannel(visitorId, photoDataUrl) {
     (rows ? line + '\n' + rows : '') +
     line + '\n' +
     '🆔 <code>' + _tgEsc_(visitorId) + '</code>\n' +
-    '▶️ <a href="' + checkInUrl + '">Check in / out</a>';
+    // The pass no longer toggles presence — the gate scanner does. Label the
+    // link for what it now is, or the message promises a button that is gone.
+    '▶️ <a href="' + checkInUrl + '">Open pass</a>';
 
   // Single image only (Telegram renders photos large — avoid posting two).
   // With a captured photo: send the photo + badge caption. The QR stays on the
