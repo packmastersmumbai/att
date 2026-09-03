@@ -7,6 +7,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700;800;900&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <!-- SheetJS: a CSV cannot carry formulas (Excel and Sheets read a leading
+       "=" in a .csv as literal text), so the formula-bearing monthly export
+       has to be a real .xlsx. Pinned to an exact version. -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <style>
     /* ── Design tokens ── */
     :root {
@@ -1187,6 +1191,7 @@
         <button onclick="loadMonthly()" style="padding:7px 18px;background:var(--primary);color:#fff;border:none;border-radius:3px;font-size:12px;font-weight:700;cursor:pointer;letter-spacing:.5px;">LOAD</button>
         <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--muted);cursor:pointer;white-space:nowrap"><input type="checkbox" id="monthInactive" onchange="loadMonthly()"> Include inactive</label>
         <button onclick="exportMonthlyCSV()" id="monthExportBtn" style="padding:7px 14px;background:var(--surface);color:var(--muted);border:1px solid var(--border);border-radius:3px;font-size:12px;font-weight:600;cursor:pointer;display:none;">↓ Export CSV</button>
+        <button onclick="exportMonthlyXLSX(this)" id="monthExportXlsxBtn" title="Excel file with live formulas — hours recompute if a punch time is edited" style="padding:7px 14px;background:var(--primary);color:#fff;border:none;border-radius:3px;font-size:12px;font-weight:700;cursor:pointer;display:none;">↓ Export Excel (formulas)</button>
         <span id="monthlyKpi" style="margin-left:auto;font-size:12px;color:var(--muted);font-family:var(--mono)"></span>
       </div>
 
@@ -1751,6 +1756,7 @@
     wrap.innerHTML = '<div style="padding:40px;text-align:center;color:var(--muted);font-size:13px">Loading…</div>';
     document.getElementById('monthlyKpi').textContent = '';
     document.getElementById('monthExportBtn').style.display = 'none';
+    document.getElementById('monthExportXlsxBtn').style.display = 'none';
 
     var inc = document.getElementById('monthInactive');
     post({ action: 'getMonthlyAttendance', year: year, month: month, includeInactive: !!(inc && inc.checked) }, function(res) {
@@ -1840,6 +1846,7 @@
     var kpi = document.getElementById('monthlyKpi');
     if (kpi) kpi.textContent = rows.length + ' employees · ' + MON_NAMES[month-1] + ' ' + year;
     document.getElementById('monthExportBtn').style.display = '';
+    document.getElementById('monthExportXlsxBtn').style.display = '';
   }
 
   /* ── Monthly CSV export ───────────────────────────────────────────────────
@@ -2000,6 +2007,156 @@
     a.href = URL.createObjectURL(blob);
     a.download = 'gatepass-outstanding.csv';
     a.click();
+  }
+
+  /* ── Monthly Excel export, with live formulas ──────────────────────────────
+     A CSV cannot carry formulas — both Excel and Sheets read a leading "=" in
+     a .csv as literal text — so the formula-bearing export is a real .xlsx
+     built with SheetJS.
+
+     Cells rather than values:
+       · per-day Hours = (Out - In) * 24, guarded for blanks
+       · Total Hours   = SUM of that row's Hours cells
+       · Days Present  = COUNT of that row's In cells that hold a time
+     Editing a punch time in the sheet therefore recomputes the day, the row
+     total and the month total — the whole point of exporting formulas.
+
+     Times are written as Excel TIME SERIALS (a fraction of a day) with a
+     'hh:mm' number format, not as strings. A formula cannot subtract text, so
+     writing "08:00" as a string would leave every Hours cell as #VALUE!. The
+     8 a.m. floor is applied to the serial that gets written, so the sheet
+     opens already floored and the arithmetic stays consistent with the CSV. */
+
+  function _xlsxCol(n) {
+    // 0-based index → A1 column letters (needed past Z: 98 columns here).
+    var s = '';
+    n += 1;
+    while (n > 0) {
+      var r = (n - 1) % 26;
+      s = String.fromCharCode(65 + r) + s;
+      n = Math.floor((n - 1) / 26);
+    }
+    return s;
+  }
+
+  function exportMonthlyXLSX(btn) {
+    if (!_monthlyData) return;
+    if (typeof XLSX === 'undefined') {
+      window.alert('The spreadsheet library did not load. Check the connection and reload the page, or use Export CSV.');
+      return;
+    }
+    if (btn) { btn.disabled = true; btn.textContent = '…'; }
+
+    var res = _monthlyData;
+    var year = parseInt(res.year, 10);
+    var month = parseInt(res.month, 10);
+    var days = res.daysInMonth;
+    var rows = res.rows || [];
+
+    var dayMeta = [];
+    for (var d = 1; d <= days; d++) {
+      var dt = new Date(year, month - 1, d);
+      dayMeta.push({ d: d, dow: dt.getDay() });
+    }
+
+    var ws = {};
+    var maxCol = 3 + dayMeta.length * 3 + 2 - 1;
+    var maxRow = 1 + rows.length;   // 2 header rows (0,1) + one row per employee
+
+    function put(r, c, cell) { ws[_xlsxCol(c) + (r + 1)] = cell; }
+
+    // ── Header rows ────────────────────────────────────────────────────────
+    var merges = [];
+    put(0, 0, { t: 's', v: '' });
+    put(1, 0, { t: 's', v: 'Emp ID' });
+    put(1, 1, { t: 's', v: 'Name' });
+    put(1, 2, { t: 's', v: 'Department' });
+    dayMeta.forEach(function(dm, i) {
+      var c = 3 + i * 3;
+      var isWkd = dm.dow === 0 || dm.dow === 6;
+      put(0, c, { t: 's', v: dm.d + '/' + month + (isWkd ? ' (WO)' : '') });
+      merges.push({ s: { r: 0, c: c }, e: { r: 0, c: c + 2 } });
+      put(1, c,     { t: 's', v: 'In' });
+      put(1, c + 1, { t: 's', v: 'Out' });
+      put(1, c + 2, { t: 's', v: 'Hours' });
+    });
+    var cDays = 3 + dayMeta.length * 3;
+    var cTotal = cDays + 1;
+    put(1, cDays,  { t: 's', v: 'Days Present' });
+    put(1, cTotal, { t: 's', v: 'Total Hours' });
+
+    // ── Body ───────────────────────────────────────────────────────────────
+    rows.forEach(function(emp, ri) {
+      var r = 2 + ri;              // 0-based row index
+      var excelRow = r + 1;        // 1-based, for A1 refs inside formulas
+      put(r, 0, { t: 's', v: String(emp.empId) });
+      put(r, 1, { t: 's', v: String(emp.name || '') });
+      put(r, 2, { t: 's', v: String(emp.department || '') });
+
+      var hourCells = [], inCells = [];
+      // Mirror of what the formulas compute, cached into the totals cells.
+      var dayHours = [], presentCount = 0;
+      dayMeta.forEach(function(dm, i) {
+        var c = 3 + i * 3;
+        var colIn = _xlsxCol(c), colOut = _xlsxCol(c + 1), colHrs = _xlsxCol(c + 2);
+        var isWkd = dm.dow === 0 || dm.dow === 6;
+        var rec = emp.days[dm.d];
+        inCells.push(colIn + excelRow);
+        hourCells.push(colHrs + excelRow);
+
+        if (rec) {
+          // Presence wins over the weekend marker — a worked Sat/Sun shows its
+          // real punches, matching the on-screen grid.
+          var e = _exportDay(rec);
+          var inMin = _minutesOf(e.inT), outMin = _minutesOf(e.outT);
+          if (inMin !== null)  { put(r, c, { t: 'n', v: inMin / 1440, z: 'hh:mm' }); presentCount++; }
+          if (outMin !== null) put(r, c + 1, { t: 'n', v: outMin / 1440, z: 'hh:mm' });
+          // The formula is written for every present day, even one missing its
+          // out-punch: the IF collapses to "" now, and fills itself in the
+          // moment someone types the missing time into the sheet.
+          // The cached value is not optional: SheetJS DROPS a formula cell that
+          // carries no value, so writing f alone silently loses every Hours
+          // cell from the file. It also makes the numbers correct in viewers
+          // that never recalculate (Drive preview, Quick Look, most importers).
+          var fml = 'IF(OR(' + colIn + excelRow + '="",' + colOut + excelRow + '="",' +
+                    colOut + excelRow + '<=' + colIn + excelRow + '),"",(' +
+                    colOut + excelRow + '-' + colIn + excelRow + ')*24)';
+          if (e.mins !== null) {
+            put(r, c + 2, { t: 'n', v: Number((e.mins / 60).toFixed(2)), f: fml, z: '0.00' });
+          } else {
+            put(r, c + 2, { t: 's', v: '', f: fml });
+          }
+          if (e.mins !== null) dayHours.push(e.mins / 60);
+        } else if (isWkd) {
+          put(r, c, { t: 's', v: 'WO' });
+        } else {
+          put(r, c, { t: 's', v: 'A' });
+        }
+      });
+
+      // Row totals as formulas, so an edited punch flows through to the month.
+      // COUNT (not COUNTA) counts only numeric In cells — the "A"/"WO" text
+      // markers are correctly excluded from Days Present.
+      var totalHrs = dayHours.reduce(function(a, b) { return a + b; }, 0);
+      put(r, cDays,  { t: 'n', v: presentCount, f: 'COUNT(' + inCells.join(',') + ')' });
+      put(r, cTotal, { t: 'n', v: Number(totalHrs.toFixed(2)),
+                       f: 'SUM(' + hourCells.join(',') + ')', z: '0.00' });
+    });
+
+    ws['!ref'] = 'A1:' + _xlsxCol(maxCol) + (maxRow + 1);
+    ws['!merges'] = merges;
+    // Freeze the label columns and both header rows so the grid stays readable
+    // while scrolling across 90-odd day columns.
+    ws['!freeze'] = { xSplit: 3, ySplit: 2 };
+    ws['!cols'] = [{ wch: 10 }, { wch: 22 }, { wch: 16 }]
+      .concat(dayMeta.reduce(function(a) { return a.concat([{ wch: 7 }, { wch: 7 }, { wch: 7 }]); }, []))
+      .concat([{ wch: 13 }, { wch: 12 }]);
+
+    var wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, MON_NAMES[month - 1] + ' ' + year);
+    XLSX.writeFile(wb, 'monthly-attendance-' + res.year + '-' + res.month + '.xlsx');
+
+    if (btn) { btn.disabled = false; btn.textContent = '↓ Export Excel (formulas)'; }
   }
 
   function exportMonthlyCSV() {
