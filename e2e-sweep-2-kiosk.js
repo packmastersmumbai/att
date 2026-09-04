@@ -83,6 +83,29 @@ async function run() {
     }
   });
 
+  await R.check('cards show the full name, and company when names collide', async () => {
+    // The dedup fix made the two same-named visitors two cards; both still
+    // rendered as the first name alone, so the guard saw two identical cards.
+    const cards = await page.evaluate(() =>
+      [...document.querySelectorAll('#arrivalsGrid .a-card')].map(c => ({
+        id:   c.dataset.emp,
+        name: (c.querySelector('.a-name') || {}).textContent || '',
+        org:  (c.querySelector('.a-org')  || {}).textContent || ''
+      }))
+    );
+    const stay = cards.find(c => c.id === 'VIS-STAYOVER');
+    if (!stay || stay.name !== 'Visitor B')
+      throw new Error('full name not rendered: ' + JSON.stringify(stay));
+    // A unique name needs no disambiguator.
+    if (stay.org) throw new Error('company shown on a card with a unique name');
+
+    const dupes = cards.filter(c => c.name === 'Visitor A');
+    if (dupes.length !== 2) throw new Error('expected two same-named cards');
+    const orgs = dupes.map(c => c.org).sort();
+    if (orgs[0] !== 'Alpha Traders' || orgs[1] !== 'Beta Corp')
+      throw new Error('colliding names not disambiguated by company: ' + JSON.stringify(orgs));
+  });
+
   await R.check('a visitor who stayed overnight still appears', async () => {
     // Regression: the grid rendered recentActivity (TODAY's logs only) while
     // the KPI tile counted open visitor logs from ANY date. A visitor who
@@ -117,7 +140,7 @@ async function run() {
   });
 
   await R.check('arrivals grid shows employee names', async () => {
-    // Kiosk arrival cards show first name only (.a-name), no badge text
+    // Kiosk arrival cards show the FULL name (.a-name), no badge text
     const txt = await page.locator('#arrivalsGrid').textContent();
     // Mock has Priya Sharma and Rahul Mehta
     if (!txt.includes('Priya') && !txt.includes('Rahul'))

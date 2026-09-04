@@ -58,7 +58,7 @@ const GAS_MOCK_SCRIPT = `
     ],
     activeVisitorList: [
       { VisitorID: 'VIS001', Name: 'Visitor A', TimeIN: '10:00 AM', Gate: 'Main Gate',
-        Company: '', Host: 'Priya Sharma', overdue: false },
+        Company: 'Alpha Traders', Host: 'Priya Sharma', overdue: false },
       { VisitorID: 'VIS-STAYOVER', Name: 'Visitor B', TimeIN: '04:20 PM', Gate: 'Main Gate',
         Company: 'Acme Ltd', Host: 'Rahul Mehta', overdue: true },
       // Deliberately shares a display name with Visitor A. Deduping on name

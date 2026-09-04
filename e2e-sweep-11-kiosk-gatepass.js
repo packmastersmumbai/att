@@ -122,7 +122,19 @@ async function run() {
       await page.waitForSelector('#kGpMount .gpc-row', { timeout: 5000 });
       const txt = await page.locator('#kGpMount').textContent();
       if (!/with visitor/i.test(txt)) throw new Error('no plain-language state on the row: ' + txt);
-      if (!/Got it back/i.test(txt)) throw new Error('return action is not labelled as an action');
+      // Same word as the check-out settlement uses — one vocabulary per action.
+      if (!/Returned/i.test(txt)) throw new Error('return action is not labelled as an action');
+    });
+
+    await R.check('the attendance column headers are hidden for a visitor', async () => {
+      // DATE | IN | OUT | LATE are the employee attendance table's headers.
+      // The visitor view renders items, so they labelled nothing.
+      await page.evaluate(() => window.pmClose());
+      await settle(page, 300);
+      await page.evaluate(() => window.pmOpen('VIS-OUT-OWING', 'Owing'));
+      await page.waitForSelector('#kGpMount', { timeout: 5000 });
+      if (await page.locator('#pmHead').isVisible())
+        throw new Error('orphaned DATE/IN/OUT/LATE headers shown over the item list');
     });
 
     await R.check('an employee card still shows attendance, not items', async () => {
@@ -132,6 +144,9 @@ async function run() {
       await settle(page, 900);
       const n = await page.locator('#kGpMount').count();
       if (n !== 0) throw new Error('item form mounted for an employee');
+      // ...and the headers come back — hiding them must not be sticky.
+      if (!(await page.locator('#pmHead').isVisible()))
+        throw new Error('attendance headers stayed hidden after a visitor modal');
     });
 
     summary.push(R.report());

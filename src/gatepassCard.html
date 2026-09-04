@@ -181,7 +181,10 @@ var QRATT_GPC = (function() {
       if (owed && opts.onReturn) {
         html += '<button class="gpc-act" onclick="' +
                 esc(opts.onReturn.replace('{id}', i.gatepassId)) + '">' +
-                esc(t('kiosk_gp_mark_back', 'Got it back')) + '</button>';
+                // One word for one action. The check-out settlement calls this
+                // "Returned"; saying "Got it back" here made two vocabularies
+                // for the same thing, minutes apart on the same screen.
+                esc(t('kiosk_gp_returned', 'Returned')) + '</button>';
       } else if (!owed && opts.onVoid) {
         html += '<button class="gpc-act gpc-act-void" onclick="' +
                 esc(opts.onVoid.replace('{id}', i.gatepassId)) + '">' +

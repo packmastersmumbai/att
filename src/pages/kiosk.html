@@ -261,10 +261,19 @@
       font-size: 8px; font-weight: 700; color: rgba(255,255,255,.5);
       letter-spacing: 1px; text-transform: uppercase; margin-bottom: 1px;
     }
+    /* Full names, not first names — two people can share a first name, and
+       "Visitor" is not an identification. Wrap to at most two lines rather
+       than ellipsising a surname away. */
     .a-name {
       font-size: 11px; font-weight: 700; color: #fff;
+      line-height: 1.2; overflow: hidden;
+      display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2;
+    }
+    /* Only rendered when two people on site share a name. */
+    .a-org {
+      font-size: 9px; font-weight: 600; color: rgba(255,255,255,.62);
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-      line-height: 1.2;
+      line-height: 1.25; margin-top: 1px;
     }
     .a-time {
       font-size: 9px; font-weight: 600; margin-top: 3px;
@@ -1034,7 +1043,7 @@
         <span id="pmMonth" style="font-size:11px;font-weight:700;color:#94A3B8;letter-spacing:.5px"></span>
         <span id="pmTotals" style="font-size:11px;color:#64748B"></span>
       </div>
-      <div style="display:grid;grid-template-columns:2fr 1.2fr 1.2fr 1.4fr;gap:0;padding:0 14px;font-size:10px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid #1E293B;padding-bottom:5px">
+      <div id="pmHead" style="display:grid;grid-template-columns:2fr 1.2fr 1.2fr 1.4fr;gap:0;padding:0 14px;font-size:10px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid #1E293B;padding-bottom:5px">
         <span>Date</span><span>In</span><span>Out</span><span style="text-align:right">Late</span>
       </div>
       <div id="pmRows" style="flex:1;overflow-y:auto;padding:0 14px"></div>
@@ -1309,6 +1318,15 @@
         }
         PM_ACTIVE_IDS = (d.activeVisitorList || []).map(function(v) { return String(v.VisitorID); });
 
+        // A visitor's company lives only in activeVisitorList; the same person
+        // arriving via recentActivity carries a blank Department. Without this
+        // lookup, whether a card can be disambiguated depends on which feed
+        // happened to supply the row.
+        var orgById = {};
+        (d.activeVisitorList || []).forEach(function(v) {
+          if (v.VisitorID && v.Company) orgById[String(v.VisitorID)] = v.Company;
+        });
+
         // Only people still INSIDE. recentActivity is every log row for today,
         // including closed ones, so someone who left hours ago was sitting in a
         // grid that means "on site" — with a live Check Out button on their
@@ -1335,19 +1353,29 @@
         if (!arrivals.length) {
           grid.innerHTML = '<div style="color:var(--muted-dk);font-size:12px;grid-column:1/-1;text-align:center;padding:28px 0">' + esc(qrattT('kiosk_no_arrivals')) + '</div>';
         } else {
+          // Three different visitors all rendering as "Visitor" is not a name.
+          // Show the whole name, and where two people on site share one, add
+          // the company/department to tell them apart.
+          var nameCount = {};
+          arrivals.forEach(function(r) {
+            var n = String(r.Name || '').trim();
+            if (n) nameCount[n] = (nameCount[n] || 0) + 1;
+          });
           grid.innerHTML = arrivals.map(function(r, i) {
             var c      = pickColor(r.Name);
             var ini    = initials(r.Name);
             var late   = !!r.isLate;
             var hasOut = r.TimeOUT && String(r.TimeOUT).trim() !== '';
             var code   = r.EmpID || r.empId || r.Code || r.PersonID || '';
-            var firstName = (r.Name || '').split(' ')[0];
+            var fullName = String(r.Name || '').trim() || ('#' + code);
+            var org      = String(orgById[String(code)] || r.Department || r.Company || '').trim();
+            var subLabel = (nameCount[fullName] > 1 && org) ? org : '';
             var photo = r.PhotoURL || r.photoUrl || '';
             var bgHtml = photo
               ? '<div class="a-card-bg" style="background-image:url(\'' + esc(photo) + '\')"></div>'
               : '<div class="a-av-fill" style="background:' + c + '33;color:' + c + '">' + esc(ini) + '</div>';
             return '<div class="a-card' + (i === 0 ? ' newest' : '') + '"' +
-              ' data-emp="' + esc(String(code)) + '" data-name="' + esc(firstName) + '" style="cursor:pointer' +
+              ' data-emp="' + esc(String(code)) + '" data-name="' + esc(fullName) + '" style="cursor:pointer' +
               (late ? ';border-color:rgba(245,158,11,.7)' : '') + '">' +
               bgHtml +
               '<div class="a-overlay"></div>' +
@@ -1355,7 +1383,8 @@
               (i === 0 ? '<div class="a-new-dot"></div>' : '') +
               '<div class="a-info">' +
                 (code ? '<div class="a-code">#' + esc(String(code)) + '</div>' : '') +
-                '<div class="a-name">' + esc(firstName) + '</div>' +
+                '<div class="a-name">' + esc(fullName) + '</div>' +
+                (subLabel ? '<div class="a-org">' + esc(subLabel) + '</div>' : '') +
                 '<div class="a-time">' +
                   '<span class="a-tin">↓ ' + esc(r.TimeIN || '–') + '</span>' +
                   (hasOut ? '<span class="a-tout">↑ ' + esc(r.TimeOUT) + '</span>' : '') +
@@ -1387,6 +1416,8 @@
       document.getElementById('pmSub').textContent = '#' + empId;
       document.getElementById('pmMonth').textContent = '';
       document.getElementById('pmTotals').textContent = '';
+      // Attendance column headers — meaningful only for the employee view.
+      document.getElementById('pmHead').style.display = 'grid';
       document.getElementById('pmRows').innerHTML = '<div style="padding:16px 0;color:#64748B;font-size:12px">' + esc(qrattT('kiosk_loading')) + '</div>';
       var btn = document.getElementById('pmCheckoutBtn');
       btn.disabled = false; btn.textContent = qrattT('kiosk_check_out');
@@ -1433,6 +1464,9 @@
     function pmOpenVisitor(visitorId, name) {
       document.getElementById('pmMonth').textContent = qrattT('kiosk_gp_items_title');
       document.getElementById('pmTotals').textContent = '';
+      // DATE/IN/OUT/LATE belong to the attendance table; there is no such table
+      // here, so the header row would label nothing.
+      document.getElementById('pmHead').style.display = 'none';
       document.getElementById('pmRows').innerHTML = '<div id="kGpMount" class="kgp"></div>';
 
       // Is this visitor still inside? The grid now only lists people who are,
