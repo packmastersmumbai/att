@@ -1269,17 +1269,27 @@
            no TimeOUT, on yesterday's date). They counted in the KPI tile and
            were missing from this grid, so the two disagreed. activeVisitorList
            is date-independent, so merge it in. */
+        // Dedup on IDENTITY, not display name. Keying on Name silently dropped
+        // any second person sharing a name (two "Ramesh Kumar"s are two
+        // people), and dropped anyone whose Name was blank. Fall back to the
+        // name only when no id exists.
         var seen = {}, arrivals = [];
+        function keyOf(r) {
+          var id = r.PersonID || r.VisitorID || r.EmpID || '';
+          return id ? 'id:' + id : (r.Name ? 'nm:' + r.Name : '');
+        }
         (d.recentActivity || []).forEach(function(r) {
-          if (!r.Name || seen[r.Name]) return;
-          seen[r.Name] = true;
+          var k = keyOf(r);
+          if (!k || seen[k]) return;
+          seen[k] = true;
           arrivals.push(r);
         });
         (d.activeVisitorList || []).forEach(function(v) {
-          if (!v.Name || seen[v.Name]) return;
-          seen[v.Name] = true;
+          var k = keyOf(v);
+          if (!k || seen[k]) return;
+          seen[k] = true;
           arrivals.push({
-            Name: v.Name, PersonID: v.VisitorID, Type: 'VIS',
+            Name: v.Name || v.VisitorID, PersonID: v.VisitorID, Type: 'VIS',
             Department: v.Company || '', TimeIN: v.TimeIN, TimeOUT: '',
             Gate: v.Gate || '', isLate: false, PhotoURL: ''
           });

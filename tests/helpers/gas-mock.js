@@ -60,7 +60,11 @@ const GAS_MOCK_SCRIPT = `
       { VisitorID: 'VIS001', Name: 'Visitor A', TimeIN: '10:00 AM', Gate: 'Main Gate',
         Company: '', Host: 'Priya Sharma', overdue: false },
       { VisitorID: 'VIS-STAYOVER', Name: 'Visitor B', TimeIN: '04:20 PM', Gate: 'Main Gate',
-        Company: 'Acme Ltd', Host: 'Rahul Mehta', overdue: true }
+        Company: 'Acme Ltd', Host: 'Rahul Mehta', overdue: true },
+      // Deliberately shares a display name with Visitor A. Deduping on name
+      // silently dropped this person; two people can have one name.
+      { VisitorID: 'VIS-SAMENAME', Name: 'Visitor A', TimeIN: '02:15 PM', Gate: 'Side Gate',
+        Company: 'Beta Corp', Host: 'Priya Sharma', overdue: false }
     ]
   };
 
