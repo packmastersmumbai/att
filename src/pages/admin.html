@@ -397,6 +397,51 @@
     .cfg-block { padding: 24px; border-bottom: 1px solid var(--border); }
     .cfg-block:last-child { border-bottom: none; }
 
+    /* ── Alert toggles ────────────────────────────────── */
+    .alert-toggle {
+      display: flex; align-items: center; justify-content: space-between; gap: 16px;
+      padding: 11px 14px; margin-bottom: 8px;
+      border: 1px solid var(--border); border-radius: 8px;
+      cursor: pointer; transition: background .12s, border-color .12s;
+    }
+    .alert-toggle:hover { background: var(--bg); border-color: var(--border-strong, var(--border)); }
+    .alert-toggle-locked { cursor: default; background: rgba(248,113,113,.05); border-color: rgba(248,113,113,.3); }
+    .alert-toggle-locked:hover { background: rgba(248,113,113,.05); }
+    .alert-name { font-size: 13px; font-weight: 600; color: var(--text); }
+    .alert-desc { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+    .alert-check { width: 18px; height: 18px; flex-shrink: 0; cursor: pointer; accent-color: var(--primary, #2563EB); }
+    .alert-always {
+      flex-shrink: 0; font-size: 10px; font-weight: 700; letter-spacing: .5px;
+      text-transform: uppercase; color: #DC2626;
+      background: rgba(220,38,38,.1); border-radius: 5px; padding: 4px 9px;
+    }
+
+    /* ── Telegram preview ─────────────────────────────── */
+    .tg-preview-wrap { display: flex; flex-direction: column; gap: 14px; }
+    .tg-msg-label {
+      font-size: 11px; font-weight: 700; color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: .5px; margin-bottom: 5px;
+    }
+    .tg-msg-off { opacity: .4; }
+    .tg-off-tag {
+      background: rgba(148,163,184,.25); color: var(--text-muted);
+      border-radius: 4px; padding: 1px 6px; font-size: 9px; letter-spacing: 0;
+    }
+    /* Approximates the Telegram bubble so the preview reads as a message, not
+       a config field — line length and wrapping are what actually differ. */
+    .tg-bubble {
+      background: #E7F3FF; border-radius: 10px; padding: 11px 14px;
+      font-size: 13px; line-height: 1.5; color: #0F172A;
+      max-width: 460px; word-break: break-word;
+      font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+    }
+    .tg-bubble b { font-weight: 700; }
+    .tg-bubble code { background: rgba(0,0,0,.06); border-radius: 3px; padding: 1px 4px; }
+    .tg-btn {
+      margin-top: 8px; background: rgba(255,255,255,.75); border-radius: 7px;
+      padding: 8px; text-align: center; font-size: 12px; font-weight: 600; color: #2563EB;
+    }
+
     /* ── Modal overlay ────────────────────────────────── */
     .modal-overlay {
       position: fixed;
@@ -778,16 +823,131 @@
                 <button class="btn btn-ghost btn-sm" onclick="setTelegramWebhook(this)">Enable Bot Commands</button>
                 <button class="btn btn-ghost btn-sm" onclick="installTriggers(this)">Install Daily Triggers</button>
               </div>
-              <div class="form-hint" style="margin-top:6px">Save settings first. <b>Enable Bot Commands</b> starts 1-min polling for /today, /present, etc. — <b>message the bot directly (DM @your_bot)</b>, not the channel. <b>Install Daily Triggers</b> schedules the daily summary, auto-checkout &amp; hours rebuild.</div>
+              <div class="form-hint" style="margin-top:6px">Save settings first. <b>Enable Bot Commands</b> starts 5-min polling for /today, /present, /outstanding, etc. — <b>message the bot directly (DM @your_bot)</b>, not the channel. <b>Install Daily Triggers</b> schedules the daily summary, auto-checkout &amp; hours rebuild.</div>
+            </div>
+
+            <!-- ── Which alerts are sent ── -->
+            <div class="cfg-block">
+              <div class="cfg-section-title">Alerts</div>
+              <div class="form-hint" style="margin-bottom:10px">
+                Choose which events post to Telegram. Turning one off stops that message entirely —
+                the underlying record is still written either way.
+              </div>
+
+              <div class="alert-toggle alert-toggle-locked">
+                <div>
+                  <div class="alert-name">🚨 Blacklisted entry attempt</div>
+                  <div class="alert-desc">Someone on the blacklist scanned at a gate</div>
+                </div>
+                <span class="alert-always">Always on</span>
+              </div>
+
+              <label class="alert-toggle">
+                <div>
+                  <div class="alert-name">🔔 Visitor arrived</div>
+                  <div class="alert-desc">Host is being summoned to reception</div>
+                </div>
+                <input type="checkbox" id="cfgAlertVisitorArrival" class="alert-check">
+              </label>
+
+              <label class="alert-toggle">
+                <div>
+                  <div class="alert-name">📦 Gatepass approval needed</div>
+                  <div class="alert-desc">Visitor declared items; host must approve</div>
+                </div>
+                <input type="checkbox" id="cfgAlertGatepassApproval" class="alert-check">
+              </label>
+
+              <label class="alert-toggle">
+                <div>
+                  <div class="alert-name">📤 Visitor left with items</div>
+                  <div class="alert-desc">Items marked "kept" at check-out</div>
+                </div>
+                <input type="checkbox" id="cfgAlertItemsKept" class="alert-check">
+              </label>
+
+              <label class="alert-toggle">
+                <div>
+                  <div class="alert-name">⚠️ Auto-checkout: unreturned items</div>
+                  <div class="alert-desc">Nightly sweep closed a visitor still holding items</div>
+                </div>
+                <input type="checkbox" id="cfgAlertUnreturned" class="alert-check">
+              </label>
+
+              <label class="alert-toggle">
+                <div>
+                  <div class="alert-name">🛠️ App issue reported</div>
+                  <div class="alert-desc">Someone used the "Report an issue" button</div>
+                </div>
+                <input type="checkbox" id="cfgAlertFeedback" class="alert-check">
+              </label>
+
+              <label class="alert-toggle">
+                <div>
+                  <div class="alert-name">📊 Daily attendance digest</div>
+                  <div class="alert-desc">Present / absent / late roster, once a day</div>
+                </div>
+                <input type="checkbox" id="cfgAlertDigest" class="alert-check">
+              </label>
+            </div>
+
+            <!-- ── What each message contains ── -->
+            <div class="cfg-block">
+              <div class="cfg-section-title">Message content</div>
+              <div class="form-grid-2">
+                <label class="alert-toggle">
+                  <div>
+                    <div class="alert-name">Action buttons</div>
+                    <div class="alert-desc">Tap-to-act buttons on alerts (Mark returned, Acknowledge)</div>
+                  </div>
+                  <input type="checkbox" id="cfgAlertButtons" class="alert-check">
+                </label>
+                <label class="alert-toggle">
+                  <div>
+                    <div class="alert-name">Site name</div>
+                    <div class="alert-desc">🏢 stamp at the foot of every message</div>
+                  </div>
+                  <input type="checkbox" id="cfgAlertShowSite" class="alert-check">
+                </label>
+                <label class="alert-toggle">
+                  <div>
+                    <div class="alert-name">Gate name</div>
+                    <div class="alert-desc">Which entrance a scan happened at</div>
+                  </div>
+                  <input type="checkbox" id="cfgAlertShowGate" class="alert-check">
+                </label>
+              </div>
+              <div class="form-hint" style="margin-top:8px">
+                Buttons act on the bot's next poll — up to 5 minutes, not instantly.
+              </div>
+            </div>
+
+            <!-- ── Live preview ── -->
+            <div class="cfg-block">
+              <div class="cfg-section-title">
+                Preview
+                <button class="btn btn-ghost btn-sm" style="float:right;margin-top:-4px" onclick="loadAlertPreview(this)">Refresh</button>
+              </div>
+              <div class="form-hint" style="margin-bottom:10px">
+                Rendered by the same code that sends the real messages. <b>Save first</b> — the preview
+                reflects saved settings, not unsaved edits.
+              </div>
+              <div id="alertPreview" class="tg-preview-wrap">
+                <div class="form-hint">Loading preview…</div>
+              </div>
             </div>
 
             <div class="cfg-block">
               <div class="cfg-section-title">Scheduling</div>
               <div class="form-grid-2">
                 <div class="form-group">
-                  <label>Daily Summary Hour (0–23)</label>
-                  <input type="number" id="cfgSummaryHr" class="input" min="0" max="23" placeholder="9">
-                  <div class="form-hint">Hour to send daily attendance digest</div>
+                  <label>Daily Digest Time</label>
+                  <div style="display:flex;align-items:center;gap:6px">
+                    <input type="number" id="cfgSummaryHr" class="input" min="0" max="23" placeholder="9" style="flex:1">
+                    <span style="font-weight:700;color:var(--color-text-muted)">:</span>
+                    <input type="number" id="cfgSummaryMin" class="input" min="0" max="59" step="5" placeholder="00" style="flex:1">
+                  </div>
+                  <div class="form-hint">Google fires this within ~15 min of the chosen time — it cannot be exact.</div>
                 </div>
                 <div class="form-group">
                   <label>Auto Checkout Hour (0–23)</label>
@@ -1045,6 +1205,7 @@
       else if (action === 'sendDigestNow')  r.sendDigestNow(t);
       else if (action === 'setTelegramWebhook') r.setTelegramWebhook(t);
       else if (action === 'installTriggers') r.installTriggers(t);
+      else if (action === 'previewAlertTemplates') r.previewAlertTemplates();
       else if (action === 'getBlacklist')   r.getBlacklist();
       else if (action === 'addBlacklist')   r.addToBlacklist(data.entry, t);
       else if (action === 'removeBlacklist') r.removeFromBlacklist(data.qrCode, t);
@@ -1395,7 +1556,54 @@
       document.getElementById('cfgTelegramLiveScans').value = (String(map['TelegramLiveScans']||'off').toLowerCase()==='on'?'on':'off');
       document.getElementById('cfgLateAfter').value     = map['LateAfter']     || '09:30';
       document.getElementById('cfgSummaryHr').value     = map['SummaryHr']     || '9';
+      document.getElementById('cfgSummaryMin').value    = map['SummaryMin']    || '0';
       document.getElementById('cfgAutoCheckoutHr').value = map['AutoCheckoutHr'] || '23';
+
+      // Alert toggles. Default ON when the Config row is missing, matching
+      // _alertOn_() on the server — a fresh install notifies rather than
+      // going silently dark.
+      ALERT_KEYS.forEach(function(k) {
+        var el = document.getElementById('cfg' + k);
+        if (el) el.checked = _isOn(map[k]);
+      });
+      loadAlertPreview();
+    }
+
+    /* Config 'on'/'off' flags, mirrored from _alertOn_() on the server. */
+    var ALERT_KEYS = ['AlertVisitorArrival','AlertGatepassApproval','AlertItemsKept',
+                      'AlertUnreturned','AlertFeedback','AlertDigest',
+                      'AlertButtons','AlertShowSite','AlertShowGate'];
+
+    function _isOn(v) {
+      if (v === undefined || v === null || v === '') return true;   // default ON
+      v = String(v).trim().toLowerCase();
+      return !(v === 'off' || v === 'false' || v === 'no' || v === '0');
+    }
+
+    /* Renders sample cards produced by the real server-side builder, so the
+       preview cannot drift from what is actually sent. */
+    function loadAlertPreview(btn) {
+      var wrap = document.getElementById('alertPreview');
+      if (!wrap) return;
+      if (btn) { btn.disabled = true; btn.textContent = '…'; }
+      post({ action: 'previewAlertTemplates' }, function(res) {
+        if (btn) { btn.disabled = false; btn.textContent = 'Refresh'; }
+        if (!res || !res.success) {
+          wrap.innerHTML = '<div class="form-hint">Preview unavailable: ' +
+                           ((res && res.error) || 'failed') + '</div>';
+          return;
+        }
+        wrap.innerHTML = res.samples.map(function(s) {
+          var btns = (s.buttons || []).map(function(b) {
+            return '<div class="tg-btn">' + b + '</div>';
+          }).join('');
+          return '<div class="tg-msg' + (s.enabled ? '' : ' tg-msg-off') + '">' +
+            '<div class="tg-msg-label">' + s.label +
+              (s.enabled ? '' : ' <span class="tg-off-tag">off</span>') + '</div>' +
+            '<div class="tg-bubble">' + s.msg.replace(/\n/g, '<br>') + btns + '</div>' +
+          '</div>';
+        }).join('');
+      });
     }
 
     function saveConfig() {
@@ -1410,10 +1618,21 @@
         { Key: 'TelegramLiveScans', Value: document.getElementById('cfgTelegramLiveScans').value },
         { Key: 'LateAfter',     Value: document.getElementById('cfgLateAfter').value },
         { Key: 'SummaryHr',     Value: document.getElementById('cfgSummaryHr').value },
+        { Key: 'SummaryMin',    Value: document.getElementById('cfgSummaryMin').value },
         { Key: 'AutoCheckoutHr', Value: document.getElementById('cfgAutoCheckoutHr').value }
       ];
+      ALERT_KEYS.forEach(function(k) {
+        var el = document.getElementById('cfg' + k);
+        if (el) config.push({ Key: k, Value: el.checked ? 'on' : 'off' });
+      });
+
       post({ action: 'saveConfig', config: config }, function(res) {
-        showToast(res.success ? 'Settings saved successfully' : 'Error: ' + res.error, res.success ? 'success' : 'error');
+        if (!res.success) return showToast('Error: ' + res.error, 'error');
+        // saveConfig reinstalls the daily triggers when a time changed, so say
+        // so — otherwise the admin cannot tell whether the new time took effect.
+        showToast(res.rescheduled ? 'Settings saved · daily triggers rescheduled'
+                                  : 'Settings saved successfully', 'success');
+        loadAlertPreview();
       });
     }
 

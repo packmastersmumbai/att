@@ -525,5 +525,22 @@ function saveConfig(configArray, token) {
   // Invalidate the per-execution Config memo so a value changed here is
   // seen by any getConfigValue() call later in this same execution.
   _CONFIG_MEMO = null;
-  return { success: true };
+
+  // Schedule times live in Config but are only READ when installTriggers()
+  // runs — so changing "digest at 09:00" to 08:00 used to do nothing at all
+  // until someone remembered to press "Install Daily Triggers". Silent
+  // no-op settings are worse than no settings, so reinstall automatically
+  // whenever a timing key actually changed.
+  var TIMING_KEYS = ['SummaryHr', 'SummaryMin', 'AutoCheckoutHr', 'HoursRebuildHr', 'BackupHr'];
+  var timingChanged = configArray.some(function(item) {
+    return TIMING_KEYS.indexOf(item.Key) !== -1;
+  });
+  var rescheduled = false;
+  if (timingChanged) {
+    // Best-effort: the settings ARE saved either way, so a trigger-quota or
+    // permission failure must not report the save itself as failed.
+    try { installTriggers(token); rescheduled = true; }
+    catch (e) { Logger.log('saveConfig: trigger reinstall failed: ' + e.message); }
+  }
+  return { success: true, rescheduled: rescheduled };
 }

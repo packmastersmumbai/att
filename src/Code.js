@@ -189,6 +189,18 @@ function _bootstrapIfNeeded() {
       ['TelegramBotToken',   ''],
       ['TelegramChatID',     ''],
       ['TelegramLiveScans',  'off'],
+      // Per-alert toggles. Blacklist is deliberately absent — a security alert
+      // must not be switchable off from a settings screen.
+      ['AlertVisitorArrival', 'on'],
+      ['AlertGatepassApproval', 'on'],
+      ['AlertItemsKept',     'on'],
+      ['AlertUnreturned',    'on'],
+      ['AlertFeedback',      'on'],
+      ['AlertDigest',        'on'],
+      ['AlertButtons',       'on'],   // inline action buttons on alerts
+      ['AlertShowSite',      'on'],   // 🏢 OrgName stamp on every card
+      ['AlertShowGate',      'on'],   // gate on scan alerts + blacklist
+      ['SummaryMin',         '0'],    // minute for the daily digest (hour = SummaryHr)
       ['Holidays',           ''],
       ['PublicUrl',          ''],  // blank → publicBaseUrl() falls back to the raw GAS app URL (links open the app directly)
       ['AutoWhatsAppPass',   'off'],  // 'on' → vreg auto-opens the wa.me pass draft after registration
