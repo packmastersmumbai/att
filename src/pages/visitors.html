@@ -1253,14 +1253,25 @@
     }
 
     function checkoutClick(btn) { checkout(btn.getAttribute('data-vid')); }
+
+    /* Ask about unreturned items BEFORE writing the check-out, not after.
+       The old order checked out first and then alerted, so "Continue
+       check-out?" asked a question already answered — the visitor was out and
+       the guard had no decision left. Both callers (Active row, detail modal)
+       route through here, so the guard gets one prompt naming the items. */
     function checkout(visitorId) {
-      post({ action: 'checkoutVisitor', visitorId: visitorId }, function(res) {
-        // Warn (advisory) if returnable gatepass items were still out at
-        // check-out — the guard is alerted but the check-out is not blocked.
-        // The items stay OUT_PENDING as a true record until returned or voided.
-        if (res && res.success && res.returnableOutstanding > 0) {
-          window.alert(qrattT('gp_checkout_warn'));
+      post({ action: 'getGatepass', visitorId: visitorId }, function(gp) {
+        var out = (gp && gp.items || []).filter(function(i){ return i.status === 'OUT_PENDING'; });
+        if (out.length) {
+          var list = out.map(function(i){ return '• ' + i.qty + '× ' + i.itemDesc; }).join('\n');
+          if (!window.confirm(qrattT('gp_checkout_warn') + '\n\n' + list)) return;
         }
+        _doCheckout(visitorId);
+      });
+    }
+
+    function _doCheckout(visitorId) {
+      post({ action: 'checkoutVisitor', visitorId: visitorId }, function(res) {
         showToast(res.success ? 'Checked out successfully' : 'Error: ' + res.error, res.success ? 'success' : 'error');
         loadActive();
       });
@@ -1462,8 +1473,10 @@
        unreturned-items warning fires here exactly as it does on the Active
        tab, then closes the modal and refreshes the list behind it. */
     function checkoutFromDetail(vid) {
-      checkout(vid);
+      // Close only after checkout() resolves — closing synchronously used to
+      // pull the modal out from under the confirm prompt.
       closeVisitorDetail();
+      checkout(vid);
     }
 
     /* ── Item gatepass card — reusable; mounts into any element by id ──

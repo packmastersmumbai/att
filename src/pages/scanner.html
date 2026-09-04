@@ -537,7 +537,7 @@
     .dismiss-fill {
       height: 100%;
       border-radius: 1px;
-      animation: shrink 2s linear forwards;
+      animation: shrink 8.1s linear forwards;  /* must match DISMISS_MS */
     }
     @keyframes shrink { from{width:100%} to{width:0} }
     .df-in  { background: #10B981; }
@@ -937,6 +937,18 @@
   <script>
     var COLORS = ['#3B82F6','#8B5CF6','#EC4899','#F59E0B','#10B981','#06B6D4','#EF4444','#6366F1','#84CC16','#F97316'];
     var dismissTimer = null;
+    var dismissHeld  = false;   // set by holdResult(); blocks every re-arm
+
+    // Single owner of the auto-dismiss timeout. Three call sites used to arm
+    // their own (8100 here, 1800 on the popup path, 2s in the CSS bar) and the
+    // popup one landed LAST, so a card the guard had to read vanished in 1.8s.
+    // ponytail: one duration, one arm point. Held cards never re-arm.
+    var DISMISS_MS = 8100;
+    function armDismiss() {
+      clearTimeout(dismissTimer);
+      if (dismissHeld) return;
+      dismissTimer = setTimeout(dismissResult, DISMISS_MS);
+    }
 
     function initials(name) {
       var p = String(name || ' ').trim().split(/\s+/);
@@ -1009,8 +1021,6 @@
         }
         showResult(res);
         document.getElementById('manualCode').value = '';
-        clearTimeout(dismissTimer);
-        dismissTimer = setTimeout(dismissResult, 1800);
       });
     }
 
@@ -1051,6 +1061,7 @@
 
     function showResult(res) {
       clearTimeout(dismissTimer);
+      dismissHeld = false;   // a new scan is a fresh card
       // A scan arrives from the camera popup, not as a DOM event on this page,
       // so it must resume the activity feed explicitly.
       if (typeof noteActivity === 'function') noteActivity();
@@ -1077,7 +1088,7 @@
         } else {
           overlay.style.display = 'flex';
         }
-        dismissTimer = setTimeout(function() { dismissResult(); }, 8100);
+        armDismiss();
         return;
       }
         var type = res.action === 'CHECK_IN'  ? 'check-in'  :
@@ -1226,10 +1237,7 @@
 
       if (res.type === 'VIS' && res.empId) scGpLoad(res.empId);
 
-      // Auto-dismiss after 8s
-      dismissTimer = setTimeout(function() {
-        dismissResult();
-      }, 8100);
+      armDismiss();   // no-op if the warning above held the card
     }
 
     /* ── Gatepass on the scan result ────────────────────────────────────────
@@ -1238,6 +1246,7 @@
        item. Any interaction with the gatepass cancels the timer; the guard
        then closes the card themselves. ── */
     function holdResult() {
+      dismissHeld = true;
       clearTimeout(dismissTimer);
       var bar = document.querySelector('#resultCard .dismiss-bar');
       if (bar) bar.style.display = 'none';
