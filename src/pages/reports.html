@@ -235,7 +235,7 @@
       margin-top: 18px;
       width: 100%;
       padding: 9px 12px;
-      background: var(--teal);
+      background: var(--primary);
       color: #fff;
       border-radius: 3px;
       font-size: 12px; font-weight: 700;
@@ -245,7 +245,7 @@
       border: none;
       transition: background .15s;
     }
-    .fs-apply:hover { background: var(--teal-dk); }
+    .fs-apply:hover { background: var(--primary-dk); }
 
     .fs-clear {
       margin-top: 6px;
@@ -314,14 +314,6 @@
     .stat-pill.red         { color: var(--danger); }
     .stat-pill.amber .dot { background: var(--warning); }
     .stat-pill.amber       { color: var(--warning); }
-    .avg-dur {
-      font-size: 12px;
-      font-weight: 500;
-      color: var(--muted);
-      white-space: nowrap;
-    }
-    .avg-dur strong { color: var(--text); font-weight: 700; }
-
     /* Export / print buttons on the right */
     .stats-actions {
       margin-left: auto;
@@ -407,7 +399,6 @@
     tbody tr.row-absent:hover { background: #fee2e2; }
 
     /* Row number */
-    .row-num { font-size: 10px; color: var(--muted); font-family: var(--mono); }
 
     /* Person cell */
     .person-cell { display: flex; align-items: center; gap: 8px; }
@@ -1038,8 +1029,6 @@
           <span class="stat-pill green"><span class="dot"></span><span id="sumPresent">–</span> Present</span>
           <span class="stat-pill red">  <span class="dot"></span><span id="sumAbsent">–</span> Absent</span>
           <span class="stat-pill amber"><span class="dot"></span><span id="sumVisitors">–</span> Visitors</span>
-          <div class="stats-sep"></div>
-          <span class="avg-dur">Avg Duration: <strong id="sumAvgDur">–</strong></span>
           <div class="stats-actions">
             <button class="act-btn" onclick="exportCSV()">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -1067,7 +1056,6 @@
           <table id="logsTable">
             <thead>
               <tr>
-                <th style="width:40px">#</th>
                 <th>Name</th>
                 <th style="width:90px">ID</th>
                 <th style="width:90px">Type</th>
@@ -1082,7 +1070,7 @@
             </thead>
             <tbody id="logsBody">
               <tr>
-                <td colspan="11" class="empty-state">
+                <td colspan="10" class="empty-state">
                   Click <strong>APPLY FILTERS</strong> to load records
                 </td>
               </tr>
@@ -1452,7 +1440,7 @@
       post({ action: 'getLogs', filters: f }, function(res) {
         if (!res.success) {
           document.getElementById('logsBody').innerHTML =
-            '<tr><td colspan="11" class="empty-state">Error loading records</td></tr>';
+            '<tr><td colspan="10" class="empty-state">Error loading records</td></tr>';
           return;
         }
 
@@ -1485,11 +1473,10 @@
         document.getElementById('sumPresent').textContent  = presCount;
         document.getElementById('sumAbsent').textContent   = absCount;
         document.getElementById('sumVisitors').textContent = visCount;
-        document.getElementById('sumAvgDur').textContent   = avgStr;
 
         if (!data.length) {
           document.getElementById('logsBody').innerHTML =
-            '<tr><td colspan="11" class="empty-state">No records found for selected filters</td></tr>';
+            '<tr><td colspan="10" class="empty-state">No records found for selected filters</td></tr>';
           return;
         }
 
@@ -1499,7 +1486,6 @@
           var isAbsent = r.Status === 'ABSENT';
           var id  = r.EmpID || r.VisitorID || '';
           return '<tr' + (isAbsent ? ' class="row-absent"' : '') + '>' +
-            '<td><span class="row-num">' + String(idx+1).padStart(3,'0') + '</span></td>' +
             '<td><div class="person-cell">' +
               '<div class="p-av" style="background:' + c + '1a;color:' + c + '">' + esc(ini) + '</div>' +
               '<div>' +
