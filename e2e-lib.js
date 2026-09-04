@@ -32,6 +32,12 @@ const GAS_DELAY = 350;   // ms to wait after a mock GAS call resolves
 // using qrattT()/data-i18n would find those globals undefined.
 const I18N_SCRIPT = fs.readFileSync(path.join(__dirname, 'src', 'i18n.html'), 'utf8');
 const GPC_PARTIAL = fs.readFileSync(path.join(__dirname, 'src', 'gatepassCard.html'), 'utf8');
+// Shared design tokens. doGet() injects these right after <head>, ahead of
+// each page's own <style>, and several pages have now dropped their local
+// :root entirely and rely on them. Without this the harness renders those
+// pages with no palette at all — every colour, radius and font resolves to
+// nothing — which looks like a page-wide style collapse in a screenshot.
+const TOKENS_PARTIAL = fs.readFileSync(path.join(__dirname, 'src', 'tokens.html'), 'utf8');
 
 /** All testable pages (maps to src/pages/<name>.html) */
 const PAGES = ['kiosk', 'dashboard', 'scanner', 'admin', 'reports', 'visitors'];
@@ -109,7 +115,9 @@ async function openPage(browser, pageName) {
 
   // Inject mock + i18n runtime before any other scripts (i18n.html already
   // includes its own <script>…</script> wrapper, so it's concatenated as-is).
-  html = html.replace('<head>', '<head><script>' + GAS_MOCK_SCRIPT + '</script>' + I18N_SCRIPT + GPC_PARTIAL);
+  // TOKENS_PARTIAL must come FIRST, so a page's own :root still overrides it
+  // — the same ordering doGet() uses in production.
+  html = html.replace('<head>', '<head>' + TOKENS_PARTIAL + '<script>' + GAS_MOCK_SCRIPT + '</script>' + I18N_SCRIPT + GPC_PARTIAL);
 
   // charset MUST be declared on the data URL. The page's own <meta charset>
   // only counts inside the first 1024 bytes, and the injected mock + i18n +

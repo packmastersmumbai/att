@@ -12,7 +12,7 @@
  */
 const fs = require('fs');
 const path = require('path');
-const { launch, makeRunner } = require('./e2e-lib');
+const { launch, openPage, makeRunner } = require('./e2e-lib');
 
 const ROOT   = __dirname;
 const TOKENS = fs.readFileSync(path.join(ROOT, 'src', 'tokens.html'), 'utf8');
@@ -90,6 +90,25 @@ async function run() {
                           JSON.stringify(withTokens[family]));
       });
     }
+
+    await R.check('the harness itself injects the tokens, like doGet does', async () => {
+      // Regression: the migrated pages went live in the harness before e2e-lib
+      // learned to inject tokens.html, so every one of them rendered with no
+      // palette at all. Nothing failed — the suites assert behaviour, not
+      // colour — and it only surfaced in a screenshot. Assert the harness and
+      // production agree about what a served page contains.
+      const { page: served, context: ctx } = await openPage(browser, 'reports');
+      try {
+        const primary = await served.evaluate(() =>
+          getComputedStyle(document.documentElement).getPropertyValue('--primary').trim());
+        if (!/#000666/i.test(primary))
+          throw new Error('a page opened through the harness has no palette; ' +
+                          'e2e-lib is not injecting src/tokens.html (--primary = ' +
+                          JSON.stringify(primary) + ')');
+      } finally {
+        await ctx.close();
+      }
+    });
 
     await R.check('a page with no token of its own inherits the shared one', async () => {
       // Guards the other direction: if the file stopped defining defaults (or
