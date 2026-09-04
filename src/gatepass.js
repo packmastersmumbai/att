@@ -186,6 +186,107 @@ function settleVisitorGatepass(visitorId, mode, reason) {
   return { success: true, settled: settled, status: status };
 }
 
+/**
+ * Settle a visitor's outstanding items as part of checking them out.
+ *
+ * The old flow checked the visitor out and THEN warned that items were still
+ * out. The visitor was already gone, nothing was recorded, and the rows stayed
+ * OUT_PENDING forever — so a laptop that genuinely came back haunted the
+ * visitor's next ten visits, and one that genuinely walked out left no trace
+ * that anyone noticed. Same non-decision, both failure modes.
+ *
+ * decisions = [{gatepassId, decision:'RETURNED'|'KEPT', reason}]
+ *   RETURNED — came back. Row closes (Status RETURNED, SettledAt set).
+ *   KEPT     — left with the visitor, deliberately. Row STAYS OUT_PENDING so
+ *              it keeps showing in the outstanding register for chasing, but
+ *              gains a reason + timestamp so it reads as an accepted decision
+ *              rather than an oversight.
+ *
+ * Returns the kept items so the caller can notify the host — someone walking
+ * out with company property on purpose is exactly what the host must hear.
+ */
+function settleGatepassAtCheckout(visitorId, decisions) {
+  if (!visitorId) return { success: false, error: 'Missing visitor id' };
+  if (!decisions || !decisions.length) return { success: true, returned: 0, kept: [] };
+
+  var sheet = getSheet(SHEETS.GATEPASS);
+  var now = new Date().toISOString();
+  var returned = 0, kept = [];
+
+  decisions.forEach(function(d) {
+    var row = findRowByValue(sheet, 'GatepassID', d.gatepassId);
+    if (row === -1) return;
+    // Only ever settle a row that is actually outstanding — a replayed or
+    // stale client payload must not reopen or overwrite a closed row.
+    if (getCell(sheet, row, 'Status') !== 'OUT_PENDING') return;
+
+    if (d.decision === 'KEPT') {
+      // Status deliberately unchanged: still owed back.
+      setCell(sheet, row, 'Note', 'Kept at check-out: ' + (d.reason || 'no reason given') + ' (' + now + ')');
+      kept.push({
+        gatepassId: d.gatepassId,
+        itemDesc:   getCell(sheet, row, 'ItemDesc') || '',
+        qty:        Number(getCell(sheet, row, 'Qty')) || 1,
+        reason:     d.reason || ''
+      });
+    } else {
+      setCell(sheet, row, 'Status', 'RETURNED');
+      setCell(sheet, row, 'SettledAt', now);
+      returned++;
+    }
+  });
+
+  return { success: true, returned: returned, kept: kept };
+}
+
+/**
+ * Tell the host their visitor left holding items. Best-effort: a notification
+ * failure must never fail the check-out that triggered it.
+ */
+function notifyHostItemsKept(visitorId, kept) {
+  try {
+    if (!kept || !kept.length) return { success: false, error: 'Nothing kept' };
+
+    var visSheet = getSheet(SHEETS.VISITORS);
+    var vRow = findRowByValue(visSheet, 'VisitorID', visitorId);
+    if (vRow === -1) return { success: false, error: 'Visitor not found' };
+    var visitorName = getCell(visSheet, vRow, 'Name') || visitorId;
+    var hostEmpId   = getCell(visSheet, vRow, 'HostEmpID') || '';
+
+    var hostName = '', hostPhone = '';
+    if (hostEmpId) {
+      var empSheet = getSheet(SHEETS.EMPLOYEES);
+      var hr = findRowByValue(empSheet, 'EmpID', hostEmpId);
+      if (hr !== -1) {
+        hostName  = getCell(empSheet, hr, 'Name') || '';
+        hostPhone = getCell(empSheet, hr, 'Phone') || '';
+      }
+    }
+
+    function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+    var lines = kept.map(function(k) {
+      return '• ' + k.qty + '× ' + k.itemDesc + (k.reason ? ' — ' + k.reason : '');
+    }).join('\n');
+
+    var tgMsg =
+      '📤 <b>Visitor left with items</b>\n' +
+      'Visitor: <b>' + esc(visitorName) + '</b>' + (hostName ? ' → host ' + esc(hostName) : '') + '\n' +
+      esc(lines) + '\n\n' +
+      'These remain outstanding in the gatepass register.';
+
+    var sent = false;
+    try { if (_sendTelegram(tgMsg)) sent = true; } catch (e) { Logger.log('kept telegram: ' + e.message); }
+    if (hostPhone) {
+      var waMsg = 'Visitor *' + visitorName + '* left holding:\n' + lines + '\n\nStill outstanding in the gatepass register.';
+      try { if (_sendWhatsApp(hostPhone, waMsg)) sent = true; } catch (e) { Logger.log('kept wa: ' + e.message); }
+    }
+    return { success: sent };
+  } catch (e) {
+    Logger.log('notifyHostItemsKept failed: ' + e.message);
+    return { success: false, error: e.message };
+  }
+}
+
 // ── Host approval ──────────────────────────────────────────────────────────
 // The host approves via a link (they are not app users). The link carries a
 // per-visitor token, cache-stored with TTL, so it cannot be forged or replayed

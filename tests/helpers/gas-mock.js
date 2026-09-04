@@ -18,7 +18,20 @@ const GAS_MOCK_SCRIPT = `
   ];
 
   // Gatepass items keyed by visitorId, seeded fresh per page load.
-  var MOCK_GP = {};
+  // VIS-OUT-OWING's scan result reports returnableOutstanding:2, so its
+  // gatepass must actually hold two OUT_PENDING rows — a surface that renders
+  // the warning from getGatepass (the kiosk) rather than from the scan result
+  // sees nothing otherwise.
+  var MOCK_GP = {
+    'VIS-OUT-OWING': [
+      { gatepassId: 'GP-OWING-1', direction: 'IN', materialCode: '', itemDesc: 'laptop',
+        unit: '', qty: 1, returnable: true, status: 'OUT_PENDING', photoUrl: '',
+        hostApproved: false, loggedAt: '2026-09-04T09:00:00.000Z', daysOut: 0 },
+      { gatepassId: 'GP-OWING-2', direction: 'IN', materialCode: '', itemDesc: 'toolkit',
+        unit: '', qty: 1, returnable: true, status: 'OUT_PENDING', photoUrl: '',
+        hostApproved: false, loggedAt: '2026-09-04T09:00:00.000Z', daysOut: 0 }
+    ]
+  };
 
   // Mirrors src/holidays.js: saveHolidays stores only what the admin picked;
   // the 3 gazetted national dates are merged in on every getHolidays() read
@@ -255,6 +268,26 @@ const GAS_MOCK_SCRIPT = `
           status: (item.direction === 'IN' && item.returnable) ? 'OUT_PENDING' : 'LEFT',
           photoUrl: '', hostApproved: false });
         respond({ success: true, gatepassId: 'GP-TEST' });
+      },
+      settleGatepassAtCheckout: function(vid, decisions) {
+        var kept = [], returned = 0;
+        (decisions || []).forEach(function(d) {
+          (MOCK_GP[vid] || []).forEach(function(i) {
+            if (i.gatepassId !== d.gatepassId || i.status !== 'OUT_PENDING') return;
+            if (d.decision === 'KEPT') {
+              // Deliberately still OUT_PENDING — it is owed back.
+              i.note = 'Kept at check-out: ' + (d.reason || '');
+              kept.push({ gatepassId: i.gatepassId, itemDesc: i.itemDesc, qty: i.qty, reason: d.reason || '' });
+            } else {
+              i.status = 'RETURNED';
+              returned++;
+            }
+          });
+        });
+        respond({ success: true, returned: returned, kept: kept });
+      },
+      notifyHostItemsKept: function(vid, kept) {
+        respond({ success: true, notified: (kept || []).length });
       },
       markItemReturned: function(id) {
         Object.keys(MOCK_GP).forEach(function(k){ (MOCK_GP[k]||[]).forEach(function(i){ if(i.gatepassId===id) i.status='RETURNED'; }); });

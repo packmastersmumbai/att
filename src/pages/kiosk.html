@@ -714,6 +714,74 @@
     }
     #kioskResult .krc-meta-lbl { font-size: 9px; color: var(--muted-dk); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 2px; }
     #kioskResult .krc-meta-val { font-size: 12px; font-weight: 700; }
+
+    /* ── Items on the scan card ── */
+    .kgp { margin-top: 10px; text-align: left; }
+    .kgp-warn {
+      background: rgba(180,83,9,.22); border: 1px solid rgba(251,191,36,.45);
+      color: #FCD34D; font-size: 12px; font-weight: 700; text-align: center;
+      border-radius: 7px; padding: 8px 10px; margin-bottom: 8px;
+    }
+    .kgp-row {
+      display: flex; align-items: center; gap: 8px;
+      padding: 7px 2px; border-bottom: 1px solid rgba(255,255,255,.06); font-size: 12px;
+    }
+    .kgp-desc { flex: 1; color: #E2E8F0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .kgp-qty  { color: var(--muted); font-size: 11px; flex-shrink: 0; }
+    .kgp-done { color: #10B981; font-weight: 700; flex-shrink: 0; }
+    .kgp-ret {
+      flex-shrink: 0; background: rgba(16,185,129,.15); border: 1px solid rgba(16,185,129,.4);
+      color: #34D399; border-radius: 6px; padding: 4px 10px;
+      font-size: 11px; font-weight: 700; font-family: var(--font); cursor: pointer;
+    }
+    .kgp-form { margin-top: 9px; }
+    .kgp-form input[type=text], .kgp-form #kGpDesc {
+      width: 100%; box-sizing: border-box; background: rgba(255,255,255,.05);
+      border: 1px solid var(--border-md); border-radius: 7px; padding: 9px 10px;
+      color: #F1F5F9; font-size: 13px; font-family: var(--font);
+    }
+    .kgp-ctl { display: flex; align-items: center; gap: 6px; margin-top: 6px; }
+    .kgp-ctl #kGpQty {
+      width: 52px; background: rgba(255,255,255,.05); border: 1px solid var(--border-md);
+      border-radius: 7px; padding: 8px 6px; color: #F1F5F9; font-size: 13px;
+      font-family: var(--font); text-align: center;
+    }
+    .kgp-cam {
+      flex-shrink: 0; background: rgba(255,255,255,.05); border: 1px solid var(--border-md);
+      border-radius: 7px; padding: 7px 9px; cursor: pointer; font-size: 15px; line-height: 1;
+    }
+    .kgp-chk { flex: 1; display: flex; align-items: center; gap: 5px; color: var(--muted); font-size: 11px; cursor: pointer; }
+    .kgp-add {
+      flex-shrink: 0; background: #2563EB; border: none; border-radius: 7px;
+      padding: 9px 16px; color: #fff; font-size: 12px; font-weight: 700;
+      font-family: var(--font); cursor: pointer;
+    }
+    .kgp-add:disabled { opacity: .5; cursor: default; }
+
+    /* ── Check-out settlement ── */
+    .kgp-choose { display: flex; gap: 5px; flex-shrink: 0; }
+    .kgp-keep {
+      background: rgba(248,113,113,.14); border: 1px solid rgba(248,113,113,.4);
+      color: #FCA5A5; border-radius: 6px; padding: 4px 10px;
+      font-size: 11px; font-weight: 700; font-family: var(--font); cursor: pointer;
+    }
+    .kgp-answered { opacity: .85; }
+    .kgp-verdict { flex-shrink: 0; font-size: 11px; font-weight: 700; cursor: pointer; border-radius: 6px; padding: 4px 9px; }
+    .kgp-v-ret  { background: rgba(16,185,129,.15); color: #34D399; }
+    .kgp-v-kept { background: rgba(248,113,113,.14); color: #FCA5A5; }
+    .kgp-muted  { opacity: .45; }
+    .kgp-muted .kgp-done { color: var(--muted); font-weight: 600; font-size: 11px; }
+    .kgp-done-btn {
+      width: 100%; margin-top: 10px; padding: 11px; border: none; border-radius: 9px;
+      background: #0D9488; color: #fff; font-size: 13px; font-weight: 700;
+      font-family: var(--font); cursor: pointer;
+    }
+    .kgp-done-btn:disabled { background: #334155; color: #64748B; cursor: default; }
+    .kgp-reason {
+      width: 100%; margin-bottom: 7px; padding: 11px; border: 1px solid var(--border-md);
+      border-radius: 8px; background: rgba(255,255,255,.05); color: #E2E8F0;
+      font-size: 13px; font-weight: 600; font-family: var(--font); cursor: pointer; text-align: left;
+    }
     .krc-spinner {
       width: 30px; height: 30px;
       border: 3px solid rgba(56,189,248,.15);
@@ -776,6 +844,7 @@
       </div>
     </div>
     <nav class="k-nav">
+      <a class="k-nav-link" data-page="scanner">&#9635; <span data-i18n="nav_scanner">Scanner</span></a>
       <a class="k-nav-link" data-page="dashboard">&#9776; <span data-i18n="nav_dashboard">Dashboard</span></a>
       <a class="k-nav-link" data-page="reports">&#9741; <span data-i18n="nav_reports">Reports</span></a>
       <a class="k-nav-link" data-page="visitors">&#9786; <span data-i18n="nav_visitors">Visitors</span></a>
@@ -941,6 +1010,18 @@
     </div>
   </div>
 
+  <!-- Why is this item leaving with the visitor? -->
+  <div id="kGpReasonBox" data-gpid="" style="display:none;position:fixed;inset:0;z-index:1002;background:rgba(2,6,16,.8);align-items:center;justify-content:center;padding:24px">
+    <div style="width:100%;max-width:320px;background:#0F172A;border:1px solid #1E293B;border-radius:14px;padding:18px;font-size:13px">
+      <div style="color:#E2E8F0;font-weight:700;margin-bottom:14px;text-align:center" data-i18n="kiosk_gp_reason_title">Item leaving — why?</div>
+      <button class="kgp-reason" onclick="kGpReasonPick(qrattT('kiosk_gp_reason_host'))" data-i18n="kiosk_gp_reason_host">Host approved</button>
+      <button class="kgp-reason" onclick="kGpReasonPick(qrattT('kiosk_gp_reason_repair'))" data-i18n="kiosk_gp_reason_repair">Taken for repair</button>
+      <button class="kgp-reason" onclick="kGpReasonPick(qrattT('kiosk_gp_reason_notback'))" data-i18n="kiosk_gp_reason_notback">Not returned</button>
+      <button class="kgp-reason" onclick="kGpReasonPick('__other__')" data-i18n="kiosk_gp_reason_other">Other…</button>
+      <button onclick="kGpReasonCancel()" style="width:100%;margin-top:10px;padding:9px;border:1px solid #334155;border-radius:8px;background:transparent;color:#94A3B8;font-weight:600;font-family:var(--font);cursor:pointer" data-i18n="kiosk_cancel">Cancel</button>
+    </div>
+  </div>
+
   <!-- confirm dialog -->
   <div id="pmConfirm" style="display:none;position:fixed;inset:0;z-index:1001;background:rgba(2,6,16,.8);align-items:center;justify-content:center;padding:24px">
     <div style="width:100%;max-width:300px;background:#0F172A;border:1px solid #1E293B;border-radius:14px;padding:18px;text-align:center;font-size:13px">
@@ -1095,6 +1176,11 @@
       else if (data.action === 'lookupVisitorByPhone') r.lookupVisitorByPhone(data.phone);
       else if (data.action === 'getEmployeeMonth') r.getEmployeeMonth(data.empId);
       else if (data.action === 'checkoutEmployee') r.checkoutEmployee(data.empId);
+      else if (data.action === 'getGatepass') r.getGatepass(data.visitorId);
+      else if (data.action === 'addGatepassItem') r.addGatepassItem(data.visitorId, data.item);
+      else if (data.action === 'markItemReturned') r.markItemReturned(data.gatepassId);
+      else if (data.action === 'settleGatepassAtCheckout') r.settleGatepassAtCheckout(data.visitorId, data.decisions);
+      else if (data.action === 'notifyHostItemsKept') r.notifyHostItemsKept(data.visitorId, data.kept);
       else callback({ success: false, error: 'Unknown: ' + data.action });
     }
   </script>
@@ -1434,6 +1520,15 @@
   var kioskScanWin = null;
   var kioskDismissTimer = null;
 
+  // Single owner of the auto-dismiss. Both scan paths used to arm their own
+  // after kioskShowResult() had already run, so anything the card held open
+  // (an item being typed, an unreturned-items warning) got yanked at 8s.
+  function kioskArmDismiss() {
+    clearTimeout(kioskDismissTimer);
+    if (kGpHeld) return;
+    kioskDismissTimer = setTimeout(kioskDismissResult, 8000);
+  }
+
   window.addEventListener('message', function(e) {
     if (!e.data) return;
     if (e.data.qratt_code) kioskOnScan(e.data.qratt_code, e.source);
@@ -1468,8 +1563,7 @@
       if (sourceWin) { try { sourceWin.postMessage({ qratt_result: res }, '*'); } catch(ex) {} }
       else if (kioskScanWin && !kioskScanWin.closed) { try { kioskScanWin.postMessage({ qratt_result: res }, '*'); } catch(ex) {} }
       kioskShowResult(res);
-      clearTimeout(kioskDismissTimer);
-      kioskDismissTimer = setTimeout(kioskDismissResult, 8000);
+      kioskArmDismiss();
     });
   }
 
@@ -1483,8 +1577,7 @@
       post({ action: 'processQRScan', qrCode: qr, gate: gate }, function(res) {
         kioskShowResult(res);
         document.getElementById('kioskManualCode').value = '';
-        clearTimeout(kioskDismissTimer);
-        kioskDismissTimer = setTimeout(kioskDismissResult, 8000);
+        kioskArmDismiss();
       });
     };
 
@@ -1512,6 +1605,7 @@
   }
 
   function kioskShowResult(res) {
+    kGpHeld = false; kGpPhotoData = ''; kGpDecisions = {};   // a new scan is a fresh card
     var r = document.getElementById('kioskResult');
     r.style.display = 'block';
     document.getElementById('kioskScanLauncher').style.display = 'none';
@@ -1550,8 +1644,240 @@
       '<div class="krc-name">' + esc(res.name || qrattT('kiosk_unknown')) + '</div>' +
       '<div class="krc-dept">' + esc(res.department || '') + '</div>' +
       metaHtml +
+      // Items live on the scan card itself. The guard is holding the visitor
+      // at this moment — sending them to another page to log a laptop is what
+      // made this unusable.
+      (res.type === 'VIS' && res.empId ? '<div id="kGpMount" class="kgp"></div>' : '') +
       '<button onclick="kioskDismissResult()" style="margin-top:12px;background:rgba(255,255,255,.06);border:1px solid var(--border-md);color:var(--muted);border-radius:6px;padding:6px 18px;font-size:11px;font-weight:600;font-family:var(--font);cursor:pointer;">' + esc(qrattT('kiosk_dismiss')) + '</button>' +
       '</div>';
+
+    if (res.type === 'VIS' && res.empId) {
+      // Direction is inferred from the scan: arriving = bringing IN, leaving =
+      // taking OUT. One less control for the guard to think about.
+      kGpLoad(res.empId, res.action === 'CHECK_OUT' ? 'OUT' : 'IN');
+      if (res.action === 'CHECK_OUT' && res.returnableOutstanding > 0) kioskHold();
+    }
+  }
+
+  /* ── Items on the kiosk scan card ──────────────────────────────────────
+     The card auto-dismisses at 8s, which would yank it away mid-entry. Any
+     interaction holds it open; the guard closes it themselves. Mirrors
+     holdResult() on the scanner page. ── */
+  var kGpHeld = false, kGpVid = '', kGpDir = 'IN';
+
+  function kioskHold() {
+    kGpHeld = true;
+    clearTimeout(kioskDismissTimer);
+  }
+
+  function kGpLoad(vid, dir) {
+    kGpVid = vid;
+    if (dir) kGpDir = dir;
+    post({ action: 'getGatepass', visitorId: vid }, function(d) {
+      kGpRender(d || { items: [], returnableOutstanding: 0 });
+    });
+  }
+
+  function kGpRender(d) {
+    var mount = document.getElementById('kGpMount');
+    if (!mount) return;
+    var items = (d.items || []).filter(function(i) { return i.status !== 'VOID'; });
+    var out   = d.returnableOutstanding || 0;
+
+    // On the way OUT with items owed back, the list stops being a read-only
+    // warning and becomes the checklist that must be answered before the
+    // check-out completes. See kGpRenderCheckout().
+    if (kGpDir === 'OUT' && out > 0) { kGpRenderCheckout(items); return; }
+
+    var rows = items.map(function(i) {
+      return '<div class="kgp-row">' +
+        '<span class="kgp-desc">' + esc(i.itemDesc) + '</span>' +
+        '<span class="kgp-qty">' + esc(i.direction) + ' ' + esc(i.qty) + '</span>' +
+        (i.status === 'OUT_PENDING'
+          ? '<button class="kgp-ret" onclick="kGpReturn(\'' + esc(i.gatepassId) + '\')">' + esc(qrattT('kiosk_gp_returned')) + '</button>'
+          : '<span class="kgp-done">✓</span>') +
+        '</div>';
+    }).join('');
+
+    mount.innerHTML =
+      (out ? '<div class="kgp-warn">⚠ ' + out + ' ' + esc(qrattT('kiosk_gp_still_out')) + '</div>' : '') +
+      rows +
+      '<div class="kgp-form">' +
+        '<input id="kGpDesc" placeholder="' + esc(qrattT('kiosk_gp_item_placeholder')) + '" onfocus="kioskHold()" oninput="kioskHold()">' +
+        '<div class="kgp-ctl">' +
+          '<input id="kGpQty" type="number" value="1" min="1" onfocus="kioskHold()">' +
+          '<label class="kgp-cam"><input type="file" accept="image/*" capture="environment" onchange="kGpCapture(this)" hidden><span id="kGpCamLbl">📷</span></label>' +
+          '<label class="kgp-chk"><input type="checkbox" id="kGpRet" checked onchange="kioskHold()"> ' + esc(qrattT('kiosk_gp_returnable')) + '</label>' +
+          '<button class="kgp-add" onclick="kGpAdd()">' + esc(qrattT('kiosk_gp_add')) + '</button>' +
+        '</div>' +
+      '</div>';
+  }
+
+  /* ── Check-out settlement ──────────────────────────────────────────────
+     Every outstanding item needs an explicit Returned or Kept before the
+     check-out button enables. "Kept" is always allowed — nobody is trapped at
+     the gate over bookkeeping — but it now costs a reason and notifies the
+     host, so it is a recorded decision instead of a warning nobody read.
+     Non-returnables are shown greyed for context but need no answer. ── */
+  var kGpDecisions = {};   // gatepassId → {decision, reason}
+
+  function kGpRenderCheckout(items) {
+    var mount = document.getElementById('kGpMount');
+    if (!mount) return;
+    kioskHold();   // never yank a checklist mid-decision
+
+    var owed  = items.filter(function(i) { return i.status === 'OUT_PENDING'; });
+    var other = items.filter(function(i) { return i.status !== 'OUT_PENDING'; });
+
+    var rows = owed.map(function(i) {
+      var d = kGpDecisions[i.gatepassId];
+      var answered = !!d;
+      return '<div class="kgp-row' + (answered ? ' kgp-answered' : '') + '">' +
+        '<span class="kgp-desc">' + esc(i.itemDesc) + '</span>' +
+        '<span class="kgp-qty">×' + esc(i.qty) + '</span>' +
+        (answered
+          ? '<span class="kgp-verdict ' + (d.decision === 'KEPT' ? 'kgp-v-kept' : 'kgp-v-ret') + '" ' +
+              'onclick="kGpUndo(\'' + esc(i.gatepassId) + '\')" title="' + esc(qrattT('kiosk_gp_tap_change')) + '">' +
+              (d.decision === 'KEPT' ? esc(qrattT('kiosk_gp_kept')) : esc(qrattT('kiosk_gp_returned'))) + ' ✎</span>'
+          : '<span class="kgp-choose">' +
+              '<button class="kgp-ret" onclick="kGpDecide(\'' + esc(i.gatepassId) + '\',\'RETURNED\')">' + esc(qrattT('kiosk_gp_returned')) + '</button>' +
+              '<button class="kgp-keep" onclick="kGpDecide(\'' + esc(i.gatepassId) + '\',\'KEPT\')">' + esc(qrattT('kiosk_gp_kept')) + '</button>' +
+            '</span>') +
+        '</div>';
+    }).join('');
+
+    var greyed = other.map(function(i) {
+      return '<div class="kgp-row kgp-muted">' +
+        '<span class="kgp-desc">' + esc(i.itemDesc) + '</span>' +
+        '<span class="kgp-qty">' + esc(i.direction) + ' ×' + esc(i.qty) + '</span>' +
+        '<span class="kgp-done">' + esc(i.status === 'RETURNED' ? qrattT('kiosk_gp_returned') : qrattT('kiosk_gp_no_action')) + '</span>' +
+        '</div>';
+    }).join('');
+
+    var pending = owed.filter(function(i) { return !kGpDecisions[i.gatepassId]; }).length;
+
+    mount.innerHTML =
+      '<div class="kgp-warn">' + owed.length + ' ' + esc(qrattT('kiosk_gp_settle_before_exit')) + '</div>' +
+      rows + greyed +
+      '<button id="kGpDoneBtn" class="kgp-done-btn" ' + (pending ? 'disabled' : '') + ' onclick="kGpCompleteCheckout()">' +
+        (pending ? esc(qrattT('kiosk_gp_answer_remaining')).replace('{n}', pending)
+                 : esc(qrattT('kiosk_gp_complete_checkout'))) +
+      '</button>';
+  }
+
+  function kGpDecide(gatepassId, decision) {
+    kioskHold();
+    if (decision === 'KEPT') { kGpAskReason(gatepassId); return; }
+    kGpDecisions[gatepassId] = { decision: 'RETURNED', reason: '' };
+    kGpLoad(kGpVid);
+  }
+
+  function kGpUndo(gatepassId) {
+    kioskHold();
+    delete kGpDecisions[gatepassId];
+    kGpLoad(kGpVid);
+  }
+
+  /* Why an item is leaving with the visitor. Preset reasons cover the common
+     cases in one tap; Other falls back to free text. */
+  function kGpAskReason(gatepassId) {
+    var box = document.getElementById('kGpReasonBox');
+    if (!box) return;
+    box.dataset.gpid = gatepassId;
+    box.style.display = 'flex';
+  }
+
+  function kGpReasonPick(reason) {
+    var box = document.getElementById('kGpReasonBox');
+    var gpid = box && box.dataset.gpid;
+    if (!gpid) return;
+    if (reason === '__other__') {
+      var typed = window.prompt(qrattT('kiosk_gp_reason_prompt'));
+      if (typed === null) return;              // cancelled — leave unanswered
+      reason = (typed || '').trim() || qrattT('kiosk_gp_reason_other');
+    }
+    kGpDecisions[gpid] = { decision: 'KEPT', reason: reason };
+    box.style.display = 'none';
+    box.dataset.gpid = '';
+    kGpLoad(kGpVid);
+  }
+
+  function kGpReasonCancel() {
+    var box = document.getElementById('kGpReasonBox');
+    if (box) { box.style.display = 'none'; box.dataset.gpid = ''; }
+  }
+
+  function kGpCompleteCheckout() {
+    kioskHold();
+    var btn = document.getElementById('kGpDoneBtn');
+    if (btn) { btn.disabled = true; btn.textContent = '…'; }
+
+    var decisions = Object.keys(kGpDecisions).map(function(id) {
+      return { gatepassId: id, decision: kGpDecisions[id].decision, reason: kGpDecisions[id].reason };
+    });
+
+    post({ action: 'settleGatepassAtCheckout', visitorId: kGpVid, decisions: decisions }, function(res) {
+      if (!res || !res.success) {
+        if (btn) { btn.disabled = false; btn.textContent = qrattT('kiosk_gp_complete_checkout'); }
+        alert((res && res.error) || qrattT('kiosk_gp_add_failed'));
+        return;
+      }
+      // Someone walked out with company property on purpose — the host hears
+      // about it. Best-effort: the check-out is already settled regardless.
+      if (res.kept && res.kept.length) {
+        post({ action: 'notifyHostItemsKept', visitorId: kGpVid, kept: res.kept }, function() {});
+      }
+      kGpDecisions = {};
+      kioskDismissResult();
+      loadData();
+    });
+  }
+
+  /* Downscale in the browser — a full-res phone photo is megabytes and the
+     Apps Script payload limit is not generous. */
+  function kGpCapture(input) {
+    kioskHold();
+    var f = input.files && input.files[0];
+    if (!f) return;
+    var img = new Image();
+    img.onload = function() {
+      var s = Math.min(1, 320 / Math.max(img.width, img.height));
+      var cv = document.createElement('canvas');
+      cv.width = img.width * s; cv.height = img.height * s;
+      cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+      kGpPhotoData = cv.toDataURL('image/jpeg', 0.5);
+      var lbl = document.getElementById('kGpCamLbl');
+      if (lbl) lbl.textContent = '📷✓';
+    };
+    img.src = URL.createObjectURL(f);
+  }
+  var kGpPhotoData = '';
+
+  function kGpAdd() {
+    kioskHold();
+    var descEl = document.getElementById('kGpDesc');
+    var desc = (descEl && descEl.value || '').trim();
+    if (!desc) { if (descEl) descEl.focus(); return; }
+    var btn = document.querySelector('.kgp-add');
+    if (btn) { btn.disabled = true; btn.textContent = '…'; }
+    post({ action: 'addGatepassItem', visitorId: kGpVid, item: {
+      direction: kGpDir, materialCode: '', itemDesc: desc, unit: '',
+      qty: Number((document.getElementById('kGpQty') || {}).value) || 1,
+      returnable: !!(document.getElementById('kGpRet') || {}).checked,
+      photoData: kGpPhotoData
+    }}, function(res) {
+      if (btn) { btn.disabled = false; btn.textContent = qrattT('kiosk_gp_add'); }
+      if (res && res.success) { kGpPhotoData = ''; kGpLoad(kGpVid); }
+      else alert((res && res.error) || qrattT('kiosk_gp_add_failed'));
+    });
+  }
+
+  function kGpReturn(gatepassId) {
+    kioskHold();
+    post({ action: 'markItemReturned', gatepassId: gatepassId }, function(res) {
+      if (res && res.success) kGpLoad(kGpVid);
+      else alert((res && res.error) || qrattT('kiosk_gp_add_failed'));
+    });
   }
 
   function kioskDismissResult() {
