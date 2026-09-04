@@ -1182,6 +1182,7 @@
       else if (data.action === 'lookupVisitorByPhone') r.lookupVisitorByPhone(data.phone);
       else if (data.action === 'getEmployeeMonth') r.getEmployeeMonth(data.empId);
       else if (data.action === 'checkoutEmployee') r.checkoutEmployee(data.empId);
+      else if (data.action === 'checkoutVisitor') r.checkoutVisitor(data.visitorId);
       else if (data.action === 'getGatepass') r.getGatepass(data.visitorId);
       else if (data.action === 'addGatepassItem') r.addGatepassItem(data.visitorId, data.item);
       else if (data.action === 'markItemReturned') r.markItemReturned(data.gatepassId);
@@ -1356,6 +1357,13 @@
       btn.disabled = false; btn.textContent = qrattT('kiosk_check_out');
       document.getElementById('pmBackdrop').style.display = 'flex';
 
+      // A visitor is not an employee: getEmployeeMonth returns nothing for a
+      // VisitorID, which left this modal empty with a dead Check Out button —
+      // so handling a visitor meant leaving the kiosk for the Visitors page.
+      // Visitors get their items here instead.
+      if (String(empId).indexOf('VIS') === 0) { pmOpenVisitor(empId, name); return; }
+      kGpVid = '';   // employee modal owns no gatepass; drop any in-flight one
+
       post({ action: 'getEmployeeMonth', empId: empId }, function(d) {
         if (!d || !d.success) {
           document.getElementById('pmRows').innerHTML = '<div style="padding:16px 0;color:#F87171;font-size:12px">' + esc((d && d.error) || qrattT('kiosk_failed_to_load')) + '</div>';
@@ -1384,6 +1392,24 @@
       });
     }
 
+    /* Visitor view of the person modal: their items, addable and returnable
+       right here, plus a real check-out. Reuses the same kGp* renderer as the
+       scan card — one item UI, not two. */
+    function pmOpenVisitor(visitorId, name) {
+      document.getElementById('pmMonth').textContent = qrattT('kiosk_gp_items_title');
+      document.getElementById('pmTotals').textContent = '';
+      document.getElementById('pmRows').innerHTML = '<div id="kGpMount" class="kgp"></div>';
+
+      var btn = document.getElementById('pmCheckoutBtn');
+      btn.disabled = false;
+      btn.textContent = qrattT('kiosk_check_out');
+      btn.style.background = '#0D9488'; btn.style.cursor = 'pointer';
+
+      // Direction IN: from the grid the visitor is on site, so anything logged
+      // now is coming in with them. Leaving is handled by the check-out button.
+      kGpLoad(visitorId, 'IN');
+    }
+
     function pmSetCheckoutState(inToday, outToday) {
       var btn = document.getElementById('pmCheckoutBtn');
       if (outToday) { btn.disabled = true; btn.textContent = '✓ ' + qrattT('kiosk_checked_out'); btn.style.background = '#334155'; btn.style.cursor = 'default'; }
@@ -1397,7 +1423,14 @@
       if (!pmEmpId) return;
       var name = document.getElementById('pmName').textContent;
       pmConfirmAction = 'checkout';
-      document.getElementById('pmConfirmText').textContent = qrattT('kiosk_confirm_checkout_q').replace('{name}', name);
+
+      // Name the outstanding items in the confirm, so nobody is checked out
+      // past an unreturned laptop without being told which one.
+      var owed = document.querySelectorAll('#kGpMount .kgp-ret').length;
+      var extra = owed ? '\n\n⚠ ' + owed + ' ' + qrattT('kiosk_gp_still_out') : '';
+
+      document.getElementById('pmConfirmText').textContent =
+        qrattT('kiosk_confirm_checkout_q').replace('{name}', name) + extra;
       document.getElementById('pmConfirm').style.display = 'flex';
     }
     function pmConfirmCancel() { document.getElementById('pmConfirm').style.display = 'none'; pmConfirmAction = null; }
@@ -1406,7 +1439,10 @@
       if (pmConfirmAction !== 'checkout' || !pmEmpId) return;
       var btn = document.getElementById('pmCheckoutBtn');
       btn.disabled = true; btn.textContent = qrattT('kiosk_checking_out');
-      post({ action: 'checkoutEmployee', empId: pmEmpId }, function(d) {
+
+      var isVisitor = String(pmEmpId).indexOf('VIS') === 0;
+      post({ action: isVisitor ? 'checkoutVisitor' : 'checkoutEmployee',
+             empId: pmEmpId, visitorId: pmEmpId }, function(d) {
         if (d && d.success) {
           btn.textContent = '✓ ' + qrattT('kiosk_checked_out') + ' ' + (d.time || '');
           setTimeout(function() { pmClose(); loadData(); }, 900);
@@ -1704,13 +1740,19 @@
     kGpVid = vid;
     if (dir) kGpDir = dir;
     post({ action: 'getGatepass', visitorId: vid }, function(d) {
-      kGpRender(d || { items: [], returnableOutstanding: 0 });
+      d = d || { items: [], returnableOutstanding: 0 };
+      d.forVisitor = vid;   // tagged here so kGpRender can drop a stale reply
+      kGpRender(d);
     });
   }
 
   function kGpRender(d) {
     var mount = document.getElementById('kGpMount');
     if (!mount) return;
+    // Guard against a stale response: getGatepass is async, so a reply for the
+    // previous visitor can land after the modal has been reopened for someone
+    // else (or for an employee, which has no item list at all).
+    if (d && d.forVisitor && d.forVisitor !== kGpVid) return;
     var items = (d.items || []).filter(function(i) { return i.status !== 'VOID'; });
     var out   = d.returnableOutstanding || 0;
 

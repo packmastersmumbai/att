@@ -252,6 +252,20 @@ const GAS_MOCK_SCRIPT = `
         respond({ success: true, visitorId: 'VIS-E2E', qrCode: 'VIS-E2E-QR' });
       },
 
+      // The kiosk person modal calls this for an EMPLOYEE card. Its absence
+      // made that path throw, so the modal kept whatever was rendered before —
+      // which looked like a product bug when it was a missing mock.
+      getEmployeeMonth: function(empId) {
+        respond({
+          success: true, month: '2026-09', presentDays: 18, lateDays: 2,
+          inToday: true, outToday: false,
+          rows: [
+            { day: '01', weekday: 'Mon', timeIn: '09:05 AM', timeOut: '05:30 PM', lateMins: 0 },
+            { day: '02', weekday: 'Tue', timeIn: '09:42 AM', timeOut: '06:10 PM', lateMins: 12 }
+          ]
+        });
+      },
+
       checkoutVisitor: function(visitorId) {
         respond({ success: true, visitorId: visitorId, returnableOutstanding: 0 });
       },
