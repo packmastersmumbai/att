@@ -1,0 +1,153 @@
+<!--
+  Shared design tokens.
+
+  WHY THIS FILE EXISTS
+  Eleven pages each declared their own :root block. The VALUES already agreed
+  almost everywhere (#000666 navy, #006b5f teal, #DC2626 danger, #fcf9f8 page,
+  #e8e3e0 border, #1b1c1c ink, Public Sans / Roboto Mono, radii 2/4/8) — it was
+  the NAMES that forked three ways:
+
+      --primary          (admin, reports, kiosk, vreg, vpass, idcards, e2e)
+      --color-primary    (dashboard, visitors, scanner, login)
+      --muted / --color-text-muted / --color-muted   for one grey
+
+  So a token edit had to be made in up to eleven places and usually wasn't,
+  which is how 179 distinct hex literals, 16 radius values and a 24-step
+  padding scale accumulated.
+
+  HOW IT IS INJECTED — AND WHY ORDER IS THE WHOLE TRICK
+  doGet() splices this in immediately after <head>, BEFORE each page's own
+  <style>. That ordering is load-bearing: both this file and the pages declare
+  :root, so they tie on specificity and the LATER one wins. Being first makes
+  every value here a default that any page silently overrides just by
+  declaring its own — plain cascade, no !important, no per-page edits.
+
+  Adding this file therefore changes nothing on any page. A page migrates by
+  DELETING a local token and inheriting this one, one page at a time.
+
+  (The obvious-looking alternative, `--primary: var(--primary, X)` injected
+  afterwards, does NOT work: a custom property referencing itself is a cycle
+  and resolves to nothing, blanking the token on every page. Verified in
+  Chromium before this file was written.)
+
+  Both naming conventions are defined and point at the same values, so
+  --primary and --color-primary cannot drift apart again.
+
+  DELIBERATELY NOT DEFINED HERE
+  The kiosk and vpass dark palettes. They are surface-specific, not brand
+  tokens, and flattening them into one light scale would wreck both screens.
+-->
+<style>
+:root {
+  /* ── Brand ─────────────────────────────────────────────────────────────
+     Navy is the product's primary. Teal is the secondary/success accent —
+     and is what the visitor-facing pages (vreg, vpass) currently use AS
+     their primary, which is the one real brand split left in the app. */
+  --qr-navy:        #000666;
+  --qr-navy-dk:     #000444;
+  --qr-teal:        #006b5f;
+  --qr-teal-dk:     #005549;
+
+  /* ── Status ──────────────────────────────────────────────────────────── */
+  --qr-danger:      #DC2626;
+  --qr-warning:     #D97706;
+  --qr-blocked:     #7C3AED;
+
+  /* ── Light-surface neutrals ──────────────────────────────────────────── */
+  --qr-bg:          #fcf9f8;
+  --qr-surface:     #ffffff;
+  --qr-border:      #e8e3e0;
+  --qr-text:        #1b1c1c;
+  --qr-muted:       #4a5568;
+  --qr-muted-light: #6b7280;
+
+  /* ── Radius ──────────────────────────────────────────────────────────
+     Three steps. The codebase currently uses sixteen (1,2,3,4,5,6,7,8,9,
+     10,12,14,16,20,99,999); 3px and 4px chips sit side by side on one page.
+     999px is kept as a named pill rather than a magic number. */
+  --qr-radius-sm:   2px;
+  --qr-radius-md:   4px;
+  --qr-radius-lg:   8px;
+  --qr-radius-xl:   12px;
+  --qr-radius-pill: 999px;
+
+  /* ── Spacing ─────────────────────────────────────────────────────────
+     A 4px scale. Padding in the pages currently uses 24 different values
+     including 1,2,3,5,7,9,11,13,15px, so gaps that should read as equal
+     do not. */
+  --qr-space-1:  4px;
+  --qr-space-2:  8px;
+  --qr-space-3: 12px;
+  --qr-space-4: 16px;
+  --qr-space-5: 20px;
+  --qr-space-6: 24px;
+  --qr-space-8: 32px;
+
+  /* ── Type ────────────────────────────────────────────────────────────
+     10/11/13px currently do three different jobs with 1-2px between them,
+     which is why table headers, badges and body text read as one blur. */
+  --qr-text-xs:  11px;
+  --qr-text-sm:  12px;
+  --qr-text-md:  13px;
+  --qr-text-lg:  15px;
+  --qr-text-xl:  18px;
+
+  /* ── Fonts ───────────────────────────────────────────────────────────── */
+  --qr-font:      'Public Sans', system-ui, -apple-system, sans-serif;
+  --qr-font-mono: 'Roboto Mono', ui-monospace, monospace;
+
+  /* ── Elevation ───────────────────────────────────────────────────────── */
+  --qr-shadow-sm: 0 1px 3px rgba(0,0,0,.08);
+  --qr-shadow-md: 0 4px 16px rgba(0,0,0,.12);
+
+  /* ── Controls ────────────────────────────────────────────────────────
+     A gate tablet is used with gloves. 44px is the minimum comfortable
+     touch target; several buttons are currently ~36px. */
+  --qr-control-h:      40px;
+  --qr-control-h-touch: 44px;
+
+  /* ══ Both naming conventions ═════════════════════════════════════════
+     Defaults only — this file is injected before the pages, so any page
+     that declares one of these overrides it. Both families resolve to the
+     same source values, so they cannot drift apart again. */
+
+  /* --primary family (admin, reports, kiosk, vreg, vpass, idcards, e2e) */
+  --primary:        var(--qr-navy);
+  --primary-dk:     var(--qr-navy-dk);
+  --success:        var(--qr-teal);
+  --danger:         var(--qr-danger);
+  --warning:        var(--qr-warning);
+  --blocked:        var(--qr-blocked);
+  --bg:             var(--qr-bg);
+  --surface:        var(--qr-surface);
+  --border:         var(--qr-border);
+  --text:           var(--qr-text);
+  --muted:          var(--qr-muted);
+  --muted-light:    var(--qr-muted-light);
+  --font:           var(--qr-font);
+  --mono:           var(--qr-font-mono);
+
+  /* --color-* family (dashboard, visitors, scanner, login) */
+  --color-primary:    var(--qr-navy);
+  --color-primary-dk: var(--qr-navy-dk);
+  --color-success:    var(--qr-teal);
+  --color-danger:     var(--qr-danger);
+  --color-warning:    var(--qr-warning);
+  --color-blocked:    var(--qr-blocked);
+  --color-bg:         var(--qr-bg);
+  --color-surface:    var(--qr-surface);
+  --color-border:     var(--qr-border);
+  --color-text:       var(--qr-text);
+  --color-text-muted: var(--qr-muted);
+  --color-muted:      var(--qr-muted-light);
+  --font-sans:        var(--qr-font);
+  --font-mono:        var(--qr-font-mono);
+
+  /* Radius + shadow, shared by both families */
+  --radius-sm: var(--qr-radius-sm);
+  --radius-md: var(--qr-radius-md);
+  --radius-lg: var(--qr-radius-lg);
+  --shadow-sm: var(--qr-shadow-sm);
+  --shadow-md: var(--qr-shadow-md);
+}
+</style>

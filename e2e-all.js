@@ -23,6 +23,7 @@ const SUITES = [
   { n: 9, label: 'Gatepass',       mod: './e2e-sweep-9-gatepass'   },
   { n: 10, label: 'Gatepass wiring', mod: './e2e-sweep-10-gatepass-connect' },
   { n: 11, label: 'Kiosk gatepass',  mod: './e2e-sweep-11-kiosk-gatepass' },
+  { n: 12, label: 'Design tokens',   mod: './e2e-sweep-12-tokens'        },
 ];
 
 async function main() {

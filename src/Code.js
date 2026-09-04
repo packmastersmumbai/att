@@ -115,7 +115,16 @@ function doGet(e) {
   // setTitle/addMetaTag/setXFrameOptionsMode aren't available on a template,
   // so evaluate first, patch the content string, then rebuild the output.
   var evaluated = template.evaluate();
-  var withI18n = evaluated.getContent().replace('</head>',
+
+  // Shared design tokens go in FIRST — right after <head>, ahead of the page's
+  // own <style>. Both declare :root, so they tie on specificity and the later
+  // one wins; being first makes every shared value a default the page silently
+  // overrides just by declaring its own. Injecting them before </head> instead
+  // would invert that and restyle all eleven pages at once.
+  var withTokens = evaluated.getContent().replace('<head>',
+    '<head>' + HtmlService.createHtmlOutputFromFile('tokens').getContent());
+
+  var withI18n = withTokens.replace('</head>',
     HtmlService.createHtmlOutputFromFile('i18n').getContent() +
     // Shared visitor-item card (markup + styles + QRATT_GPC renderer). Injected
     // like i18n so every surface renders items identically instead of each page
