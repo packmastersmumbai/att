@@ -13,9 +13,16 @@ function installTriggers(authToken) {
   var hoursHr    = parseInt(getConfigValue('HoursRebuildHr') || '1'); // after auto-checkout closes the day
   var backupHr   = parseInt(getConfigValue('BackupHr')       || '23'); // end of day, after checkout
 
+  // GAS fires an .atHour() trigger somewhere inside that hour, not on the dot.
+  // nearMinute() narrows it to ~±15min, which is as precise as the platform
+  // allows — worth setting so "digest at 09:00" is not delivered at 09:52.
+  var summaryMin = parseInt(getConfigValue('SummaryMin') || '0');
+  if (isNaN(summaryMin) || summaryMin < 0 || summaryMin > 59) summaryMin = 0;
+
   ScriptApp.newTrigger('sendDailySummary')
     .timeBased()
     .atHour(summaryHr)
+    .nearMinute(summaryMin)
     .everyDays(1)
     .create();
 
@@ -203,18 +210,36 @@ function _alertUnreturnedAtAutoCheckout_() {
   var active = getSheetAsObjects(SHEETS.ACTIVE_VISITORS);
   if (!active.length) return;
 
-  var lines = [];
+  var lines = [], owing = [];
   active.forEach(function(a) {
     var id = String(a.VisitorID || '');
     if (!id) return;
     var n = 0;
     try { n = getVisitorReturnablesOutstanding(id); } catch (e) { return; }
-    if (n > 0) lines.push('• ' + (a.Name || id) + ' — ' + n + ' item(s) not returned');
+    if (n > 0) {
+      // _tgEsc_ — this used to interpolate the name raw, so a visitor called
+      // "Ram & Co <Pvt>" broke HTML parsing and the message arrived stripped
+      // of all formatting by the transport's plain-text retry.
+      lines.push('• <b>' + _tgEsc_(a.Name || id) + '</b> — ' + n + ' item(s) not returned');
+      owing.push({ id: id, name: a.Name || id });
+    }
   });
   if (!lines.length) return;
 
-  var msg = '⚠️ <b>Auto-checkout: unreturned items</b>\n' +
-            'These visitors were closed out by the nightly sweep while still holding returnable items:\n' +
-            lines.join('\n');
-  try { _sendTelegram(msg); } catch (e) { Logger.log('unreturned alert telegram: ' + e.message); }
+  var msg = _tgCard_({
+    icon: '⚠️', title: 'Auto-checkout: unreturned items',
+    body: lines.join('\n'), raw: true,
+    footer: '<i>Closed out by the nightly sweep while still holding returnable items.</i>'
+  });
+
+  // One "mark returned" button per visitor, so the common case (the items did
+  // come back, nobody ticked them off) is a single tap instead of opening the
+  // app. Capped at 5 — beyond that the keyboard is unreadable and /outstanding
+  // is the better tool.
+  var buttons = owing.slice(0, 5).map(function(v) {
+    return [{ text: '✓ ' + v.name + ' returned', callback_data: 'gpret:' + v.id }];
+  });
+
+  if (!_alertOn_('AlertUnreturned')) return;
+  try { _sendTelegram(msg, _tgButtons_(buttons)); } catch (e) { Logger.log('unreturned alert telegram: ' + e.message); }
 }

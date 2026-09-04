@@ -16,7 +16,178 @@ function _tgEsc_(s) {
   return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-function _sendTelegram(message) {
+/**
+ * Is an alert enabled? Reads a Config 'on'/'off' flag, defaulting to ON so a
+ * fresh install (or a Config row someone deleted) still notifies rather than
+ * going silently dark.
+ */
+function _alertOn_(key) {
+  var v;
+  try { v = getConfigValue(key); } catch (e) { return true; }
+  if (v === '' || v == null) return true;
+  v = String(v).trim().toLowerCase();
+  return !(v === 'off' || v === 'false' || v === 'no' || v === '0');
+}
+
+/** Inline buttons can be switched off wholesale (e.g. a read-only channel). */
+function _tgButtons_(buttons) {
+  return _alertOn_('AlertButtons') ? buttons : null;
+}
+
+/**
+ * One card shape for every Telegram message.
+ *
+ * Before this, four files each invented their own layout and their own copy of
+ * an escape helper — a badge card for the pass, a header/body block for
+ * gatepass and feedback, a bare one-liner for scans — so nothing looked
+ * related and one of them (the auto-checkout alert) escaped nothing at all.
+ *
+ * opts = {
+ *   icon, title,            // header line
+ *   subtitle,               // optional line under the rule, bold
+ *   note,                   // optional italic line under the subtitle
+ *   rows: [[label, value]], // aligned detail rows; falsy values are dropped
+ *   body,                   // free text block (already escaped by caller if HTML)
+ *   footer,                 // optional line above the site stamp
+ *   raw,                    // true = body is pre-built HTML, do not escape
+ *   bodyFirst               // true = body leads, rows follow as provenance
+ * }
+ *
+ * Every value is escaped here, so callers pass plain strings and cannot forget.
+ */
+function _tgCard_(opts) {
+  opts = opts || {};
+  var LINE = '━━━━━━━━━━━━━━━';
+  var out = [];
+
+  out.push((opts.icon ? opts.icon + ' ' : '') + '<b>' + _tgEsc_(opts.title || '') + '</b>');
+  out.push(LINE);
+
+  if (opts.subtitle) out.push('<b>' + _tgEsc_(opts.subtitle) + '</b>');
+  if (opts.note)     out.push('<i>' + _tgEsc_(opts.note) + '</i>');
+
+  var rows = (opts.rows || []).filter(function(r) { return r && r[1]; });
+
+  // bodyFirst: the body IS the message (a user's complaint, say) and the rows
+  // are just provenance — lead with it instead of burying it under metadata.
+  if (opts.bodyFirst && opts.body) {
+    out.push(opts.raw ? opts.body : _tgEsc_(opts.body));
+    if (rows.length) out.push(LINE);
+  }
+
+  if (rows.length) {
+    if ((opts.subtitle || opts.note) && !opts.bodyFirst) out.push(LINE);
+    // Pad labels so values line up. Telegram's font is proportional, so this
+    // is approximate — good enough to read as a column, and <pre> would fight
+    // the surrounding bold text.
+    var w = 0;
+    rows.forEach(function(r) { if (String(r[0]).length > w) w = String(r[0]).length; });
+    rows.forEach(function(r) {
+      var label = String(r[0]);
+      var padded = label + Array(w - label.length + 1).join(' ');
+      out.push('<b>' + _tgEsc_(padded) + '</b>   ' + _tgEsc_(r[1]));
+    });
+  }
+
+  if (opts.body && !opts.bodyFirst) {
+    // Only rule off when something precedes the body — otherwise the header's
+    // own rule and this one render as a doubled divider.
+    if (opts.subtitle || opts.note || rows.length) out.push(LINE);
+    out.push(opts.raw ? opts.body : _tgEsc_(opts.body));
+  }
+
+  out.push(LINE);
+  if (opts.footer) out.push(opts.footer);
+
+  // Every message says where it came from. Only the digest used to, so a
+  // channel serving two sites could not tell them apart. Switchable off for a
+  // single-site channel where the stamp is just noise on every message.
+  if (_alertOn_('AlertShowSite')) {
+    var org = '';
+    try { org = getConfigValue('OrgName') || ''; } catch (e) {}
+    if (org) out.push('🏢 ' + _tgEsc_(org));
+  }
+
+  return out.join('\n');
+}
+
+/**
+ * Renders sample cards through the REAL _tgCard_ with the CURRENT toggles, so
+ * the admin preview cannot drift from what actually gets sent. Returns HTML
+ * exactly as Telegram would receive it; the page renders it as-is.
+ */
+function previewAlertTemplates() {
+  try {
+    var samples = [
+      { key: 'blacklist', label: 'Blacklisted entry attempt', always: true,
+        msg: _tgCard_({
+          icon: '🚨', title: 'BLACKLISTED ENTRY ATTEMPT',
+          subtitle: 'Ramesh Kumar',
+          rows: [
+            ['Gate', _alertOn_('AlertShowGate') ? 'Main Gate' : ''],
+            ['Time', '09:48 AM'],
+            ['QR',   'VIS-20260904-A1B2C3']
+          ],
+          footer: '⚠️ <b>Verify at the gate before allowing entry.</b>'
+        }),
+        buttons: _alertOn_('AlertButtons') ? ['👁 Acknowledge'] : [] },
+
+      { key: 'AlertVisitorArrival', label: 'Visitor arrived',
+        msg: _tgCard_({
+          icon: '🔔', title: 'Visitor arrived',
+          subtitle: 'Priya Sharma', note: 'Acme Ltd',
+          rows: [['To meet', 'Rahul Nair'], ['Time', '09:48 AM']]
+        }), buttons: [] },
+
+      { key: 'AlertGatepassApproval', label: 'Gatepass approval needed',
+        msg: _tgCard_({
+          icon: '📦', title: 'Gatepass approval needed',
+          subtitle: 'Ramesh Kumar', rows: [['Host', 'Rahul Nair']],
+          body: '• IN 1× laptop (returnable)\n• IN 2× toolkit (returnable)'
+        }),
+        buttons: _alertOn_('AlertButtons') ? ['✅ Approve gatepass'] : [] },
+
+      { key: 'AlertItemsKept', label: 'Visitor left with items',
+        msg: _tgCard_({
+          icon: '📤', title: 'Visitor left with items',
+          subtitle: 'Ramesh Kumar', rows: [['Host', 'Rahul Nair']],
+          body: '• <b>laptop</b> ×1 — <i>Host approved</i>', raw: true,
+          footer: '<i>These remain outstanding in the gatepass register.</i>'
+        }),
+        buttons: _alertOn_('AlertButtons') ? ['✓ Mark returned'] : [] },
+
+      { key: 'AlertUnreturned', label: 'Auto-checkout: unreturned items',
+        msg: _tgCard_({
+          icon: '⚠️', title: 'Auto-checkout: unreturned items',
+          body: '• <b>Ramesh Kumar</b> — 2 item(s) not returned', raw: true,
+          footer: '<i>Closed out by the nightly sweep while still holding returnable items.</i>'
+        }),
+        buttons: _alertOn_('AlertButtons') ? ['✓ Ramesh Kumar returned'] : [] },
+
+      { key: 'AlertFeedback', label: 'App issue reported',
+        msg: _tgCard_({
+          icon: '🛠️', title: 'App Issue Reported',
+          body: 'Scanner freezes when I tap the gate dropdown', bodyFirst: true,
+          rows: [['Page', 'kiosk'], ['Lang', 'hi'], ['Time', '10:32 AM']]
+        }),
+        buttons: _alertOn_('AlertButtons') ? ['👁 Acknowledge'] : [] },
+
+      { key: 'TelegramLiveScans', label: 'Live check-in / check-out',
+        msg: '🟢 <b>IN</b> · Ramesh Kumar · Production · ' +
+             (_alertOn_('AlertShowGate') ? 'Main Gate · ' : '') + '09:48 AM',
+        buttons: [] }
+    ];
+
+    samples.forEach(function(s) {
+      s.enabled = s.always ? true : _alertOn_(s.key);
+    });
+    return { success: true, samples: samples };
+  } catch (e) {
+    return { success: false, error: e.message };
+  }
+}
+
+function _sendTelegram(message, buttons) {
   var token  = getConfigValue('TelegramBotToken');
   var chatId = getConfigValue('TelegramChatID');
   if (!token || !chatId) {
@@ -29,10 +200,13 @@ function _sendTelegram(message) {
 
   // Sends one chunk (chat_id/parse_mode fixed here), retrying as plain text if
   // HTML parsing fails so the message still delivers.
-  function sendOne(text) {
+  function sendOne(text, markup) {
     function post(t, html) {
       var payload = { chat_id: chatId, text: t, disable_web_page_preview: true };
       if (html) payload.parse_mode = 'HTML';
+      // Buttons ride on the LAST chunk only — attaching them to every chunk of
+      // a split message would repeat the same actions several times.
+      if (markup) payload.reply_markup = markup;
       return UrlFetchApp.fetch(url, {
         method: 'post', contentType: 'application/json',
         payload: JSON.stringify(payload), muteHttpExceptions: true
@@ -59,9 +233,14 @@ function _sendTelegram(message) {
   // Telegram rejects any message over 4096 chars. Split on blank-line section
   // boundaries (never inside a <pre>) so the full present/absent list is
   // delivered across several messages instead of being truncated.
+  var markup = (buttons && buttons.length)
+    ? { inline_keyboard: buttons.map(function(row) { return row.length ? row : [row]; }) }
+    : null;
+
   var allOk = true;
-  _splitTelegramMessage_(message).forEach(function(chunk) {
-    if (!sendOne(chunk)) allOk = false;
+  var chunks = _splitTelegramMessage_(message);
+  chunks.forEach(function(chunk, i) {
+    if (!sendOne(chunk, i === chunks.length - 1 ? markup : null)) allOk = false;
   });
   return allOk;
 }
@@ -439,8 +618,11 @@ function sendScanAlert(kind, person, gate, timeStr, duration) {
   var name = _tgEsc_(person.name || (isVisitor ? 'Visitor' : 'Person'));
   var dept = person.department ? _tgEsc_(person.department) : '';
 
-  // Single-line format: emoji IN/OUT · name · [dept ·] time [· extras]
-  var tail = (dept ? dept + ' · ' : '') + _tgEsc_(timeStr);
+  // Single-line format: emoji IN/OUT · name · [dept ·] [gate ·] time [· extras]
+  // The gate was passed in and thrown away — on a multi-gate site the feed
+  // could not tell you where anyone actually entered.
+  var gateStr = (gate && _alertOn_('AlertShowGate')) ? _tgEsc_(gate) + ' · ' : '';
+  var tail = (dept ? dept + ' · ' : '') + gateStr + _tgEsc_(timeStr);
   var msg;
   if (kind === 'IN') {
     var late = !isVisitor && _isLateTime_(timeStr);  // "late" applies to employees only
@@ -479,7 +661,6 @@ function sendVisitorAlert(visitor) {
   // sendScanAlert('IN') under the Live Scans toggle — so we do NOT post the
   // channel arrival here (that caused a duplicate message).
 
-  // Notify the host employee via WhatsApp (only if a valid host with a phone exists)
   if (!visitor.hostId) return;
   var empSheet = getSheet(SHEETS.EMPLOYEES);
   var hostRow  = findRowByValue(empSheet, 'EmpID', visitor.hostId);
@@ -487,6 +668,22 @@ function sendVisitorAlert(visitor) {
 
   var hostPhone = getCell(empSheet, hostRow, 'Phone');
   var hostName  = getCell(empSheet, hostRow, 'Name');
+
+  // The host is being summoned to reception, so the channel should carry it
+  // even when that host has no phone on file — previously a missing number
+  // meant nobody anywhere was told the visitor had arrived.
+  if (_alertOn_('AlertVisitorArrival')) _sendTelegram(_tgCard_({
+    icon: '🔔', title: 'Visitor arrived',
+    subtitle: visitor.name || 'Visitor',
+    note: visitor.department || '',
+    rows: [
+      ['To meet', hostName || ''],
+      ['Time',    arrivedAt]
+    ],
+    footer: hostPhone ? '' : 'ℹ️ <i>No phone on file for the host — please tell them.</i>'
+  }));
+
+  // Notify the host employee via WhatsApp (only if a valid host with a phone exists)
   if (!hostPhone) return;
 
   var msg = 'Hi ' + hostName + ', your visitor *' + visitor.name +
@@ -503,12 +700,29 @@ function sendVisitorAlert(visitor) {
  * Alert owner when a blacklisted QR is scanned.
  */
 function sendBlacklistAlert(qrCode, personName, gate) {
+  var when = formatTime(new Date());
+
+  // Telegram FIRST, and unconditionally. This used to be WhatsApp-only, gated
+  // on OwnerPhone — so on a site without CallMeBot configured, the single most
+  // urgent event in the system reached nobody at all. The channel is the
+  // always-on shared record; it must always get this.
+  _sendTelegram(_tgCard_({
+    icon: '🚨', title: 'BLACKLISTED ENTRY ATTEMPT',
+    subtitle: personName || 'Unknown person',
+    rows: [
+      ['Gate', gate],
+      ['Time', when],
+      ['QR',   qrCode]
+    ],
+    footer: '⚠️ <b>Verify at the gate before allowing entry.</b>'
+  }), [[{ text: '👁 Acknowledge', callback_data: 'gpack:blacklist ' + String(personName || '').slice(0, 30) }]]);
+
   var ownerPhone = getConfigValue('OwnerPhone');
   if (!ownerPhone || ownerPhone === '(set after setup)') return;
 
   var msg = '⚠️ ALERT: Blacklisted person *' + personName +
     '* (QR: ' + qrCode + ') attempted entry at *' + gate +
-    '* — ' + formatTime(new Date());
+    '* — ' + when;
 
   _sendWhatsApp(ownerPhone, msg);
 
@@ -536,7 +750,9 @@ function sendDailySummary() {
   var orgName = getConfigValue('OrgName') || 'Organisation';
 
   // Post a full digest to the Telegram channel (independent of email config)
-  _sendTelegram(_buildTelegramDigest_(todayStr, orgName, empLogs, visLogs, present, absent, allEmps.length));
+  if (_alertOn_('AlertDigest')) {
+    _sendTelegram(_buildTelegramDigest_(todayStr, orgName, empLogs, visLogs, present, absent, allEmps.length));
+  }
 
   var ownerEmail = getConfigValue('OwnerEmail');
   if (!ownerEmail || ownerEmail === '(set after setup)') return;

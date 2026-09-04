@@ -263,19 +263,23 @@ function notifyHostItemsKept(visitorId, kept) {
       }
     }
 
-    function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
     var lines = kept.map(function(k) {
-      return '• ' + k.qty + '× ' + k.itemDesc + (k.reason ? ' — ' + k.reason : '');
+      return '• <b>' + _tgEsc_(k.itemDesc) + '</b> ×' + k.qty +
+             (k.reason ? ' — <i>' + _tgEsc_(k.reason) + '</i>' : '');
     }).join('\n');
 
-    var tgMsg =
-      '📤 <b>Visitor left with items</b>\n' +
-      'Visitor: <b>' + esc(visitorName) + '</b>' + (hostName ? ' → host ' + esc(hostName) : '') + '\n' +
-      esc(lines) + '\n\n' +
-      'These remain outstanding in the gatepass register.';
+    var tgMsg = _tgCard_({
+      icon: '📤', title: 'Visitor left with items',
+      subtitle: visitorName,
+      rows: [['Host', hostName]],
+      body: lines, raw: true,
+      footer: '<i>These remain outstanding in the gatepass register.</i>'
+    });
 
     var sent = false;
-    try { if (_sendTelegram(tgMsg)) sent = true; } catch (e) { Logger.log('kept telegram: ' + e.message); }
+    // One tap to close them out if they do come back later.
+    var btns = _tgButtons_([[{ text: '✓ Mark returned', callback_data: 'gpret:' + visitorId }]]);
+    try { if (_alertOn_('AlertItemsKept') && _sendTelegram(tgMsg, btns)) sent = true; } catch (e) { Logger.log('kept telegram: ' + e.message); }
     if (hostPhone) {
       var waMsg = 'Visitor *' + visitorName + '* left holding:\n' + lines + '\n\nStill outstanding in the gatepass register.';
       try { if (_sendWhatsApp(hostPhone, waMsg)) sent = true; } catch (e) { Logger.log('kept wa: ' + e.message); }
@@ -362,15 +366,17 @@ function notifyHostForApproval(visitorId) {
 
     // Primary channel: Telegram (HTML), which the app already uses for passes.
     // Secondary: WhatsApp to the host via CallMeBot (only if that key is set).
-    function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-    var tgMsg =
-      '📦 <b>Gatepass approval needed</b>\n' +
-      'Visitor: <b>' + esc(visitorName) + '</b>' + (hostName ? ' → host ' + esc(hostName) : '') + '\n' +
-      esc(lines) + '\n\n' +
-      '▶️ <a href="' + link + '">Approve gatepass</a>';
+    var tgMsg = _tgCard_({
+      icon: '📦', title: 'Gatepass approval needed',
+      subtitle: visitorName,
+      rows: [['Host', hostName]],
+      body: lines
+    });
 
     var sent = false;
-    try { if (_sendTelegram(tgMsg)) sent = true; } catch (e) { Logger.log('gp telegram: ' + e.message); }
+    // A real button beats a bare link — the host taps once, in the chat.
+    var btns = _tgButtons_([[{ text: '✅ Approve gatepass', url: link }]]);
+    try { if (_alertOn_('AlertGatepassApproval') && _sendTelegram(tgMsg, btns)) sent = true; } catch (e) { Logger.log('gp telegram: ' + e.message); }
 
     if (typeof hostPhone !== 'undefined' && hostPhone) {
       var waMsg = 'Gatepass approval for visitor *' + visitorName + '*:\n' + lines + '\n\nApprove: ' + link;
