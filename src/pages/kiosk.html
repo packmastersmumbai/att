@@ -59,7 +59,8 @@
       background: rgba(7,17,31,.8);
     }
     /* Logo mark */
-    .k-logo-wrap { display: flex; align-items: center; gap: 10px; }
+    /* flex-shrink:0 — the logo is the anchor; the nav yields, never this. */
+    .k-logo-wrap { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
     .k-logo-mark {
       width: 28px; height: 28px;
       background: linear-gradient(135deg, #38BDF8 0%, #2563EB 100%);
@@ -89,7 +90,12 @@
     .k-date { font-size: 11px; color: var(--muted); margin-top: 2px; }
 
     /* ── Top nav links ── */
-    .k-nav { display: flex; align-items: center; gap: 2px; }
+    /* min-width:0 lets this shrink below its content instead of pushing the
+       logo out of the bar; overflow-x keeps the extra items reachable. The
+       Scanner link made this a 5-item nav, which overflowed a narrow desktop
+       window and clipped the logo on the left. */
+    .k-nav { display: flex; align-items: center; gap: 2px; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+    .k-nav::-webkit-scrollbar { display: none; }
     .k-nav-link {
       padding: 5px 11px; border-radius: 6px;
       font-size: 11px; font-weight: 500; letter-spacing: .3px;

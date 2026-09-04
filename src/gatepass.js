@@ -166,9 +166,16 @@ function voidGatepassItem(gatepassId, reason) {
  * mode 'VOID'     = the rows were wrong and should never have been raised.
  * Both write SettledAt, so the item leaves the outstanding register either way.
  */
-function settleVisitorGatepass(visitorId, mode, reason) {
+function settleVisitorGatepass(visitorId, mode, reason, token) {
   if (!visitorId) return { success: false, error: 'Missing visitor id' };
   var status = mode === 'VOID' ? 'VOID' : 'RETURNED';
+
+  // VOID erases the record that an item was ever owed back, in bulk, with no
+  // undo — the one gatepass action worth stealing. It needs the admin token.
+  // RETURNED stays open: that is the guard's honest day job, and the pages
+  // that do it (kiosk, visitors) have no PIN gate.
+  // ponytail: gate the destructive mode only, not the whole function.
+  if (status === 'VOID') _requireAdmin_(token);
   var sheet = getSheet(SHEETS.GATEPASS);
   var rows = getSheetAsObjects(SHEETS.GATEPASS).filter(function(r) {
     return String(r.VisitorID) === String(visitorId) && r.Status === 'OUT_PENDING';
