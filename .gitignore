@@ -10,10 +10,11 @@ tests/
 # Screenshots / debug images
 *.png
 
-# E2E scripts (local dev tooling)
-e2e-*.js
+# E2E suites ARE source: 226 assertions, and tests/helpers/gas-mock.js was
+# already tracked while every suite reading it was not — the mock was
+# versioned, the tests were not. package.json comes with them or a fresh
+# clone cannot install Playwright to run any of it.
 playwright.config.js
-package.json
 package-lock.json
 run_params.json
 
