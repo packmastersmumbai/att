@@ -46,10 +46,21 @@ const GAS_MOCK_SCRIPT = `
     activeVisitors: 2,
     totalEmployees: 4,
     holiday: false,
+    // recentActivity is TODAY's logs only. Visitor B checked in YESTERDAY and
+    // never checked out, so they are still inside and counted in
+    // activeVisitors: 2 — but they do not appear here. That asymmetry is real
+    // (see getDashboardData in reports.js) and is what made the kiosk grid
+    // disagree with its own KPI tile.
     recentActivity: [
       { Name: 'Priya Sharma', Type: 'EMP', Department: 'Operations', TimeIN: '09:05 AM', TimeOUT: '', Status: 'PARTIAL' },
       { Name: 'Rahul Mehta',  Type: 'EMP', Department: 'Engineering', TimeIN: '09:12 AM', TimeOUT: '05:30 PM', Status: 'PRESENT' },
-      { Name: 'Visitor A',    Type: 'VIS', Department: '', TimeIN: '10:00 AM', TimeOUT: '', Status: 'PARTIAL' },
+      { Name: 'Visitor A',    Type: 'VIS', Department: '', TimeIN: '10:00 AM', TimeOUT: '', Status: 'PARTIAL', PersonID: 'VIS001' },
+    ],
+    activeVisitorList: [
+      { VisitorID: 'VIS001', Name: 'Visitor A', TimeIN: '10:00 AM', Gate: 'Main Gate',
+        Company: '', Host: 'Priya Sharma', overdue: false },
+      { VisitorID: 'VIS-STAYOVER', Name: 'Visitor B', TimeIN: '04:20 PM', Gate: 'Main Gate',
+        Company: 'Acme Ltd', Host: 'Rahul Mehta', overdue: true }
     ]
   };
 

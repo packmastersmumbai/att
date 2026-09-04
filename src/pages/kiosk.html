@@ -1257,12 +1257,26 @@
         document.getElementById('kLastUpdated').textContent =
           now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
-        /* ── Arrivals grid — all unique people present today ── */
+        /* ── Arrivals grid — everyone currently on site ──
+           recentActivity is TODAY's logs only, but a visitor who checked in
+           yesterday and never checked out is still inside (their Logs row has
+           no TimeOUT, on yesterday's date). They counted in the KPI tile and
+           were missing from this grid, so the two disagreed. activeVisitorList
+           is date-independent, so merge it in. */
         var seen = {}, arrivals = [];
         (d.recentActivity || []).forEach(function(r) {
           if (!r.Name || seen[r.Name]) return;
           seen[r.Name] = true;
           arrivals.push(r);
+        });
+        (d.activeVisitorList || []).forEach(function(v) {
+          if (!v.Name || seen[v.Name]) return;
+          seen[v.Name] = true;
+          arrivals.push({
+            Name: v.Name, PersonID: v.VisitorID, Type: 'VIS',
+            Department: v.Company || '', TimeIN: v.TimeIN, TimeOUT: '',
+            Gate: v.Gate || '', isLate: false, PhotoURL: ''
+          });
         });
 
         var grid = document.getElementById('arrivalsGrid');
