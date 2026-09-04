@@ -31,6 +31,7 @@ const GAS_DELAY = 350;   // ms to wait after a mock GAS call resolves
 // never runs doGet, so the same injection is done here — otherwise pages
 // using qrattT()/data-i18n would find those globals undefined.
 const I18N_SCRIPT = fs.readFileSync(path.join(__dirname, 'src', 'i18n.html'), 'utf8');
+const GPC_PARTIAL = fs.readFileSync(path.join(__dirname, 'src', 'gatepassCard.html'), 'utf8');
 
 /** All testable pages (maps to src/pages/<name>.html) */
 const PAGES = ['kiosk', 'dashboard', 'scanner', 'admin', 'reports', 'visitors'];
@@ -108,10 +109,14 @@ async function openPage(browser, pageName) {
 
   // Inject mock + i18n runtime before any other scripts (i18n.html already
   // includes its own <script>…</script> wrapper, so it's concatenated as-is).
-  html = html.replace('<head>', '<head><script>' + GAS_MOCK_SCRIPT + '</script>' + I18N_SCRIPT);
+  html = html.replace('<head>', '<head><script>' + GAS_MOCK_SCRIPT + '</script>' + I18N_SCRIPT + GPC_PARTIAL);
 
-  const encoded = Buffer.from(html).toString('base64');
-  await page.goto('data:text/html;base64,' + encoded);
+  // charset MUST be declared on the data URL. The page's own <meta charset>
+  // only counts inside the first 1024 bytes, and the injected mock + i18n +
+  // gatepass partial push it well past that — the browser then falls back to
+  // Latin-1 and every Devanagari string renders as mojibake.
+  const encoded = Buffer.from(html, 'utf8').toString('base64');
+  await page.goto('data:text/html;charset=utf-8;base64,' + encoded);
   await page.waitForLoadState('domcontentloaded');
 
   return { page, context, errors };

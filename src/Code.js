@@ -116,7 +116,11 @@ function doGet(e) {
   // so evaluate first, patch the content string, then rebuild the output.
   var evaluated = template.evaluate();
   var withI18n = evaluated.getContent().replace('</head>',
-    HtmlService.createHtmlOutputFromFile('i18n').getContent() + '</head>');
+    HtmlService.createHtmlOutputFromFile('i18n').getContent() +
+    // Shared visitor-item card (markup + styles + QRATT_GPC renderer). Injected
+    // like i18n so every surface renders items identically instead of each page
+    // hand-rolling its own copy.
+    HtmlService.createHtmlOutputFromFile('gatepassCard').getContent() + '</head>');
   // Shared floating "Report an issue" widget on every page, before </body>.
   var feedback = HtmlService.createHtmlOutputFromFile('feedbackWidget').getContent();
   withI18n = withI18n.indexOf('</body>') !== -1

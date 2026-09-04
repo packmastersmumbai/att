@@ -740,6 +740,34 @@
       color: #34D399; border-radius: 6px; padding: 4px 10px;
       font-size: 11px; font-weight: 700; font-family: var(--font); cursor: pointer;
     }
+    /* The shared item card (gatepassCard.html) ships light defaults; the kiosk
+       is dark, so it re-points the card's own variables rather than forking
+       the component. */
+    #kGpMount .gpc {
+      --gpc-text:    #F1F5F9;
+      --gpc-muted:   #94A3B8;
+      --gpc-border:  rgba(255,255,255,.12);
+      --gpc-field:   rgba(255,255,255,.05);
+      --gpc-accent:  #2563EB;
+      --gpc-owed-bg: rgba(251,191,36,.16);
+      --gpc-owed-fg: #FCD34D;
+      --gpc-back-bg: rgba(16,185,129,.15);
+      --gpc-back-fg: #34D399;
+      --gpc-warn-bg: rgba(180,83,9,.22);
+      --gpc-warn-fg: #FCD34D;
+    }
+
+    /* State reads as a label; the button reads as an action. */
+    .kgp-state { flex-shrink: 0; font-size: 10px; font-weight: 700; letter-spacing: .3px;
+      border-radius: 5px; padding: 3px 7px; text-transform: uppercase; }
+    .kgp-owed { background: rgba(251,191,36,.16); color: #FCD34D; }
+    .kgp-back { background: rgba(16,185,129,.14); color: #34D399; }
+    .kgp-allback { font-size: 12px; font-weight: 700; color: #34D399;
+      padding: 7px 0 2px; text-align: center; }
+    .kgp-addlabel { font-size: 10px; font-weight: 700; letter-spacing: .5px;
+      text-transform: uppercase; color: var(--muted-dk); margin: 12px 0 -2px;
+      padding-top: 10px; border-top: 1px solid rgba(255,255,255,.07); }
+
     .kgp-form { margin-top: 9px; }
     .kgp-form input[type=text], .kgp-form #kGpDesc {
       width: 100%; box-sizing: border-box; background: rgba(255,255,255,.05);
@@ -1279,7 +1307,14 @@
           var id = r.PersonID || r.VisitorID || r.EmpID || '';
           return id ? 'id:' + id : (r.Name ? 'nm:' + r.Name : '');
         }
+        PM_ACTIVE_IDS = (d.activeVisitorList || []).map(function(v) { return String(v.VisitorID); });
+
+        // Only people still INSIDE. recentActivity is every log row for today,
+        // including closed ones, so someone who left hours ago was sitting in a
+        // grid that means "on site" — with a live Check Out button on their
+        // card. A row with a TimeOUT is a completed visit, not an arrival.
         (d.recentActivity || []).forEach(function(r) {
+          if (r.TimeOUT && String(r.TimeOUT).trim() !== '') return;
           var k = keyOf(r);
           if (!k || seen[k]) return;
           seen[k] = true;
@@ -1400,15 +1435,28 @@
       document.getElementById('pmTotals').textContent = '';
       document.getElementById('pmRows').innerHTML = '<div id="kGpMount" class="kgp"></div>';
 
+      // Is this visitor still inside? The grid now only lists people who are,
+      // but the modal is also reachable from a stale card, and offering
+      // "Check out" to someone who already left is meaningless.
+      var stillIn = (PM_ACTIVE_IDS.indexOf(String(visitorId)) !== -1);
       var btn = document.getElementById('pmCheckoutBtn');
-      btn.disabled = false;
-      btn.textContent = qrattT('kiosk_check_out');
-      btn.style.background = '#0D9488'; btn.style.cursor = 'pointer';
+      if (stillIn) {
+        btn.disabled = false;
+        btn.textContent = qrattT('kiosk_check_out');
+        btn.style.background = '#0D9488'; btn.style.cursor = 'pointer';
+      } else {
+        btn.disabled = true;
+        btn.textContent = '✓ ' + qrattT('kiosk_checked_out');
+        btn.style.background = '#334155'; btn.style.cursor = 'default';
+      }
 
       // Direction IN: from the grid the visitor is on site, so anything logged
       // now is coming in with them. Leaving is handled by the check-out button.
       kGpLoad(visitorId, 'IN');
     }
+
+    // VisitorIDs currently on site, refreshed with the dashboard poll.
+    var PM_ACTIVE_IDS = [];
 
     function pmSetCheckoutState(inToday, outToday) {
       var btn = document.getElementById('pmCheckoutBtn');
@@ -1426,7 +1474,8 @@
 
       // Name the outstanding items in the confirm, so nobody is checked out
       // past an unreturned laptop without being told which one.
-      var owed = document.querySelectorAll('#kGpMount .kgp-ret').length;
+      // .gpc-owed = an item still with the visitor (shared card markup).
+      var owed = document.querySelectorAll('#kGpMount .gpc-owed').length;
       var extra = owed ? '\n\n⚠ ' + owed + ' ' + qrattT('kiosk_gp_still_out') : '';
 
       document.getElementById('pmConfirmText').textContent =
@@ -1761,28 +1810,25 @@
     // check-out completes. See kGpRenderCheckout().
     if (kGpDir === 'OUT' && out > 0) { kGpRenderCheckout(items); return; }
 
-    var rows = items.map(function(i) {
-      return '<div class="kgp-row">' +
-        '<span class="kgp-desc">' + esc(i.itemDesc) + '</span>' +
-        '<span class="kgp-qty">' + esc(i.direction) + ' ' + esc(i.qty) + '</span>' +
-        (i.status === 'OUT_PENDING'
-          ? '<button class="kgp-ret" onclick="kGpReturn(\'' + esc(i.gatepassId) + '\')">' + esc(qrattT('kiosk_gp_returned')) + '</button>'
-          : '<span class="kgp-done">✓</span>') +
-        '</div>';
-    }).join('');
+    // One shared renderer (QRATT_GPC, src/gatepassCard.html) — the kiosk, the
+    // scanner and the Visitors page all draw items through it, so the same row
+    // cannot be worded three different ways. idPrefix keeps the kGp* element
+    // ids this page's handlers already use.
+    mount.innerHTML = QRATT_GPC.render({
+      items: items,
+      outstanding: out,
+      onReturn: "kGpReturn('{id}')",
+      onAdd:    'kGpAdd()',
+      onPhoto:  'kGpCapture(this)',
+      showPhoto: true,
+      idPrefix: 'kGp'
+    });
 
-    mount.innerHTML =
-      (out ? '<div class="kgp-warn">⚠ ' + out + ' ' + esc(qrattT('kiosk_gp_still_out')) + '</div>' : '') +
-      rows +
-      '<div class="kgp-form">' +
-        '<input id="kGpDesc" placeholder="' + esc(qrattT('kiosk_gp_item_placeholder')) + '" onfocus="kioskHold()" oninput="kioskHold()">' +
-        '<div class="kgp-ctl">' +
-          '<input id="kGpQty" type="number" value="1" min="1" onfocus="kioskHold()">' +
-          '<label class="kgp-cam"><input type="file" accept="image/*" capture="environment" onchange="kGpCapture(this)" hidden><span id="kGpCamLbl">📷</span></label>' +
-          '<label class="kgp-chk"><input type="checkbox" id="kGpRet" checked onchange="kioskHold()"> ' + esc(qrattT('kiosk_gp_returnable')) + '</label>' +
-          '<button class="kgp-add" onclick="kGpAdd()">' + esc(qrattT('kiosk_gp_add')) + '</button>' +
-        '</div>' +
-      '</div>';
+    // Any interaction with the form holds the card open past auto-dismiss.
+    ['Desc', 'Qty', 'Ret'].forEach(function(f) {
+      var el = document.getElementById('kGp' + f);
+      if (el) { el.onfocus = kioskHold; el.oninput = kioskHold; el.onchange = kioskHold; }
+    });
   }
 
   /* ── Check-out settlement ──────────────────────────────────────────────

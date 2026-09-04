@@ -758,6 +758,20 @@
     .sc-gp-add{margin-left:auto;background:#38BDF8;border:none;color:#04283a;font-weight:800;
       font-size:12px;padding:7px 14px;border-radius:6px;cursor:pointer}
     .sc-gp-add:disabled{opacity:.5;cursor:default}
+    /* Shared item card ships light defaults; this page is dark. */
+    #scGpMount .gpc {
+      --gpc-text:    #F1F5F9;
+      --gpc-muted:   #94A3B8;
+      --gpc-border:  rgba(255,255,255,.12);
+      --gpc-field:   rgba(255,255,255,.05);
+      --gpc-accent:  #2563EB;
+      --gpc-owed-bg: rgba(251,191,36,.16);
+      --gpc-owed-fg: #FCD34D;
+      --gpc-back-bg: rgba(16,185,129,.15);
+      --gpc-back-fg: #34D399;
+      --gpc-warn-bg: rgba(180,83,9,.22);
+      --gpc-warn-fg: #FCD34D;
+    }
     .sc-gp-warn{margin:10px 0 2px;padding:8px 10px;border-radius:7px;background:rgba(180,83,9,.22);
       border:1px solid rgba(251,191,36,.45);color:#FCD34D;font-size:12px;font-weight:700;text-align:center}
   </style>
@@ -1262,8 +1276,15 @@
       if (SC_GP_MATERIALS === null) {
         post({ action: 'getMaterialList' }, function(m) {
           SC_GP_MATERIALS = (m && m.materials) || [];
-          var dl = document.getElementById('scGpMatList');
-          if (dl) dl.innerHTML = scGpOptions();
+          // Fill the datalist in place. Re-rendering the whole card here would
+          // wipe whatever the guard has already typed the moment the picklist
+          // arrives — the response lands seconds after the card opens.
+          var dl = document.getElementById('scGpMats');
+          if (dl) {
+            dl.innerHTML = SC_GP_MATERIALS.slice(0, 500).map(function(m) {
+              return '<option value="' + esc(m.desc || m.code) + '">' + esc(m.code) + '</option>';
+            }).join('');
+          }
         });
       }
       post({ action: 'getGatepass', visitorId: vid }, function(d) {
@@ -1271,11 +1292,6 @@
       });
     }
 
-    function scGpOptions() {
-      return (SC_GP_MATERIALS || []).slice(0, 500).map(function(m) {
-        return '<option value="' + esc(m.desc || m.code) + '">' + esc(m.code) + '</option>';
-      }).join('');
-    }
 
     function scGpRender(vid, d) {
       var mount = document.getElementById('scGpMount');
@@ -1283,28 +1299,28 @@
       var items = (d.items || []).filter(function(i) { return i.status !== 'VOID'; });
       var outstanding = d.returnableOutstanding || 0;
 
-      var rows = items.map(function(i) {
-        return '<div class="sc-gp-row">' +
-          '<span>' + esc(i.direction) + ' · ' + esc(i.qty) + '× ' + esc(i.itemDesc) + '</span>' +
-          (i.status === 'OUT_PENDING'
-            ? '<button class="sc-gp-ret" onclick="scGpReturn(\'' + esc(i.gatepassId) + '\')">returned</button>'
-            : '<span class="sc-gp-st">' + esc(i.status) + '</span>') +
-          '</div>';
-      }).join('');
-
+      // Shared renderer (QRATT_GPC, src/gatepassCard.html). This copy used to
+      // hardcode English — "returned", "ret", raw status codes — and ignored
+      // i18n entirely, so the same item read differently here than on the
+      // kiosk. idPrefix keeps the scGp* ids this page's handlers use.
       mount.innerHTML =
-        '<div class="sc-gp-hd">Gatepass items' + (outstanding ? ' · ' + outstanding + ' out' : '') + '</div>' +
-        (rows || '') +
-        '<div class="sc-gp-form">' +
-          '<input id="scGpDesc" list="scGpMatList" placeholder="Item description" onfocus="holdResult()" oninput="holdResult()">' +
-          '<datalist id="scGpMatList">' + scGpOptions() + '</datalist>' +
-          '<div class="sc-gp-ctl">' +
-            '<select id="scGpDir" onchange="holdResult()"><option value="IN">In</option><option value="OUT">Out</option></select>' +
-            '<input id="scGpQty" type="number" value="1" min="1" onfocus="holdResult()">' +
-            '<label><input type="checkbox" id="scGpRet" checked onchange="holdResult()"> ret</label>' +
-            '<button class="sc-gp-add" onclick="scGpAdd()">Add</button>' +
-          '</div>' +
-        '</div>';
+        '<div class="sc-gp-hd">' + esc(qrattT('kiosk_gp_items_title')) +
+          (outstanding ? ' · ' + outstanding : '') + '</div>' +
+        QRATT_GPC.render({
+          items: items,
+          outstanding: outstanding,
+          onReturn: "scGpReturn('{id}')",
+          onAdd:    'scGpAdd()',
+          showDir:  true,
+          materials: SC_GP_MATERIALS || [],
+          idPrefix: 'scGp'
+        });
+
+      // Any interaction cancels the result card's auto-dismiss.
+      ['Desc', 'Qty', 'Ret', 'Dir'].forEach(function(f) {
+        var el = document.getElementById('scGp' + f);
+        if (el) { el.onfocus = holdResult; el.oninput = holdResult; el.onchange = holdResult; }
+      });
     }
 
     function scGpAdd() {
@@ -1313,15 +1329,16 @@
       var desc = (descEl && descEl.value || '').trim();
       if (!desc) return;
       var mat = (SC_GP_MATERIALS || []).filter(function(m) { return (m.desc || m.code) === desc; })[0] || {};
-      var btn = document.querySelector('.sc-gp-add');
+      var btn = document.querySelector('.gpc-add');
+      var lbl = btn ? btn.textContent : '';
       if (btn) { btn.disabled = true; btn.textContent = '…'; }
+      var f = QRATT_GPC.readForm('scGp');
       post({ action: 'addGatepassItem', visitorId: SC_GP_VID, item: {
-        direction: (document.getElementById('scGpDir') || {}).value || 'IN',
-        materialCode: mat.code || '', itemDesc: desc, unit: mat.unit || '',
-        qty: Number((document.getElementById('scGpQty') || {}).value) || 1,
-        returnable: !!(document.getElementById('scGpRet') || {}).checked
+        direction: f.direction,
+        materialCode: mat.code || '', itemDesc: f.itemDesc, unit: mat.unit || '',
+        qty: f.qty, returnable: f.returnable
       }}, function(res) {
-        if (btn) { btn.disabled = false; btn.textContent = 'Add'; }
+        if (btn) { btn.disabled = false; btn.textContent = lbl; }
         if (res && res.success) scGpLoad(SC_GP_VID);
       });
     }
