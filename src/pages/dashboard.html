@@ -9,14 +9,12 @@
   <script src="https://www.gstatic.com/charts/loader.js"></script>
   <style>
     :root {
-      --color-primary: #000666; --color-primary-dk: #000444;
-      --color-success: #006b5f; --color-danger: #DC2626; --color-warning: #D97706;
-      --color-bg: #fcf9f8; --color-surface: #ffffff; --color-border: #e8e3e0;
-      --color-text: #1b1c1c; --color-text-muted: #4a5568; --color-blocked: #7C3AED;
-      --radius-sm: 2px; --radius-md: 4px; --radius-lg: 8px;
-      --shadow-sm: 0 1px 3px rgba(0,0,0,.08); --shadow-md: 0 4px 12px rgba(0,0,0,.12);
-      --font-sans: 'Public Sans', system-ui, sans-serif; --font-mono: 'Roboto Mono', monospace;
+      /* Only what differs from the shared tokens in src/tokens.html, which
+         doGet() injects ahead of this block. This dashboard's cards use a
+         tighter 12px blur than the shared 16px. */
+      --shadow-md: 0 4px 12px rgba(0,0,0,.12);
     }
+
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html, body { height: 100%; }
     body {

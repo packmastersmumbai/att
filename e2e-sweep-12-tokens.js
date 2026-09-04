@@ -67,6 +67,30 @@ async function run() {
       });
     }
 
+    // Pages that have DROPPED their local :root and now rely on the shared
+    // file. For these the check above is vacuous — with nothing local left to
+    // override, before and after are trivially equal. What matters instead is
+    // that the tokens still resolve: if the injection ever stops happening,
+    // these pages render with no colours at all rather than falling back.
+    const MIGRATED = ['admin', 'dashboard', 'reports', 'visitors', 'scanner', 'login'];
+    for (const name of MIGRATED) {
+      await R.check(name + ': resolves its palette from the shared file', async () => {
+        const html = pageHtml(name);
+
+        // It must genuinely depend on the shared file...
+        const bare = await readTokens(page, html);
+        const family = html.indexOf('--color-primary') !== -1 ? '--color-primary' : '--primary';
+        if (bare[family])
+          throw new Error(family + ' is still declared locally: ' + bare[family]);
+
+        // ...and get a real value once it is injected.
+        const withTokens = await readTokens(page, html.replace('<head>', '<head>' + TOKENS));
+        if (!/#000666/i.test(withTokens[family]))
+          throw new Error(family + ' did not resolve to the brand navy: ' +
+                          JSON.stringify(withTokens[family]));
+      });
+    }
+
     await R.check('a page with no token of its own inherits the shared one', async () => {
       // Guards the other direction: if the file stopped defining defaults (or
       // regressed to a self-referential var(--x, y) cycle, which resolves to
