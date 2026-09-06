@@ -413,10 +413,19 @@ const GAS_MOCK_SCRIPT = `
             { planId: 'PLN-D3', topicId: 'DRL-03', name: 'Fire Safety', type: 'FIRE SAFETY',
               plannedDate: y + '-08-10', actualDate: '', status: 'OVERDUE',
               targetMinutes: 30, responseMinutes: '', score: '', outcome: '',
+              conducted: false, photos: 0, videos: 0, openActions: 0 },
+            // Held on the calendar, but nobody ever filed the report. This
+            // read as PLANNED — wrong in both directions at once, because the
+            // calendar said it happened while the register said it had not.
+            // No fixture covered it, which is why nothing caught it.
+            { planId: 'PLN-D4', topicId: 'DRL-02', name: 'Suspicious Transaction',
+              type: 'SUSPICIOUS TRANSACTION',
+              plannedDate: y + '-05-16', actualDate: y + '-05-16', status: 'DONE',
+              targetMinutes: 20, responseMinutes: '', score: '', outcome: '',
               conducted: false, photos: 0, videos: 0, openActions: 0 }
           ],
-          kpis: { planned: 3, conducted: 2, overdue: 1, onTimePct: 50,
-                  avgScore: 95, openActions: 2 }
+          kpis: { planned: 4, conducted: 2, unreported: 1, overdue: 1,
+                  onTimePct: 50, avgScore: 95, openActions: 2 }
         });
       },
 

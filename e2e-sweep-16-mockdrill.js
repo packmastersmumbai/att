@@ -62,7 +62,31 @@ async function run() {
     await R.check('one row per planned drill', async () => {
       const rows = await page.evaluate(() =>
         document.querySelectorAll('#grid tbody tr').length);
-      if (rows !== 3) throw new Error('expected 3 drills, got ' + rows);
+      if (rows !== 4) throw new Error('expected 4 drills, got ' + rows);
+    });
+
+    await R.check('a drill held with no report says so, and is not called PLANNED', async () => {
+      // The failure this replaces: a drill with an ActualDate but no report
+      // rendered as PLANNED. Wrong in both directions at once — the calendar
+      // said it happened, this said it had not, and neither screen named the
+      // gap. For a drill the report IS the substance: minutes to the assembly
+      // point, the head count, what went wrong. It is what an audit asks for.
+      const tags = await page.evaluate(() =>
+        [...document.querySelectorAll('#grid tbody tr')].map(tr => ({
+          name: tr.querySelector('td') ? tr.querySelector('td').textContent.trim() : '',
+          txt: tr.textContent
+        })));
+      const held = tags.find(t => /Suspicious Transaction/.test(t.name));
+      if (!held) throw new Error('the unreported drill is not in the register');
+      if (!/NO REPORT/.test(held.txt)) throw new Error('a held drill with no report is not flagged');
+      if (/PLANNED/.test(held.txt)) throw new Error('a drill that was held still reads PLANNED');
+    });
+
+    await R.check('the KPI strip counts drills held without a report', async () => {
+      const k = await page.evaluate(() =>
+        [...document.querySelectorAll('.kpi')].map(e => e.textContent.replace(/\s+/g, ' ').trim()));
+      if (!k.some(x => /Held, not reported\s*1/.test(x)))
+        throw new Error('unreported drills are not counted: ' + k.join(' | '));
     });
 
     await R.check('the response time is shown against its target', async () => {

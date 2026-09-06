@@ -482,6 +482,11 @@
       var k = DATA.kpis || {};
       el('kpis').innerHTML = [
         ['Conducted', (k.conducted || 0) + '/' + (k.planned || 0), ''],
+        // Marked held on the calendar, but no report was ever filed. Without
+        // this the two screens disagree in silence — the grid shows a drill
+        // done, the register counts it as nothing, and the missing report is
+        // the one thing an audit actually asks for.
+        ['Held, not reported', String(k.unreported || 0), k.unreported ? 'bad' : ''],
         ['Overdue', String(k.overdue || 0), k.overdue ? 'bad' : ''],
         ['Within target time', (k.onTimePct || 0) + '%', (k.onTimePct || 0) < 80 ? 'warn' : ''],
         ['Average score', (k.avgScore || 0) + '%', (k.avgScore || 0) < 80 ? 'warn' : ''],
@@ -511,10 +516,16 @@
       }
 
       var body = DATA.drills.map(function (d) {
+        // A drill with a date but no report was reading as PLANNED, which is
+        // not merely vague — it is wrong in both directions at once: the
+        // calendar says it happened and this said it had not. NO REPORT names
+        // the actual state, and it is the state somebody has to fix.
         var status = d.conducted
           ? outcomeTag(d.outcome)
-          : '<span class="tag ' + (d.status === 'OVERDUE' ? 't-bad' : 't-plan') + '">' +
-            (d.status === 'OVERDUE' ? 'OVERDUE' : 'PLANNED') + '</span>';
+          : d.actualDate
+            ? '<span class="tag t-bad">NO REPORT</span>'
+            : '<span class="tag ' + (d.status === 'OVERDUE' ? 't-bad' : 't-plan') + '">' +
+              (d.status === 'OVERDUE' ? 'OVERDUE' : 'PLANNED') + '</span>';
         // The response time only means something beside its target.
         var resp = d.responseMinutes === '' ? '—'
           : d.responseMinutes + '/' + d.targetMinutes + ' min';

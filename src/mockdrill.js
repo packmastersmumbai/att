@@ -923,9 +923,20 @@ function _drillKpis_(rows) {
     return r.targetMinutes > 0 && r.responseMinutes !== '' && r.responseMinutes <= r.targetMinutes;
   });
   var scores = conducted.filter(function (r) { return r.score !== ''; });
+  // A drill marked DONE on the calendar with no report behind it. The two
+  // screens disagreed silently: the grid said held, the register said
+  // conducted:0, and nothing named the gap. For a drill the report IS the
+  // substance — minutes to the assembly point, the head count, what went
+  // wrong — so a held drill without one is a claim with nothing behind it,
+  // and it is exactly what a customer audit asks to see.
+  var unreported = rows.filter(function (r) {
+    return !r.conducted && r.actualDate;
+  });
+
   return {
     planned:   rows.length,
     conducted: conducted.length,
+    unreported: unreported.length,
     overdue:   rows.filter(function (r) { return r.status === 'OVERDUE'; }).length,
     onTimePct: conducted.length ? Math.round(onTime.length / conducted.length * 100) : 0,
     avgScore:  scores.length
