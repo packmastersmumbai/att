@@ -155,6 +155,62 @@ const GAS_MOCK_SCRIPT = `
         });
       },
 
+      // The test an attendee sits. No answer key — that is the whole point
+      // of it being a separate endpoint from getTrainingModule.
+      getModuleTest: function(topicId, lang) {
+        if (!topicId) { respond({ success: false, error: 'Missing topic id' }); return; }
+        var hi = String(lang || '') === 'hi';
+        respond({
+          success: true, topicId: topicId, lang: hi ? 'hi' : 'en',
+          hasHindi: true, passMark: 70,
+          objectives: [hi ? 'एसओपी क्या है यह बताना' : 'State what an SOP is'],
+          sections: [{ heading: hi ? 'एसओपी क्या है' : 'What an SOP is',
+                       body: hi ? 'लिखित सहमत तरीका।' : 'The agreed written way.' }],
+          questions: [
+            { n:1, text: hi ? 'एसओपी क्या है?' : 'What is an SOP?',
+              options: hi ? ['लिखित तरीका','मशीन सेटिंग'] : ['A written method','A machine setting'] },
+            { n:2, text: hi ? 'इसे कौन पढ़ता है?' : 'Who reads it?',
+              options: hi ? ['जो काम करे','केवल सुपरवाइज़र'] : ['Whoever does the task','Only the supervisor'] }
+          ]
+        });
+      },
+
+      recordAssessment: function(entry) {
+        if (!entry || !entry.empId) { respond({ success: false, error: 'Pick your name first' }); return; }
+        if (!entry.planId) { respond({ success: false, error: 'Missing session' }); return; }
+        window.__mockAssessments = (window.__mockAssessments || []).concat([entry]);
+        var ans = entry.answers || [];
+        var correct = ans.filter(function(a) { return a === 0; }).length;
+        var total = 2;
+        var score = Math.round(correct / total * 100);
+        respond({ success: true, score: score, correct: correct, total: total,
+                  passed: score >= 70, passMark: 70,
+                  detail: [0,1].map(function(i) {
+                    return { n: i+1, correct: ans[i] === 0, answer: 0, picked: ans[i] };
+                  }),
+                  attendanceRecorded: 'added',
+                  levelNote: score >= 70
+                    ? 'Recorded. Your supervisor confirms anything above this level.'
+                    : 'Recorded. Speak to your supervisor about a refresher.' });
+      },
+
+      getSessionAssessments: function(planId) {
+        var taken = (window.__mockAssessments || []).length;
+        respond({
+          success: true, planId: planId,
+          roster: MOCK_EMPLOYEES.filter(function(e){ return e.Status === 'ACTIVE'; })
+            .map(function(e, i) {
+              return { empId: e.EmpID, name: e.Name, dept: e.Department,
+                       taken: i === 0 && taken > 0, score: i === 0 && taken ? 100 : '',
+                       passed: i === 0 && taken > 0, lang: 'en', confidence: 'c3',
+                       attempts: i === 0 && taken ? 1 : 0 };
+            }),
+          kpis: { roster: 2, taken: taken ? 1 : 0, passed: taken ? 1 : 0,
+                  participation: taken ? 50 : 0, passRate: taken ? 100 : 0,
+                  avgScore: taken ? 100 : 0 }
+        });
+      },
+
       getSessionAttendance: function(planId) {
         var saved = (window.__mockAttendance || {})[planId] || {};
         respond({

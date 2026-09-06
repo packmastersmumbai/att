@@ -236,6 +236,7 @@ async function run() {
     await R.check('sections parse into heading and body', async () => {
       const out = lift('_moduleOut_', {
         _splitList_: splitList, _parseQuestions_: parseQuestions,
+        _parseSections_: lift('_parseSections_', { _splitList_: splitList }),
         _trainingPassMark_: () => 70,
         MODULE_SOURCES: { RECORD: 'From the site training records' }
       })({ TopicID: 'T', Objectives: 'a|b', Sections: 'Head::Body text|Two::More',

@@ -20,11 +20,22 @@
 // not the same claim, and an auditor is entitled to tell them apart.
 // ============================================================
 
-var MODULE_SHEETS = { MODULES: 'TrainingModules' };
+var MODULE_SHEETS = {
+  MODULES:     'TrainingModules',
+  ASSESSMENTS: 'TrainingAssessments'
+};
 
 var MODULE_HEADERS = {
-  TrainingModules: ['TopicID', 'Objectives', 'Sections', 'Questions',
-                    'PassMark', 'Source', 'Reviewed', 'Active']
+  // The Hi columns are separate rather than a second row, so a translator
+  // can work down one column without touching the English beside it.
+  TrainingModules: ['TopicID', 'Objectives', 'ObjectivesHi', 'Sections', 'SectionsHi',
+                    'Questions', 'QuestionsHi', 'PassMark', 'Source', 'Reviewed', 'Active'],
+  // One row per attempt. Attempts are kept, not overwritten: a second pass
+  // after a fail is the evidence that the retraining worked, and deleting
+  // the first attempt destroys exactly what an auditor wants to see.
+  TrainingAssessments: ['AssessmentID', 'PlanID', 'TopicID', 'EmpID', 'Name',
+                        'Lang', 'Score', 'Correct', 'Total', 'Passed',
+                        'Confidence', 'Answers', 'Device', 'TakenAt']
 };
 
 /**
@@ -103,18 +114,46 @@ function getTrainingModules() {
            sources: MODULE_SOURCES };
 }
 
+/** "Heading::body" pairs, pipe separated — hand-editable in one cell. */
+function _parseSections_(v) {
+  return _splitList_(v).map(function (s) {
+    var i = s.indexOf('::');
+    return i === -1 ? { heading: '', body: s }
+                    : { heading: s.slice(0, i).trim(), body: s.slice(i + 2).trim() };
+  });
+}
+
 function _moduleOut_(m) {
+  // Hindi is returned ALONGSIDE English, never instead of it. A worker reads
+  // one; a trainer, an auditor and the printed record may need the other, and
+  // a missing translation must fall back rather than blank the page.
+  var objHi = _splitList_(m.ObjectivesHi);
+  var secHi = _parseSections_(m.SectionsHi);
+  var qHi   = _parseQuestions_(m.QuestionsHi);
+
   return {
     topicId:    m.TopicID,
     objectives: _splitList_(m.Objectives),
-    // "Heading::body text" per section, pipe separated — one cell stays
-    // hand-editable, which a JSON blob in a spreadsheet does not.
-    sections:   _splitList_(m.Sections).map(function (s) {
-      var i = s.indexOf('::');
-      return i === -1 ? { heading: '', body: s }
-                      : { heading: s.slice(0, i).trim(), body: s.slice(i + 2).trim() };
-    }),
+    objectivesHi: objHi,
+    sections:   _parseSections_(m.Sections),
+    sectionsHi: secHi,
     questions:  _parseQuestions_(m.Questions),
+    questionsHi: qHi,
+    // Whether this module can actually be TAKEN in Hindi. A partial
+    // translation is worse than none — a worker halfway through a test that
+    // reverts to English has been failed by the tool, not by their knowledge.
+    // The question count must match too, or the test runs out of Hindi
+    // midway; and every Hindi question needs the same number of options,
+    // since the answer index is shared between the two languages.
+    hasHindi: (function () {
+      var qs = _parseQuestions_(m.Questions);
+      if (!objHi.length || !secHi.length) return false;
+      if (qHi.length !== qs.length) return false;
+      for (var i = 0; i < qs.length; i++) {
+        if (qHi[i].options.length !== qs[i].options.length) return false;
+      }
+      return true;
+    })(),
     passMark:   Number(m.PassMark) || _trainingPassMark_(),
     source:     m.Source || '',
     sourceLabel: MODULE_SOURCES[String(m.Source)] || String(m.Source || ''),
@@ -240,6 +279,203 @@ function scoreModuleTest(topicId, answers) {
   };
 }
 
+// ── Self-assessment ────────────────────────────────────────────────────────
+
+/**
+ * The test an attendee sits, WITHOUT the answer key.
+ *
+ * Deliberately a separate call from getTrainingModule: that one is for the
+ * trainer and carries the answers. A test whose answers are in the page
+ * source proves nothing, and the two audiences must not share an endpoint.
+ *
+ * Public by design — an attendee scans a QR code on their own phone and has
+ * no login. What protects the record is that the answers are marked on the
+ * server and the resulting level is capped at L2 (see recordAssessment).
+ */
+function getModuleTest(topicId, lang) {
+  _ensureModuleSheets_();
+  var got = getTrainingModule(topicId);
+  if (!got.success) return got;
+
+  var m = got.module;
+  var hi = String(lang || '').toLowerCase() === 'hi' && m.hasHindi;
+  var qs = hi ? m.questionsHi : m.questions;
+
+  return {
+    success: true,
+    topicId: m.topicId,
+    lang: hi ? 'hi' : 'en',
+    hasHindi: m.hasHindi,
+    passMark: m.passMark,
+    objectives: hi ? m.objectivesHi : m.objectives,
+    sections: hi ? m.sectionsHi : m.sections,
+    // The answer index is stripped here. Everything else about the question
+    // travels; the one field that would make the test meaningless does not.
+    questions: qs.map(function (q, i) {
+      return { n: i + 1, text: q.text, options: q.options };
+    })
+  };
+}
+
+/**
+ * Record one attendee's self-assessment and update what follows from it.
+ *
+ * Three things happen, and only the first two are automatic:
+ *   1. the attempt is stored, with its answers, for the audit trail
+ *   2. the score is written to the attendance row, which moves the person
+ *      from "attended, not assessed" (L1) to L2 when they pass
+ *   3. L3 and L4 remain a supervisor's judgement, per SOP-SM-001 §6.2
+ *
+ * That cap is the whole design. A worker answering multiple-choice questions
+ * on their own phone is real evidence of knowledge, and it is NOT evidence
+ * that they can work unsupervised or train somebody else. The SOP says a
+ * department head or supervisor decides that, and the system must not quietly
+ * decide it instead.
+ */
+function recordAssessment(entry) {
+  _ensureModuleSheets_();
+  _ensureTrainingSheets_();
+
+  var planId = String((entry && entry.planId) || '').trim();
+  var empId  = String((entry && entry.empId) || '').trim();
+  var topicId = String((entry && entry.topicId) || '').trim();
+  if (!planId) return { success: false, error: 'Missing session' };
+  if (!empId)  return { success: false, error: 'Pick your name first' };
+  if (!topicId) return { success: false, error: 'Missing topic' };
+
+  var marked = scoreModuleTest(topicId, entry.answers || []);
+  if (!marked.success) return marked;
+
+  var emp = getSheetAsObjects(SHEETS.EMPLOYEES)
+              .filter(function (e) { return String(e.EmpID) === empId; })[0];
+  if (!emp) return { success: false, error: 'Employee not found' };
+
+  var sheet = getSheet(MODULE_SHEETS.ASSESSMENTS);
+  var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  var values = {
+    AssessmentID: 'ASM-' + Utilities.getUuid().replace(/-/g, '').slice(0, 10).toUpperCase(),
+    PlanID: planId, TopicID: topicId, EmpID: empId, Name: emp.Name || empId,
+    Lang: String(entry.lang || 'en'),
+    Score: marked.score, Correct: marked.correct, Total: marked.total,
+    Passed: marked.passed ? 'YES' : 'NO',
+    // The attendee's own view of how confident they feel. Not a competency
+    // claim — a signal for the supervisor about who to watch on the line.
+    Confidence: entry.confidence || '',
+    Answers: JSON.stringify(entry.answers || []),
+    Device: String(entry.device || ''),
+    TakenAt: new Date().toISOString()
+  };
+  sheet.appendRow(headers.map(function (h) { return values[h] !== undefined ? values[h] : ''; }));
+
+  // Mark them present with their score. This is what feeds the skill matrix:
+  // present + a score at or above the pass mark computes to L2.
+  var att = _upsertAttendanceScore_(planId, empId, emp.Name || empId, marked.score);
+
+  return {
+    success: true,
+    score: marked.score, correct: marked.correct, total: marked.total,
+    passed: marked.passed, passMark: marked.passMark,
+    detail: marked.detail,
+    attendanceRecorded: att,
+    // Said plainly to the attendee: what their result does and does not do.
+    levelNote: marked.passed
+      ? 'Recorded. Your supervisor confirms anything above this level.'
+      : 'Recorded. Speak to your supervisor about a refresher.'
+  };
+}
+
+/**
+ * Write one person's attendance and score for a session, replacing their own
+ * row rather than appending. A retake must update the person's score, not
+ * add a second attendance row that inflates the headcount.
+ */
+function _upsertAttendanceScore_(planId, empId, name, score) {
+  var sheet = getSheet(TRAINING_SHEETS.ATTENDANCE);
+  var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  var last = sheet.getLastRow();
+
+  if (last > 1) {
+    var data = sheet.getRange(2, 1, last - 1, headers.length).getValues();
+    var pc = headers.indexOf('PlanID'), ec = headers.indexOf('EmpID');
+    for (var i = 0; i < data.length; i++) {
+      if (String(data[i][pc]) === planId && String(data[i][ec]) === empId) {
+        var row = i + 2;
+        setCell(sheet, row, 'Present', 'YES');
+        // Keep the BEST score across attempts. A retake after retraining is
+        // the point; penalising somebody for having failed once first would
+        // discourage exactly the behaviour the system wants.
+        var existing = getCell(sheet, row, 'Score');
+        if (existing === '' || existing == null || Number(existing) < score) {
+          setCell(sheet, row, 'Score', score);
+        }
+        return 'updated';
+      }
+    }
+  }
+
+  var values = { PlanID: planId, EmpID: empId, Name: name, Present: 'YES',
+                 Score: score, RecordedAt: new Date().toISOString() };
+  sheet.appendRow(headers.map(function (h) { return values[h] !== undefined ? values[h] : ''; }));
+  return 'added';
+}
+
+/**
+ * Live participation for one session: who has taken the test, who has not,
+ * and how the room is doing. This is what the trainer watches on screen
+ * while the room answers on their phones.
+ */
+function getSessionAssessments(planId) {
+  _ensureModuleSheets_();
+  _ensureTrainingSheets_();
+  var id = String(planId || '').trim();
+  if (!id) return { success: false, error: 'Missing session' };
+
+  var best = {};
+  getSheetAsObjects(MODULE_SHEETS.ASSESSMENTS).forEach(function (a) {
+    if (String(a.PlanID) !== id) return;
+    var k = String(a.EmpID);
+    var prev = best[k];
+    var score = Number(a.Score) || 0;
+    if (!prev || score > prev.score) {
+      best[k] = { empId: k, name: a.Name, score: score,
+                  passed: String(a.Passed).toUpperCase() === 'YES',
+                  lang: a.Lang, confidence: a.Confidence,
+                  attempts: (prev ? prev.attempts : 0) + 1, takenAt: a.TakenAt };
+    } else {
+      prev.attempts++;
+    }
+  });
+
+  var roster = getSheetAsObjects(SHEETS.EMPLOYEES)
+    .filter(function (e) { return String(e.Status || 'ACTIVE').toUpperCase() === 'ACTIVE'; })
+    .map(function (e) {
+      var r = best[String(e.EmpID)];
+      return { empId: e.EmpID, name: e.Name || e.EmpID, dept: e.Department || '',
+               taken: !!r, score: r ? r.score : '', passed: r ? r.passed : false,
+               lang: r ? r.lang : '', confidence: r ? r.confidence : '',
+               attempts: r ? r.attempts : 0 };
+    });
+
+  var taken = roster.filter(function (r) { return r.taken; });
+  var passed = taken.filter(function (r) { return r.passed; });
+  var scores = taken.map(function (r) { return r.score; });
+
+  return {
+    success: true, planId: id, roster: roster,
+    kpis: {
+      roster: roster.length,
+      taken: taken.length,
+      passed: passed.length,
+      // Participation is the KPI the paper record calls "Training Feedback"
+      // and never had a number for.
+      participation: roster.length ? Math.round(taken.length / roster.length * 100) : 0,
+      passRate: taken.length ? Math.round(passed.length / taken.length * 100) : 0,
+      avgScore: scores.length
+        ? Math.round(scores.reduce(function (a, b) { return a + b; }, 0) / scores.length) : 0
+    }
+  };
+}
+
 // ── Seeding ────────────────────────────────────────────────────────────────
 
 /**
@@ -267,7 +503,12 @@ function seedTrainingModules(token) {
     }
     var values = {
       TopicID: m.TopicID, Objectives: m.Objectives, Sections: m.Sections,
-      Questions: m.Questions, PassMark: m.PassMark || '', Source: m.Source,
+      Questions: m.Questions,
+      // Hindi is optional per module: a topic with no translation yet simply
+      // has no Hindi test, rather than a half-translated one.
+      ObjectivesHi: m.ObjectivesHi || '', SectionsHi: m.SectionsHi || '',
+      QuestionsHi: m.QuestionsHi || '',
+      PassMark: m.PassMark || '', Source: m.Source,
       Reviewed: 'NO', Active: 'YES'
     };
     var out = headers.map(function (h) { return values[h] !== undefined ? values[h] : ''; });

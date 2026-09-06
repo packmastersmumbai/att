@@ -29,6 +29,7 @@ const SUITES = [
   { n: 15, label: 'Skill matrix',    mod: './e2e-sweep-15-skillmatrix' },
   { n: 16, label: 'Mock drills',     mod: './e2e-sweep-16-mockdrill' },
   { n: 17, label: 'Training modules', mod: './e2e-sweep-17-modules' },
+  { n: 18, label: 'Self-assessment', mod: './e2e-sweep-18-selftest' },
 ];
 
 async function main() {

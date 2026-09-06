@@ -70,6 +70,16 @@ const CHECKS = {
       ['session panel closed',     async page => !(await page.locator('#panel').evaluate(el => el.classList.contains('on')))],
     ],
   },
+  selftest: {
+    label: 'Self-test',
+    checks: [
+      ['language toggle present',  page => page.locator('#langSeg').isVisible()],
+      ['name picker visible',      page => page.locator('#who').isVisible()],
+      ['start button visible',     page => page.locator('#bStart').isVisible()],
+      ['questions hidden until started', async page => !(await page.locator('#stepQ').isVisible())],
+      ['result hidden until submitted', async page => !(await page.locator('#stepDone').isVisible())],
+    ],
+  },
   mockdrill: {
     label: 'Mock drills',
     checks: [

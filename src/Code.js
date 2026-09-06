@@ -47,7 +47,7 @@ function doGet(e) {
   }
 
   var page = (e && e.parameter && e.parameter.page) ? e.parameter.page : 'scanner';
-  var validPages = ['scanner', 'scanner_popup', 'dashboard', 'reports', 'visitors', 'kiosk', 'admin', 'idcards', 'e2e', 'vreg', 'vpass', 'gatepass_approve', 'training', 'skillmatrix', 'mockdrill'];
+  var validPages = ['scanner', 'scanner_popup', 'dashboard', 'reports', 'visitors', 'kiosk', 'admin', 'idcards', 'e2e', 'vreg', 'vpass', 'gatepass_approve', 'training', 'skillmatrix', 'mockdrill', 'selftest'];
   if (validPages.indexOf(page) === -1) page = 'scanner';
 
   var template = HtmlService.createTemplateFromFile('pages/' + page);
@@ -77,6 +77,16 @@ function doGet(e) {
   } else {
     template.employeesJson = '[]';
     template.idcardsError = '';
+  }
+
+  // The self-test page is opened from a QR code with the session and topic
+  // in the URL. Both are injected server-side so the page needs no parsing
+  // and works before any script runs.
+  if (page === 'selftest') {
+    template.planId  = String((e && e.parameter && e.parameter.plan) || '');
+    template.topicId = String((e && e.parameter && e.parameter.topic) || '');
+  } else {
+    template.planId = ''; template.topicId = '';
   }
 
   // Public visitor self-service pages: inject org name + (for vpass) the pass record
@@ -279,6 +289,9 @@ function _dispatchPost_(params) {
 
   var action = params.action;
 
+  if (action === 'getModuleTest')         return jsonResponse(getModuleTest(params.topicId, params.lang));
+  if (action === 'recordAssessment')      return jsonResponse(recordAssessment(params.entry));
+  if (action === 'getSessionAssessments') return jsonResponse(getSessionAssessments(params.planId));
   if (action === 'getTrainingModule')     return jsonResponse(getTrainingModule(params.topicId));
   if (action === 'getTrainingModules')    return jsonResponse(getTrainingModules());
   if (action === 'saveTrainingModule')    return jsonResponse(saveTrainingModule(params.module, params.token));
