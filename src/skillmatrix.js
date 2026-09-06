@@ -602,6 +602,9 @@ function setupTraining(token, years) {
     if (a.success) {
       out.attendanceRows = a.rows;
       out.attendanceSessions = a.sessions;
+      // Credited under a different name than the record used. Reported so a
+      // substitution is visible rather than looking like a direct match.
+      out.attendanceAliased = a.aliased;
       // Who the records name that the system could not identify. Surfaced
       // rather than swallowed: these are people whose training is on paper
       // but cannot be credited to anyone.

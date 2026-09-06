@@ -238,6 +238,9 @@ function _bootstrapIfNeeded() {
       ['DocVersion',         '1.0'],
       ['DocNextReview',      '01/04/2026'],
       ['MinRequired',        ''],
+      // Name substitutions applied when seeding the 2025 attendance. Blank
+      // means the defaults in _nameAliasDefaults_ apply.
+      ['NameAliases',        ''],
       ['LevelNames',         'Beginner|Under supervision|Independent|Can train others']
     ];
     configSheet.getRange(2, 1, defaults.length, 2).setValues(defaults);

@@ -409,16 +409,65 @@ function _attendanceSeed_() {
 }
 
 /**
+ * Names in the 2025 records that correspond to somebody on the current
+ * employee sheet under a different name.
+ *
+ * Supplied BY THE CUSTOMER, not inferred — the system has no way to know that
+ * the person written as "Atul Waghmare" in a 2025 record is Shikha Kumar
+ * today. Every entry here is a person the customer identified; a name absent
+ * from this table stays unmatched and is reported rather than guessed.
+ *
+ * Held in Config key `NameAliases` when set, so a correction is a settings
+ * change rather than a deploy. The values below are the defaults confirmed
+ * on 2026-09-06.
+ */
+function _nameAliasDefaults_() {
+  return {
+    // Transposed spelling: the same person, written 'PATOLE' on the record
+    // and 'POTALE' on the sheet.
+    'ASHOK PATOLE':   'ASHOK POTALE',
+    // Substitutions the customer supplied.
+    'ATUL WAGHMARE':  'SHIKHA KUMAR',
+    'SATENDRA YADAV': 'HARISH SINGH',
+    'AVINASH VASANT': 'DILIP MAHALE',
+    'KRIPASANKAR':    'DEEPAK NISHAD',
+    'RIDDHI MESTRY':  'KHUSHI PASWAN'
+  };
+}
+
+/**
+ * Alias table: defaults above, overridden by Config `NameAliases` when set.
+ * Format, one per line: `Name in the record = Name on the sheet`.
+ */
+function _nameAliases_() {
+  var map = _nameAliasDefaults_();
+  var raw;
+  try { raw = String(getConfigValue('NameAliases') || '').trim(); } catch (e) { raw = ''; }
+  if (!raw) return map;
+
+  raw.split(/[\n;]+/).forEach(function (line) {
+    var i = line.indexOf('=');
+    if (i === -1) return;
+    var from = line.slice(0, i).trim(), to = line.slice(i + 1).trim();
+    // A blank right-hand side deliberately CLEARS an alias, so a wrong
+    // default can be undone from settings rather than needing a deploy.
+    if (from) map[from.toUpperCase()] = to;
+  });
+  return map;
+}
+
+/**
  * Write the 2025 attendance that the documents actually recorded.
  *
- * Exact name match only, after normalising case and spacing. A near miss is
- * NOT accepted: 'RAJNI' in the records fuzzy-matches 'DHRUV RAJ NISHAD' on
- * the employee sheet, which is a different person — and a matrix that says
- * the wrong worker is trained is worse than one that admits it does not know.
+ * Exact name match only, after normalising case and spacing, plus the alias
+ * table above. A near miss is NEVER accepted on its own: 'RAJNI' in the
+ * records fuzzy-matches 'DHRUV RAJ NISHAD' on the employee sheet, which is a
+ * different person — and a matrix that says the wrong worker is trained is
+ * worse than one that admits it does not know.
  *
- * Unmatched names come back in `unmatched` so they can be added to Employees
- * or the spelling corrected, and the seed re-run. Idempotent: a session that
- * already has rows is left alone.
+ * Unmatched names come back in `unmatched` so they can be aliased or added to
+ * Employees, and the seed re-run. Idempotent: a session that already has rows
+ * is left alone.
  */
 function seedTrainingAttendance(token) {
   _requireAdmin_(token);
@@ -445,8 +494,10 @@ function seedTrainingAttendance(token) {
   var sheet = getSheet(TRAINING_SHEETS.ATTENDANCE);
   var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
   var now = new Date().toISOString();
+  var aliases = _nameAliases_();
 
   var rows = [], unmatched = {}, sessions = 0, skipped = 0, noPlan = [];
+  var aliased = 0, merged = 0;
 
   _attendanceSeed_().forEach(function (entry) {
     var date = entry[0], names = entry[1];
@@ -455,9 +506,26 @@ function seedTrainingAttendance(token) {
     if (already[String(plan.PlanID)]) { skipped++; return; }
 
     var wrote = 0;
+    // Two names in one session can now resolve to the same employee — Harish
+    // Singh attends under his own name AND as the alias for Satendra Yadav.
+    // One person cannot attend one session twice, and a duplicate row would
+    // inflate every count downstream.
+    var seen = {};
     names.forEach(function (n) {
-      var emp = byName[_normName_(n)];
+      var alias = aliases[String(n).toUpperCase()];
+      var emp = byName[_normName_(alias || n)];
+      if (!emp && alias) {
+        // An alias that points at nobody is a settings error, not a missing
+        // person. Report the ORIGINAL name so it is recognisable on the page.
+        unmatched[n + ' (aliased to ' + alias + ', who is not on the sheet)'] = true;
+        return;
+      }
       if (!emp) { unmatched[n] = true; return; }
+      if (alias) aliased++;
+
+      if (seen[String(emp.EmpID)]) { merged++; return; }
+      seen[String(emp.EmpID)] = true;
+
       var values = {
         PlanID: plan.PlanID, EmpID: emp.EmpID, Name: emp.Name,
         Present: 'YES',
@@ -482,6 +550,12 @@ function seedTrainingAttendance(token) {
     rows: rows.length,
     skipped: skipped,
     datesWithNoPlan: noPlan,
+    // Rows credited through the alias table rather than a direct name match.
+    aliased: aliased,
+    // Rows dropped because the alias resolved to somebody already present in
+    // that session — reported rather than silently swallowed, since it means
+    // the headcount on paper is higher than the headcount recorded.
+    merged: merged,
     // The honest half of the result: who the documents name that the system
     // could not identify. Nothing was guessed for these.
     unmatched: Object.keys(unmatched).sort()

@@ -992,6 +992,17 @@
                 </div>
               </div>
               <div class="form-group">
+                <label>Name substitutions in the 2025 records</label>
+                <textarea id="cfgNameAliases" class="input" rows="3"
+                          placeholder="ATUL WAGHMARE = SHIKHA KUMAR&#10;SATENDRA YADAV = HARISH SINGH"></textarea>
+                <div class="form-hint">
+                  One per line — <code>name in the record = name on the employee sheet</code>.
+                  Used when the 2025 training attendance is seeded. Leave a
+                  right-hand side blank to cancel a substitution. Anything not
+                  listed here stays uncredited rather than being guessed.
+                </div>
+              </div>
+              <div class="form-group">
                 <label>Minimum Required Level, per job role</label>
                 <textarea id="cfgMinRequired" class="input" rows="4"
                           placeholder="Packaging Operator: SKL-01=L3, SKL-04=L3, SKL-16=NA&#10;Security Guard: SKL-16=L3, SKL-01=NA"></textarea>
@@ -1640,7 +1651,10 @@
       { key: 'DocApprover',   fallback: 'Balkrishna Mishra' },
       { key: 'DocApprovedOn', fallback: '01/04/2025' },
       { key: 'DocVersion',    fallback: '1.0' },
-      { key: 'DocNextReview', fallback: '01/04/2026' }
+      { key: 'DocNextReview', fallback: '01/04/2026' },
+      // Blank fallback: the server's own defaults apply when this is unset,
+      // and pre-filling the box would save them back as if hand-entered.
+      { key: 'NameAliases',   fallback: '' }
     ];
 
     /* Config 'on'/'off' flags, mirrored from _alertOn_() on the server. */

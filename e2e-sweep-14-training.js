@@ -486,6 +486,85 @@ async function run() {
       });
     });
 
+    await R.check('the alias table maps records to the current roster', async () => {
+      // These are substitutions the CUSTOMER supplied. The system cannot
+      // infer that "Atul Waghmare" on a 2025 record is Shikha Kumar today,
+      // so an alias absent from this table must never be invented.
+      const a = lift('_nameAliasDefaults_', {})();
+      const want = {
+        'ASHOK PATOLE': 'ASHOK POTALE',      // transposed spelling
+        'ATUL WAGHMARE': 'SHIKHA KUMAR',
+        'SATENDRA YADAV': 'HARISH SINGH',
+        'AVINASH VASANT': 'DILIP MAHALE',
+        'KRIPASANKAR': 'DEEPAK NISHAD',
+        'RIDDHI MESTRY': 'KHUSHI PASWAN'
+      };
+      Object.keys(want).forEach(k => {
+        if (a[k] !== want[k]) throw new Error(k + ' maps to ' + a[k] + ', expected ' + want[k]);
+      });
+      // TARUN MISHRA and RAJNI were deliberately NOT mapped. Adding a guess
+      // here would credit someone with training they did not attend.
+      if (a['TARUN MISHRA']) throw new Error('TARUN MISHRA was given an unrequested alias');
+      if (a['RAJNI']) throw new Error('RAJNI was given an unrequested alias');
+    });
+
+    await R.check('Config can override or cancel an alias without a deploy', async () => {
+      const aliases = lift('_nameAliases_', {
+        _nameAliasDefaults_: lift('_nameAliasDefaults_', {}),
+        getConfigValue: () => 'ATUL WAGHMARE = SOMEONE ELSE\nKRIPASANKAR ='
+      })();
+      if (aliases['ATUL WAGHMARE'] !== 'SOMEONE ELSE')
+        throw new Error('Config did not override a default: ' + aliases['ATUL WAGHMARE']);
+      // A blank right-hand side cancels the default rather than being ignored.
+      if (aliases['KRIPASANKAR']) throw new Error('a blank alias did not cancel the default');
+      // Untouched defaults survive.
+      if (aliases['SATENDRA YADAV'] !== 'HARISH SINGH')
+        throw new Error('an unrelated default was lost');
+    });
+
+    await R.check('an alias never double-credits somebody in one session', async () => {
+      // Harish Singh attends 18/06 under his own name AND as the alias for
+      // Satendra Yadav in other sessions. If those ever coincided, one person
+      // would get two rows for one session and inflate every count.
+      const seed = lift('_attendanceSeed_', {})();
+      const alias = lift('_nameAliasDefaults_', {})();
+      seed.forEach(([date, names]) => {
+        const resolved = names.map(n => alias[n] || n);
+        const dupes = resolved.filter((v, i) => resolved.indexOf(v) !== i);
+        if (dupes.length)
+          throw new Error(date + ' resolves ' + dupes.join(', ') + ' more than once');
+      });
+      // And the seeder must dedupe anyway, because Config can add an alias
+      // tomorrow that collides. Exercised rather than grepped: run the real
+      // function against a session where two names resolve to one person.
+      const rows = [];
+      const run = lift('seedTrainingAttendance', {
+        _requireAdmin_: () => {},
+        _ensureTrainingSheets_: () => {},
+        _isoDate_: v => String(v || ''),
+        _normName_: lift('_normName_', {}),
+        _nameAliases_: () => ({ 'SATENDRA YADAV': 'HARISH SINGH' }),
+        _attendanceSeed_: () => [['2025-01-01', ['HARISH SINGH', 'SATENDRA YADAV']]],
+        SHEETS: { EMPLOYEES: 'Employees' },
+        TRAINING_SHEETS: { PLAN: 'P', ATTENDANCE: 'A' },
+        getSheetAsObjects: tab =>
+          tab === 'Employees' ? [{ EmpID: '825', Name: 'HARISH SINGH' }]
+          : tab === 'P' ? [{ PlanID: 'PLN-1', PlannedDate: '2025-01-01' }]
+          : [],
+        getSheet: () => ({
+          getRange: (r, c, nr, nc) => ({
+            getValues: () => [['PlanID', 'EmpID', 'Name', 'Present', 'Score', 'RecordedAt']],
+            setValues: v => { v.forEach(x => rows.push(x)); }
+          }),
+          getLastColumn: () => 6,
+          getLastRow: () => 1
+        })
+      })('tok');
+      if (rows.length !== 1)
+        throw new Error('one person got ' + rows.length + ' rows for one session');
+      if (run.merged !== 1) throw new Error('the duplicate was not reported: merged=' + run.merged);
+    });
+
     await R.check('a name is matched exactly, never fuzzily', async () => {
       // 'RAJNI' in the records loosely matches 'DHRUV RAJ NISHAD' on the
       // employee sheet. Crediting that person with safety training they did
