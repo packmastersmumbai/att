@@ -75,11 +75,57 @@ async function run() {
     await R.check('KPIs count what the grid shows', async () => {
       const k = await page.evaluate(() =>
         [...document.querySelectorAll('.kpi')].map(e => e.textContent.replace(/\s+/g, ' ').trim()));
-      // Mock: 4 training rows, 1 done, 1 overdue.
-      if (!k.some(x => /Sessions\s*1\/4/.test(x))) throw new Error('session count wrong: ' + k.join(' | '));
-      if (!k.some(x => /Overdue\s*1/.test(x)))     throw new Error('overdue count wrong: ' + k.join(' | '));
-      // 1 completed SOP session at 3 hrs.
+      // Mock: 4 training rows — 1 done, 1 overdue, 1 due, 1 future.
+      if (!k.some(x => /Sessions held\s*1\/4/.test(x))) throw new Error('session count wrong: ' + k.join(' | '));
+      if (!k.some(x => /Overdue\s*1/.test(x)))          throw new Error('overdue count wrong: ' + k.join(' | '));
       if (!k.some(x => /Hours delivered\s*3\.0/.test(x))) throw new Error('hours wrong: ' + k.join(' | '));
+    });
+
+    await R.check('adherence measures what was DUE, not the whole year', async () => {
+      // Dividing by every session planned for the year made a perfectly
+      // on-schedule January read 8% — which reads as failure at a glance.
+      // 1 done of 2 that had come due = 50%, not 1 of 4 = 25%.
+      const pct = await page.evaluate(() => {
+        const k = [...document.querySelectorAll('.kpi')]
+          .find(e => /On-time so far/i.test(e.textContent));
+        return k ? k.textContent.replace(/\s+/g, ' ') : '';
+      });
+      if (!/50%/.test(pct)) throw new Error('adherence should be 50% (1 of 2 due): ' + pct);
+    });
+
+    await R.check('every cell is reachable and operable by keyboard', async () => {
+      // The grid's only action was a <span onclick> — unreachable without a
+      // mouse, which fails WCAG 2.1.1 outright.
+      const a = await page.evaluate(() => {
+        const cells = [...document.querySelectorAll('.cell')];
+        return {
+          n: cells.length,
+          buttons: cells.filter(c => c.tagName === 'BUTTON').length,
+          labelled: cells.filter(c => (c.getAttribute('aria-label') || '').length > 5).length
+        };
+      });
+      if (!a.n) throw new Error('no cells rendered');
+      if (a.buttons !== a.n)  throw new Error(a.n - a.buttons + ' cells are not buttons');
+      if (a.labelled !== a.n) throw new Error('cells without an accessible name');
+
+      // ...and pressing one actually opens the session.
+      await page.evaluate(() => document.querySelector('.cell').focus());
+      await page.keyboard.press('Enter');
+      await settle(page, 350);
+      const open = await page.evaluate(() =>
+        document.getElementById('panel').classList.contains('on'));
+      if (!open) throw new Error('Enter on a focused cell did not open the session');
+      await page.keyboard.press('Escape');
+      await settle(page, 200);
+    });
+
+    await R.check('a planned session carries a glyph too', async () => {
+      // Three states had a mark and the fourth did not, so on a black-and-white
+      // print "planned" and "no session at all" were the same empty cell.
+      const txt = await page.evaluate(() =>
+        (document.querySelector('#grid .c-plan') || {}).textContent || '');
+      if (!txt.trim()) throw new Error('no planned cell rendered');
+      if (/^\d/.test(txt.trim())) throw new Error('planned cell is a bare number: ' + txt);
     });
 
     await R.check('the drill toggle swaps the grid, it is not a second page', async () => {

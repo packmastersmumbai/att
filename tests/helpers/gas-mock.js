@@ -130,6 +130,11 @@ const GAS_MOCK_SCRIPT = `
         });
       },
 
+      seedTrainingYear: function(year, token) {
+        if (token !== 'test-admin-token') { respond({ success: false, error: 'Admin PIN required' }); return; }
+        respond({ success: true, year: year, topicsAdded: 14, sessionsAdded: 36 });
+      },
+
       saveTrainingSession: function(session) {
         if (!session || !session.planId) { respond({ success: false, error: 'Missing plan id' }); return; }
         respond({ success: true, planId: session.planId });

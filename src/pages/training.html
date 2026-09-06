@@ -75,8 +75,13 @@
        black-and-white print and is readable to a colour-blind auditor. */
     .cell{display:inline-flex;align-items:center;justify-content:center;gap:2px;
       font:700 11px var(--font-mono);padding:4px 6px;border-radius:var(--radius-md);
-      min-width:42px;cursor:pointer;border:1px solid transparent;font-variant-numeric:tabular-nums}
+      min-width:42px;min-height:26px;cursor:pointer;border:1px solid transparent;
+      font-variant-numeric:tabular-nums}
     .cell:hover{border-color:var(--color-primary)}
+    /* The grid's only action is opening a session. As a <span onclick> it was
+       unreachable by keyboard entirely — every cell is a button now. */
+    .cell:focus-visible,.btn:focus-visible,.seg button:focus-visible,.inp:focus-visible{
+      outline:2px solid var(--color-primary);outline-offset:2px}
     .c-done{background:var(--done-bg);color:var(--done)}
     .c-due {background:var(--due-bg); color:var(--due)}
     .c-late{background:var(--late-bg);color:var(--late)}
@@ -110,6 +115,23 @@
       letter-spacing:.5px;margin-bottom:5px}
     .agenda ul{margin:0 0 6px 16px}
     .agenda li{margin-bottom:2px}
+    /* Below 900px the sidebar becomes a horizontal strip. At 390px it was
+       taking 238 of the screen's width and leaving the calendar about 150px —
+       and a supervisor on the floor carries a phone, not a desktop. */
+    @media (max-width:900px){
+      body{flex-direction:column}
+      .sb{width:100%;border-right:0;border-bottom:1px solid var(--color-border)}
+      .sb-logo{padding:10px 14px}
+      .sb-nav{display:flex;gap:4px;overflow-x:auto;padding:8px 10px}
+      .sb-section{display:none}
+      .sb-item{white-space:nowrap;padding:8px 12px}
+      .main{padding:14px}
+      .doc-hd{flex-direction:column;align-items:stretch}
+      .panel{width:100%}
+      /* Keep the topic name visible while the months scroll under it —
+         a bare date is meaningless without knowing which topic it belongs to. */
+      .topic{min-width:150px;position:sticky;left:0;background:var(--color-surface);z-index:1}
+    }
     @media print{.sb,.ctrls,.panel,.backdrop{display:none!important}.main{padding:0}}
   </style>
 </head>
@@ -192,10 +214,10 @@
       <div class="scroll"><table id="grid"></table></div>
 
       <div class="legend">
-        <span><i class="sw" style="background:var(--done-bg);border:1px solid var(--done)"></i> Completed</span>
-        <span><i class="sw" style="background:var(--due-bg);border:1px solid var(--due)"></i> Due this month</span>
-        <span><i class="sw" style="background:var(--late-bg);border:1px solid var(--late)"></i> Overdue</span>
-        <span><i class="sw" style="background:var(--plan-bg);border:1px solid var(--plan)"></i> Planned</span>
+        <span><i class="sw" style="background:var(--done-bg);border:1px solid var(--done)"></i> ✓ Completed</span>
+        <span><i class="sw" style="background:var(--due-bg);border:1px solid var(--due)"></i> ◷ Due this month</span>
+        <span><i class="sw" style="background:var(--late-bg);border:1px solid var(--late)"></i> ! Overdue</span>
+        <span><i class="sw" style="background:var(--plan-bg);border:1px solid var(--plan)"></i> &middot; Planned</span>
         <span>Number is the day of the month. Click a cell to open the session.</span>
       </div>
     </section>
@@ -279,9 +301,18 @@
         '</tr></thead>';
 
       if (!topics.length) {
+        // An empty state that sends the user somewhere else is a dead end.
+        // The action that fills the page belongs on the page.
         document.getElementById('grid').innerHTML = head +
-          '<tbody><tr><td class="empty" colspan="13">No ' +
-          (VIEW === 'DRILL' ? 'drills' : 'topics') + ' yet. Seed the year from Admin.</td></tr></tbody>';
+          '<tbody><tr><td class="empty" colspan="13">' +
+            '<div style="font-weight:700;color:var(--color-text);margin-bottom:4px">' +
+              'Nothing scheduled for ' + esc(DATA.year) + '</div>' +
+            '<div style="margin-bottom:14px">Load the topic library and this year’s plan — ' +
+              'the ten topics, their agendas and the mock drill schedule.</div>' +
+            '<button type="button" class="btn btn-pri" onclick="seedYear()">' +
+              'Set up ' + esc(DATA.year) + '</button>' +
+            '<div id="seedMsg" style="margin-top:10px"></div>' +
+          '</td></tr></tbody>';
         renderKpis([]);
         return;
       }
@@ -294,10 +325,14 @@
           var mi = Number(shown.slice(5, 7)) - 1;
           var day = shown.slice(8, 10);
           var cls = { DONE: 'c-done', DUE: 'c-due', OVERDUE: 'c-late', PLANNED: 'c-plan' }[p.status];
-          var mark = { DONE: '✓', DUE: '◷', OVERDUE: '!', PLANNED: '' }[p.status];
-          cells[mi] = '<span class="cell ' + cls + '" onclick="openPanel(\'' + p.planId + '\')" ' +
-                      'title="' + esc(t.Title) + ' — ' + p.status.toLowerCase() + '">' +
-                      mark + day + '</span>';
+          // Every state carries a glyph, not just a hue: printed in black and
+          // white, "planned" and "no session" were the same pale cell.
+          var mark = { DONE: '✓', DUE: '◷', OVERDUE: '!', PLANNED: '·' }[p.status];
+          var label = esc(t.Title) + ', ' + p.status.toLowerCase() + ' ' + shown;
+          cells[mi] = '<button type="button" class="cell ' + cls + '" ' +
+                      'onclick="openPanel(\'' + p.planId + '\')" ' +
+                      'title="' + label + '" aria-label="' + label + '">' +
+                      mark + day + '</button>';
         });
         return '<tr><td class="topic"><span class="n">' + (i + 1) + '</span>' + esc(t.Title) + '</td>' +
                cells.map(function (c) { return '<td class="mth">' + c + '</td>'; }).join('') + '</tr>';
@@ -310,7 +345,13 @@
     function renderKpis(rows) {
       var done = rows.filter(function (r) { return r.status === 'DONE'; }).length;
       var overdue = rows.filter(function (r) { return r.status === 'OVERDUE'; }).length;
-      var pct = rows.length ? Math.round(done / rows.length * 100) : 0;
+
+      // Adherence measures sessions that SHOULD have happened by now — done
+      // plus overdue. Dividing by the whole year's plan made a perfectly
+      // on-schedule January read 8%, which reads as failure to anyone
+      // glancing at it.
+      var dueSoFar = done + overdue;
+      var pct = dueSoFar ? Math.round(done / dueSoFar * 100) : 100;
       var hrs = 0;
       var byId = {};
       DATA.topics.forEach(function (t) { byId[t.TopicID] = t; });
@@ -319,8 +360,8 @@
       });
 
       document.getElementById('kpis').innerHTML = [
-        ['Plan adherence', pct + '%', pct < 80 ? 'warn' : ''],
-        ['Sessions', done + '/' + rows.length, ''],
+        ['On-time so far', pct + '%', pct < 80 ? 'warn' : ''],
+        ['Sessions held', done + '/' + rows.length, ''],
         ['Overdue', String(overdue), overdue ? 'bad' : ''],
         ['Hours delivered', hrs.toFixed(1), '']
       ].map(function (k) {
@@ -389,6 +430,32 @@
           trainer: document.getElementById('pTrainer').value.trim(),
           observations: document.getElementById('pObs').value.trim()
         });
+    }
+
+    /* Seeding writes the whole year's plan, so it is admin-gated on the server.
+       This page has no PIN screen of its own — asking for the PIN at the moment
+       it is needed is less machinery than a second gate, and this runs once. */
+    function seedYear() {
+      var box = document.getElementById('seedMsg');
+      var pin = window.prompt('Admin PIN to set up ' + DATA.year);
+      if (!pin) return;
+      box.textContent = 'Checking…';
+
+      google.script.run
+        .withSuccessHandler(function (v) {
+          if (!v || !v.success || !v.token) { box.textContent = 'That PIN was not accepted.'; return; }
+          box.textContent = 'Setting up ' + DATA.year + '…';
+          google.script.run
+            .withSuccessHandler(function (r) {
+              if (!r || !r.success) { box.textContent = (r && r.error) || 'Could not set up the year.'; return; }
+              box.textContent = r.sessionsAdded + ' sessions added.';
+              load(DATA.year);
+            })
+            .withFailureHandler(function (e) { box.textContent = 'Error: ' + (e && e.message); })
+            .seedTrainingYear(DATA.year, v.token);
+        })
+        .withFailureHandler(function (e) { box.textContent = 'Error: ' + (e && e.message); })
+        .verifyPIN(pin);
     }
 
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closePanel(); });
