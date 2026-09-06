@@ -368,6 +368,40 @@ async function run() {
       });
     });
 
+    await R.check('sitting the test marks the session as run', async () => {
+      // The matrix counts only sessions that actually happened. Without this
+      // the score attaches to a row still marked overdue and is invisible to
+      // the competency calculation — the assessment records, and nothing
+      // moves. Found live, not in a test.
+      const cells = [];
+      let actual = '';
+      const mark = lift('_markSessionRun_', {
+        TRAINING_SHEETS: { PLAN: 'P' },
+        getSheet: () => ({}),
+        findRowByValue: () => 2,
+        getCell: () => actual,
+        setCell: (sh, row, col, val) => { cells.push([col, val]); actual = val; },
+        // Mirrors the real _isoDate_: a Date becomes YYYY-MM-DD, a string
+        // passes through. Slicing a Date's toString gives "Mon Sep 07".
+        _isoDate_: v => !v ? ''
+          : (Object.prototype.toString.call(v) === '[object Date]'
+              ? v.getFullYear() + '-' + String(v.getMonth() + 1).padStart(2, '0') +
+                '-' + String(v.getDate()).padStart(2, '0')
+              : String(v).slice(0, 10))
+      });
+      const first = mark('PLN-1');
+      if (first !== 'marked run') throw new Error('a blank date was not filled: ' + first);
+      if (!cells.some(c => c[0] === 'ActualDate' && /^\d{4}-\d{2}-\d{2}$/.test(c[1])))
+        throw new Error('no actual date written: ' + JSON.stringify(cells));
+
+      // A trainer's own entry must always win over this inference.
+      cells.length = 0;
+      const second = mark('PLN-1');
+      if (second !== 'already recorded')
+        throw new Error('an existing date was overwritten: ' + second);
+      if (cells.length) throw new Error('it wrote over a recorded date');
+    });
+
     await R.check('participation is measured against the whole roster', async () => {
       // "8 people passed" means nothing without knowing 8 of how many. The
       // paper record's Training Feedback KPI never had this number.

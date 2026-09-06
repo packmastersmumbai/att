@@ -397,17 +397,41 @@ function recordAssessment(entry) {
   // present + a score at or above the pass mark computes to L2.
   var att = _upsertAttendanceScore_(planId, empId, emp.Name || empId, marked.score);
 
+  // Somebody sat the test, so the session demonstrably ran. Without this the
+  // attendance attaches to a row still marked overdue, and the matrix — which
+  // counts only sessions that actually happened — cannot see the score at
+  // all. The date is only set if it is not already recorded, so a trainer's
+  // own entry always wins over this inference.
+  var ran = _markSessionRun_(planId);
+
   return {
     success: true,
     score: marked.score, correct: marked.correct, total: marked.total,
     passed: marked.passed, passMark: marked.passMark,
     detail: marked.detail,
     attendanceRecorded: att,
+    sessionMarkedRun: ran,
     // Said plainly to the attendee: what their result does and does not do.
     levelNote: marked.passed
       ? 'Recorded. Your supervisor confirms anything above this level.'
       : 'Recorded. Speak to your supervisor about a refresher.'
   };
+}
+
+/**
+ * Record that a session ran, if nothing has said so yet.
+ *
+ * A trainer's entered date always wins: this only fills a blank. The date
+ * used is today's, because that is when somebody demonstrably sat the test —
+ * inventing the planned date instead would backdate a record.
+ */
+function _markSessionRun_(planId) {
+  var sheet = getSheet(TRAINING_SHEETS.PLAN);
+  var row = findRowByValue(sheet, 'PlanID', planId);
+  if (row === -1) return 'no such session';
+  if (_isoDate_(getCell(sheet, row, 'ActualDate'))) return 'already recorded';
+  setCell(sheet, row, 'ActualDate', _isoDate_(new Date()));
+  return 'marked run';
 }
 
 /**
