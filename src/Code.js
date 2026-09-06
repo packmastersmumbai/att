@@ -54,37 +54,39 @@ function doGet(e) {
   template.page = page;
   template.appUrl = ScriptApp.getService().getUrl();
   template.publicUrl = publicBaseUrl();   // GAS app base for in-app nav + shared links (direct, no launcher)
+  // Org name, read ONCE for every page. Three separate blocks used to read the
+  // same Config key with three different fallbacks, and any page outside those
+  // branches got an empty string — which is how the training calendar shipped
+  // printing "Rev 00 ·" with nothing after the separator.
+  var orgName = 'My Organisation';
+  try {
+    getSheetAsObjects(SHEETS.CONFIG).forEach(function(c) {
+      if (String(c.Key).trim() === 'OrgName' && c.Value) orgName = String(c.Value).trim();
+    });
+  } catch(ex) {}
+  template.orgName = orgName;
+
   // For ID cards page inject employee data server-side (no extra round-trip)
   if (page === 'idcards') {
-    var emps = [], orgName = 'My Organisation', idcardsError = '';
+    var emps = [], idcardsError = '';
     try {
       emps = getSheetAsObjects(SHEETS.EMPLOYEES);
     } catch(ex) { idcardsError += 'Employees sheet error: ' + ex.message + '. '; }
-    try {
-      var cfg = getSheetAsObjects(SHEETS.CONFIG);
-      cfg.forEach(function(c) { if (String(c.Key).trim() === 'OrgName') orgName = String(c.Value || 'My Organisation').trim(); });
-    } catch(ex) { idcardsError += 'Config sheet error: ' + ex.message + '. '; }
     template.employeesJson = JSON.stringify(emps);
-    template.orgName = orgName;
     template.idcardsError = idcardsError;
   } else {
     template.employeesJson = '[]';
-    template.orgName = '';
     template.idcardsError = '';
   }
 
   // Public visitor self-service pages: inject org name + (for vpass) the pass record
   if (page === 'vreg' || page === 'vpass') {
-    var vOrg = 'My Organisation';
     var hostDepts = '';
     try {
       getSheetAsObjects(SHEETS.CONFIG).forEach(function(c) {
-        var k = String(c.Key).trim();
-        if (k === 'OrgName') vOrg = String(c.Value || vOrg).trim();
-        if (k === 'HostDepartments') hostDepts = String(c.Value || '').trim();
+        if (String(c.Key).trim() === 'HostDepartments') hostDepts = String(c.Value || '').trim();
       });
     } catch(ex) {}
-    template.orgName = vOrg;
     template.hostDepartments = hostDepts;  // comma-separated depts shown in "Whom to meet"; blank = all active
   } else {
     template.hostDepartments = '';

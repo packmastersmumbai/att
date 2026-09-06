@@ -67,9 +67,18 @@
     th,td{border:1px solid var(--color-border);padding:6px 8px;text-align:left}
     thead th{background:var(--color-bg);font-size:10px;font-weight:700;color:var(--color-text-muted);
       text-transform:uppercase;letter-spacing:.5px;white-space:nowrap}
-    .topic{min-width:230px;font-weight:600}
+    /* The topic column takes what it needs and the twelve months split the
+       rest evenly, so an empty month is not the same width as one holding a
+       date. table-layout:fixed keeps all twelve equal regardless of content —
+       without it a single long topic title squeezes December to nothing. */
+    table{table-layout:fixed}
+    /* overflow-wrap matters because table-layout:fixed clips rather than
+       widens — the longest real title is "Emergency Response, Fire
+       Extinguisher, Hose". */
+    .topic{width:auto;min-width:220px;font-weight:600;
+      overflow-wrap:anywhere;white-space:normal}
     .topic .n{font-family:var(--font-mono);color:var(--color-muted);margin-right:6px}
-    .mth{width:54px;text-align:center;padding:4px}
+    .mth{width:6.2%;min-width:50px;text-align:center;padding:4px}
 
     /* Status carries a glyph as well as a colour, so the grid survives a
        black-and-white print and is readable to a colour-blind auditor. */

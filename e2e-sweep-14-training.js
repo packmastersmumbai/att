@@ -128,6 +128,22 @@ async function run() {
       if (/^\d/.test(txt.trim())) throw new Error('planned cell is a bare number: ' + txt);
     });
 
+    await R.check('long topic titles wrap instead of being clipped', async () => {
+      // table-layout:fixed keeps the twelve months evenly spaced, but it will
+      // clip a cell's content rather than widen for it — so the longest real
+      // topic title has to be checked, not assumed.
+      const clipped = await page.evaluate(() => {
+        const cells = [...document.querySelectorAll('.topic')];
+        cells.forEach(c => { if (!c.dataset.orig) c.dataset.orig = c.textContent; });
+        // Longest title in the real 2026 library.
+        cells[0].textContent = 'Emergency Response, Fire Extinguisher, Hose';
+        const bad = cells.filter(c => c.scrollWidth > c.clientWidth + 1).length;
+        cells.forEach(c => { c.textContent = c.dataset.orig; });
+        return bad;
+      });
+      if (clipped) throw new Error(clipped + ' topic title(s) clipped');
+    });
+
     await R.check('the drill toggle swaps the grid, it is not a second page', async () => {
       await page.click('#typeSeg button[data-type="DRILL"]');
       await settle(page, 200);
