@@ -120,28 +120,48 @@ async function run() {
       if (!ok) throw new Error('moved session is not in its planned month');
     });
 
+    await R.check('a back-filled session is not dressed as a real record', async () => {
+      // An ActualDate is a claim that training happened. A row marked held in
+      // bulk and one with a trainer, a roster and a signature both carry that
+      // date — without a visible difference the weaker claim inherits the
+      // stronger one's credibility, which is what an auditor is there to catch.
+      const cells = await page.evaluate(() =>
+        [...document.querySelectorAll('#grid .cell')].map(c => ({
+          cls: c.className, title: c.getAttribute('title') || ''
+        })));
+      const thin = cells.filter(c => c.cls.includes('thin'));
+      const real = cells.filter(c => c.cls.includes('c-done') && !c.cls.includes('thin'));
+      if (!thin.length) throw new Error('back-filled session renders no differently');
+      if (!real.length) throw new Error('no genuinely recorded session to contrast with');
+      if (!/back-filled/i.test(thin[0].title)) throw new Error('back-fill is not named in the tooltip');
+      if (/back-filled/i.test(real[0].title)) throw new Error('a real record is labelled back-filled');
+    });
+
     await R.check('KPIs count what the grid shows', async () => {
       const k = await page.evaluate(() =>
         [...document.querySelectorAll('.kpi')].map(e => e.textContent.replace(/\s+/g, ' ').trim()));
-      // Mock: 4 training rows — 1 done, 1 overdue, 1 due, 1 future — plus
-      // the drill. The KPI strip counts what the grid below it shows, so in
-      // the default ALL view that is 5. When these disagreed, every figure
-      // read zero over a full grid.
-      if (!k.some(x => /Sessions held\s*1\/5/.test(x))) throw new Error('session count wrong: ' + k.join(' | '));
+      // Mock: 5 training rows — 1 done, 1 back-filled, 1 overdue, 1 due,
+      // 1 future — plus the drill. The KPI strip counts what the grid below
+      // it shows, so in the default ALL view that is 6. When these disagreed,
+      // every figure read zero over a full grid.
+      if (!k.some(x => /Sessions held\s*2\/6/.test(x))) throw new Error('session count wrong: ' + k.join(' | '));
       if (!k.some(x => /Overdue\s*1/.test(x)))          throw new Error('overdue count wrong: ' + k.join(' | '));
-      if (!k.some(x => /Hours delivered\s*3\.0/.test(x))) throw new Error('hours wrong: ' + k.join(' | '));
+      // TRN-01 at 3h plus the back-filled TRN-05 at 1h.
+      if (!k.some(x => /Hours delivered\s*4\.0/.test(x))) throw new Error('hours wrong: ' + k.join(' | '));
     });
 
     await R.check('adherence measures what was DUE, not the whole year', async () => {
       // Dividing by every session planned for the year made a perfectly
       // on-schedule January read 8% — which reads as failure at a glance.
-      // 1 done of 2 that had come due = 50%, not 1 of 4 = 25%.
+      // 2 done (one of them back-filled) of 3 that had come due = 67%, not
+      // 2 of 6 = 33%. A back-filled session still counts as held here: the
+      // KPI answers "did it happen", and the grid answers "on what evidence".
       const pct = await page.evaluate(() => {
         const k = [...document.querySelectorAll('.kpi')]
           .find(e => /On-time so far/i.test(e.textContent));
         return k ? k.textContent.replace(/\s+/g, ' ') : '';
       });
-      if (!/50%/.test(pct)) throw new Error('adherence should be 50% (1 of 2 due): ' + pct);
+      if (!/67%/.test(pct)) throw new Error('adherence should be 67% (2 of 3 due): ' + pct);
     });
 
     await R.check('every cell is reachable and operable by keyboard', async () => {

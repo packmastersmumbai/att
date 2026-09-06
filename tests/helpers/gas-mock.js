@@ -106,6 +106,9 @@ const GAS_MOCK_SCRIPT = `
         // grid quietly reports the slip as on-time work in a later month.
         // A same-month slip cannot tell those two behaviours apart.
         var pastMoved = iso(new Date(today.getFullYear(), today.getMonth() - 1, 22));
+        // Its own month: the grid holds one cell per topic per month, so a
+        // second TRN-05 session in the same month as PLN-2 would overwrite it.
+        var pastEarlier = iso(new Date(today.getFullYear(), today.getMonth() - 4, 8));
         var future    = iso(new Date(today.getFullYear() + 1, 5, 20));
         respond({
           success: true, year: y, years: ['2025', '2026'],
@@ -128,7 +131,13 @@ const GAS_MOCK_SCRIPT = `
             { planId: 'PLN-1', topicId: 'TRN-01', type: 'TRAIN', plannedDate: past,
               actualDate: pastMoved, status: 'DONE', trainer: 'Anuj Pathak', rating: '4' },
             { planId: 'PLN-2', topicId: 'TRN-05', type: 'TRAIN', plannedDate: past,
-              actualDate: '', status: 'OVERDUE', trainer: '', rating: '' },
+              actualDate: '', status: 'OVERDUE', trainer: '', content: '', rating: '' },
+            // Marked held in bulk, with no trainer and no roster behind it.
+            // Carries an ActualDate exactly like PLN-1 does, so the grid must
+            // distinguish them on something other than the date.
+            { planId: 'PLN-6', topicId: 'TRN-05', type: 'TRAIN', plannedDate: pastEarlier,
+              actualDate: pastEarlier, status: 'DONE', trainer: '',
+              content: 'Back-filled in bulk on 07/09/26 — no per-session record', rating: '' },
             { planId: 'PLN-3', topicId: 'TRN-05', type: 'TRAIN', plannedDate: thisMonth,
               actualDate: '', status: 'DUE', trainer: '', rating: '' },
             { planId: 'PLN-4', topicId: 'TRN-01', type: 'TRAIN', plannedDate: future,

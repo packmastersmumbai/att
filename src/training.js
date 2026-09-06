@@ -72,6 +72,10 @@ function getTrainingCalendar(year) {
         actualDate:  _isoDate_(p.ActualDate),
         status:      _planStatus_(p),
         trainer:     p.Trainer || '',
+        // Returned so the caller can tell a session with a real record apart
+        // from one that was back-filled in bulk. Both carry an ActualDate;
+        // only this says which kind of claim it is.
+        content:     p.Content || '',
         rating:      p.Rating || ''
       };
     }),

@@ -99,6 +99,12 @@
     .cell .d-plan{font-size:9px;opacity:.6;text-decoration:line-through}
     .cell .d-act{font-size:10.5px}
     .cell.moved{border-style:dashed;border-color:currentColor}
+    /* Held, but on a bulk back-fill rather than a signed record. Hatched
+       rather than solid: an auditor should be able to see at a glance which
+       green cells have evidence behind them and which are an assertion. */
+    .cell.thin{background-image:repeating-linear-gradient(45deg,
+      rgba(255,255,255,.55) 0 3px, transparent 3px 6px)}
+    .cell.thin .d-one,.cell.thin .d-act{opacity:.78}
     /* The icon beside the topic name, so the row is identifiable on its own
        when the grid is scrolled sideways past the first column. */
     .topic .tk{display:inline-block;width:15px;text-align:center;margin-right:5px;
@@ -315,6 +321,7 @@
         <span style="color:var(--color-primary)">&#9673; Induction</span>
         <span class="lsep">&nbsp;</span>
         <span><s style="opacity:.6">10/01/26</s> planned &rarr; <b>02/01/26</b> actual, when a session moved</span>
+        <span><i class="sw" style="background:var(--done-bg);border:1px solid var(--done);background-image:repeating-linear-gradient(45deg,rgba(255,255,255,.55) 0 3px,transparent 3px 6px)"></i> Back-filled &mdash; no per-session record</span>
         <span>Dates are DD/MM/YY, filed under the month they were planned for. Click a cell to open the session.</span>
       </div>
     </section>
@@ -516,13 +523,20 @@
               '<span class="d-act">' + ddmmyy(p.actualDate) + '</span>'
             : '<span class="d-one">' + ddmmyy(p.actualDate || p.plannedDate) + '</span>';
 
+          // A session marked held in bulk is not the same claim as one with a
+          // trainer, a roster and a signature behind it. Both carry an
+          // ActualDate, so without this they are indistinguishable — and the
+          // weaker claim would quietly inherit the stronger one's credibility.
+          var thin = /Back-filled in bulk/.test(p.content || '');
+
           var label = esc(t.Title) + ' — ' + kind.label + ', ' + p.status.toLowerCase() +
                       (moved ? ', planned ' + ddmmyy(p.plannedDate) +
                                ' held ' + ddmmyy(p.actualDate)
-                             : ' ' + ddmmyy(p.actualDate || p.plannedDate));
+                             : ' ' + ddmmyy(p.actualDate || p.plannedDate)) +
+                      (thin ? ' — back-filled, no per-session record' : '');
 
           cells[mi] = '<button type="button" class="cell ' + cls +
-                      (moved ? ' moved' : '') + '" ' +
+                      (moved ? ' moved' : '') + (thin ? ' thin' : '') + '" ' +
                       'onclick="openPanel(\'' + p.planId + '\')" ' +
                       'title="' + label + '" aria-label="' + label + '">' +
                       '<span class="ic">' + kind.icon + '</span>' +
