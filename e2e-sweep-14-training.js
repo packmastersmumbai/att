@@ -455,11 +455,89 @@ async function run() {
     await R.check('every seeded 2026 date lands on a working day', async () => {
       const seed = lift('_trainingDateSeed_', {});
       const all = Object.values(seed()).flat();
-      if (all.length !== 36) throw new Error('expected 36 seeded sessions, got ' + all.length);
+      // 33 training (32 from the 2025 records + Product Stewardship, added in
+      // 2026) and 5 drills (the four run in 2025 plus Earthquake, run in 2024).
+      if (all.length !== 38) throw new Error('expected 38 seeded sessions, got ' + all.length);
       const sundays = all
         .map(d => planDate(d, 2026))
         .filter(iso => new Date(iso + 'T00:00:00').getDay() === 0);
       if (sundays.length) throw new Error('sessions landed on a Sunday: ' + sundays.join(', '));
+    });
+
+    await R.check('re-seeding an existing year tops it up, never duplicates it', async () => {
+      // A topic added to the library later must reach a calendar that already
+      // exists, and the year must NOT be rewritten — attendance and drill
+      // reports hang off those rows by PlanID.
+      const written = [], cells = [];
+      const run = lift('seedTrainingYear', {
+        _requireAdmin_: () => {},
+        _ensureTrainingSheets_: () => {},
+        _isoDate_: v => String(v || ''),
+        _planDateFor_: (dd, y) => y + '-' + dd.split('/')[1] + '-' + dd.split('/')[0],
+        _holidayLookup_: () => ({}),
+        _trainingTopicSeed_: () => [],
+        _trainingDateSeed_: () => ({ 'TRN-01': ['10/01'], 'TRN-11': ['03/02'] }),
+        _actualDateOverrides_: () => ({ '2026': { 'TRN-01': [['2026-01-10', '2026-01-02']] } }),
+        TRAINING_SHEETS: { TOPICS: 'T', PLAN: 'P' },
+        // TRN-01 is already on the calendar; TRN-11 is the new topic.
+        getSheetAsObjects: tab => tab === 'P'
+          ? [{ PlanID: 'PLN-2026-001', Year: '2026', TopicID: 'TRN-01',
+               PlannedDate: '2026-01-10', ActualDate: '' }]
+          : [],
+        getSheet: () => ({
+          getRange: () => ({
+            getValues: () => [['PlanID','Year','TopicID','Type','PlannedDate','ActualDate']],
+            setValues: v => v.forEach(x => written.push(x))
+          }),
+          getLastColumn: () => 6, getLastRow: () => 2
+        }),
+        findRowByValue: () => 2,
+        setCell: (sh, row, col, val) => cells.push([col, val])
+      })(2026, 'tok');
+
+      if (run.sessionsAdded !== 1)
+        throw new Error('expected only the new topic to be added, got ' + run.sessionsAdded);
+      if (written[0][2] !== 'TRN-11')
+        throw new Error('added the wrong topic: ' + written[0][2]);
+      if (run.alreadyPresent !== 1)
+        throw new Error('the existing session was not recognised: ' + run.alreadyPresent);
+      // And the existing row's actual date is corrected in place.
+      if (run.datesCorrected !== 1)
+        throw new Error('the real date was not applied: ' + run.datesCorrected);
+      if (!cells.some(c => c[0] === 'ActualDate' && c[1] === '2026-01-02'))
+        throw new Error('ActualDate not set to the record date: ' + JSON.stringify(cells));
+      // The new PlanID must not collide with the one already there.
+      if (written[0][0] === 'PLN-2026-001')
+        throw new Error('the top-up minted a PlanID that already exists');
+    });
+
+    await R.check('a real session date beats the derived one', async () => {
+      // The 2026 SOP session was derived onto 10/01 but the record dates it
+      // 02/01. Without the override the calendar shows it overdue on a day it
+      // was never held, and absent on the day it was.
+      const ov = lift('_actualDateOverrides_', {})();
+      const y26 = ov['2026'] || {};
+      const sop = (y26['TRN-01'] || [])[0];
+      if (!sop) throw new Error('the 2026 SOP override is missing');
+      if (sop[0] !== '2026-01-10' || sop[1] !== '2026-01-02')
+        throw new Error('SOP override reads ' + JSON.stringify(sop));
+      // Product Stewardship: derived and actual agree, and it must still be
+      // marked as run rather than left blank because the dates match.
+      const ps = (y26['TRN-11'] || [])[0];
+      if (!ps || ps[1] !== '2026-02-03')
+        throw new Error('the Product Stewardship override is missing or wrong');
+      // An override must point at a date the derivation actually produces,
+      // or it silently never fires.
+      const planDate = lift('_planDateFor_', GAS);
+      const seeded = lift('_trainingDateSeed_', {})();
+      Object.keys(y26).forEach(topic => {
+        y26[topic].forEach(pair => {
+          const derived = (seeded[topic] || []).map(dd => planDate(dd, 2026));
+          if (derived.indexOf(pair[0]) === -1)
+            throw new Error(topic + ' override targets ' + pair[0] +
+                            ', which the seed never produces (' + derived.join(', ') + ')');
+        });
+      });
     });
 
     await R.check('the 2025 attendance seed matches the records it came from', async () => {
@@ -596,8 +674,14 @@ async function run() {
                       .reduce((n, k) => n + seed[k].length, 0);
       const drill = Object.keys(seed).filter(k => k.startsWith('DRL'))
                       .reduce((n, k) => n + seed[k].length, 0);
-      if (train !== 32) throw new Error('expected 32 training sessions, got ' + train);
-      if (drill !== 4)  throw new Error('expected 4 drills, got ' + drill);
+      // 32 of the training sessions come from the 2025 records; the 33rd is
+      // Product Stewardship, which first appears in the 2026 folder. The 5th
+      // drill is Earthquake, run in 2024 but not in 2025.
+      if (train !== 33) throw new Error('expected 33 training sessions, got ' + train);
+      if (drill !== 5)  throw new Error('expected 5 drills, got ' + drill);
+      const y2025 = Object.keys(seed).filter(k => k.startsWith('TRN') && k !== 'TRN-11')
+                      .reduce((n, k) => n + seed[k].length, 0);
+      if (y2025 !== 32) throw new Error('the 2025 record count drifted: ' + y2025);
       // Spot-check against the real records.
       if (seed['TRN-05'].join() !== '07/03,30/07,14/10,17/12')
         throw new Error('Electrical Safety dates drifted: ' + seed['TRN-05'].join());

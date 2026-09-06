@@ -183,6 +183,43 @@ function _drillProcedureSeed_() {
       ].join('|')
     },
     {
+      // From the 2024 drill (15/10/2024, inside the factory). Unlike the
+      // other four, that record carries a written step-by-step procedure in
+      // its own text, so the steps below are the record's own wording rather
+      // than a decomposition of its observations.
+      DrillID: 'MD-QUAKE', TopicID: 'DRL-05',
+      Name: 'Earthquake', NameHi: 'भूकंप',
+      EmergencyType: 'EARTHQUAKE',
+      Scenario: 'A pre-arranged distinctive signal such as a siren or bell is set off indicating an earthquake. Responsible persons are alerted by this signal.',
+      DefaultLocation: 'Inside Factory',
+      TargetMinutes: 30,
+      Equipment: 'Siren or bell|Marked evacuation pathways|Assembly point board|Roll call list|First aid box',
+      Steps: [
+        'Distinctive signal (siren or bell) sounded to indicate an earthquake',
+        'Everyone moves away from windows, glass and unfastened objects',
+        'All perform “drop, cover and hold” under tables, desks or chairs until the shaking signal stops',
+        'Where there are not enough desks, bags are used to protect the head',
+        'Anyone outside gets clear of buildings, power lines, trees and poles, then drops and covers head and neck',
+        'Once the shaking stops, all leave the building in single file, calmly and in order',
+        'Person in charge indicates the pre-determined route to the pre-identified evacuation area',
+        'Buddy system used to assist persons with physical or mental disabilities',
+        'No running permitted, to avoid panic and stampede; no overtaking on staircases',
+        'Roll call or body count taken at the assembly point and each responsible person reports whether all are accounted for'
+      ].join('|'),
+      StepsHi: [
+        'भूकंप का संकेत देने हेतु सायरन या घंटी बजाई जाए',
+        'सभी खिड़कियों, काँच और खुली वस्तुओं से दूर हट जाएँ',
+        'कंपन का संकेत रुकने तक मेज़ या कुर्सी के नीचे “झुको, ढको, पकड़ो” करें',
+        'पर्याप्त मेज़ न हों तो बैग से सिर की सुरक्षा करें',
+        'बाहर मौजूद लोग इमारत, बिजली की लाइन और पेड़ों से दूर हटकर सिर व गर्दन ढकें',
+        'कंपन रुकने पर सभी शांतिपूर्वक एक पंक्ति में इमारत से बाहर निकलें',
+        'प्रभारी व्यक्ति पूर्वनिर्धारित मार्ग और निकासी स्थल बताए',
+        'शारीरिक या मानसिक अक्षमता वाले व्यक्तियों हेतु बडी सिस्टम का उपयोग हो',
+        'भगदड़ से बचने हेतु दौड़ना और सीढ़ियों पर आगे निकलना वर्जित',
+        'असेंबली पॉइंट पर गिनती हो और प्रत्येक प्रभारी उपस्थिति की सूचना दे'
+      ].join('|')
+    },
+    {
       DrillID: 'MD-FIRSTAID', TopicID: 'DRL-01',
       Name: 'First Aid', NameHi: 'प्राथमिक चिकित्सा',
       EmergencyType: 'FIRST AID',

@@ -218,6 +218,12 @@ function _trainingTopicSeed_() {
     ['TRN-10', 'Safety & PPE', 'सुरक्षा एवं पीपीई', 'TRAIN',
      'Safety awareness and importance|PPE compulsory use as per PPE Matrix|Importance of PPE and hierarchy of controls',
      'Classroom + demonstration', 1.0, 12],
+    // Introduced in 2026 — the record is "01 TRAINING Product Stewardship &.doc",
+    // dated 03/02/2026, 3 hrs. Not present in the 2025 library, so it carries
+    // no historical cadence and is planned once a year.
+    ['TRN-11', 'Product Stewardship', 'उत्पाद प्रबंधन', 'TRAIN',
+     'Training for Filling, Packing|Standard Operating Procedure (SOP)|Importance of SOP and examples of SOP in daily life|Products safe, compliant, sustainable and reliable',
+     'Classroom', 3.0, 12],
     // Mock drill scenarios — same library, Type=DRILL.
     ['DRL-01', 'Mock Drill — First Aid', 'मॉक ड्रिल — प्राथमिक चिकित्सा', 'DRILL',
      'Casualty identification|First aid response|Escalation and medical support', 'Drill', 0.5, 12],
@@ -226,7 +232,13 @@ function _trainingTopicSeed_() {
     ['DRL-03', 'Mock Drill — Fire Safety', 'मॉक ड्रिल — अग्नि सुरक्षा', 'DRILL',
      'Alarm and evacuation|Assembly point roll call|Extinguisher and hose deployment', 'Drill', 0.5, 12],
     ['DRL-04', 'Mock Drill — Spill Control', 'मॉक ड्रिल — रिसाव नियंत्रण', 'DRILL',
-     'Spill identification|Spill kit deployment|Containment and disposal as per MSDS', 'Drill', 0.5, 12]
+     'Spill identification|Spill kit deployment|Containment and disposal as per MSDS', 'Drill', 0.5, 12],
+    // Run in 2024 (15/10, inside the factory) but not in 2025. Kept in the
+    // library because the scenario is real and the site has a written
+    // procedure for it — a drill the site can run should not disappear from
+    // the calendar just because it was skipped one year.
+    ['DRL-05', 'Mock Drill — Earthquake', 'मॉक ड्रिल — भूकंप', 'DRILL',
+     'Alarm signal and drop, cover, hold|Orderly single-file evacuation|Assembly point roll call', 'Drill', 0.5, 12]
   ];
 }
 
@@ -249,10 +261,38 @@ function _trainingDateSeed_() {
     'TRN-08': ['25/02', '10/08', '29/12'],
     'TRN-09': ['25/05', '24/09'],
     'TRN-10': ['24/03', '23/06', '18/11'],
+    // No 2025 cadence — the topic was introduced in 2026, where the record
+    // dates it 03/02. Carried forward as an annual session on that date.
+    'TRN-11': ['03/02'],
     'DRL-01': ['04/02'],
     'DRL-02': ['16/05'],
     'DRL-03': ['09/08'],
-    'DRL-04': ['24/11']
+    'DRL-04': ['24/11'],
+    // From the 2024 drill (15/10). Not run in 2025, so 2025 seeds it as a
+    // planned-but-missed session, which is what the record shows.
+    'DRL-05': ['15/10']
+  };
+}
+
+/**
+ * Sessions that actually ran on a date OTHER than the derived one.
+ *
+ * The plan for a later year is derived from 2025's cadence, but a real
+ * session happens when it happens. Where a record exists, the actual date
+ * wins over the derivation — otherwise the calendar shows a session as
+ * overdue on a date it was never held, and the one it WAS held on is absent.
+ *
+ * Keyed year -> topic -> [derived date, actual date].
+ */
+function _actualDateOverrides_() {
+  return {
+    '2026': {
+      // "01 TRAINING RECORD 2026 PM SOP PRODUCT SAFETY TRAINING.doc",
+      // dated 02/01/2026 — the derivation put it on 10/01.
+      'TRN-01': [['2026-01-10', '2026-01-02']],
+      // "01 TRAINING Product Stewardship &.doc", dated 03/02/2026.
+      'TRN-11': [['2026-02-03', '2026-02-03']]
+    }
   };
 }
 
@@ -336,22 +376,42 @@ function seedTrainingYear(year, token) {
   var planSheet = getSheet(TRAINING_SHEETS.PLAN);
   var existing = getSheetAsObjects(TRAINING_SHEETS.PLAN)
                    .filter(function (p) { return String(p.Year) === String(y); });
-  if (existing.length) {
-    return { success: true, year: y, topicsAdded: addedTopics, sessionsAdded: 0,
-             note: 'Year already seeded — left untouched' };
-  }
+
+  // A year already seeded is TOPPED UP, not skipped and not rewritten. A
+  // topic added to the library later — Product Stewardship, the Earthquake
+  // drill — would otherwise never reach a calendar that already exists, and
+  // rewriting the year would destroy attendance and drill reports already
+  // attached to its rows.
+  var havePlanned = {};
+  existing.forEach(function (p) {
+    havePlanned[String(p.TopicID) + '|' + _isoDate_(p.PlannedDate)] = true;
+  });
 
   var dates = _trainingDateSeed_();
   var headers = planSheet.getRange(1, 1, 1, planSheet.getLastColumn()).getValues()[0];
   var isHistory = (y === 2025);
   // Read once for the whole year rather than once per session.
   var holidays = _holidayLookup_();
-  var n = 0, rows = [];
+  // Continue the numbering past whatever is already there, so a top-up
+  // cannot mint a PlanID that already exists.
+  var n = existing.length, rows = [], skippedExisting = 0;
+  var overrides = (_actualDateOverrides_()[String(y)] || {});
 
   Object.keys(dates).forEach(function (topicId) {
     dates[topicId].forEach(function (ddmm) {
-      n++;
       var planned = _planDateFor_(ddmm, y, holidays);
+      if (havePlanned[topicId + '|' + planned]) { skippedExisting++; return; }
+      n++;
+
+      // A record exists for this session on a date the derivation did not
+      // predict. The actual date wins: otherwise the calendar shows the
+      // session overdue on a day it was never held, and absent on the day
+      // it was.
+      var actual = isHistory ? planned : '';
+      (overrides[topicId] || []).forEach(function (pair) {
+        if (pair[0] === planned) actual = pair[1];
+      });
+
       var values = {
         PlanID: 'PLN-' + y + '-' + ('00' + n).slice(-3),
         Year: y,
@@ -359,7 +419,7 @@ function seedTrainingYear(year, token) {
         Type: topicId.indexOf('DRL') === 0 ? 'DRILL' : 'TRAIN',
         PlannedDate: planned,
         // 2025 is history: the session happened on the date in the record.
-        ActualDate: isHistory ? planned : '',
+        ActualDate: actual,
         Status: '', Trainer: '', Content: '', Observations: '', PhotoURLs: '', Rating: ''
       };
       rows.push(headers.map(function (h) { return values[h] !== undefined ? values[h] : ''; }));
@@ -369,7 +429,29 @@ function seedTrainingYear(year, token) {
   if (rows.length) {
     planSheet.getRange(planSheet.getLastRow() + 1, 1, rows.length, headers.length).setValues(rows);
   }
-  return { success: true, year: y, topicsAdded: addedTopics, sessionsAdded: rows.length };
+
+  // Correct the actual date on rows that already exist, where a record shows
+  // the session ran on a different day than the derivation predicted. Done
+  // in place so attendance and drill reports keep pointing at the same row.
+  var corrected = 0;
+  Object.keys(overrides).forEach(function (topicId) {
+    overrides[topicId].forEach(function (pair) {
+      existing.forEach(function (p) {
+        if (String(p.TopicID) !== topicId) return;
+        if (_isoDate_(p.PlannedDate) !== pair[0]) return;
+        if (_isoDate_(p.ActualDate) === pair[1]) return;
+        var row = findRowByValue(planSheet, 'PlanID', p.PlanID);
+        if (row === -1) return;
+        setCell(planSheet, row, 'ActualDate', pair[1]);
+        corrected++;
+      });
+    });
+  });
+
+  return {
+    success: true, year: y, topicsAdded: addedTopics, sessionsAdded: rows.length,
+    alreadyPresent: skippedExisting, datesCorrected: corrected
+  };
 }
 
 // ── Seeding 2025 attendance ────────────────────────────────────────────────

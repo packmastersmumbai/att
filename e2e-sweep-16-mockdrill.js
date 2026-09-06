@@ -457,7 +457,9 @@ async function run() {
 
     await R.check('every seeded procedure has steps, a target and real equipment', async () => {
       const seed = lift('_drillProcedureSeed_', {})();
-      if (seed.length !== 4) throw new Error('expected 4 scenarios, got ' + seed.length);
+      // Five scenarios: the four run in 2025 plus Earthquake, whose 2024
+      // record carries its own written step-by-step procedure.
+      if (seed.length !== 5) throw new Error('expected 5 scenarios, got ' + seed.length);
       seed.forEach(p => {
         const steps = splitList(p.Steps);
         const hi    = splitList(p.StepsHi);
@@ -556,6 +558,10 @@ async function run() {
       // All four scenarios were run in 2025 — one each.
       if (new Set(reports.map(r => r.drillId)).size !== 4)
         throw new Error('the four 2025 drills are not four distinct scenarios');
+      // Earthquake is in the library but was NOT run in 2025, so it must not
+      // appear among the conducted reports.
+      if (reports.some(r => r.drillId === 'MD-QUAKE'))
+        throw new Error('Earthquake was recorded as conducted in 2025');
     });
 
     await R.check('the 2025 targets match the records they came from', async () => {
