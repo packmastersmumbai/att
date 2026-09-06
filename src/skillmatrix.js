@@ -549,7 +549,19 @@ function _skillSeed_() {
     ['SKL-16', 'Security Awareness',      'सुरक्षा जागरूकता',        'Security',    'TRN-09,DRL-02', 'L2'],
     ['SKL-17', 'First Aid Response',      'प्राथमिक चिकित्सा',       'Common',      'DRL-01',        'L1'],
     ['SKL-18', 'Spill Control',           'रिसाव नियंत्रण',          'Engineering', 'DRL-04',        'L2'],
-    ['SKL-19', 'Electrical Safety',       'विद्युत सुरक्षा',          'Engineering', 'TRN-05',        'L3']
+    ['SKL-19', 'Electrical Safety',       'विद्युत सुरक्षा',          'Engineering', 'TRN-05',        'L3'],
+    // Added with the 2026 topic it comes from. Product Stewardship is a
+    // compliance and sustainability competency in its own right, not a
+    // restatement of the Filling/Packing process skills — the training runs
+    // 3 hours and covers the product being "safe, compliant, sustainable
+    // and reliable", which none of the other topics assert.
+    ['SKL-20', 'Product Stewardship',     'उत्पाद प्रबंधन',           'Common',      'TRN-11',        'L2'],
+    // Evacuation is distinct from fire response: drop-cover-hold, single-file
+    // descent, the buddy system and the assembly-point roll call apply to an
+    // earthquake, a fire and anything else that empties the building. Credited
+    // by the earthquake drill, the fire drill and the emergency response
+    // training, because all three demonstrate it.
+    ['SKL-21', 'Emergency Evacuation',    'आपातकालीन निकासी',        'Common',      'DRL-05,DRL-03,TRN-07', 'L2']
   ];
 }
 

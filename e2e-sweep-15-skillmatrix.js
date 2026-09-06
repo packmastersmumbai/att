@@ -530,7 +530,27 @@ async function run() {
         });
         if (!/^(L[1-4]|NA)$/.test(s[5])) throw new Error(s[0] + ' has a bad minimum: ' + s[5]);
       });
-      if (skills.length !== 19) throw new Error('expected 19 skills, got ' + skills.length);
+      if (skills.length !== 21) throw new Error('expected 21 skills, got ' + skills.length);
+    });
+
+    await R.check('every topic credits at least one skill', async () => {
+      // Product Stewardship and the Earthquake drill were added to the
+      // library and bound to nothing, so attending either earned nobody a
+      // competency. Nothing noticed, because the matrix still rendered.
+      const skills = lift('_skillSeed_', {})();
+      const credited = new Set();
+      skills.forEach(s => String(s[4]).split(',')
+        .forEach(t => credited.add(t.trim())));
+
+      const topicSrc = fs.readFileSync(path.join(__dirname, 'src', 'training.js'), 'utf8');
+      const seedFn = (topicSrc.match(/function _trainingTopicSeed_[\s\S]*?\n}/) || [])[0] || '';
+      const topics = [...new Set((seedFn.match(/'(TRN|DRL)-\d\d'/g) || [])
+        .map(s => s.replace(/'/g, '')))];
+      if (topics.length !== 16) throw new Error('expected 16 topics, got ' + topics.length);
+
+      const orphans = topics.filter(t => !credited.has(t));
+      if (orphans.length)
+        throw new Error('these topics build no skill: ' + orphans.join(', '));
     });
 
     await R.check('setup seeds 2025 plus this year and next, without duplicates', async () => {
