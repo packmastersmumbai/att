@@ -176,6 +176,31 @@ async function run() {
     return /m\.levelNames/.test(body) && /SOP-SM-001 §6\.2/.test(body);
   });
 
+  await R.check('the annexure is capped, and says so on the page', () => {
+    const MAX = Number((SRC.match(/var ANNEXURE_MAX = (\d+)/) || [])[1]);
+    const ann = lift(SRC, '_annexureBlock_', { ANNEXURE_MAX: MAX });
+    const many = [];
+    for (let i = 0; i < 404; i++) many.push(['P' + i, '', '', 'S', '', '', '', '', '', 'NO', '', '']);
+    const b = ann(many);
+    // While coverage is near zero almost every competence is short — the live
+    // matrix produced 404 annexure rows, the same twenty-page document the
+    // grid was reshaped to avoid. Capped, but never silently: a register
+    // quietly showing 60 of 404 gaps understates exactly what it exists to
+    // report.
+    if (b.rows.length !== 60) throw new Error('annexure not capped: ' + b.rows.length);
+    if (!/first 60 of 404/.test(b.title)) throw new Error('the cap is not stated in the title');
+    if (!/404/.test(b.note || '')) throw new Error('the full count is not stated');
+    return true;
+  });
+
+  await R.check('a short annexure is not capped or captioned', () => {
+    const MAX = Number((SRC.match(/var ANNEXURE_MAX = (\d+)/) || [])[1]);
+    const ann = lift(SRC, '_annexureBlock_', { ANNEXURE_MAX: MAX });
+    const few = [['A', '', '', 'S', '', '', '', '', '', 'NO', '', '']];
+    const b = ann(few);
+    return b.rows.length === 1 && !/first/.test(b.title) && !b.note;
+  });
+
   // ---- the new drill fields ---------------------------------------------
   await R.check('the head count is now part of the drill schema', () => {
     // PM/OH/REC-007 asks for persons on site and persons accounted for. The

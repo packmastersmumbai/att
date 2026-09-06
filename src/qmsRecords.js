@@ -323,16 +323,46 @@ function getTrainingMatrixDoc(year) {
     // The detail behind the grid. Only the cells that are SHORT — a full
     // annexure repeats what the grid already says, and the reader is looking
     // for what is missing.
-    { type: 'table', title: 'Annexure A · Competences below the required level',
-      columns: ['Employee Name', 'Designation', 'Qualification',
-                'Required Competence', 'Training Identified', 'Training Date',
-                'Trainer', 'Assessment Method', 'Result',
-                'Effectiveness Verified', 'Next Training Due', 'Remarks'],
-      rows: rows.filter(function (r) { return r[9] === 'NO'; }) },
+    _annexureBlock_(rows.filter(function (r) { return r[9] === 'NO'; })),
     { type: 'signoff' }
   ];
 
   return _withApproval_(doc, 'PM/REG/HR-01', y);
+}
+
+/**
+ * Annexure A — the longhand behind the short cells.
+ *
+ * Capped, because while coverage is near zero almost every competence is
+ * short: the live matrix produced 404 annexure rows, which is the same
+ * twenty-page document the grid was reshaped to avoid, one page later.
+ *
+ * The cap is stated on the page rather than applied silently. A register that
+ * quietly shows 60 of 404 gaps understates the problem, which is the opposite
+ * of what this document is for — so the number missing is printed, and the
+ * grid above it already carries every gap in one letter per cell.
+ */
+var ANNEXURE_MAX = 60;
+
+function _annexureBlock_(short) {
+  var shown = short.slice(0, ANNEXURE_MAX);
+  var block = {
+    type: 'table',
+    title: 'Annexure A · Competences below the required level' +
+           (short.length > ANNEXURE_MAX
+              ? ' — first ' + ANNEXURE_MAX + ' of ' + short.length : ''),
+    columns: ['Employee Name', 'Designation', 'Qualification',
+              'Required Competence', 'Training Identified', 'Training Date',
+              'Trainer', 'Assessment Method', 'Result',
+              'Effectiveness Verified', 'Next Training Due', 'Remarks'],
+    rows: shown
+  };
+  if (short.length > ANNEXURE_MAX) {
+    block.note = 'Listing the first ' + ANNEXURE_MAX + ' of ' + short.length +
+                 ' short competences. The grid above carries all of them. ' +
+                 'The full list is on the portal.';
+  }
+  return block;
 }
 
 // ── Draft / approved state ─────────────────────────────────────────────────
