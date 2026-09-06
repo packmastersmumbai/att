@@ -130,6 +130,44 @@ const GAS_MOCK_SCRIPT = `
         });
       },
 
+      // Attendance is kept per session so a save can be read back — a mock
+      // that always returns a blank roster hides the double-count bug the
+      // real rewrite-on-save exists to prevent.
+      getSessionAttendance: function(planId) {
+        var saved = (window.__mockAttendance || {})[planId] || {};
+        respond({
+          success: true, planId: planId, passMark: 70,
+          session: { observations: '', photoURLs: [] },
+          roster: MOCK_EMPLOYEES
+            .filter(function(e) { return e.Status === 'ACTIVE'; })
+            .map(function(e) {
+              var m = saved[e.EmpID] || {};
+              return { empId: e.EmpID, name: e.Name, dept: e.Department,
+                       jobRole: '', present: !!m.present, score: m.score || '' };
+            })
+        });
+      },
+
+      saveSessionAttendance: function(planId, rows) {
+        if (!planId) { respond({ success: false, error: 'Missing plan id' }); return; }
+        window.__mockAttendance = window.__mockAttendance || {};
+        var keep = {};
+        (rows || []).forEach(function(r) {
+          if (r && r.present) keep[r.empId] = { present: true, score: r.score };
+        });
+        window.__mockAttendance[planId] = keep;
+        var present = Object.keys(keep);
+        var scored = present.filter(function(k) { return keep[k].score !== '' && keep[k].score != null; });
+        respond({ success: true, planId: planId, present: present.length,
+                  scored: scored.length,
+                  passed: scored.filter(function(k) { return Number(keep[k].score) >= 70; }).length });
+      },
+
+      addSessionPhoto: function(planId, dataUrl) {
+        if (!dataUrl) { respond({ success: false, error: 'No image supplied' }); return; }
+        respond({ success: true, url: 'https://example.test/photo.jpg', count: 1 });
+      },
+
       seedTrainingYear: function(year, token) {
         if (token !== 'test-admin-token') { respond({ success: false, error: 'Admin PIN required' }); return; }
         respond({ success: true, year: year, topicsAdded: 14, sessionsAdded: 36 });

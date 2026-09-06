@@ -18,15 +18,19 @@
 
 /** Sheet tab names. Kept here rather than in SHEETS so training stays optional. */
 var TRAINING_SHEETS = {
-  TOPICS: 'TrainingTopics',
-  PLAN:   'TrainingPlan'
+  TOPICS:     'TrainingTopics',
+  PLAN:       'TrainingPlan',
+  ATTENDANCE: 'TrainingAttendance'
 };
 
 var TRAINING_HEADERS = {
   TrainingTopics: ['TopicID', 'Title', 'TitleHi', 'Type', 'Agenda', 'Method',
                    'DurationHrs', 'ValidityMonths', 'Active'],
   TrainingPlan:   ['PlanID', 'Year', 'TopicID', 'Type', 'PlannedDate', 'ActualDate',
-                   'Status', 'Trainer', 'Content', 'Observations', 'PhotoURLs', 'Rating']
+                   'Status', 'Trainer', 'Content', 'Observations', 'PhotoURLs', 'Rating'],
+  // One row per person per session. This is the table the skill matrix is
+  // derived from, and the thing the 2025 paper records never captured.
+  TrainingAttendance: ['PlanID', 'EmpID', 'Name', 'Present', 'Score', 'RecordedAt']
 };
 
 /**
@@ -338,4 +342,150 @@ function seedTrainingYear(year, token) {
     planSheet.getRange(planSheet.getLastRow() + 1, 1, rows.length, headers.length).setValues(rows);
   }
   return { success: true, year: y, topicsAdded: addedTopics, sessionsAdded: rows.length };
+}
+
+// ── Attendance (Stage 2) ───────────────────────────────────────────────────
+
+/**
+ * The roster for one session: every active employee, with whoever is already
+ * marked present and their score.
+ *
+ * Driven off the existing Employees sheet rather than a second roster, so a
+ * new joiner appears in training the same day they appear at the gate.
+ */
+function getSessionAttendance(planId) {
+  _ensureTrainingSheets_();
+  var id = String(planId || '').trim();
+  if (!id) return { success: false, error: 'Missing plan id' };
+
+  var marked = {};
+  getSheetAsObjects(TRAINING_SHEETS.ATTENDANCE).forEach(function (a) {
+    if (String(a.PlanID) === id) {
+      marked[String(a.EmpID)] = {
+        present: String(a.Present).toUpperCase() === 'YES',
+        score:   a.Score === '' || a.Score == null ? '' : String(a.Score)
+      };
+    }
+  });
+
+  var roster = getSheetAsObjects(SHEETS.EMPLOYEES)
+    .filter(function (e) { return String(e.Status || 'ACTIVE').toUpperCase() === 'ACTIVE'; })
+    .map(function (e) {
+      var m = marked[String(e.EmpID)] || { present: false, score: '' };
+      return {
+        empId: e.EmpID, name: e.Name || e.EmpID,
+        dept: e.Department || '', jobRole: e.JobRole || '',
+        present: m.present, score: m.score
+      };
+    });
+
+  var plan = getSheetAsObjects(TRAINING_SHEETS.PLAN)
+               .filter(function (p) { return String(p.PlanID) === id; })[0] || {};
+
+  return {
+    success: true, planId: id, roster: roster,
+    passMark: _trainingPassMark_(),
+    session: {
+      observations: plan.Observations || '',
+      photoURLs:    String(plan.PhotoURLs || '').split(',').filter(Boolean)
+    }
+  };
+}
+
+/** The score at or above which a person counts as assessed. Config-driven. */
+function _trainingPassMark_() {
+  try {
+    var v = Number(getConfigValue('PassMark'));
+    if (!isNaN(v) && v > 0) return v;
+  } catch (e) {}
+  return 70;
+}
+
+/**
+ * Record who attended a session and what they scored.
+ *
+ * Rewrites this session's rows rather than appending, so saving twice cannot
+ * double-count a person — the panel is edited repeatedly as a trainer works
+ * down the list, and an append-only table would silently inflate every
+ * downstream count.
+ */
+function saveSessionAttendance(planId, rows) {
+  _ensureTrainingSheets_();
+  var id = String(planId || '').trim();
+  if (!id) return { success: false, error: 'Missing plan id' };
+  if (!rows || !rows.length) rows = [];
+
+  var sheet = getSheet(TRAINING_SHEETS.ATTENDANCE);
+  var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  var last = sheet.getLastRow();
+
+  // Drop this session's existing rows, bottom-up so the indices stay valid.
+  if (last > 1) {
+    var data = sheet.getRange(2, 1, last - 1, headers.length).getValues();
+    var planCol = headers.indexOf('PlanID');
+    for (var i = data.length - 1; i >= 0; i--) {
+      if (String(data[i][planCol]) === id) sheet.deleteRow(i + 2);
+    }
+  }
+
+  var now = new Date().toISOString();
+  var out = rows.filter(function (r) { return r && r.empId && r.present; })
+    .map(function (r) {
+      var values = {
+        PlanID: id, EmpID: r.empId, Name: r.name || '',
+        Present: 'YES',
+        // A blank score is not a zero — it means "not assessed", and storing
+        // it as 0 would read as a failed test on the matrix.
+        Score: (r.score === '' || r.score == null) ? '' : Number(r.score),
+        RecordedAt: now
+      };
+      return headers.map(function (h) { return values[h] !== undefined ? values[h] : ''; });
+    });
+
+  if (out.length) {
+    sheet.getRange(sheet.getLastRow() + 1, 1, out.length, headers.length).setValues(out);
+  }
+
+  var pass = _trainingPassMark_();
+  var scored = out.filter(function (r) { return r[headers.indexOf('Score')] !== ''; });
+  return {
+    success: true, planId: id,
+    present: out.length,
+    scored: scored.length,
+    passed: scored.filter(function (r) { return Number(r[headers.indexOf('Score')]) >= pass; }).length
+  };
+}
+
+/**
+ * Store a session photo on Drive and append it to the plan row.
+ *
+ * Mirrors _storeVisitorPhoto_: same blob helper, same link-sharing, so
+ * evidence photos behave like every other image the app stores.
+ */
+function addSessionPhoto(planId, dataUrl) {
+  _ensureTrainingSheets_();
+  var id = String(planId || '').trim();
+  if (!id) return { success: false, error: 'Missing plan id' };
+
+  try {
+    var blob = _dataUrlToBlob_(dataUrl, id + '-' + Date.now());
+    if (!blob) return { success: false, error: 'No image supplied' };
+
+    var folders = DriveApp.getFoldersByName('TrainingPhotos');
+    var folder = folders.hasNext() ? folders.next() : DriveApp.createFolder('TrainingPhotos');
+    var file = folder.createFile(blob);
+    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    var url = _drivePhotoUrl_(file.getId());
+
+    var sheet = getSheet(TRAINING_SHEETS.PLAN);
+    var row = findRowByValue(sheet, 'PlanID', id);
+    if (row === -1) return { success: false, error: 'Session not found' };
+    var existing = String(getCell(sheet, row, 'PhotoURLs') || '').split(',').filter(Boolean);
+    existing.push(url);
+    setCell(sheet, row, 'PhotoURLs', existing.join(','));
+
+    return { success: true, url: url, count: existing.length };
+  } catch (e) {
+    return { success: false, error: e.message };
+  }
 }

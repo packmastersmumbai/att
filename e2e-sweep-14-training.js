@@ -203,6 +203,137 @@ async function run() {
     await context.close();
   }
 
+  // ── 14d · attendance capture (Stage 2) ─────────────────────────
+  {
+    const R = makeRunner('14d · Training — attendance and scores');
+    const { page, context } = await openPage(browser, 'training');
+    await settle(page, 900);
+    await page.click('#grid .c-done');
+    await page.waitForSelector('#pAtt .att-r', { timeout: 8000 });
+
+    await R.check('the roster comes from the live employee master', async () => {
+      // Driven off Employees rather than a second list, so a new joiner shows
+      // up in training the same day they show up at the gate. INACTIVE staff
+      // must not appear at all.
+      const r = await page.evaluate(() =>
+        [...document.querySelectorAll('#pAtt .att-r')].map(x => x.textContent.trim()));
+      if (r.length !== 2) throw new Error('expected 2 active employees, got ' + r.length);
+      if (r.join(' ').includes('Rahul')) throw new Error('an INACTIVE employee is on the roster');
+    });
+
+    await R.check('the score box is disabled until the person is marked present', async () => {
+      // A score against someone who was not in the room is meaningless.
+      const before = await page.evaluate(() =>
+        document.querySelector('#pAtt .score').disabled);
+      if (!before) throw new Error('score was editable before anyone was marked present');
+
+      await page.click('#pAtt input[type=checkbox]');
+      await settle(page, 150);
+      const after = await page.evaluate(() =>
+        document.querySelector('#pAtt .score').disabled);
+      if (after) throw new Error('score stayed disabled after marking present');
+    });
+
+    await R.check('a score below the pass mark is flagged as it is typed', async () => {
+      await page.fill('#pAtt .score', '65');
+      await settle(page, 150);
+      const low = await page.evaluate(() =>
+        document.querySelector('#pAtt .score').classList.contains('low'));
+      if (!low) throw new Error('65 was not flagged against a pass mark of 70');
+
+      await page.fill('#pAtt .score', '70');
+      await settle(page, 150);
+      const still = await page.evaluate(() =>
+        document.querySelector('#pAtt .score').classList.contains('low'));
+      if (still) throw new Error('70 is a pass at the boundary, not a fail');
+    });
+
+    await R.check('unticking someone clears their score', async () => {
+      // Otherwise a score lingers against a person recorded as absent.
+      await page.click('#pAtt input[type=checkbox]');
+      await settle(page, 150);
+      const v = await page.evaluate(() => ({
+        val: document.querySelector('#pAtt .score').value,
+        off: document.querySelector('#pAtt .score').disabled
+      }));
+      if (v.val) throw new Error('score survived the person being unticked: ' + v.val);
+      if (!v.off) throw new Error('score box stayed editable');
+      await page.click('#pAtt input[type=checkbox]');
+      await settle(page, 150);
+    });
+
+    await R.check('the footer counts present, scored and below', async () => {
+      await page.fill('#pAtt .score', '65');
+      await settle(page, 200);
+      const t = await page.evaluate(() =>
+        document.getElementById('pAttCount').textContent);
+      if (!/1 of 2 present/.test(t)) throw new Error('present count wrong: ' + t);
+      if (!/1 scored/.test(t))       throw new Error('scored count wrong: ' + t);
+      if (!/1 below/.test(t))        throw new Error('below-pass count wrong: ' + t);
+    });
+
+    await R.check('select all marks everyone, clear unmarks everyone', async () => {
+      await page.click('button[onclick="attAll(true)"]');
+      await settle(page, 200);
+      let n = await page.evaluate(() =>
+        document.querySelectorAll('#pAtt input[type=checkbox]:checked').length);
+      if (n !== 2) throw new Error('select all marked ' + n + ' of 2');
+
+      await page.click('button[onclick="attAll(false)"]');
+      await settle(page, 200);
+      n = await page.evaluate(() =>
+        document.querySelectorAll('#pAtt input[type=checkbox]:checked').length);
+      if (n !== 0) throw new Error('clear left ' + n + ' marked');
+    });
+
+    await R.check('saving twice does not double-count anyone', async () => {
+      // The server rewrites this session's rows rather than appending. An
+      // append-only table would silently inflate every downstream count,
+      // and the panel is edited repeatedly as a trainer works the list.
+      await page.click('button[onclick="attAll(true)"]');
+      await settle(page, 200);
+      await page.click('#pSave');
+      await settle(page, 900);
+
+      await page.click('#grid .c-done');
+      await page.waitForSelector('#pAtt .att-r', { timeout: 8000 });
+      const marked = await page.evaluate(() =>
+        document.querySelectorAll('#pAtt input[type=checkbox]:checked').length);
+      if (marked !== 2) throw new Error('reopened with ' + marked + ' marked, expected 2');
+
+      await page.click('#pSave');
+      await settle(page, 900);
+      const stored = await page.evaluate(() =>
+        Object.keys((window.__mockAttendance || {})['PLN-1'] || {}).length);
+      if (stored !== 2) throw new Error('second save produced ' + stored + ' rows, expected 2');
+    });
+
+    await R.check('names render as written, not shouted', async () => {
+      // Each attendee row is a <label> nested inside .fld, so a descendant
+      // selector meant for field captions rendered every worker's name in
+      // uppercase with caption letter-spacing.
+      const n = await page.evaluate(() => {
+        const el = document.querySelector('#pAtt .att-n');
+        return { text: el.textContent.trim(),
+                 tf: getComputedStyle(el).textTransform };
+      });
+      if (n.tf === 'uppercase') throw new Error('attendee names are uppercased by CSS');
+      if (n.text !== 'Priya Sharma') throw new Error('name rendered as: ' + n.text);
+    });
+
+    await R.check('every attendance control has an accessible name', async () => {
+      await page.click('#grid .c-done');
+      await page.waitForSelector('#pAtt .att-r', { timeout: 8000 });
+      const bad = await page.evaluate(() =>
+        [...document.querySelectorAll('#pAtt input')]
+          .filter(i => !(i.getAttribute('aria-label') || '').trim()).length);
+      if (bad) throw new Error(bad + ' attendance inputs have no accessible name');
+    });
+
+    summary.push(R.report());
+    await context.close();
+  }
+
   // ── 14c · seed date arithmetic ──────────────────────────────────────────
   {
     const R = makeRunner('14c · Training — seed dates');

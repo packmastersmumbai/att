@@ -259,6 +259,9 @@ function _dispatchPost_(params) {
   var action = params.action;
 
   if (action === 'getTrainingCalendar') return jsonResponse(getTrainingCalendar(params.year));
+  if (action === 'getSessionAttendance')  return jsonResponse(getSessionAttendance(params.planId));
+  if (action === 'saveSessionAttendance') return jsonResponse(saveSessionAttendance(params.planId, params.rows));
+  if (action === 'addSessionPhoto')       return jsonResponse(addSessionPhoto(params.planId, params.dataUrl));
   if (action === 'saveTrainingSession') return jsonResponse(saveTrainingSession(params.session));
   if (action === 'addTrainingSession')  return jsonResponse(addTrainingSession(params.session));
   if (action === 'seedTrainingYear')    return jsonResponse(seedTrainingYear(params.year, params.token));

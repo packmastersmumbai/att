@@ -112,7 +112,10 @@
       display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
     .panel-b{padding:14px 16px;overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:14px}
     .fld{display:flex;flex-direction:column;gap:5px}
-    .fld label{font-size:10px;font-weight:700;color:var(--color-text-muted);
+    /* Direct child only. Each attendee row is itself a <label> nested inside
+       .fld, and a descendant selector rendered every worker's name in
+       uppercase with field-label letter-spacing. */
+    .fld > label{font-size:10px;font-weight:700;color:var(--color-text-muted);
       text-transform:uppercase;letter-spacing:.5px}
     .inp{border:1px solid var(--color-border);border-radius:var(--radius-md);padding:8px 10px;
       font:400 13px var(--font-sans);background:var(--color-surface);color:var(--color-text);
@@ -124,6 +127,36 @@
       letter-spacing:.5px;margin-bottom:5px}
     .agenda ul{margin:0 0 6px 16px}
     .agenda li{margin-bottom:2px}
+    /* Attendee list. The score sits ON the row so a trainer makes one pass
+       down the list instead of ticking here and scoring somewhere else. */
+    .att{border:1px solid var(--color-border);border-radius:var(--radius-md);
+      max-height:260px;overflow-y:auto}
+    .att-r{display:flex;align-items:center;gap:9px;padding:7px 10px;
+      border-bottom:1px solid var(--color-border)}
+    .att-r:last-child{border-bottom:0}
+    .att-r input[type=checkbox]{width:18px;height:18px;flex-shrink:0;
+      accent-color:var(--color-primary);cursor:pointer}
+    .att-n{flex:1;font-size:12.5px;min-width:0;overflow:hidden;text-overflow:ellipsis;
+      white-space:nowrap}
+    .att-d{font-size:10px;color:var(--color-muted);width:72px;flex-shrink:0}
+    .score{width:52px;min-height:30px;text-align:center;font:600 12px var(--font-mono);
+      padding:4px;border:1px solid var(--color-border);border-radius:var(--radius-md);
+      background:var(--color-surface);color:var(--color-text)}
+    .score:disabled{opacity:.35}
+    .score.low{border-color:var(--color-warning);color:var(--color-warning)}
+    .att-foot{display:flex;justify-content:space-between;gap:10px;font-size:11px;
+      color:var(--color-text-muted);padding:7px 10px;background:var(--color-bg);
+      border-top:1px solid var(--color-border);flex-wrap:wrap}
+    .rating{display:flex;gap:6px}
+    .rating button{width:38px;min-height:36px;border:1px solid var(--color-border);
+      border-radius:var(--radius-md);background:var(--color-surface);
+      color:var(--color-text);font:700 12px var(--font-mono);cursor:pointer}
+    .rating button[aria-pressed="true"]{background:var(--color-primary);
+      border-color:var(--color-primary);color:#fff}
+    .thumbs{display:flex;gap:6px;flex-wrap:wrap}
+    .thumbs img{width:52px;height:52px;object-fit:cover;border-radius:var(--radius-md);
+      border:1px solid var(--color-border)}
+
     /* Below 900px the sidebar becomes a horizontal strip. At 390px it was
        taking 238 of the screen's width and leaving the calendar about 150px —
        and a supervisor on the floor carries a phone, not a desktop. */
@@ -247,8 +280,31 @@
         <input type="date" class="inp" id="pActual"></div>
       <div class="fld"><label for="pTrainer">Trainer</label>
         <input type="text" class="inp" id="pTrainer" placeholder="Who delivered it"></div>
+      <div class="fld">
+        <label>Attendees &amp; assessment</label>
+        <div class="att" id="pAtt"></div>
+        <div class="att-foot">
+          <span id="pAttCount">—</span>
+          <span>
+            <button type="button" class="btn" onclick="attAll(true)">Select all</button>
+            <button type="button" class="btn" onclick="attAll(false)">Clear</button>
+          </span>
+        </div>
+      </div>
+
       <div class="fld"><label for="pObs">Observations</label>
         <textarea class="inp" id="pObs" rows="3" placeholder="How it went"></textarea></div>
+
+      <div class="fld"><label>Photos</label>
+        <div class="thumbs" id="pThumbs"></div>
+        <input type="file" id="pPhotoFile" accept="image/*" capture="environment"
+               style="display:none" onchange="uploadPhoto(this)">
+        <button type="button" class="btn" onclick="document.getElementById('pPhotoFile').click()">
+          Add photo</button></div>
+
+      <div class="fld"><label>Session rating</label>
+        <div class="rating" id="pRating" role="group" aria-label="Session rating out of 5"></div></div>
+
       <button class="btn btn-pri" id="pSave" onclick="saveSession()" style="min-height:42px">Save session</button>
       <div id="pMsg" style="font-size:12px;color:var(--color-text-muted)"></div>
     </div>
@@ -406,7 +462,35 @@
       document.getElementById('pActual').value = p.actualDate || '';
       document.getElementById('pTrainer').value = p.trainer || '';
       document.getElementById('pObs').value = '';
+      setRating(p.rating || '');
       msg('');
+
+      // The roster is fetched per session rather than held page-wide: it must
+      // reflect who is on the payroll now AND who was already marked present.
+      ROSTER = [];
+      document.getElementById('pAtt').innerHTML =
+        '<div style="padding:14px;color:var(--color-text-muted)">Loading the roster...</div>';
+      document.getElementById('pThumbs').innerHTML = '';
+      google.script.run
+        .withSuccessHandler(function (a) {
+          if (!a || !a.success) {
+            document.getElementById('pAtt').innerHTML =
+              '<div style="padding:14px;color:var(--color-danger)">Could not load the roster.</div>';
+            return;
+          }
+          ROSTER = a.roster || [];
+          PASS_MARK = a.passMark || 70;
+          if (a.session) {
+            document.getElementById('pObs').value = a.session.observations || '';
+            renderThumbs(a.session.photoURLs || []);
+          }
+          renderRoster();
+        })
+        .withFailureHandler(function (e) {
+          document.getElementById('pAtt').innerHTML =
+            '<div style="padding:14px;color:var(--color-danger)">' + esc(e && e.message) + '</div>';
+        })
+        .getSessionAttendance(p.planId);
 
       document.getElementById('panel').classList.add('on');
       document.getElementById('panel').setAttribute('aria-hidden', 'false');
@@ -420,24 +504,133 @@
       OPEN = null;
     }
 
+    /* -- Attendance -- */
+    var ROSTER = [], PASS_MARK = 70, RATING = '';
+
+    function renderRoster() {
+      if (!ROSTER.length) {
+        document.getElementById('pAtt').innerHTML =
+          '<div style="padding:14px;color:var(--color-text-muted)">No active employees.</div>';
+        attCount();
+        return;
+      }
+      document.getElementById('pAtt').innerHTML = ROSTER.map(function (r, i) {
+        return '<label class="att-r">' +
+          '<input type="checkbox" data-i="' + i + '"' + (r.present ? ' checked' : '') +
+            ' onchange="attToggle(this)" aria-label="' + esc(r.name) + ' attended">' +
+          '<span class="att-n">' + esc(r.name) + '</span>' +
+          '<span class="att-d">' + esc(r.dept) + '</span>' +
+          '<input class="score" type="number" min="0" max="100" data-i="' + i + '"' +
+            ' value="' + esc(r.score) + '"' + (r.present ? '' : ' disabled') +
+            ' oninput="attScore(this)" placeholder="-"' +
+            ' aria-label="Score for ' + esc(r.name) + '"></label>';
+      }).join('');
+      [].forEach.call(document.querySelectorAll('#pAtt .score'), markLow);
+      attCount();
+    }
+
+    function markLow(el) {
+      var v = el.value.trim();
+      el.classList.toggle('low', v !== '' && Number(v) < PASS_MARK);
+    }
+
+    function attToggle(cb) {
+      var r = ROSTER[Number(cb.dataset.i)];
+      r.present = cb.checked;
+      // A score against someone who was not there is meaningless, so the box
+      // follows the tick rather than sitting there inviting one.
+      var sc = cb.closest('.att-r').querySelector('.score');
+      sc.disabled = !cb.checked;
+      if (!cb.checked) { sc.value = ''; r.score = ''; markLow(sc); }
+      attCount();
+    }
+
+    function attScore(el) {
+      ROSTER[Number(el.dataset.i)].score = el.value.trim();
+      markLow(el);
+      attCount();
+    }
+
+    function attAll(on) {
+      ROSTER.forEach(function (r) { r.present = on; if (!on) r.score = ''; });
+      renderRoster();
+    }
+
+    function attCount() {
+      var present = ROSTER.filter(function (r) { return r.present; });
+      var scored = present.filter(function (r) { return r.score !== '' && r.score != null; });
+      var below = scored.filter(function (r) { return Number(r.score) < PASS_MARK; }).length;
+      document.getElementById('pAttCount').textContent =
+        present.length + ' of ' + ROSTER.length + ' present' +
+        (scored.length ? ' \u00b7 ' + scored.length + ' scored \u00b7 pass mark ' + PASS_MARK : '') +
+        (below ? ' \u00b7 ' + below + ' below' : '');
+    }
+
+    function setRating(v) {
+      RATING = String(v || '');
+      document.getElementById('pRating').innerHTML = [1, 2, 3, 4, 5].map(function (n) {
+        return '<button type="button" onclick="setRating(' + n + ')" ' +
+               'aria-pressed="' + (String(n) === RATING) + '">' + n + '</button>';
+      }).join('');
+    }
+
+    function renderThumbs(urls) {
+      document.getElementById('pThumbs').innerHTML = (urls || []).map(function (u) {
+        return '<img src="' + esc(u) + '" alt="Session photo">';
+      }).join('');
+    }
+
+    function uploadPhoto(input) {
+      var f = input.files && input.files[0];
+      if (!f || !OPEN) return;
+      msg('Uploading photo...');
+      var reader = new FileReader();
+      reader.onload = function () {
+        google.script.run
+          .withSuccessHandler(function (r) {
+            input.value = '';
+            if (!r || !r.success) { msg((r && r.error) || 'Photo upload failed'); return; }
+            msg(r.count + ' photo(s) attached.');
+            document.getElementById('pThumbs').innerHTML +=
+              '<img src="' + esc(r.url) + '" alt="Session photo">';
+          })
+          .withFailureHandler(function (e) { input.value = ''; msg('Error: ' + (e && e.message)); })
+          .addSessionPhoto(OPEN.planId, reader.result);
+      };
+      reader.readAsDataURL(f);
+    }
+
     function saveSession() {
       if (!OPEN) return;
       var btn = document.getElementById('pSave');
       btn.disabled = true; msg('Saving…');
+
+      // Two writes: the session row, then its attendance. Attendance goes
+      // second so a failure there cannot leave a session marked as held with
+      // nobody in it, which is the more misleading of the two half-states.
       google.script.run
         .withSuccessHandler(function (r) {
-          btn.disabled = false;
-          if (!r || !r.success) { msg((r && r.error) || 'Could not save'); return; }
-          msg('Saved.');
-          closePanel();
-          load(DATA.year);
+          if (!r || !r.success) { btn.disabled = false; msg((r && r.error) || 'Could not save'); return; }
+          google.script.run
+            .withSuccessHandler(function (a) {
+              btn.disabled = false;
+              if (!a || !a.success) { msg((a && a.error) || 'Session saved, attendance did not'); return; }
+              msg(a.present + ' marked present.');
+              closePanel();
+              load(DATA.year);
+            })
+            .withFailureHandler(function (e) { btn.disabled = false; msg('Attendance error: ' + (e && e.message)); })
+            .saveSessionAttendance(OPEN.planId, ROSTER.map(function (x) {
+              return { empId: x.empId, name: x.name, present: x.present, score: x.score };
+            }));
         })
         .withFailureHandler(function (e) { btn.disabled = false; msg('Error: ' + (e && e.message)); })
         .saveTrainingSession({
           planId: OPEN.planId,
           actualDate: document.getElementById('pActual').value,
           trainer: document.getElementById('pTrainer').value.trim(),
-          observations: document.getElementById('pObs').value.trim()
+          observations: document.getElementById('pObs').value.trim(),
+          rating: RATING
         });
     }
 
