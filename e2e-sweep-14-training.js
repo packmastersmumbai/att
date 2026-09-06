@@ -137,6 +137,17 @@ async function run() {
       if (/back-filled/i.test(real[0].title)) throw new Error('a real record is labelled back-filled');
     });
 
+    await R.check('a session held with no roster is counted, not hidden', async () => {
+      // The skill matrix counts ATTENDANCE. Marking 22 sessions held moved
+      // coverage not one point, because a date says nothing about who was in
+      // the room — so the calendar can read complete while coverage sits at
+      // zero. Naming the gap is what connects the two screens.
+      const k = await page.evaluate(() =>
+        [...document.querySelectorAll('.kpi')].map(e => e.textContent.replace(/\s+/g, ' ').trim()));
+      if (!k.some(x => /Held, no roster\s*1/.test(x)))
+        throw new Error('sessions with no roster are not counted: ' + k.join(' | '));
+    });
+
     await R.check('KPIs count what the grid shows', async () => {
       const k = await page.evaluate(() =>
         [...document.querySelectorAll('.kpi')].map(e => e.textContent.replace(/\s+/g, ' ').trim()));

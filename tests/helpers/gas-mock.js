@@ -129,7 +129,8 @@ const GAS_MOCK_SCRIPT = `
             // it is the case the grid has to make visible — one date cannot
             // show a slip.
             { planId: 'PLN-1', topicId: 'TRN-01', type: 'TRAIN', plannedDate: past,
-              actualDate: pastMoved, status: 'DONE', trainer: 'Anuj Pathak', rating: '4' },
+              actualDate: pastMoved, status: 'DONE', trainer: 'Anuj Pathak',
+              attendees: 12, rating: '4' },
             { planId: 'PLN-2', topicId: 'TRN-05', type: 'TRAIN', plannedDate: past,
               actualDate: '', status: 'OVERDUE', trainer: '', content: '', rating: '' },
             // Marked held in bulk, with no trainer and no roster behind it.
@@ -137,7 +138,8 @@ const GAS_MOCK_SCRIPT = `
             // distinguish them on something other than the date.
             { planId: 'PLN-6', topicId: 'TRN-05', type: 'TRAIN', plannedDate: pastEarlier,
               actualDate: pastEarlier, status: 'DONE', trainer: '',
-              content: 'Back-filled in bulk on 07/09/26 — no per-session record', rating: '' },
+              content: 'Back-filled in bulk on 07/09/26 — no per-session record',
+              attendees: 0, rating: '' },
             { planId: 'PLN-3', topicId: 'TRN-05', type: 'TRAIN', plannedDate: thisMonth,
               actualDate: '', status: 'DUE', trainer: '', rating: '' },
             { planId: 'PLN-4', topicId: 'TRN-01', type: 'TRAIN', plannedDate: future,

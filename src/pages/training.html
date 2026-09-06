@@ -527,13 +527,23 @@
           // trainer, a roster and a signature behind it. Both carry an
           // ActualDate, so without this they are indistinguishable — and the
           // weaker claim would quietly inherit the stronger one's credibility.
-          var thin = /Back-filled in bulk/.test(p.content || '');
+          // Held, but with nobody recorded present. The skill matrix counts
+          // ATTENDANCE, so such a session credits no one and moves no
+          // coverage — it only looks done. Same empty claim as a drill with
+          // no report, and it has to read the same way.
+          var noRoster = !!p.actualDate && !p.attendees;
+          var thin = /Back-filled in bulk/.test(p.content || '') || noRoster;
 
           var label = esc(t.Title) + ' — ' + kind.label + ', ' + p.status.toLowerCase() +
                       (moved ? ', planned ' + ddmmyy(p.plannedDate) +
                                ' held ' + ddmmyy(p.actualDate)
                              : ' ' + ddmmyy(p.actualDate || p.plannedDate)) +
-                      (thin ? ' — back-filled, no per-session record' : '');
+                      // Both, when both are true: a bulk back-fill usually
+                      // HAS no roster, and naming only one leaves the reader
+                      // thinking the other was satisfied.
+                      (/Back-filled in bulk/.test(p.content || '')
+                        ? ' — back-filled, no per-session record' : '') +
+                      (noRoster ? ' — nobody recorded present' : '');
 
           cells[mi] = '<button type="button" class="cell ' + cls +
                       (moved ? ' moved' : '') + (thin ? ' thin' : '') + '" ' +
@@ -566,6 +576,10 @@
       // plus overdue. Dividing by the whole year's plan made a perfectly
       // on-schedule January read 8%, which reads as failure to anyone
       // glancing at it.
+      var noRoster = rows.filter(function (r) {
+        return r.actualDate && !r.attendees;
+      }).length;
+
       var dueSoFar = done + overdue;
       var pct = dueSoFar ? Math.round(done / dueSoFar * 100) : 100;
       var hrs = 0;
@@ -578,6 +592,10 @@
       document.getElementById('kpis').innerHTML = [
         ['On-time so far', pct + '%', pct < 80 ? 'warn' : ''],
         ['Sessions held', done + '/' + rows.length, ''],
+        // A session held with nobody marked present credits nobody on the
+        // skill matrix. Counting it beside "held" is what stops the calendar
+        // reading complete while coverage sits at zero.
+        ['Held, no roster', String(noRoster), noRoster ? 'bad' : ''],
         ['Overdue', String(overdue), overdue ? 'bad' : ''],
         ['Hours delivered', hrs.toFixed(1), '']
       ].map(function (k) {

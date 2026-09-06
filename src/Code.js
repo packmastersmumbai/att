@@ -289,6 +289,12 @@ function _dispatchPost_(params) {
 
   var action = params.action;
 
+  if (action === 'getDrillRecordDoc')     return jsonResponse(getDrillRecordDoc(params.planId));
+  if (action === 'getTrainingMatrixDoc')  return jsonResponse(getTrainingMatrixDoc(params.year));
+  if (action === 'getQmsRecordQueue')     return jsonResponse(getQmsRecordQueue());
+  if (action === 'approveQmsRecord')      return jsonResponse(approveQmsRecord(
+                                            params.docCode, params.sourceId,
+                                            params.approvedBy, params.notes, params.token));
   if (action === 'getInductionAudio')     return jsonResponse(getInductionAudio(params.prefix));
   if (action === 'getInductionAudioStatus') return jsonResponse(getInductionAudioStatus());
   if (action === 'putInductionClip')      return jsonResponse(putInductionClip(

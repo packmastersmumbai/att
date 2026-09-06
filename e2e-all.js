@@ -31,6 +31,7 @@ const SUITES = [
   { n: 17, label: 'Training modules', mod: './e2e-sweep-17-modules' },
   { n: 18, label: 'Self-assessment', mod: './e2e-sweep-18-selftest' },
   { n: 19, label: 'Induction audio', mod: './e2e-sweep-19-inductionaudio' },
+  { n: 20, label: 'Controlled records', mod: './e2e-sweep-20-qmsrecords' },
 ];
 
 async function main() {

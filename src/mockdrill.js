@@ -38,7 +38,14 @@ var DRILL_HEADERS = {
                    'SiteInCharge', 'SecurityLead', 'FireFighter', 'FirstAider',
                    'Scenario', 'Observations', 'StepResults', 'Recommendations',
                    'Minutes', 'PhotoURLs', 'VideoURLs', 'Score', 'Outcome',
-                   'ConductedBy', 'RecordedAt']
+                   'ConductedBy', 'RecordedAt',
+                   // Required by PM/OH/REC-007 and absent until now. The head
+                   // count is the most important number in an evacuation: a
+                   // drill where 40 of 43 reached the assembly point is a
+                   // finding, and the old schema could not record it at all.
+                   // Announced/unannounced changes what the timing means.
+                   'Announced', 'PersonsOnSite', 'PersonsAccounted',
+                   'EquipmentChecked']
 };
 
 /** Roles on the emergency response team, in the order the format prints them. */
@@ -555,7 +562,15 @@ function _reportOut_(r) {
     videoURLs: _splitCsv_(r.VideoURLs),
     score:     r.Score === '' || r.Score == null ? '' : Number(r.Score),
     outcome:   r.Outcome || '',
-    conductedBy: r.ConductedBy || ''
+    conductedBy: r.ConductedBy || '',
+    // PM/OH/REC-007 fields. A head count short of the persons on site is the
+    // finding an evacuation drill exists to produce.
+    announced:  r.Announced || '',
+    personsOnSite:    r.PersonsOnSite === '' || r.PersonsOnSite == null
+                        ? '' : Number(r.PersonsOnSite),
+    personsAccounted: r.PersonsAccounted === '' || r.PersonsAccounted == null
+                        ? '' : Number(r.PersonsAccounted),
+    equipmentChecked: _splitList_(r.EquipmentChecked || '')
   };
 }
 

@@ -59,6 +59,18 @@ function getTrainingCalendar(year) {
   var plan = getSheetAsObjects(TRAINING_SHEETS.PLAN)
                .filter(function (p) { return String(p.Year) === y; });
 
+  // Who was actually in the room, counted once for the whole year rather than
+  // once per session. A session marked held with nobody recorded present is
+  // the same empty claim a drill with no report is: the skill matrix counts
+  // ATTENDANCE, so such a session credits nobody and moves no coverage — it
+  // just sits there looking done.
+  var present = {};
+  getSheetAsObjects(TRAINING_SHEETS.ATTENDANCE).forEach(function (a) {
+    if (String(a.Present).toUpperCase() === 'NO') return;
+    var k = String(a.PlanID);
+    present[k] = (present[k] || 0) + 1;
+  });
+
   return {
     success: true,
     year: y,
@@ -76,6 +88,7 @@ function getTrainingCalendar(year) {
         // from one that was back-filled in bulk. Both carry an ActualDate;
         // only this says which kind of claim it is.
         content:     p.Content || '',
+        attendees:   present[String(p.PlanID)] || 0,
         rating:      p.Rating || ''
       };
     }),
