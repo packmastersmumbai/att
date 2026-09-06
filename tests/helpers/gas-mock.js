@@ -175,6 +175,14 @@ const GAS_MOCK_SCRIPT = `
         });
       },
 
+      // Spoken clips for an induction. Empty by default, which is the state
+      // of every module except TRN-IND — and the state the page has to render
+      // correctly, with no listen button rather than a button that plays
+      // silence. A suite wanting audio overrides this.
+      getInductionAudio: function(prefix) {
+        respond({ success: true, clips: {}, count: 0 });
+      },
+
       recordAssessment: function(entry) {
         if (!entry || !entry.empId) { respond({ success: false, error: 'Pick your name first' }); return; }
         if (!entry.planId) { respond({ success: false, error: 'Missing session' }); return; }

@@ -410,17 +410,62 @@
        rather than a briefing. The dwell runs per section, so opening them all at
        once still costs the full time. */
     var DWELL_MS_PER_RULE = 900;
+
+    /* Spoken rules.
+       A visitor who cannot read the section still has to be briefed, so where
+       a clip exists the section is READ ALOUD and the audio itself is the
+       dwell: the section counts as read when the voice finishes, which is
+       honest time rather than an arbitrary delay. With no clip the timer above
+       is unchanged, so nothing regresses for a language or a section that has
+       no audio yet. */
+    var SAFETY_CLIPS = {}, SAFETY_AU = null;
+
+    function loadSafetyClips(){
+      if(typeof google==='undefined' || !google.script) return;
+      google.script.run
+        .withSuccessHandler(function(r){
+          if(r && r.success && r.count){ SAFETY_CLIPS=r.clips||{}; renderRules(); }
+        })
+        .withFailureHandler(function(){ /* no audio is not an error */ })
+        .getInductionAudio('VISITOR/');
+    }
+
+    function safetyClipFor(si){
+      var sec=SAFETY_SECTIONS[si];
+      if(!sec) return '';
+      var lang=(typeof qrattLang==='function' && qrattLang()==='hi') ? 'hi' : 'en';
+      var k='VISITOR/'+sec.key+'/'+lang;
+      return (SAFETY_CLIPS[k] && SAFETY_CLIPS[k].url) || '';
+    }
+
     function revealRule(el){
       if(!el.classList.contains('blurred')) return;
       el.classList.remove('blurred');
       el.classList.add('reading');
-      var n = (SAFETY_SECTIONS[Number(el.dataset.i)] || {rules:[]}).rules.length || 1;
-      setTimeout(function(){
+      var si = Number(el.dataset.i);
+      var n = (SAFETY_SECTIONS[si] || {rules:[]}).rules.length || 1;
+
+      function done(){
+        if(el.classList.contains('revealed')) return;   // never count twice
         el.classList.remove('reading');
         el.classList.add('revealed');
         sectionsRevealed++;
         updateRulesCount();
-      }, n * DWELL_MS_PER_RULE);
+      }
+
+      var url = safetyClipFor(si);
+      if(url){
+        if(SAFETY_AU){ SAFETY_AU.pause(); }
+        SAFETY_AU = new Audio(url);
+        SAFETY_AU.addEventListener('ended', done);
+        // A refused autoplay, a dead link or a codec the phone will not take
+        // must not strand the visitor on an un-revealed section: fall back to
+        // the timer in every failure path.
+        SAFETY_AU.addEventListener('error', function(){ setTimeout(done, n*DWELL_MS_PER_RULE); });
+        SAFETY_AU.play().catch(function(){ setTimeout(done, n*DWELL_MS_PER_RULE); });
+      } else {
+        setTimeout(done, n * DWELL_MS_PER_RULE);
+      }
       updateRulesCount();
     }
     function updateRulesCount(){
@@ -470,6 +515,7 @@
 
     (function loadSafetyConfig(){
       renderRules();
+      loadSafetyClips();
       if(typeof google==='undefined' || !google.script){ renderSafetyVideo(SAFETY_DEFAULT); return; }
       google.script.run
         .withSuccessHandler(function(res){

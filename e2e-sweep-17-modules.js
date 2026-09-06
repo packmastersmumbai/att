@@ -51,7 +51,7 @@ async function run() {
   {
     const R = makeRunner('17a · Modules — the library');
     const modules = moduleSeed();
-    const topics = new Set((TRAIN.match(/\['([A-Z]{3}-\d\d)'/g) || [])
+    const topics = new Set((TRAIN.match(/\['([A-Z]{3}-[A-Z0-9]{2,4})'/g) || [])
       .map(s => s.replace(/\['|'/g, '')));
 
     await R.check('every topic in the library has a module', async () => {

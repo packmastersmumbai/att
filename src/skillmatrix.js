@@ -559,7 +559,7 @@ function _skillSeed_() {
     ['SKL-11', 'Emergency Response',      'आपातकालीन प्रतिक्रिया',    'Site-wide',
      'TRN-07,DRL-01,DRL-02,DRL-03,DRL-04,DRL-05,VID-11', 'L2'],
     ['SKL-12', 'Safety & Security',       'सुरक्षा एवं संरक्षा',      'Site-wide',
-     'TRN-05,TRN-08,TRN-09,TRN-10,DRL-02', 'L2'],
+     'TRN-IND,TRN-05,TRN-08,TRN-09,TRN-10,DRL-02', 'L2'],
     ['SKL-13', 'Waste Handling',          'अपशिष्ट प्रबंधन',          'Site-wide',
      'TRN-03,TRN-04,QAC-09,QAC-03', 'L2'],
     // Reporting and Responsibility are one skill rather than two: both are

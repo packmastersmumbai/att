@@ -230,7 +230,19 @@ function _trainingTopicSeed_() {
     // procedure for it — a drill the site can run should not disappear from
     // the calendar just because it was skipped one year.
     ['DRL-05', 'Mock Drill — Earthquake', 'मॉक ड्रिल — भूकंप', 'DRILL',
-     'Alarm signal and drop, cover, hold|Orderly single-file evacuation|Assembly point roll call', 'Drill', 0.5, 12]
+     'Alarm signal and drop, cover, hold|Orderly single-file evacuation|Assembly point roll call', 'Drill', 0.5, 12],
+    // Worker induction. Type INDUCT rather than TRAIN because it is not on
+    // the yearly calendar: it is due when somebody joins, not in March. The
+    // content is the site's own "Workers instructions" sheet (ZED · PM
+    // FORMATS), which is the one topic where the Hindi was written by the
+    // site and not by a machine.
+    //
+    // Validity 12 months is an ASSUMPTION. The sheet's seven SIGN columns
+    // prove the site re-inducts, but nothing on it says how often — the
+    // interval wants confirming before anybody is marked overdue on it.
+    ['TRN-IND', 'Worker Induction', 'कर्मचारी प्रवेश प्रशिक्षण', 'INDUCT',
+     'Site rules by category|What is allowed and what is not|What to do in each situation|Acknowledgement of the rules',
+     'Phone or kiosk, spoken', 0.5, 12]
   ].concat(_libraryTopicSeed_());
 }
 

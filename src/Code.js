@@ -289,6 +289,11 @@ function _dispatchPost_(params) {
 
   var action = params.action;
 
+  if (action === 'getInductionAudio')     return jsonResponse(getInductionAudio(params.prefix));
+  if (action === 'getInductionAudioStatus') return jsonResponse(getInductionAudioStatus());
+  if (action === 'putInductionClip')      return jsonResponse(putInductionClip(
+                                            params.name, params.audio, params.lang,
+                                            params.cues, params.voice, params.token));
   if (action === 'getModuleTest')         return jsonResponse(getModuleTest(params.topicId, params.lang));
   if (action === 'recordAssessment')      return jsonResponse(recordAssessment(params.entry));
   if (action === 'getSessionAssessments') return jsonResponse(getSessionAssessments(params.planId));

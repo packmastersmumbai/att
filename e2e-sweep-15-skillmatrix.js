@@ -526,7 +526,10 @@ async function run() {
       // are delivered training, VID and QAC are the video and course library.
       // Matching on a hardcoded prefix list would silently stop checking the
       // moment a new kind of topic is added.
-      const known = new Set((topicSrc.match(/'[A-Z]{3}-\d\d'/g) || [])
+      // Ids are PREFIX-SUFFIX where the suffix may be digits (TRN-01) or
+      // letters (TRN-IND). Matching only digits stopped checking the day
+      // induction was added — which is the failure this comment warned about.
+      const known = new Set((topicSrc.match(/'[A-Z]{3}-[A-Z0-9]{2,4}'/g) || [])
         .map(s => s.replace(/'/g, '')));
       skills.forEach(s => {
         String(s[4]).split(',').map(t => t.trim()).forEach(t => {

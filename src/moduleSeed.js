@@ -336,6 +336,126 @@ function _moduleSeedTraining_() {
         'A compliant product is one that: ?? Meets the standard it claims to ~ Looks correct ~ Was made quickly ?? 0',
         'Who is responsible for product safety? ?? Everyone who handles it ~ Only QA ~ Only the manager ?? 0'
       ].join('|')
+    },
+    // ── Worker induction ────────────────────────────────────────────────
+    // The one module the SITE wrote. Content is the "Workers instructions"
+    // sheet in ZED · PM FORMATS: 15 categories, 30 rules, and a Hindi column
+    // a person translated rather than a machine.
+    //
+    // Two things differ from every other module here:
+    //   - the questions are SITUATIONS, not "is this allowed?". Asking that
+    //     straight after stating a rule is guessable — a rule is nearly always
+    //     a "yes, do this", so somebody who understood nothing scores full
+    //     marks. Each wrong option is a real habit ("leave it, it's the
+    //     cleaner's job"), never a straw man, or it is a one-option question.
+    //   - correct is on the left in half the questions and the right in the
+    //     other half. Always-left is a pattern a worker spots in five screens.
+    //
+    // Reviewed is still NO: the WORDS are the site's, the pairing of rule to
+    // situation is mine.
+    {
+      TopicID: 'TRN-IND', Source: 'RECORD',
+      Objectives: [
+        'State the site rules that apply to you every day',
+        'Say what is allowed and what is not, in your own area',
+        'Choose the right action in a situation you will actually meet',
+        'Know who to tell when something is wrong'
+      ].join('|'),
+      ObjectivesHi: [
+        'रोज़ लागू होने वाले साइट के नियम बताना',
+        'अपने एरिया में क्या कर सकते हैं और क्या नहीं, यह बताना',
+        'सामने आने वाली स्थिति में सही काम चुनना',
+        'कुछ गलत हो तो किसे बताना है, यह जानना'
+      ].join('|'),
+      Sections: [
+        'Safety::Always wear your safety gear at work.',
+        'Access Control::You may go in the production area only.',
+        'Access Control::Use the toilet on your own floor only.',
+        'Access Control::Do not go to the lift room, third floor, meter room, office or lab without permission.',
+        'Prohibited Items::No tobacco, no alcohol, no pan masala, no cigarettes, no beedi at work.',
+        'Prohibited Items::Do not use your phone or earphones in the production area. Keep them in your bag.',
+        'Movement::Do not run on the stairs.',
+        'Movement::Hold the railing on the stairs.',
+        'Movement::If there is an emergency, go out from the emergency exit.',
+        'Movement::In a mock drill, walk on the marked line to the assembly point.',
+        'Waste Handling::Put paper, plastic and other waste in their own bins.',
+        'Waste Handling::Do not throw anything in the drain or the toilet.',
+        'Waste Handling::Food waste goes in the wet bin only.',
+        'Resources::Do not waste water. Close the tap.',
+        'Resources::Use less water in the toilet.',
+        'Resources::If a tap is running, close it and tell your supervisor.',
+        'Resources::Switch off the light and fan when nobody is there.',
+        'Cleanliness::Everyone must clean their own work area.',
+        'Cleanliness::Clean your place yourself after tea and lunch.',
+        'Hygiene::Wash your hands before work and after work.',
+        'Put things back::Put the material back in its place after use.',
+        'Information::For leave, give a written application.',
+        'Information::Do not take leave without telling anyone.',
+        'Information::Give your name, address, phone number and bank details.',
+        'Timings::Come on time. Finish your work on time and safely.',
+        'Polite Behaviour::Talk nicely to your team. Do not shout.',
+        'Accountability::Understand your work. When it is finished, tell your supervisor.',
+        'Responsibility::Look after your own things.',
+        'Responsibility::I am 18 years or older.',
+        'Test and Training::I agree to take tests and training.'
+      ].join('|'),
+      SectionsHi: [
+        'Safety::काम के समय सेफ्टी का सामान हमेशा पहनो।',
+        'Access Control::सिर्फ़ प्रोडक्शन एरिया में जाना है।',
+        'Access Control::टॉयलेट अपने ही फ़्लोर का इस्तेमाल करो।',
+        'Access Control::लिफ्ट रूम, तीसरा फ़्लोर, मीटर रूम, ऑफिस और लैब में बिना इजाज़त मत जाओ।',
+        'Prohibited Items::काम पर तम्बाकू, दारू, पान मसाला, सिगरेट, बीड़ी कुछ नहीं चलेगा।',
+        'Prohibited Items::प्रोडक्शन एरिया में मोबाइल और इयरफ़ोन मत चलाओ। बैग में रखो।',
+        'Movement::सीढ़ी पर मत दौड़ो।',
+        'Movement::सीढ़ी पर रेलिंग पकड़ो।',
+        'Movement::कोई इमरजेंसी हो तो इमरजेंसी गेट से बाहर निकलो।',
+        'Movement::मॉक ड्रिल में लाइन के रास्ते से असेंबली पॉइंट तक जाओ।',
+        'Waste Handling::कागज़, प्लास्टिक और बाकी कचरा अलग-अलग डिब्बे में डालो।',
+        'Waste Handling::नाली और टॉयलेट में कुछ मत फेंको।',
+        'Waste Handling::खाने का कचरा सिर्फ़ गीले कचरे के डिब्बे में डालो।',
+        'Resources::पानी बरबाद मत करो। नल बंद करो।',
+        'Resources::टॉयलेट में पानी कम इस्तेमाल करो।',
+        'Resources::नल चालू दिखे तो बंद करो और सुपरवाइज़र को बताओ।',
+        'Resources::कोई न हो तो लाइट और पंखा बंद करो।',
+        'Cleanliness::अपनी जगह की सफ़ाई सबको खुद करनी है।',
+        'Cleanliness::चाय और खाने के बाद अपनी जगह खुद साफ़ करो।',
+        'Hygiene::काम से पहले और काम के बाद हाथ धोओ।',
+        'Put things back::सामान इस्तेमाल के बाद अपनी जगह पर रखो।',
+        'Information::छुट्टी चाहिए तो लिखकर देना है।',
+        'Information::बिना बताए छुट्टी मत लो।',
+        'Information::अपना नाम, पता, फ़ोन नंबर और बैंक की जानकारी दो।',
+        'Timings::टाइम पर आओ। काम टाइम पर और सही तरीके से करो।',
+        'Polite Behaviour::टीम से अच्छे से बात करो। चिल्लाओ मत।',
+        'Accountability::अपना काम समझ लो। हो जाए तो सुपरवाइज़र को बताओ।',
+        'Responsibility::अपना सामान खुद संभालो।',
+        'Responsibility::मेरी उम्र अठारह साल से ज़्यादा है।',
+        'Test and Training::मुझे टेस्ट और ट्रेनिंग से कोई दिक्कत नहीं है।'
+      ].join('|'),
+      Questions: [
+        'You are starting your shift on the line. ?? Start, it is only one hour ~ Put on my safety gear ?? 1',
+        'You need something kept in the lab. ?? Ask the supervisor first ~ Go in and take it ?? 0',
+        'Someone offers you pan masala inside the plant. ?? Take it, just once ~ Say no ?? 1',
+        'Your phone rings while you are on the machine. ?? Leave it in my bag ~ Pick it up quickly ?? 0',
+        'You are late and the stairs are ahead of you. ?? Run down ~ Walk down ?? 1',
+        'You have empty plastic bags and waste paper. ?? Put it all in one bin ~ Put each in its own bin ?? 1',
+        'You washed your hands and the tap is still running. ?? Close the tap ~ Leave it, it closes by itself ?? 0',
+        'You see a tap running with nobody there. ?? Close it and tell the supervisor ~ Walk past, it is not my job ?? 0',
+        'Your shift is ending and your area is dirty. ?? Clean it myself ~ Leave it for the cleaner ?? 0',
+        'You have finished using a tool. ?? Leave it on the table ~ Put it back in its place ?? 1'
+      ].join('|'),
+      QuestionsHi: [
+        'आप लाइन पर काम शुरू कर रहे हो। ?? शुरू कर दूँगा, एक ही घंटा है ~ सेफ्टी का सामान पहनूँगा ?? 1',
+        'आपको लैब में रखी एक चीज़ चाहिए। ?? पहले सुपरवाइज़र से पूछूँगा ~ अंदर जाकर ले आऊँगा ?? 0',
+        'प्लांट के अंदर कोई आपको पान मसाला दे रहा है। ?? एक बार ले लूँगा ~ मना कर दूँगा ?? 1',
+        'मशीन पर काम करते समय आपका फ़ोन बजता है। ?? बैग में ही रहने दूँगा ~ जल्दी से उठा लूँगा ?? 0',
+        'आपको देर हो रही है और सामने सीढ़ी है। ?? दौड़कर उतरूँगा ~ चलकर उतरूँगा ?? 1',
+        'आपके पास खाली प्लास्टिक बैग और कागज़ है। ?? सब एक ही डिब्बे में डालूँगा ~ अलग-अलग डिब्बे में डालूँगा ?? 1',
+        'हाथ धो लिए और नल अभी चालू है। ?? नल बंद करूँगा ~ छोड़ दूँगा, अपने आप बंद होता है ?? 0',
+        'एक नल चालू है और वहाँ कोई नहीं है। ?? बंद करके सुपरवाइज़र को बताऊँगा ~ आगे बढ़ जाऊँगा, मेरा काम नहीं है ?? 0',
+        'शिफ्ट खत्म हो रही है और आपकी जगह गंदी है। ?? खुद साफ़ करूँगा ~ सफ़ाई वाले के लिए छोड़ दूँगा ?? 0',
+        'आपका औज़ार का काम खत्म हो गया। ?? टेबल पर ही छोड़ दूँगा ~ अपनी जगह पर रख दूँगा ?? 1'
+      ].join('|'),
+      PassMark: 80
     }
   ];
 }

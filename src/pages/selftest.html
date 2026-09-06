@@ -93,6 +93,8 @@
       font-size:15px}
     .review .r:last-child{border-bottom:0}
     .review .ok{color:#0f766e;font-weight:800} .review .no{color:#b91c1c;font-weight:800}
+    /* Sits above the options and below the question: heard before answered. */
+    .listen{margin:0 0 14px;min-height:48px;font-size:16px}
     [hidden]{display:none!important}
   </style>
 </head>
@@ -123,6 +125,8 @@
       <div class="prog" id="prog"></div>
       <div class="qn" id="qn">—</div>
       <div class="qt" id="qt">—</div>
+      <button type="button" class="btn btn-ghost listen" id="bListen"
+              onclick="listen()" hidden>🔊  Listen</button>
       <div id="opts"></div>
       <button class="btn" id="bNext" onclick="next()" disabled>Next</button>
       <button class="btn btn-ghost" id="bBack" onclick="back()" hidden>Back</button>
@@ -170,6 +174,7 @@
       intro:   { en: 'Answer a few questions about what was covered. Your score is recorded against this session.',
                  hi: 'जो पढ़ाया गया उस पर कुछ प्रश्नों के उत्तर दें। आपका अंक इस सत्र के साथ दर्ज होगा।' },
       next:    { en: 'Next',                      hi: 'आगे' },
+      listen:  { en: '🔊  Listen',                 hi: '🔊  सुनें' },
       back:    { en: 'Back',                      hi: 'पीछे' },
       qof:     { en: 'Question # of #',           hi: 'प्रश्न # / #' },
       confT:   { en: 'How confident do you feel?', hi: 'आप कितना आत्मविश्वास महसूस करते हैं?' },
@@ -263,6 +268,60 @@
         .getModuleTest(TOPIC, LANG);
     }
 
+    // ── Spoken questions ──────────────────────────────────────────────────
+    // A worker who reads slowly, or not at all, has only the voice. The
+    // button appears ONLY when a clip exists for this topic and language, so
+    // the modules with no audio look exactly as they did before rather than
+    // offering a button that plays silence.
+    //
+    // Clips are fetched once as a manifest rather than per question: forty
+    // round trips through google.script.run is a spinner on the floor.
+    var CLIPS = {}, AU = null;
+
+    function loadClips() {
+      if (typeof google === 'undefined' || !google.script) return;
+      google.script.run
+        .withSuccessHandler(function (r) {
+          if (r && r.success) { CLIPS = r.clips || {}; renderListen(); }
+        })
+        .withFailureHandler(function () { /* no audio is not an error */ })
+        .getInductionAudio(TOPIC + '/');
+    }
+
+    /**
+     * The clip for the question on screen, or '' when there is none.
+     *
+     * Keyed by QUESTION NUMBER (TRN-IND/Q3/qhi), not by the rule id the clip
+     * was built from. getModuleTest returns n/text/options and deliberately
+     * nothing else — the answer key lives on the server — so the question's
+     * position is the only stable handle the page has. Renumbering the
+     * questions therefore means re-uploading the audio, which is the right
+     * trade: the alternative is shipping a rule id to the phone purely so the
+     * audio can find itself.
+     */
+    function clipFor(idx) {
+      var q = (TEST && TEST.questions[idx]) || null;
+      if (!q) return '';
+      var key = TOPIC + '/Q' + (q.n || (idx + 1)) + '/' + (LANG === 'hi' ? 'qhi' : 'qen');
+      return (CLIPS[key] && CLIPS[key].url) || '';
+    }
+
+    function renderListen() {
+      var btn = el('bListen');
+      if (!btn) return;
+      var url = clipFor(IDX);
+      btn.hidden = !url;
+      btn.textContent = t('listen');
+    }
+
+    function listen() {
+      var url = clipFor(IDX);
+      if (!url) return;
+      if (AU) { AU.pause(); AU = null; }
+      AU = new Audio(url);
+      AU.play().catch(function () { /* autoplay refused: the tap will retry */ });
+    }
+
     // ── The test ──────────────────────────────────────────────────────────
     function start() {
       var v = el('who').value;
@@ -283,6 +342,7 @@
       }).join('');
       el('qn').textContent = t('qof').replace('#', IDX + 1).replace('#', TEST.questions.length);
       el('qt').textContent = q.text;
+      renderListen();
       el('opts').innerHTML = q.options.map(function (o, i) {
         return '<button type="button" class="opt" onclick="pick(' + i + ')" ' +
                'aria-pressed="' + (ANS[IDX] === i) + '">' +
@@ -372,6 +432,7 @@
     applyLang();
     loadRoster();
     loadTest(false);
+    loadClips();
   </script>
 </body>
 </html>
