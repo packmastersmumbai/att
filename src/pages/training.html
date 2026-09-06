@@ -82,11 +82,29 @@
 
     /* Status carries a glyph as well as a colour, so the grid survives a
        black-and-white print and is readable to a colour-blind auditor. */
-    .cell{display:inline-flex;align-items:center;justify-content:center;gap:2px;
-      font:700 11px var(--font-mono);padding:4px 6px;border-radius:var(--radius-md);
-      min-width:42px;min-height:26px;cursor:pointer;border:1px solid transparent;
+    .cell{display:inline-flex;align-items:center;justify-content:center;gap:3px;
+      font:700 11px var(--font-mono);padding:4px 5px;border-radius:var(--radius-md);
+      width:100%;min-height:26px;cursor:pointer;border:1px solid transparent;
       font-variant-numeric:tabular-nums}
     .cell:hover{border-color:var(--color-primary)}
+    /* The kind icon sits before the date so a drill is spotted while scanning
+       the column, not after reading the row label at the far left. */
+    .cell .ic{font-size:10px;opacity:.75;flex:0 0 auto}
+    .cell .mk{font-size:10px;opacity:.8;flex:0 0 auto}
+    .cell .dt{display:flex;flex-direction:column;line-height:1.15;min-width:0}
+    .cell .d-one{font-size:10.5px}
+    /* A session that moved shows BOTH dates: what was committed, struck
+       through, and what happened. One date cannot show a slip, and the slip
+       is the finding. */
+    .cell .d-plan{font-size:9px;opacity:.6;text-decoration:line-through}
+    .cell .d-act{font-size:10.5px}
+    .cell.moved{border-style:dashed;border-color:currentColor}
+    /* The icon beside the topic name, so the row is identifiable on its own
+       when the grid is scrolled sideways past the first column. */
+    .topic .tk{display:inline-block;width:15px;text-align:center;margin-right:5px;
+      font-size:11px;opacity:.8}
+    .topic .t-drill{color:var(--late)}
+    .topic .t-induct{color:var(--color-primary)}
     /* The grid's only action is opening a session. As a <span onclick> it was
        unreachable by keyboard entirely — every cell is a button now. */
     .cell:focus-visible,.btn:focus-visible,.seg button:focus-visible,.inp:focus-visible{
@@ -98,6 +116,7 @@
     .legend{display:flex;gap:14px;flex-wrap:wrap;padding:10px 16px;font-size:11px;
       color:var(--color-text-muted);border-top:1px solid var(--color-border)}
     .legend span{display:inline-flex;align-items:center;gap:5px}
+    .legend .lsep{border-left:1px solid var(--color-border);height:14px;padding:0}
     .sw{width:12px;height:12px;border-radius:2px;display:inline-block;flex-shrink:0}
     .empty{padding:34px 16px;text-align:center;color:var(--color-text-muted);font-size:13px}
     .setup-note{padding:9px 16px;background:var(--done-bg);color:var(--done);
@@ -273,7 +292,8 @@
         <div class="ctrls">
           <div class="seg" id="yearSeg"></div>
           <div class="seg" id="typeSeg">
-            <button type="button" data-type="TRAIN" aria-pressed="true">Training</button>
+            <button type="button" data-type="ALL" aria-pressed="true">All</button>
+            <button type="button" data-type="TRAIN" aria-pressed="false">Training</button>
             <button type="button" data-type="DRILL" aria-pressed="false">Mock drill</button>
           </div>
           <button class="btn" onclick="window.print()">Print</button>
@@ -289,7 +309,13 @@
         <span><i class="sw" style="background:var(--due-bg);border:1px solid var(--due)"></i> ◷ Due this month</span>
         <span><i class="sw" style="background:var(--late-bg);border:1px solid var(--late)"></i> ! Overdue</span>
         <span><i class="sw" style="background:var(--plan-bg);border:1px solid var(--plan)"></i> &middot; Planned</span>
-        <span>Number is the day of the month. Click a cell to open the session.</span>
+        <span class="lsep">&nbsp;</span>
+        <span>&#9638; Training</span>
+        <span style="color:var(--late)">&#9650; Mock drill</span>
+        <span style="color:var(--color-primary)">&#9673; Induction</span>
+        <span class="lsep">&nbsp;</span>
+        <span><s style="opacity:.6">10/01/26</s> planned &rarr; <b>02/01/26</b> actual, when a session moved</span>
+        <span>Dates are DD/MM/YY, filed under the month they were planned for. Click a cell to open the session.</span>
       </div>
     </section>
   </main>
@@ -357,7 +383,38 @@
   <script>
     var MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
     var DATA = { topics: [], plan: [], years: [], year: '' };
-    var VIEW = 'TRAIN';
+    var VIEW = 'ALL';
+
+    /* What each kind of session is, in one place. The icon rides in the cell
+       AND on the topic name, so a drill is identifiable without reading the
+       row label or relying on colour — the grid is printed in black and white
+       for the audit file. */
+    var KIND = {
+      TRAIN:  { icon: '▦', label: 'training' },
+      DRILL:  { icon: '▲', label: 'mock drill' },
+      INDUCT: { icon: '◉', label: 'induction' },
+      VIDEO:  { icon: '▶', label: 'video' },
+      COURSE: { icon: '◇', label: 'course' }
+    };
+
+    /* The site writes dates DD/MM/YY on every paper record, so the grid does
+       too. ISO in the sheet, DD/MM/YY on the screen — nobody reading this
+       against a signed record should have to reorder the numbers in
+       their head. */
+    /* ALL puts training and drills in one grid. They are the same programme
+       to the person running it — one calendar, one set of overdue rows — and
+       were only ever split because the page had two tabs.
+
+       Module scope on purpose: the grid and the KPI strip above it must agree
+       about what is being shown. When the KPIs used their own `=== VIEW`
+       compare, selecting ALL matched nothing and every figure read zero over
+       a grid that was full. */
+    function inView(type) { return VIEW === 'ALL' ? true : (type || 'TRAIN') === VIEW; }
+
+    function ddmmyy(iso) {
+      if (!iso || iso.length < 10) return '';
+      return iso.slice(8, 10) + '/' + iso.slice(5, 7) + '/' + iso.slice(2, 4);
+    }
     var OPEN = null;
 
     function esc(s){ return String(s == null ? '' : s)
@@ -397,15 +454,20 @@
     /* One row per topic, one column per month. The cell shows the day number
        of whichever session falls in that month. */
     function render() {
-      var topics = DATA.topics.filter(function (t) { return (t.Type || 'TRAIN') === VIEW; });
       var byTopic = {};
       DATA.plan.forEach(function (p) {
-        if ((p.type || 'TRAIN') !== VIEW) return;
+        if (!inView(p.type)) return;
         (byTopic[p.topicId] = byTopic[p.topicId] || []).push(p);
       });
 
+      var topics = DATA.topics.filter(function (t) {
+        if (!inView(t.Type)) return false;
+        return VIEW !== 'ALL' || !!byTopic[t.TopicID];
+      });
+
       var head = '<thead><tr><th class="topic">' +
-        (VIEW === 'DRILL' ? 'Mock drill scenario' : 'Training topic') + '</th>' +
+        (VIEW === 'DRILL' ? 'Mock drill scenario'
+         : VIEW === 'ALL' ? 'Topic and drill' : 'Training topic') + '</th>' +
         MONTHS.map(function (m) { return '<th class="mth">' + m + '</th>'; }).join('') +
         '</tr></thead>';
 
@@ -430,26 +492,56 @@
       var body = topics.map(function (t, i) {
         var cells = new Array(12).fill('');
         (byTopic[t.TopicID] || []).forEach(function (p) {
-          var shown = p.actualDate || p.plannedDate;
-          if (!shown) return;
-          var mi = Number(shown.slice(5, 7)) - 1;
-          var day = shown.slice(8, 10);
+          // The month column is the one the session was PLANNED into, so a
+          // session that slipped stays in the month it was committed for.
+          // Filing it under the month it actually ran hides the slip, which
+          // is the one thing an auditor is looking for.
+          var anchor = p.plannedDate || p.actualDate;
+          if (!anchor) return;
+          var mi = Number(anchor.slice(5, 7)) - 1;
+
           var cls = { DONE: 'c-done', DUE: 'c-due', OVERDUE: 'c-late', PLANNED: 'c-plan' }[p.status];
           // Every state carries a glyph, not just a hue: printed in black and
           // white, "planned" and "no session" were the same pale cell.
           var mark = { DONE: '✓', DUE: '◷', OVERDUE: '!', PLANNED: '·' }[p.status];
-          var label = esc(t.Title) + ', ' + p.status.toLowerCase() + ' ' + shown;
-          cells[mi] = '<button type="button" class="cell ' + cls + '" ' +
+          var kind = KIND[p.type || 'TRAIN'] || KIND.TRAIN;
+
+          // Planned and actual were the same cell before: whichever existed
+          // won, so a session moved by three weeks looked exactly like one
+          // held on the day. Both are shown when they differ — planned struck
+          // through, actual beneath it.
+          var moved = p.actualDate && p.plannedDate && p.actualDate !== p.plannedDate;
+          var dates = moved
+            ? '<span class="d-plan">' + ddmmyy(p.plannedDate) + '</span>' +
+              '<span class="d-act">' + ddmmyy(p.actualDate) + '</span>'
+            : '<span class="d-one">' + ddmmyy(p.actualDate || p.plannedDate) + '</span>';
+
+          var label = esc(t.Title) + ' — ' + kind.label + ', ' + p.status.toLowerCase() +
+                      (moved ? ', planned ' + ddmmyy(p.plannedDate) +
+                               ' held ' + ddmmyy(p.actualDate)
+                             : ' ' + ddmmyy(p.actualDate || p.plannedDate));
+
+          cells[mi] = '<button type="button" class="cell ' + cls +
+                      (moved ? ' moved' : '') + '" ' +
                       'onclick="openPanel(\'' + p.planId + '\')" ' +
                       'title="' + label + '" aria-label="' + label + '">' +
-                      mark + day + '</button>';
+                      '<span class="ic">' + kind.icon + '</span>' +
+                      '<span class="dt">' + dates + '</span>' +
+                      '<span class="mk">' + mark + '</span>' +
+                      '</button>';
         });
-        return '<tr><td class="topic"><span class="n">' + (i + 1) + '</span>' + esc(t.Title) + '</td>' +
+        var kind = KIND[t.Type || 'TRAIN'] || KIND.TRAIN;
+        return '<tr><td class="topic"><span class="n">' + (i + 1) + '</span>' +
+               '<span class="tk t-' + (t.Type || 'TRAIN').toLowerCase() + '">' +
+                 kind.icon + '</span>' + esc(t.Title) + '</td>' +
                cells.map(function (c) { return '<td class="mth">' + c + '</td>'; }).join('') + '</tr>';
       }).join('');
 
       document.getElementById('grid').innerHTML = head + '<tbody>' + body + '</tbody>';
-      renderKpis(DATA.plan.filter(function (p) { return (p.type || 'TRAIN') === VIEW; }));
+      // Through inView, not a bare === VIEW: with ALL selected the strict
+      // compare matched nothing and every KPI read zero while the grid below
+      // it was full.
+      renderKpis(DATA.plan.filter(function (p) { return inView(p.type); }));
     }
 
     function renderKpis(rows) {

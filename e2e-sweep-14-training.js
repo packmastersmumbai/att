@@ -48,7 +48,9 @@ async function run() {
         cols: document.querySelectorAll('#grid thead th').length
       }));
       if (g.cols !== 13) throw new Error('expected 13 columns (topic + 12 months), got ' + g.cols);
-      if (g.rows !== 2)  throw new Error('expected 2 training topics, got ' + g.rows);
+      // The default view is ALL — training and drills in one grid — so the
+      // drill topic counts too. Only topics WITH a session appear there.
+      if (g.rows !== 3)  throw new Error('expected 3 scheduled topics, got ' + g.rows);
     });
 
     await R.check('each status renders with its own glyph, not colour alone', async () => {
@@ -61,22 +63,71 @@ async function run() {
       const done = cells.find(c => c.cls.includes('c-done'));
       const late = cells.find(c => c.cls.includes('c-late'));
       const due  = cells.find(c => c.cls.includes('c-due'));
-      if (!done || !done.txt.startsWith('✓')) throw new Error('completed cell carries no glyph');
-      if (!late || !late.txt.startsWith('!')) throw new Error('overdue cell carries no glyph');
-      if (!due  || !due.txt.startsWith('◷'))  throw new Error('due cell carries no glyph');
+      // Presence, not position: the kind icon (▦ ▲ ◉) leads the cell so a
+      // drill is spotted while scanning a column. The status glyph still has
+      // to be there — that is what survives a black-and-white print.
+      if (!done || !done.txt.includes('✓')) throw new Error('completed cell carries no glyph');
+      if (!late || !late.txt.includes('!')) throw new Error('overdue cell carries no glyph');
+      if (!due  || !due.txt.includes('◷'))  throw new Error('due cell carries no glyph');
     });
 
-    await R.check('the cell shows the day of the month', async () => {
+    await R.check('the cell dates read DD/MM/YY, as the paper records do', async () => {
       const txt = await page.evaluate(() =>
         (document.querySelector('#grid .c-done') || {}).textContent || '');
-      if (!/^✓\d{2}$/.test(txt.trim())) throw new Error('cell text is not a day number: ' + txt);
+      // Nobody comparing this grid against a signed record should have to
+      // reorder the numbers in their head.
+      if (!/\d{2}\/\d{2}\/\d{2}/.test(txt)) throw new Error('cell carries no DD/MM/YY date: ' + txt);
+    });
+
+    await R.check('training and drills share one grid', async () => {
+      // They are the same programme to the person running it — one calendar,
+      // one set of overdue rows. Two tabs made a drill invisible while
+      // looking at training, which is how a drill gets missed.
+      const kinds = await page.evaluate(() =>
+        [...document.querySelectorAll('#grid .cell .ic')].map(e => e.textContent.trim()));
+      if (!kinds.includes('▦')) throw new Error('no training cell in the combined grid');
+      if (!kinds.includes('▲')) throw new Error('no drill cell in the combined grid');
+    });
+
+    await R.check('a moved session shows both planned and actual', async () => {
+      // One date cannot show a slip, and the slip is the finding. Before
+      // this, a session held three weeks late looked exactly like one held
+      // on the day it was committed for.
+      const moved = await page.evaluate(() => {
+        const c = document.querySelector('#grid .cell.moved');
+        if (!c) return null;
+        return {
+          planned: (c.querySelector('.d-plan') || {}).textContent || '',
+          actual:  (c.querySelector('.d-act')  || {}).textContent || ''
+        };
+      });
+      if (!moved) throw new Error('no moved session rendered');
+      if (!/\d{2}\/\d{2}\/\d{2}/.test(moved.planned)) throw new Error('planned date missing');
+      if (!/\d{2}\/\d{2}\/\d{2}/.test(moved.actual))  throw new Error('actual date missing');
+      if (moved.planned === moved.actual) throw new Error('both dates identical on a moved cell');
+    });
+
+    await R.check('a session is filed under the month it was planned for', async () => {
+      // Filing it under the month it actually ran hides the slip. The cell
+      // must sit in the committed month even when the work happened later.
+      const ok = await page.evaluate(() => {
+        const c = document.querySelector('#grid .cell.moved');
+        if (!c) return false;
+        const planned = (c.querySelector('.d-plan') || {}).textContent.trim();
+        const col = [...c.closest('tr').children].indexOf(c.closest('td'));
+        return Number(planned.slice(3, 5)) === col;   // col 1 = January
+      });
+      if (!ok) throw new Error('moved session is not in its planned month');
     });
 
     await R.check('KPIs count what the grid shows', async () => {
       const k = await page.evaluate(() =>
         [...document.querySelectorAll('.kpi')].map(e => e.textContent.replace(/\s+/g, ' ').trim()));
-      // Mock: 4 training rows — 1 done, 1 overdue, 1 due, 1 future.
-      if (!k.some(x => /Sessions held\s*1\/4/.test(x))) throw new Error('session count wrong: ' + k.join(' | '));
+      // Mock: 4 training rows — 1 done, 1 overdue, 1 due, 1 future — plus
+      // the drill. The KPI strip counts what the grid below it shows, so in
+      // the default ALL view that is 5. When these disagreed, every figure
+      // read zero over a full grid.
+      if (!k.some(x => /Sessions held\s*1\/5/.test(x))) throw new Error('session count wrong: ' + k.join(' | '));
       if (!k.some(x => /Overdue\s*1/.test(x)))          throw new Error('overdue count wrong: ' + k.join(' | '));
       if (!k.some(x => /Hours delivered\s*3\.0/.test(x))) throw new Error('hours wrong: ' + k.join(' | '));
     });

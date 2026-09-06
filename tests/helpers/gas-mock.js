@@ -101,6 +101,11 @@ const GAS_MOCK_SCRIPT = `
         var iso = function(d) { return d.toISOString().slice(0, 10); };
         var thisMonth = iso(new Date(today.getFullYear(), today.getMonth(), 15));
         var past      = iso(new Date(today.getFullYear(), today.getMonth() - 2, 10));
+        // Planned in one month, held in the NEXT. The month boundary is the
+        // point: the cell must stay in the month it was committed for, or the
+        // grid quietly reports the slip as on-time work in a later month.
+        // A same-month slip cannot tell those two behaviours apart.
+        var pastMoved = iso(new Date(today.getFullYear(), today.getMonth() - 1, 22));
         var future    = iso(new Date(today.getFullYear() + 1, 5, 20));
         respond({
           success: true, year: y, years: ['2025', '2026'],
@@ -116,8 +121,12 @@ const GAS_MOCK_SCRIPT = `
               Method: 'Drill', DurationHrs: 0.5, ValidityMonths: 12, Active: 'YES' }
           ],
           plan: [
+            // Held, but NOT on the day it was committed for. The real 2026
+            // plan has exactly this (TRN-01 planned 10/01, held 02/01), and
+            // it is the case the grid has to make visible — one date cannot
+            // show a slip.
             { planId: 'PLN-1', topicId: 'TRN-01', type: 'TRAIN', plannedDate: past,
-              actualDate: past, status: 'DONE', trainer: 'Anuj Pathak', rating: '4' },
+              actualDate: pastMoved, status: 'DONE', trainer: 'Anuj Pathak', rating: '4' },
             { planId: 'PLN-2', topicId: 'TRN-05', type: 'TRAIN', plannedDate: past,
               actualDate: '', status: 'OVERDUE', trainer: '', rating: '' },
             { planId: 'PLN-3', topicId: 'TRN-05', type: 'TRAIN', plannedDate: thisMonth,
