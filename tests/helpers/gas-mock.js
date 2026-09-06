@@ -178,6 +178,112 @@ const GAS_MOCK_SCRIPT = `
         respond({ success: true, planId: session.planId });
       },
 
+      // Skill matrix. Every distinct cell state appears at least once —
+      // meets, gap, never trained, expired, pending and NA — because a
+      // matrix that only ever draws green is indistinguishable from one
+      // that works. Priya meets everything; Anita carries the awkward cases.
+      getSkillMatrix: function(group) {
+        var g = String(group || '');
+        var SKILLS = [
+          { skillId: 'SKL-01', name: 'Filling',         nameHi: '', group: 'Packaging', minRequired: 'L2' },
+          { skillId: 'SKL-12', name: 'PPE Compliance',  nameHi: '', group: 'Common',    minRequired: 'L2' },
+          { skillId: 'SKL-16', name: 'Security Awareness', nameHi: '', group: 'Security', minRequired: 'L2' }
+        ].filter(function(s) { return !g || s.group === g; });
+
+        var CELLS = {
+          EMP001: {
+            'SKL-01': { level: 'L3', source: 'OVERRIDE', flag: '', min: 'L2', gap: false,
+                        by: 'Anuj Pathak', reason: 'Assessed on line 2', at: '2026-08-01' },
+            'SKL-12': { level: 'L2', source: 'COMPUTED', flag: 'PENDING', min: 'L2', gap: false,
+                        lastTrained: '2026-08-10', lastScore: 82 },
+            'SKL-16': { level: 'NA', source: 'NA', flag: '', min: 'NA', gap: false }
+          },
+          EMP003: {
+            // Attended, not assessed -> L1, which is below the L2 minimum.
+            'SKL-01': { level: 'L1', source: 'COMPUTED', flag: 'PENDING', min: 'L2', gap: true,
+                        lastTrained: '2026-07-02', lastScore: '' },
+            // Trained too long ago: dropped a level and flagged.
+            'SKL-12': { level: 'L1', source: 'COMPUTED', flag: 'EXPIRED', min: 'L2', gap: true,
+                        lastTrained: '2024-01-15', lastScore: 90 },
+            // Never trained is a BLANK level, not L1 — the distinction the
+            // printed matrix exists to make.
+            'SKL-16': { level: '', source: 'NONE', flag: 'NEVER_TRAINED', min: 'L2', gap: true }
+          }
+        };
+
+        var people = MOCK_EMPLOYEES
+          .filter(function(e) { return e.Status === 'ACTIVE'; })
+          .map(function(e) {
+            var cells = SKILLS.map(function(s) {
+              var c = (CELLS[e.EmpID] || {})[s.skillId];
+              return c ? JSON.parse(JSON.stringify(c))
+                       : { skillId: s.skillId, level: '', source: 'NONE',
+                           flag: 'NEVER_TRAINED', min: s.minRequired, gap: true };
+            });
+            cells.forEach(function(c, i) { c.skillId = SKILLS[i].skillId; });
+            var gaps = cells.filter(function(c) { return c.level !== 'NA' && c.gap; }).length;
+            return { empId: e.EmpID, name: e.Name, dept: e.Department, jobRole: '',
+                     photoUrl: '', cells: cells, gaps: gaps,
+                     overall: gaps === 0 ? 'MEETS' : (gaps + ' GAP' + (gaps === 1 ? '' : 'S')) };
+          });
+
+        var required = 0, met = 0, gaps = 0, never = 0, expired = 0, pending = 0;
+        people.forEach(function(p) { p.cells.forEach(function(c) {
+          if (c.level === 'NA') return;
+          required++; if (c.gap) gaps++; else met++;
+          if (c.flag === 'NEVER_TRAINED') never++;
+          if (c.flag === 'EXPIRED') expired++;
+          if (c.flag === 'PENDING') pending++;
+        }); });
+
+        respond({
+          success: true, group: g, groups: ['Common', 'Packaging', 'Security'],
+          skills: SKILLS, people: people, passMark: 70,
+          levelNames: { L1: 'Beginner', L2: 'Under supervision',
+                        L3: 'Independent', L4: 'Can train others' },
+          kpis: { people: people.length, required: required,
+                  coverage: required ? Math.round(met / required * 100) : 0,
+                  gaps: gaps, never: never, expired: expired, pending: pending },
+          nextReview: '2026-09-30'
+        });
+      },
+
+      getSkillHistory: function(empId, skillId) {
+        if (!empId || !skillId) { respond({ success: false, error: 'Missing employee or skill' }); return; }
+        respond({
+          success: true, empId: empId, skillId: skillId,
+          skillName: 'Filling', minRequired: 'L2', passMark: 70,
+          levelNames: { L1: 'Beginner', L2: 'Under supervision',
+                        L3: 'Independent', L4: 'Can train others' },
+          // One attended and one missed, so the panel has to distinguish
+          // "scored nothing" from "was not there".
+          sessions: [
+            { planId: 'PLN-1', topicId: 'TRN-01', title: 'SOP, Product Safety',
+              date: '2026-07-02', trainer: 'Anuj Pathak', present: true, score: '' },
+            { planId: 'PLN-0', topicId: 'TRN-04', title: 'SSOP, Best Practices',
+              date: '2026-03-11', trainer: 'Anuj Pathak', present: false, score: '' }
+          ],
+          override: null
+        });
+      },
+
+      setSkillLevel: function(entry, token) {
+        if (token !== 'test-admin-token') { respond({ success: false, error: 'Admin PIN required' }); return; }
+        if (!entry || !entry.empId || !entry.skillId) { respond({ success: false, error: 'Missing employee or skill' }); return; }
+        if (entry.level && !String(entry.reason || '').trim()) {
+          respond({ success: false, error: 'Give a reason for the level' }); return;
+        }
+        window.__mockLevels = window.__mockLevels || [];
+        window.__mockLevels.push(entry);
+        respond({ success: true, empId: entry.empId, skillId: entry.skillId,
+                  level: entry.level || '', cleared: !entry.level });
+      },
+
+      seedSkills: function(token) {
+        if (token !== 'test-admin-token') { respond({ success: false, error: 'Admin PIN required' }); return; }
+        respond({ success: true, skillsAdded: 19, total: 19 });
+      },
+
       getEmployees: function() {
         respond({ success: true, data: JSON.parse(JSON.stringify(MOCK_EMPLOYEES)) });
       },

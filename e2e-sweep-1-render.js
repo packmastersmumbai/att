@@ -61,6 +61,27 @@ const CHECKS = {
       ['staff form hidden by default', async page => !(await page.locator('#regForm').isVisible())],
     ],
   },
+  training: {
+    label: 'Training calendar',
+    checks: [
+      ['sidebar visible',          page => page.locator('.sb').isVisible()],
+      ['calendar grid present',    page => page.locator('#grid').isVisible()],
+      ['KPI strip present',        async page => (await page.locator('#kpis').count()) > 0],
+      ['session panel closed',     async page => !(await page.locator('#panel').evaluate(el => el.classList.contains('on')))],
+    ],
+  },
+  skillmatrix: {
+    label: 'Skill matrix',
+    checks: [
+      ['sidebar visible',          page => page.locator('.sb').isVisible()],
+      ['matrix grid present',      page => page.locator('#grid').isVisible()],
+      ['KPI strip present',        async page => (await page.locator('#kpis').count()) > 0],
+      // The signature blocks are the printed artefact F-HR-01 asks for, so
+      // they are part of the page rather than something added at print time.
+      ['signature blocks present', async page => (await page.locator('.sign div').count()) === 3],
+      ['cell panel closed',        async page => !(await page.locator('#panel').evaluate(el => el.classList.contains('on')))],
+    ],
+  },
 };
 
 async function run() {

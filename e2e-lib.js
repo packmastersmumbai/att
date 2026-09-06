@@ -40,7 +40,8 @@ const GPC_PARTIAL = fs.readFileSync(path.join(__dirname, 'src', 'gatepassCard.ht
 const TOKENS_PARTIAL = fs.readFileSync(path.join(__dirname, 'src', 'tokens.html'), 'utf8');
 
 /** All testable pages (maps to src/pages/<name>.html) */
-const PAGES = ['kiosk', 'dashboard', 'scanner', 'admin', 'reports', 'visitors'];
+const PAGES = ['kiosk', 'dashboard', 'scanner', 'admin', 'reports', 'visitors',
+               'training', 'skillmatrix'];
 
 // ── Browser helpers ──────────────────────────────────────────────────────────
 

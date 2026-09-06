@@ -26,6 +26,7 @@ const SUITES = [
   { n: 12, label: 'Design tokens',   mod: './e2e-sweep-12-tokens'        },
   { n: 13, label: 'Safety induction', mod: './e2e-sweep-13-safety'      },
   { n: 14, label: 'Training calendar', mod: './e2e-sweep-14-training'    },
+  { n: 15, label: 'Skill matrix',    mod: './e2e-sweep-15-skillmatrix' },
 ];
 
 async function main() {

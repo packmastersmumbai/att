@@ -1,7 +1,7 @@
 # Training & Competency System — Design
 
 **Date:** 2026-09-06
-**Status:** Awaiting review
+**Status:** Stages 1-3 built (2026-09-06)
 **Where it lives:** Inside the existing QR Attendance Apps Script app
 
 ---
@@ -277,6 +277,20 @@ the audit this system exists to satisfy.
 | 3 | Matrix, level computation, overrides, review screen | The competency journey |
 
 Each stage is independently shippable and demonstrable.
+
+**All three stages are built.** Stage 3 lives in `src/skillmatrix.js` and
+`src/pages/skillmatrix.html`, covered by suite 15 (38 assertions).
+
+Two details settled during implementation, both departures worth recording:
+
+- **`MinRequired` is per job role, held in Config**, not a sheet — one line
+  per role (`Packaging Operator: SKL-01=L3, SKL-16=NA`), with each skill's own
+  `MinRequired` as the fallback for any role without a line. It is a short
+  policy statement revised at a Management Review, not per-person data, and
+  the matrix works before anyone writes it.
+- **The printed MIN REQUIRED row prints `by role` where roles disagree** on a
+  skill. A single number there would be a claim the matrix does not hold
+  anybody to; the per-cell minimum remains exact.
 
 ## 9. Testing
 

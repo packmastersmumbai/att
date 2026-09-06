@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Skill Matrix — QR Att.</title>
+  <style>
+    /* Colours, spacing and type come from the shared tokens injected by
+       doGet(); only what is specific to this page is declared here. */
+    :root{
+      --lv-met:#0f766e;  --lv-met-bg:#ccfbf1;
+      --lv-gap:#b91c1c;  --lv-gap-bg:#fee2e2;
+      --lv-pend:#b45309; --lv-pend-bg:#fef3c7;
+      --lv-na:#64748b;   --lv-na-bg:#f1f5f9;
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    html,body{height:100%}
+    body{font-family:var(--font-sans);background:var(--color-bg);color:var(--color-text);
+      font-size:13px;line-height:1.45;display:flex}
+
+    /* ── Sidebar (matches training/reports/visitors) ── */
+    .sb{width:238px;flex-shrink:0;background:var(--color-surface);
+      border-right:1px solid var(--color-border);display:flex;flex-direction:column}
+    .sb-logo{display:flex;align-items:center;gap:10px;padding:16px;border-bottom:1px solid var(--color-border)}
+    .sb-logo-icon{width:32px;height:32px;border-radius:var(--radius-md);background:var(--color-primary);
+      color:#fff;display:grid;place-items:center;font-weight:800;font-size:12px}
+    .sb-logo-name{font-weight:800;font-size:16px;color:var(--color-primary);line-height:1}
+    .sb-logo-sub{font-size:9px;color:var(--color-text-muted);letter-spacing:1.4px;text-transform:uppercase}
+    .sb-nav{padding:12px 10px;flex:1}
+    .sb-section{font-size:9px;font-weight:700;color:var(--color-text-muted);letter-spacing:1.2px;
+      text-transform:uppercase;padding:8px 8px 4px}
+    .sb-item{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:var(--radius-md);
+      color:var(--color-text);text-decoration:none;font-size:13px;font-weight:500}
+    .sb-item:hover{background:#f5f0ee}
+    .sb-item.active{background:var(--color-primary);color:#fff}
+    .sb-icon{width:17px;height:17px;flex-shrink:0}
+
+    /* ── Main ── */
+    .main{flex:1;overflow:auto;padding:20px 24px;display:flex;flex-direction:column;gap:18px}
+    .doc{background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-md)}
+    .doc-hd{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;
+      padding:14px 16px;border-bottom:1px solid var(--color-border);flex-wrap:wrap}
+    .doc-t{font-size:16px;font-weight:800}
+    .doc-meta{font-family:var(--font-mono);font-size:11px;color:var(--color-text-muted);margin-top:2px}
+    .ctrls{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+    .seg{display:flex;border:1px solid var(--color-border);border-radius:var(--radius-md);overflow:hidden}
+    .seg button{border:0;background:var(--color-surface);color:var(--color-text-muted);cursor:pointer;
+      font:600 11px var(--font-sans);padding:7px 12px;min-height:34px}
+    .seg button[aria-pressed="true"]{background:var(--color-primary);color:#fff}
+    .btn{border:1px solid var(--color-border);background:var(--color-surface);color:var(--color-text);
+      border-radius:var(--radius-md);font:600 11px var(--font-sans);padding:7px 12px;
+      min-height:34px;cursor:pointer}
+    .btn-pri{background:var(--color-primary);border-color:var(--color-primary);color:#fff}
+    .btn:disabled{opacity:.5;cursor:default}
+
+    .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));
+      border-bottom:1px solid var(--color-border)}
+    .kpi{padding:10px 16px;border-right:1px solid var(--color-border)}
+    .kpi:last-child{border-right:0}
+    .kpi-l{font-size:10px;font-weight:700;color:var(--color-text-muted);
+      text-transform:uppercase;letter-spacing:.6px}
+    .kpi-v{font:800 20px/1.1 var(--font-mono);margin-top:3px;font-variant-numeric:tabular-nums}
+    .kpi-v.warn{color:var(--color-warning)} .kpi-v.bad{color:var(--color-danger)}
+
+    .scroll{overflow-x:auto}
+    table{border-collapse:collapse;width:100%;font-size:12px}
+    th,td{border:1px solid var(--color-border);padding:6px 8px;text-align:left}
+    thead th{background:var(--color-bg);font-size:10px;font-weight:700;color:var(--color-text-muted);
+      text-transform:uppercase;letter-spacing:.5px;vertical-align:bottom}
+    /* Skill names are long and their columns are narrow, so the header text
+       is rotated rather than wrapped. Capped well below the earlier 150px:
+       a fourteen-skill matrix does not need a header band taller than the
+       rows beneath it, and the full name is on the cell's own tooltip. */
+    .sk-h{width:44px;min-width:44px;text-align:center;padding:6px 2px}
+    .sk-h span{display:block;writing-mode:vertical-rl;transform:rotate(180deg);
+      white-space:nowrap;margin:0 auto;max-height:104px;overflow:hidden;text-overflow:ellipsis}
+    /* The name column takes what a name needs and no more. Without the cap
+       three skills left it ~600px wide and the matrix read as mostly blank
+       paper — which is also how it would print. */
+    .emp{width:210px;min-width:190px;max-width:260px;overflow-wrap:anywhere}
+    .ovr{width:96px;min-width:96px;text-align:center;white-space:nowrap}
+    /* Remarks absorbs the leftover width. Every other column is sized to its
+       content, so without a column that WANTS the slack the table hands it to
+       the name column and the matrix reads as mostly blank paper. */
+    .rem{width:auto;min-width:150px;overflow-wrap:anywhere}
+
+    .who{display:flex;align-items:center;gap:8px}
+    .ph{width:30px;height:30px;border-radius:50%;object-fit:cover;flex-shrink:0;
+      border:1px solid var(--color-border);background:var(--color-bg)}
+    /* The photo is on the printed F-HR-01, so absence needs a placeholder of
+       the same size — otherwise rows change height when one person has none. */
+    .ph-x{width:30px;height:30px;border-radius:50%;flex-shrink:0;background:var(--color-bg);
+      border:1px solid var(--color-border);display:grid;place-items:center;
+      font:700 10px var(--font-mono);color:var(--color-muted)}
+    .who-n{font-weight:600;min-width:0}
+    .who-r{font-size:10px;color:var(--color-muted)}
+
+    /* A level carries its own mark as well as a colour: "!" below minimum,
+       "•" awaiting a supervisor. The matrix is printed in black and white
+       and read by people who cannot separate the hues. */
+    .lv{display:inline-flex;align-items:center;justify-content:center;
+      font:700 11px var(--font-mono);padding:4px 5px;border-radius:var(--radius-md);
+      min-width:40px;min-height:26px;cursor:pointer;border:1px solid transparent;
+      font-variant-numeric:tabular-nums}
+    .lv:hover{border-color:var(--color-primary)}
+    .lv:focus-visible,.btn:focus-visible,.seg button:focus-visible,.inp:focus-visible{
+      outline:2px solid var(--color-primary);outline-offset:2px}
+    .l-met {background:var(--lv-met-bg); color:var(--lv-met)}
+    .l-gap {background:var(--lv-gap-bg); color:var(--lv-gap)}
+    .l-pend{background:var(--lv-pend-bg);color:var(--lv-pend)}
+    .l-na  {background:var(--lv-na-bg);  color:var(--lv-na)}
+    .cellw{text-align:center;padding:3px}
+    /* The MIN REQUIRED row is policy, not a person — it reads as part of the
+       header rather than as another employee. */
+    .minrow td{background:var(--color-bg);font-weight:700}
+    .minrow .lv{cursor:default;background:transparent;color:var(--color-text)}
+    .badge{display:inline-block;font:700 10px var(--font-mono);padding:3px 7px;
+      border-radius:var(--radius-md)}
+    .b-ok{background:var(--lv-met-bg);color:var(--lv-met)}
+    .b-no{background:var(--lv-gap-bg);color:var(--lv-gap)}
+
+    .legend{display:flex;gap:14px;flex-wrap:wrap;padding:10px 16px;font-size:11px;
+      color:var(--color-text-muted);border-top:1px solid var(--color-border)}
+    .legend span{display:inline-flex;align-items:center;gap:5px}
+    .empty{padding:34px 16px;text-align:center;color:var(--color-text-muted);font-size:13px}
+
+    /* Prepared / Reviewed / Approved — the signature blocks on F-HR-01.
+       Shown on screen too, so what prints is never a surprise. */
+    .sign{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:24px;
+      padding:22px 16px 14px;border-top:1px solid var(--color-border)}
+    .sign div{border-top:1px solid var(--color-text);padding-top:5px;font-size:10px;
+      font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--color-text-muted)}
+
+    /* ── Cell panel ── */
+    .backdrop{display:none;position:fixed;inset:0;background:rgba(2,6,16,.45);z-index:40}
+    .backdrop.on{display:block}
+    .panel{position:fixed;top:0;right:0;bottom:0;width:420px;max-width:92vw;z-index:41;
+      background:var(--color-surface);border-left:1px solid var(--color-border);
+      transform:translateX(100%);transition:transform .18s ease;display:flex;flex-direction:column}
+    .panel.on{transform:none}
+    .panel-hd{padding:14px 16px;border-bottom:1px solid var(--color-border);
+      display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+    .panel-b{padding:14px 16px;overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:14px}
+    .fld{display:flex;flex-direction:column;gap:5px}
+    /* Direct child only — the same trap the session panel hit, where a
+       descendant selector uppercased every worker's name. */
+    .fld > label{font-size:10px;font-weight:700;color:var(--color-text-muted);
+      text-transform:uppercase;letter-spacing:.5px}
+    .inp{border:1px solid var(--color-border);border-radius:var(--radius-md);padding:8px 10px;
+      font:400 13px var(--font-sans);background:var(--color-surface);color:var(--color-text);
+      min-height:38px;width:100%}
+    .inp:focus{outline:none;border-color:var(--color-primary);box-shadow:0 0 0 3px rgba(0,6,102,.10)}
+    .now{background:var(--color-bg);border:1px solid var(--color-border);
+      border-radius:var(--radius-md);padding:10px 12px;font-size:12px}
+    .now b{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.5px;
+      color:var(--color-text-muted);margin-bottom:5px}
+    .hist{border:1px solid var(--color-border);border-radius:var(--radius-md);
+      max-height:230px;overflow-y:auto}
+    .hist-r{display:flex;align-items:center;gap:9px;padding:7px 10px;
+      border-bottom:1px solid var(--color-border);font-size:12px}
+    .hist-r:last-child{border-bottom:0}
+    .hist-d{font:600 11px var(--font-mono);width:80px;flex-shrink:0;color:var(--color-text-muted)}
+    .hist-t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .hist-s{font:700 11px var(--font-mono);width:56px;text-align:right;flex-shrink:0}
+    .hist-r.absent{color:var(--color-muted)}
+    .lvpick{display:flex;gap:6px;flex-wrap:wrap}
+    .lvpick button{min-width:52px;min-height:38px;border:1px solid var(--color-border);
+      border-radius:var(--radius-md);background:var(--color-surface);color:var(--color-text);
+      font:700 12px var(--font-mono);cursor:pointer}
+    .lvpick button[aria-pressed="true"]{background:var(--color-primary);
+      border-color:var(--color-primary);color:#fff}
+
+    /* Below 900px the sidebar becomes a horizontal strip — a supervisor on
+       the floor carries a phone. The name column stays pinned so a level is
+       never read against the wrong person. */
+    @media (max-width:900px){
+      body{flex-direction:column}
+      .sb{width:100%;border-right:0;border-bottom:1px solid var(--color-border)}
+      .sb-logo{padding:10px 14px}
+      .sb-nav{display:flex;gap:4px;overflow-x:auto;padding:8px 10px}
+      .sb-section{display:none}
+      .sb-item{white-space:nowrap;padding:8px 12px}
+      .main{padding:14px}
+      .doc-hd{flex-direction:column;align-items:stretch}
+      .panel{width:100%}
+      .emp{min-width:140px;position:sticky;left:0;background:var(--color-surface);z-index:1}
+      .minrow .emp{background:var(--color-bg)}
+    }
+    @media print{
+      .sb,.ctrls,.panel,.backdrop{display:none!important}
+      .main{padding:0}
+      /* F-HR-01 prints landscape; the whole matrix must fit one width. */
+      @page{size:A4 landscape;margin:10mm}
+      /* On screen a truncated header is recoverable — the full name is on the
+         cell's tooltip. On paper it is not, and this is the audit artefact,
+         so the header band is allowed to grow and every name prints whole. */
+      .sk-h span{max-height:none}
+      /* The scroller must not clip on paper: what is off-screen is simply
+         absent from the print, which would silently drop skill columns. */
+      .scroll{overflow:visible}
+    }
+  </style>
+</head>
+<body>
+  <aside class="sb">
+    <div class="sb-logo">
+      <div class="sb-logo-icon">QR</div>
+      <div>
+        <div class="sb-logo-name">QR Att.</div>
+        <div class="sb-logo-sub">Attendance System</div>
+      </div>
+    </div>
+    <nav class="sb-nav">
+      <div class="sb-section">Operations</div>
+      <a class="sb-item" href="?page=kiosk" data-page="kiosk">
+        <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18"/>
+        </svg>
+        Kiosk
+      </a>
+      <a class="sb-item" href="?page=scanner" data-page="scanner">
+        <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="5" height="5"/><rect x="16" y="3" width="5" height="5"/><rect x="3" y="16" width="5" height="5"/><path d="M21 16h-3v3m0-3v3h-3"/></svg>
+        Scanner
+      </a>
+      <a class="sb-item" href="?page=dashboard" data-page="dashboard">
+        <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+          <rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>
+        </svg>
+        Dashboard
+      </a>
+      <a class="sb-item" href="?page=reports" data-page="reports">
+        <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/>
+        </svg>
+        Reports
+      </a>
+      <a class="sb-item" href="?page=visitors" data-page="visitors">
+        <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+        </svg>
+        Visitors
+      </a>
+      <a class="sb-item" href="?page=training" data-page="training">
+        <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/>
+          <line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+        </svg>
+        Training
+      </a>
+      <a class="sb-item active" href="?page=skillmatrix" data-page="skillmatrix">
+        <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/>
+          <line x1="9" y1="9" x2="9" y2="21"/>
+        </svg>
+        Skill matrix
+      </a>
+      <div class="sb-section" style="margin-top:8px">System</div>
+      <a class="sb-item" href="?page=admin" data-page="admin">
+        <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 1 0-16 0"/>
+        </svg>
+        Admin
+      </a>
+    </nav>
+  </aside>
+
+  <main class="main">
+    <section class="doc">
+      <div class="doc-hd">
+        <div>
+          <div class="doc-t">Skill Matrix <span id="hdGroup"></span></div>
+          <div class="doc-meta">Format F-HR-01 · Rev 00 · <?= orgName ?> ·
+            Next review <span id="hdReview">—</span></div>
+        </div>
+        <div class="ctrls">
+          <div class="seg" id="groupSeg"></div>
+          <button class="btn" onclick="window.print()">Print</button>
+        </div>
+      </div>
+
+      <div class="kpis" id="kpis"></div>
+      <div class="scroll"><table id="grid"></table></div>
+
+      <div class="legend" id="legend"></div>
+
+      <div class="sign">
+        <div>Prepared by</div>
+        <div>Reviewed by</div>
+        <div>Approved by</div>
+      </div>
+    </section>
+  </main>
+
+  <div class="backdrop" id="backdrop" onclick="closePanel()"></div>
+  <aside class="panel" id="panel" aria-hidden="true">
+    <div class="panel-hd">
+      <div>
+        <div style="font-weight:700;font-size:15px" id="pTitle">—</div>
+        <div class="doc-meta" id="pMeta">—</div>
+      </div>
+      <button class="btn" onclick="closePanel()" aria-label="Close">&times;</button>
+    </div>
+    <div class="panel-b">
+      <div class="now" id="pNow"></div>
+      <div class="fld">
+        <label>Training behind this skill</label>
+        <div class="hist" id="pHist"></div>
+      </div>
+      <div class="fld">
+        <label>Confirm the level</label>
+        <div class="lvpick" id="pLevels" role="group" aria-label="Competency level"></div>
+      </div>
+      <div class="fld"><label for="pReason">Basis for this level</label>
+        <input type="text" class="inp" id="pReason"
+               placeholder="What was assessed, and how"></div>
+      <div class="fld"><label for="pBy">Assessed by</label>
+        <input type="text" class="inp" id="pBy" placeholder="Supervisor name"></div>
+      <button class="btn btn-pri" id="pSave" onclick="saveLevel()" style="min-height:42px">Save level</button>
+      <button class="btn" id="pClear" onclick="clearLevel()">Clear override — go back to computed</button>
+      <div id="pMsg" style="font-size:12px;color:var(--color-text-muted)"></div>
+    </div>
+  </aside>
+
+  <script>
+    var DATA = { skills: [], people: [], groups: [], kpis: {}, levelNames: {} };
+    var GROUP = '';
+    var OPEN = null;          // { empId, skillId, name, skillName }
+    var PICKED = '';          // level chosen in the panel
+    var LEVELS = ['L1', 'L2', 'L3', 'L4', 'NA'];
+
+    function esc(s){ return String(s == null ? '' : s)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+    function msg(t){ document.getElementById('pMsg').textContent = t || ''; }
+
+    function load(group) {
+      GROUP = group === undefined ? GROUP : group;
+      google.script.run
+        .withSuccessHandler(function (res) {
+          if (!res || !res.success) return;
+          DATA = res;
+          GROUP = res.group || '';
+          document.getElementById('hdGroup').textContent = GROUP ? '· ' + GROUP : '';
+          document.getElementById('hdReview').textContent = res.nextReview || '—';
+          renderGroups();
+          render();
+        })
+        .withFailureHandler(function (e) {
+          document.getElementById('grid').innerHTML =
+            '<tr><td class="empty">Could not load the matrix: ' + esc(e && e.message) + '</td></tr>';
+        })
+        .getSkillMatrix(GROUP);
+    }
+
+    function renderGroups() {
+      var all = [''].concat(DATA.groups || []);
+      document.getElementById('groupSeg').innerHTML = all.map(function (g) {
+        return '<button type="button" onclick="load(\'' + esc(g) + '\')" aria-pressed="' +
+               (g === GROUP) + '">' + esc(g || 'All') + '</button>';
+      }).join('');
+    }
+
+    /* People as rows, skills as columns, with MIN REQUIRED sitting between
+       the header and the first person — the layout of F-HR-01. */
+    function render() {
+      var skills = DATA.skills || [];
+      var people = DATA.people || [];
+
+      var head = '<thead><tr><th class="emp">Employee</th>' +
+        skills.map(function (s) {
+          return '<th class="sk-h"><span title="' + esc(s.name) + '">' + esc(s.name) + '</span></th>';
+        }).join('') +
+        '<th class="ovr">Overall</th><th class="rem">Remarks</th></tr></thead>';
+
+      if (!skills.length) {
+        // The action that fills the page belongs on the page — sending
+        // someone to another screen to fix an empty state is a dead end.
+        document.getElementById('grid').innerHTML = head +
+          '<tbody><tr><td class="empty" colspan="3">' +
+            '<div style="font-weight:700;color:var(--color-text);margin-bottom:4px">' +
+              'No skills defined yet</div>' +
+            '<div style="margin-bottom:14px">Load the skill library — the process skills ' +
+              'drawn from the training content, each mapped to the topics that build it.</div>' +
+            '<button type="button" class="btn btn-pri" onclick="seedSkills()">' +
+              'Set up the skill library</button>' +
+            '<div id="seedMsg" style="margin-top:10px"></div>' +
+          '</td></tr></tbody>';
+        renderKpis(); renderLegend();
+        return;
+      }
+
+      if (!people.length) {
+        document.getElementById('grid').innerHTML = head +
+          '<tbody><tr><td class="empty" colspan="' + (skills.length + 3) + '">' +
+            'No active employees to assess.</td></tr></tbody>';
+        renderKpis(); renderLegend();
+        return;
+      }
+
+      /* MIN REQUIRED is per job role, so one printed row is only honest when
+         every visible person shares the same minimum for that skill. Where
+         roles differ the row says so rather than picking one and printing a
+         number the matrix does not actually hold people to. */
+      var minRow = '<tr class="minrow"><td class="emp">MIN REQUIRED</td>' +
+        skills.map(function (s, i) {
+          var mins = people.map(function (p) { return (p.cells[i] || {}).min || ''; });
+          var uniform = mins.every(function (m) { return m === mins[0]; });
+          var txt = uniform ? (mins[0] || s.minRequired || '—') : 'by role';
+          var title = uniform ? '' : ' title="Differs by job role — see each cell"';
+          return '<td class="cellw"' + title + '><span class="lv">' + esc(txt) + '</span></td>';
+        }).join('') + '<td class="ovr"></td><td class="rem"></td></tr>';
+
+      var body = people.map(function (p) {
+        var cells = p.cells.map(function (c) {
+          return '<td class="cellw">' + cellHtml(p, c) + '</td>';
+        }).join('');
+        var badge = '<span class="badge ' + (p.gaps ? 'b-no' : 'b-ok') + '">' +
+                    esc(p.overall) + '</span>';
+        return '<tr><td class="emp">' + whoHtml(p) + '</td>' + cells +
+               '<td class="ovr">' + badge + '</td>' +
+               '<td class="rem">' + esc(remarkFor(p)) + '</td></tr>';
+      }).join('');
+
+      document.getElementById('grid').innerHTML = head + '<tbody>' + minRow + body + '</tbody>';
+      renderKpis(); renderLegend();
+    }
+
+    function whoHtml(p) {
+      var pic = p.photoUrl
+        ? '<img class="ph" src="' + esc(p.photoUrl) + '" alt="">'
+        : '<span class="ph-x" aria-hidden="true">' + esc(initials(p.name)) + '</span>';
+      return '<span class="who">' + pic + '<span class="who-n">' + esc(p.name) +
+             (p.jobRole || p.dept
+               ? '<span class="who-r" style="display:block">' + esc(p.jobRole || p.dept) + '</span>'
+               : '') +
+             '</span></span>';
+    }
+
+    function initials(name) {
+      return String(name || '?').trim().split(/\s+/).slice(0, 2)
+        .map(function (w) { return w.charAt(0).toUpperCase(); }).join('');
+    }
+
+    /* Colour AND a mark. "!" is below the minimum, "•" is awaiting a
+       supervisor's confirmation, and a blank level prints as "—" so a
+       never-trained cell can never be mistaken for an unrendered one. */
+    function cellHtml(person, c) {
+      var cls = 'l-met', mark = '';
+      if (c.level === 'NA') cls = 'l-na';
+      else if (c.gap) { cls = 'l-gap'; mark = '!'; }
+      else if (c.flag === 'PENDING') { cls = 'l-pend'; mark = '•'; }
+
+      var text = c.level || '—';
+      var why = c.flag === 'NEVER_TRAINED' ? 'never trained'
+              : c.flag === 'EXPIRED' ? 'training lapsed'
+              : c.flag === 'PENDING' ? 'awaiting confirmation'
+              : c.source === 'OVERRIDE' ? 'set by ' + (c.by || 'a supervisor')
+              : c.level === 'NA' ? 'not applicable to this role' : 'confirmed';
+      var label = person.name + ', ' + skillName(c.skillId) + ': ' +
+                  (c.level || 'never trained') + ' — ' + why;
+
+      return '<button type="button" class="lv ' + cls + '" ' +
+             'onclick="openCell(\'' + esc(person.empId) + '\',\'' + esc(c.skillId) + '\')" ' +
+             'title="' + esc(label) + '" aria-label="' + esc(label) + '">' +
+             mark + esc(text) + '</button>';
+    }
+
+    function skillName(skillId) {
+      var s = (DATA.skills || []).filter(function (x) { return x.skillId === skillId; })[0];
+      return s ? s.name : skillId;
+    }
+
+    /* The REMARKS column states the most actionable thing about the row —
+       a blank column on a printed matrix invites someone to write in it. */
+    function remarkFor(p) {
+      var never   = p.cells.filter(function (c) { return c.flag === 'NEVER_TRAINED'; }).length;
+      var expired = p.cells.filter(function (c) { return c.flag === 'EXPIRED'; }).length;
+      if (never)   return never + ' skill' + (never === 1 ? '' : 's') + ' never trained';
+      if (expired) return 'Refresher due (' + expired + ')';
+      var pending = p.cells.filter(function (c) { return c.flag === 'PENDING'; }).length;
+      if (pending) return pending + ' awaiting confirmation';
+      return '';
+    }
+
+    function renderKpis() {
+      var k = DATA.kpis || {};
+      var cov = Number(k.coverage || 0);
+      document.getElementById('kpis').innerHTML = [
+        ['Coverage', cov + '%', cov < 80 ? 'warn' : ''],
+        ['Gaps', String(k.gaps || 0), k.gaps ? 'bad' : ''],
+        ['Never trained', String(k.never || 0), k.never ? 'bad' : ''],
+        ['Lapsed', String(k.expired || 0), k.expired ? 'warn' : ''],
+        ['Awaiting review', String(k.pending || 0), '']
+      ].map(function (x) {
+        return '<div class="kpi"><div class="kpi-l">' + x[0] + '</div>' +
+               '<div class="kpi-v ' + x[2] + '">' + x[1] + '</div></div>';
+      }).join('');
+    }
+
+    function renderLegend() {
+      var n = DATA.levelNames || {};
+      document.getElementById('legend').innerHTML =
+        ['L1', 'L2', 'L3', 'L4'].map(function (l) {
+          return '<span><b>' + l + '</b> ' + esc(n[l] || '') + '</span>';
+        }).join('') +
+        '<span><b>NA</b> Not applicable</span>' +
+        '<span><b>—</b> Never trained</span>' +
+        '<span><b>!</b> Below minimum</span>' +
+        '<span><b>•</b> Awaiting supervisor review</span>';
+    }
+
+    // ── The cell panel ────────────────────────────────────────────────────
+
+    function openCell(empId, skillId) {
+      var person = DATA.people.filter(function (p) { return p.empId === empId; })[0];
+      if (!person) return;
+      var cell = person.cells.filter(function (c) { return c.skillId === skillId; })[0] || {};
+      OPEN = { empId: empId, skillId: skillId, name: person.name, skillName: skillName(skillId) };
+      PICKED = cell.source === 'OVERRIDE' ? cell.level : '';
+
+      document.getElementById('pTitle').textContent = person.name;
+      document.getElementById('pMeta').textContent =
+        OPEN.skillName + ' · minimum ' + (cell.min || '—');
+      document.getElementById('pReason').value = cell.reason || '';
+      document.getElementById('pBy').value = cell.by || '';
+      document.getElementById('pClear').style.display = cell.source === 'OVERRIDE' ? '' : 'none';
+      msg('');
+      renderNow(cell);
+      renderLevels();
+
+      document.getElementById('pHist').innerHTML =
+        '<div class="hist-r">Loading the training record…</div>';
+      document.getElementById('panel').classList.add('on');
+      document.getElementById('panel').setAttribute('aria-hidden', 'false');
+      document.getElementById('backdrop').classList.add('on');
+
+      google.script.run
+        .withSuccessHandler(renderHistory)
+        .withFailureHandler(function (e) {
+          document.getElementById('pHist').innerHTML =
+            '<div class="hist-r">Could not load it: ' + esc(e && e.message) + '</div>';
+        })
+        .getSkillHistory(empId, skillId);
+    }
+
+    /* What the system currently claims, and on what basis. A supervisor
+       confirming a level needs to see whether it came from a computation or
+       from a person before they agree with it. */
+    function renderNow(cell) {
+      var n = DATA.levelNames || {};
+      var lvl = cell.level || '—';
+      var basis =
+        cell.source === 'OVERRIDE' ? 'Set by ' + esc(cell.by || 'a supervisor') +
+            (cell.at ? ' on ' + esc(cell.at) : '') +
+            (cell.reason ? ' — ' + esc(cell.reason) : '')
+        : cell.flag === 'NEVER_TRAINED' ? 'No attended session credits this skill.'
+        : cell.flag === 'EXPIRED' ? 'Last trained ' + esc(cell.lastTrained || '') +
+            '; the topic\'s validity has lapsed, so the level dropped one step.'
+        : cell.flag === 'PENDING' ? 'Suggested from attendance on ' + esc(cell.lastTrained || '') +
+            (cell.lastScore === '' || cell.lastScore == null
+              ? ' (not assessed)' : ' scoring ' + esc(cell.lastScore)) +
+            '. Awaiting a supervisor.'
+        : 'Not applicable to this role.';
+
+      document.getElementById('pNow').innerHTML =
+        '<b>Current level</b>' +
+        '<div style="font:800 18px var(--font-mono);margin-bottom:4px">' + esc(lvl) +
+          (n[lvl] ? ' <span style="font:400 12px var(--font-sans);color:var(--color-text-muted)">' +
+            esc(n[lvl]) + '</span>' : '') + '</div>' +
+        '<div style="color:var(--color-text-muted)">' + basis + '</div>';
+    }
+
+    function renderLevels() {
+      var n = DATA.levelNames || {};
+      document.getElementById('pLevels').innerHTML = LEVELS.map(function (l) {
+        return '<button type="button" onclick="pick(\'' + l + '\')" ' +
+               'aria-pressed="' + (l === PICKED) + '" ' +
+               'title="' + esc(n[l] || (l === 'NA' ? 'Not applicable' : l)) + '">' + l + '</button>';
+      }).join('');
+    }
+
+    function pick(l) {
+      PICKED = (PICKED === l) ? '' : l;
+      renderLevels();
+    }
+
+    function closePanel() {
+      OPEN = null;
+      document.getElementById('panel').classList.remove('on');
+      document.getElementById('panel').setAttribute('aria-hidden', 'true');
+      document.getElementById('backdrop').classList.remove('on');
+    }
+
+    function renderHistory(res) {
+      if (!res || !res.success) {
+        document.getElementById('pHist').innerHTML =
+          '<div class="hist-r">' + esc((res && res.error) || 'Not available') + '</div>';
+        return;
+      }
+      if (!res.sessions.length) {
+        document.getElementById('pHist').innerHTML =
+          '<div class="hist-r">No session that builds this skill has run yet.</div>';
+        return;
+      }
+      document.getElementById('pHist').innerHTML = res.sessions.map(function (s) {
+        var score = !s.present ? 'absent'
+                  : (s.score === '' ? '—' : s.score);
+        return '<div class="hist-r' + (s.present ? '' : ' absent') + '">' +
+               '<span class="hist-d">' + esc(s.date) + '</span>' +
+               '<span class="hist-t">' + esc(s.title) + '</span>' +
+               '<span class="hist-s">' + esc(score) + '</span></div>';
+      }).join('');
+    }
+
+    // ── Writing ───────────────────────────────────────────────────────────
+
+    /* Every write is admin-gated: a level on this matrix is the assertion an
+       auditor holds the company to. The PIN is exchanged for a token per
+       action rather than held, matching the training page. */
+    function withAdmin(prompt, box, fn) {
+      var pin = window.prompt(prompt);
+      if (!pin) return;
+      box('Checking…');
+      google.script.run
+        .withSuccessHandler(function (v) {
+          if (!v || !v.success || !v.token) { box('That PIN was not accepted.'); return; }
+          fn(v.token);
+        })
+        .withFailureHandler(function (e) { box('Error: ' + (e && e.message)); })
+        .verifyPIN(pin);
+    }
+
+    function saveLevel() {
+      if (!OPEN) return;
+      if (!PICKED) { msg('Pick a level first.'); return; }
+      var reason = document.getElementById('pReason').value.trim();
+      // Asked for here rather than rejected by the server, so the supervisor
+      // is not made to re-enter the PIN to learn the reason was missing.
+      if (!reason) { msg('Say what this level is based on.'); return; }
+
+      withAdmin('Admin PIN to set ' + OPEN.name + '’s level', msg, function (token) {
+        google.script.run
+          .withSuccessHandler(function (r) {
+            if (!r || !r.success) { msg((r && r.error) || 'Could not save the level.'); return; }
+            msg('Saved.');
+            load();
+            closePanel();
+          })
+          .withFailureHandler(function (e) { msg('Error: ' + (e && e.message)); })
+          .setSkillLevel({
+            empId: OPEN.empId, skillId: OPEN.skillId, level: PICKED,
+            reason: reason, by: document.getElementById('pBy').value.trim()
+          }, token);
+      });
+    }
+
+    function clearLevel() {
+      if (!OPEN) return;
+      withAdmin('Admin PIN to clear this override', msg, function (token) {
+        google.script.run
+          .withSuccessHandler(function (r) {
+            if (!r || !r.success) { msg((r && r.error) || 'Could not clear it.'); return; }
+            msg('Back to the computed level.');
+            load();
+            closePanel();
+          })
+          .withFailureHandler(function (e) { msg('Error: ' + (e && e.message)); })
+          .setSkillLevel({ empId: OPEN.empId, skillId: OPEN.skillId, level: '' }, token);
+      });
+    }
+
+    function seedSkills() {
+      var box = function (t) { var b = document.getElementById('seedMsg'); if (b) b.textContent = t; };
+      withAdmin('Admin PIN to set up the skill library', box, function (token) {
+        google.script.run
+          .withSuccessHandler(function (r) {
+            if (!r || !r.success) { box((r && r.error) || 'Could not set it up.'); return; }
+            box(r.skillsAdded + ' skills added.');
+            load();
+          })
+          .withFailureHandler(function (e) { box('Error: ' + (e && e.message)); })
+          .seedSkills(token);
+      });
+    }
+
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') closePanel();
+    });
+
+    load('');
+  </script>
+</body>
+</html>

@@ -47,7 +47,7 @@ function doGet(e) {
   }
 
   var page = (e && e.parameter && e.parameter.page) ? e.parameter.page : 'scanner';
-  var validPages = ['scanner', 'scanner_popup', 'dashboard', 'reports', 'visitors', 'kiosk', 'admin', 'idcards', 'e2e', 'vreg', 'vpass', 'gatepass_approve', 'training'];
+  var validPages = ['scanner', 'scanner_popup', 'dashboard', 'reports', 'visitors', 'kiosk', 'admin', 'idcards', 'e2e', 'vreg', 'vpass', 'gatepass_approve', 'training', 'skillmatrix'];
   if (validPages.indexOf(page) === -1) page = 'scanner';
 
   var template = HtmlService.createTemplateFromFile('pages/' + page);
@@ -154,7 +154,10 @@ function _bootstrapIfNeeded() {
   if (props.getProperty('bootstrapped') === 'true') return;
 
   var schema = {
-    'Employees':      ['EmpID','Name','Department','Gender','BloodGroup','Phone','Email','QRCode','Status','PhotoURL','QRImageURL'],
+    // JobRole drives the per-role minimum on the skill matrix. Only written
+    // on a fresh install — an existing sheet keeps its headers, and a missing
+    // JobRole simply falls back to each skill's own default minimum.
+    'Employees':      ['EmpID','Name','Department','JobRole','Gender','BloodGroup','Phone','Email','QRCode','Status','PhotoURL','QRImageURL'],
     'Visitors':       ['VisitorID','Name','Company','Phone','HostEmpID','Purpose','ExpectedOut','BlacklistFlag','IDType','IDNumber','Vehicle','PhotoURL','SafetyAckAt','SafetyVersion','EmergencyName','EmergencyPhone'],
     'Logs':           ['LogID','QRCode','PersonID','Type','Name','Department','TimeIN','TimeOUT','Duration','Date','Gate','Status'],
     'ActiveVisitors': ['VisitorID','Name','TimeIN','HostEmpID','Gate'],
@@ -220,7 +223,14 @@ function _bootstrapIfNeeded() {
       ['PublicUrl',          ''],  // blank → publicBaseUrl() falls back to the raw GAS app URL (links open the app directly)
       ['AutoWhatsAppPass',   'off'],  // 'on' → vreg auto-opens the wa.me pass draft after registration
       ['QMSMaterialSheetID', ''],   // QMS spreadsheet ID for the gatepass material picklist; blank → free-text only
-      ['HostDepartments',    'Office,Management']  // depts shown in vreg "Whom to meet"; blank = all active employees
+      ['HostDepartments',    'Office,Management'],  // depts shown in vreg "Whom to meet"; blank = all active employees
+      // Training & competency. PassMark is the score at or above which an
+      // attendee counts as assessed. MinRequired sets the minimum level per
+      // job role, one role per line ("Packaging Operator: SKL-01=L3, SKL-16=NA");
+      // blank means every role falls back to the skill's own default.
+      ['PassMark',           '70'],
+      ['MinRequired',        ''],
+      ['LevelNames',         'Beginner|Under supervision|Independent|Can train others']
     ];
     configSheet.getRange(2, 1, defaults.length, 2).setValues(defaults);
   }
@@ -258,6 +268,10 @@ function _dispatchPost_(params) {
 
   var action = params.action;
 
+  if (action === 'getSkillMatrix')        return jsonResponse(getSkillMatrix(params.group));
+  if (action === 'getSkillHistory')       return jsonResponse(getSkillHistory(params.empId, params.skillId));
+  if (action === 'setSkillLevel')         return jsonResponse(setSkillLevel(params.entry, params.token));
+  if (action === 'seedSkills')            return jsonResponse(seedSkills(params.token));
   if (action === 'getTrainingCalendar') return jsonResponse(getTrainingCalendar(params.year));
   if (action === 'getSessionAttendance')  return jsonResponse(getSessionAttendance(params.planId));
   if (action === 'saveSessionAttendance') return jsonResponse(saveSessionAttendance(params.planId, params.rows));
