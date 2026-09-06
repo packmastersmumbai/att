@@ -530,7 +530,69 @@ async function run() {
         });
         if (!/^(L[1-4]|NA)$/.test(s[5])) throw new Error(s[0] + ' has a bad minimum: ' + s[5]);
       });
-      if (skills.length !== 21) throw new Error('expected 21 skills, got ' + skills.length);
+      // 10 process skills (Packaging, Labelling) plus 4 site-wide ones. The
+      // site-wide four replaced eleven narrower competencies that had turned
+      // "Common" into a bucket holding 8 of 21 skills and filtering nothing.
+      if (skills.length !== 14) throw new Error('expected 14 skills, got ' + skills.length);
+      const groups = [...new Set(skills.map(s => s[3]))].sort();
+      if (groups.includes('Common'))
+        throw new Error('"Common" is a bucket, not a department — it should be gone');
+      groups.forEach(g => {
+        const n = skills.filter(s => s[3] === g).length;
+        if (n < 2) throw new Error('group "' + g + '" holds only ' + n + ' skill');
+      });
+    });
+
+    await R.check('a redefined skill is rewritten, a dropped one is retired not deleted', async () => {
+      // Eleven narrow skills were replaced by four broad ones under reused
+      // ids. A plain idempotency guard would skip every existing id, leaving
+      // the sheet holding names the code no longer knows about.
+      const rows = [], cells = [];
+      const run = lift('seedSkills', {
+        _requireAdmin_: () => {},
+        _ensureSkillSheets_: () => {},
+        SKILL_SHEETS: { SKILLS: 'S' },
+        _skillSeed_: () => [
+          ['SKL-01', 'Filling', '', 'Packaging', 'TRN-01', 'L3'],       // unchanged
+          ['SKL-11', 'Emergency Response', '', 'Site-wide', 'TRN-07', 'L2'] // redefined
+        ],
+        getSheetAsObjects: () => [
+          { SkillID: 'SKL-01', Name: 'Filling', TopicIDs: 'TRN-01', MinRequired: 'L3', Active: 'YES' },
+          // Same id, old definition — must be rewritten.
+          { SkillID: 'SKL-11', Name: 'Waste Segregation', TopicIDs: 'TRN-03',
+            MinRequired: 'L4', Active: 'YES' },
+          // No longer in the seed — must be retired, not removed.
+          { SkillID: 'SKL-17', Name: 'First Aid Response', TopicIDs: 'DRL-01',
+            MinRequired: 'L1', Active: 'YES' }
+        ],
+        getSheet: () => ({
+          getRange: () => ({
+            getValues: () => [['SkillID','Name','NameHi','Group','TopicIDs','MinRequired','Active']],
+            setValues: v => v.forEach(x => rows.push(x))
+          }),
+          getLastColumn: () => 7,
+          appendRow: r => rows.push(r)
+        }),
+        findRowByValue: () => 2,
+        setCell: (sh, row, col, val) => cells.push([col, val])
+      })('tok');
+
+      if (run.skillsUpdated !== 1)
+        throw new Error('the redefined skill was not rewritten: ' + run.skillsUpdated);
+      if (run.skillsAdded !== 0)
+        throw new Error('an existing id was appended as a duplicate');
+      if (run.skillsRetired !== 1)
+        throw new Error('the dropped skill was not retired: ' + run.skillsRetired);
+      if (!cells.some(c => c[0] === 'Active' && c[1] === 'NO'))
+        throw new Error('retirement did not set Active=NO');
+      // A supervisor's own minimum survives the rewrite — that is policy,
+      // and the seed value is only a draft.
+      const written = rows.find(r => r[0] === 'SKL-11');
+      if (!written) throw new Error('the redefined skill was never written');
+      if (written[1] !== 'Emergency Response')
+        throw new Error('the new name was not applied: ' + written[1]);
+      if (written[5] !== 'L4')
+        throw new Error('the seed overwrote a minimum somebody had set: ' + written[5]);
     });
 
     await R.check('every topic credits at least one skill', async () => {

@@ -541,27 +541,39 @@ function _skillSeed_() {
     ['SKL-08', 'Rejection & Rework',      'अस्वीकृति एवं पुनःकार्य',  'Labelling',   'TRN-04',        'L2'],
     ['SKL-09', 'Material Verification',   'सामग्री सत्यापन',         'Labelling',   'TRN-04',        'L2'],
     ['SKL-10', 'Line Clearance & CLIT',   'लाइन क्लीयरेंस एवं CLIT', 'Packaging',   'TRN-04',        'L2'],
-    ['SKL-11', 'Waste Segregation',       'अपशिष्ट पृथक्करण',        'Common',      'TRN-03',        'L2'],
-    ['SKL-12', 'PPE Compliance',          'पीपीई अनुपालन',           'Common',      'TRN-05,TRN-08,TRN-10', 'L2'],
-    ['SKL-13', 'Fire Response',           'अग्नि प्रतिक्रिया',        'Common',      'TRN-07,DRL-03', 'L2'],
-    ['SKL-14', 'Storage & Handling',      'भंडारण एवं हैंडलिंग',     'Common',      'TRN-03,TRN-04', 'L2'],
-    ['SKL-15', 'Incident Reporting',      'घटना रिपोर्टिंग',         'Common',      'TRN-06',        'L2'],
-    ['SKL-16', 'Security Awareness',      'सुरक्षा जागरूकता',        'Security',    'TRN-09,DRL-02', 'L2'],
-    ['SKL-17', 'First Aid Response',      'प्राथमिक चिकित्सा',       'Common',      'DRL-01',        'L1'],
-    ['SKL-18', 'Spill Control',           'रिसाव नियंत्रण',          'Engineering', 'DRL-04',        'L2'],
-    ['SKL-19', 'Electrical Safety',       'विद्युत सुरक्षा',          'Engineering', 'TRN-05',        'L3'],
-    // Added with the 2026 topic it comes from. Product Stewardship is a
-    // compliance and sustainability competency in its own right, not a
-    // restatement of the Filling/Packing process skills — the training runs
-    // 3 hours and covers the product being "safe, compliant, sustainable
-    // and reliable", which none of the other topics assert.
-    ['SKL-20', 'Product Stewardship',     'उत्पाद प्रबंधन',           'Common',      'TRN-11',        'L2'],
-    // Evacuation is distinct from fire response: drop-cover-hold, single-file
-    // descent, the buddy system and the assembly-point roll call apply to an
-    // earthquake, a fire and anything else that empties the building. Credited
-    // by the earthquake drill, the fire drill and the emergency response
-    // training, because all three demonstrate it.
-    ['SKL-21', 'Emergency Evacuation',    'आपातकालीन निकासी',        'Common',      'DRL-05,DRL-03,TRN-07', 'L2']
+    // ── Site-wide competencies ────────────────────────────────────────────
+    //
+    // These four replaced eleven narrower ones (Waste Segregation, PPE
+    // Compliance, Fire Response, Storage & Handling, Incident Reporting,
+    // Security Awareness, First Aid Response, Spill Control, Electrical
+    // Safety, Product Stewardship, Emergency Evacuation).
+    //
+    // The narrower set had two problems. "Common", "Security" and
+    // "Engineering" had become buckets rather than departments — Common held
+    // 8 of 21 skills and filtered nothing, while Security held one. And a
+    // matrix of 21 columns asks a supervisor to make 21 judgements per person
+    // where the site talks about four areas of responsibility.
+    //
+    // The trade is deliberate and worth stating: the matrix can no longer say
+    // who specifically can deploy a spill kit, only who is competent in
+    // emergency response. The DRILL record still holds the specific evidence —
+    // who attended the spill drill and how they performed — so the detail is
+    // not lost, it moves to where it is actually assessed.
+    // All four sit in one group. Naming each group after its single skill
+    // would repeat the bucket-of-one problem this change exists to fix —
+    // Group exists to filter the matrix by department, and a group per skill
+    // filters nothing. These four apply to every role on site, which is
+    // exactly what makes them a department-independent set.
+    ['SKL-11', 'Emergency Response',      'आपातकालीन प्रतिक्रिया',    'Site-wide',
+     'TRN-07,DRL-01,DRL-02,DRL-03,DRL-04,DRL-05', 'L2'],
+    ['SKL-12', 'Safety & Security',       'सुरक्षा एवं संरक्षा',      'Site-wide',
+     'TRN-05,TRN-08,TRN-09,TRN-10,DRL-02', 'L2'],
+    ['SKL-13', 'Waste Handling',          'अपशिष्ट प्रबंधन',          'Site-wide',
+     'TRN-03,TRN-04', 'L2'],
+    // Reporting and Responsibility are one skill rather than two: both are
+    // about owning what you produce and saying so when it goes wrong.
+    ['SKL-14', 'Reporting & Responsibility', 'रिपोर्टिंग एवं उत्तरदायित्व', 'Site-wide',
+     'TRN-01,TRN-06,TRN-11', 'L2']
   ];
 }
 
@@ -658,15 +670,48 @@ function seedSkills(token) {
   _ensureSkillSheets_();
 
   var sheet = getSheet(SKILL_SHEETS.SKILLS);
-  var have  = {};
-  getSheetAsObjects(SKILL_SHEETS.SKILLS).forEach(function (s) { have[String(s.SkillID)] = true; });
+  var seed = _skillSeed_();
+  var wanted = {};
+  seed.forEach(function (s) { wanted[s[0]] = true; });
 
-  var added = 0;
-  _skillSeed_().forEach(function (s) {
-    if (have[s[0]]) return;
-    sheet.appendRow(s.concat(['YES']));
-    added++;
+  var have = {};
+  getSheetAsObjects(SKILL_SHEETS.SKILLS).forEach(function (s) { have[String(s.SkillID)] = s; });
+
+  var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  var added = 0, updated = 0;
+
+  seed.forEach(function (s) {
+    var existing = have[s[0]];
+    if (!existing) { sheet.appendRow(s.concat(['YES'])); added++; return; }
+    // An id that has been REDEFINED — a narrow skill replaced by a broader
+    // one under the same id — must be rewritten, not skipped. Skipping is
+    // what a plain idempotency guard does, and it would leave the sheet
+    // holding a name and a binding the code no longer knows about.
+    if (String(existing.Name) === s[1] && String(existing.TopicIDs) === s[4]) return;
+    var row = findRowByValue(sheet, 'SkillID', s[0]);
+    if (row === -1) return;
+    var values = { SkillID: s[0], Name: s[1], NameHi: s[2], Group: s[3],
+                   TopicIDs: s[4], MinRequired: s[5], Active: 'YES' };
+    // MinRequired is NOT overwritten once somebody has set it: that is
+    // policy, and the seed's value is only a draft.
+    if (existing.MinRequired) values.MinRequired = existing.MinRequired;
+    sheet.getRange(row, 1, 1, headers.length)
+         .setValues([headers.map(function (h) { return values[h] !== undefined ? values[h] : ''; })]);
+    updated++;
   });
 
-  return { success: true, skillsAdded: added, total: _skillSeed_().length };
+  // Skills the seed no longer defines are RETIRED, not deleted. Deleting
+  // would orphan any supervisor override recorded against them and destroy
+  // the record that the competency was once assessed; Active=NO drops them
+  // off the matrix while leaving the history intact.
+  var retired = 0;
+  Object.keys(have).forEach(function (id) {
+    if (wanted[id]) return;
+    if (String(have[id].Active).toUpperCase() === 'NO') return;
+    var row = findRowByValue(sheet, 'SkillID', id);
+    if (row !== -1) { setCell(sheet, row, 'Active', 'NO'); retired++; }
+  });
+
+  return { success: true, skillsAdded: added, skillsUpdated: updated,
+           skillsRetired: retired, total: seed.length };
 }
