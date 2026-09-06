@@ -153,7 +153,7 @@ function _bootstrapIfNeeded() {
 
   var schema = {
     'Employees':      ['EmpID','Name','Department','Gender','BloodGroup','Phone','Email','QRCode','Status','PhotoURL','QRImageURL'],
-    'Visitors':       ['VisitorID','Name','Company','Phone','HostEmpID','Purpose','ExpectedOut','BlacklistFlag','IDType','IDNumber','Vehicle','PhotoURL','SafetyAckAt'],
+    'Visitors':       ['VisitorID','Name','Company','Phone','HostEmpID','Purpose','ExpectedOut','BlacklistFlag','IDType','IDNumber','Vehicle','PhotoURL','SafetyAckAt','SafetyVersion','EmergencyName','EmergencyPhone'],
     'Logs':           ['LogID','QRCode','PersonID','Type','Name','Department','TimeIN','TimeOUT','Duration','Date','Gate','Status'],
     'ActiveVisitors': ['VisitorID','Name','TimeIN','HostEmpID','Gate'],
     'Blacklist':      ['QRCode','PersonName','Reason','AddedDate','AddedBy'],

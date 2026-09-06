@@ -62,6 +62,12 @@
     .more-toggle{margin-top:14px;font-size:12px;font-weight:700;color:var(--primary);cursor:pointer;user-select:none;padding:4px 0}
     .more-toggle #moreArrow{display:inline-block;transition:transform .15s}
     .more-toggle.open #moreArrow{transform:rotate(90deg)}
+    /* Shown above the induction when a returning visitor's acknowledgement
+       has lapsed or the rules were reworded — it must read as a reason,
+       not as decoration, or they will not understand why they are being
+       asked again. */
+    .reinduct-note{margin-top:16px;border:1px solid #fca5a5;background:#fef2f2;color:#991b1b;
+      border-radius:10px;padding:11px 12px;font-size:12.5px;font-weight:700;line-height:1.55}
     .safety{margin-top:16px;border:1px solid #fcd34d;background:#fffbeb;border-radius:10px;padding:12px}
     .safety-hd{font-size:13px;font-weight:800;color:#92400e;margin-bottom:9px}
     .safety-video{position:relative;width:100%;aspect-ratio:16/9;background:#0f172a;border-radius:8px;overflow:hidden;margin-bottom:10px}
@@ -89,6 +95,9 @@
     .rule.blurred .rtxt{filter:blur(4.5px);user-select:none}
     .rule .tap{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
       font-size:12px;font-weight:800;color:#92400e;background:rgba(255,251,235,.35)}
+    /* Open, but still inside its minimum reading time. */
+    .rule.reading{border-color:#fbbf24;background:#fffdf5;cursor:default}
+    .rule.reading .tap{display:none}
     .rule.revealed{border-color:#86efac;background:#f0fdf4;cursor:default}
     .rule.revealed .tap{display:none}
     .rule.revealed:after{content:'✓';position:absolute;top:8px;right:10px;color:#16a34a;font-weight:800;font-size:13px}
@@ -395,11 +404,23 @@
       }).join('');
       updateRulesCount();
     }
+    /* A section counts as READ only after it has been open long enough to have
+       been read — roughly a second per rule in it. Tapping five blocks takes
+       about three seconds otherwise, which makes the acknowledgement a formality
+       rather than a briefing. The dwell runs per section, so opening them all at
+       once still costs the full time. */
+    var DWELL_MS_PER_RULE = 900;
     function revealRule(el){
       if(!el.classList.contains('blurred')) return;
       el.classList.remove('blurred');
-      el.classList.add('revealed');
-      sectionsRevealed++;
+      el.classList.add('reading');
+      var n = (SAFETY_SECTIONS[Number(el.dataset.i)] || {rules:[]}).rules.length || 1;
+      setTimeout(function(){
+        el.classList.remove('reading');
+        el.classList.add('revealed');
+        sectionsRevealed++;
+        updateRulesCount();
+      }, n * DWELL_MS_PER_RULE);
       updateRulesCount();
     }
     function updateRulesCount(){
@@ -422,14 +443,42 @@
       document.getElementById('regBtn').style.display = ok ? 'block' : 'none';
     }
 
-    /* Pull the configured video URL + rules (fall back to the built-in defaults) */
+    /* Pull the configured video URL + any rule overrides from Config.
+
+       Config key SafetyRule_<key> replaces one rule's text, e.g.
+       SafetyRule_safety_rule_6 = "…go to Assembly Point B." — so an EHS team
+       can reword the induction for their site without a redeploy. Anything not
+       overridden falls back to the built-in bilingual text. A site that
+       overrides rules should also set SafetyRulesVersion, which invalidates
+       existing acknowledgements so returning visitors re-read the new wording.
+
+       Overrides are single-language by nature: whatever is typed into Config is
+       shown to everyone, so a bilingual site should either leave the rule alone
+       or write the override to carry both languages. */
+    function applyRuleOverrides(cfg){
+      var any=false;
+      cfg.forEach(function(c){
+        var k=String(c.Key||'');
+        if(k.indexOf('SafetyRule_')!==0 || !c.Value) return;
+        var ruleKey=k.slice('SafetyRule_'.length);
+        if(!QRATT_I18N[ruleKey]) return;          // ignore keys that name no rule
+        QRATT_I18N[ruleKey]={ en:String(c.Value), hi:String(c.Value) };
+        any=true;
+      });
+      return any;
+    }
+
     (function loadSafetyConfig(){
       renderRules();
       if(typeof google==='undefined' || !google.script){ renderSafetyVideo(SAFETY_DEFAULT); return; }
       google.script.run
         .withSuccessHandler(function(res){
+          var cfg=(res&&res.data)||[];
           var url=SAFETY_DEFAULT;
-          ((res&&res.data)||[]).forEach(function(c){ if(String(c.Key)==='SafetyVideoURL' && c.Value) url=String(c.Value); });
+          cfg.forEach(function(c){ if(String(c.Key)==='SafetyVideoURL' && c.Value) url=String(c.Value); });
+          // Re-render if any rule text changed, so the override is what the
+          // visitor actually reads and acknowledges.
+          if(applyRuleOverrides(cfg)) renderRules();
           renderSafetyVideo(url);
         })
         .withFailureHandler(function(){ renderSafetyVideo(SAFETY_DEFAULT); })
@@ -555,11 +604,64 @@
         .withSuccessHandler(function(res){
           b.textContent='Find my pass'; b.disabled=false;
           if(!res || !res.success){ toast((res&&res.error)||'Not found','error'); return; }
+          // A returning visitor used to go straight to their pass, skipping the
+          // induction forever. If their acknowledgement has aged out or the
+          // rules have been reworded since, they read it again before entering.
+          if(res.safetyValid === false){ startReinduction(res); return; }
           document.getElementById('returnCard').style.display='none';
           showDone(res.visitorId, true);
         })
         .withFailureHandler(function(e){ b.textContent='Find my pass'; b.disabled=false; toast((e&&e.message)||'error','error'); })
         .lookupVisitorByPhone(phone);
+    }
+
+    /* Re-induction: we already know who they are, so only the safety block is
+       shown. Acknowledging it updates the existing record rather than creating
+       a second visitor for the same person. */
+    var reinductVisitorId = '';
+    function startReinduction(res){
+      reinductVisitorId = res.visitorId || '';
+      document.getElementById('returnCard').style.display='none';
+      document.getElementById('formCard').style.display='block';
+      // Hide everything except the safety block — their details are on file.
+      // The identity fields are direct children of #formCard with no wrapper,
+      // so hide every child up to the safety box rather than inventing one.
+      var form=document.getElementById('formCard');
+      var box0=document.getElementById('safetyBox');
+      if(form && box0){
+        Array.prototype.slice.call(form.children).forEach(function(el){
+          if(el!==box0 && !el.contains(box0) && el.id!=='regBtn') el.style.display='none';
+        });
+      }
+      var box=document.getElementById('safetyBox');
+      if(box){
+        var note=document.createElement('div');
+        note.className='reinduct-note';
+        note.setAttribute('data-i18n','vreg_reinduction_note');
+        note.textContent=qrattT('vreg_reinduction_note');
+        box.parentNode.insertBefore(note, box);
+        box.scrollIntoView({block:'start'});
+      }
+      var btn=document.getElementById('regBtn');
+      btn.setAttribute('data-i18n','vreg_reinduct_btn');
+      btn.textContent=qrattT('vreg_reinduct_btn');
+      btn.setAttribute('onclick','submitReinduction()');
+    }
+
+    function submitReinduction(){
+      if(sectionsRevealed < SAFETY_SECTIONS.length || !document.getElementById('vSafetyAck').checked){
+        toast(qrattT('vreg_toast_rules_pending'),'error'); return;
+      }
+      var btn=document.getElementById('regBtn');
+      btn.removeAttribute('data-i18n');
+      btn.textContent=qrattT('vreg_registering'); btn.disabled=true;
+      google.script.run
+        .withSuccessHandler(function(r){
+          if(!r || !r.success){ btn.disabled=false; toast((r&&r.error)||'error','error'); return; }
+          showDone(reinductVisitorId, true);
+        })
+        .withFailureHandler(function(e){ btn.disabled=false; toast((e&&e.message)||'error','error'); })
+        .recordSafetyAck(reinductVisitorId, vSafetyAckAt, vSafetyVersion);
     }
 
     // Confirmation: QR encodes the visitor ID (kiosk reads it as a badge).
