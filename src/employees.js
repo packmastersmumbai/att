@@ -165,7 +165,8 @@ function _createEmployee_(sheet, empId, emp) {
 
 /** Appends any missing employee columns (idempotent) so older sheets pick up new fields. */
 function _ensureEmployeeColumns_(sheet) {
-  var needed = ['EmpID','Name','Department','Gender','BloodGroup','Phone','Email','QRCode','Status','PhotoURL','QRImageURL'];
+  // JobRole drives the per-role minimum levels on the skill matrix.
+  var needed = ['EmpID','Name','Department','JobRole','Gender','BloodGroup','Phone','Email','QRCode','Status','PhotoURL','QRImageURL'];
   var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
   needed.forEach(function(h) {
     if (headers.indexOf(h) === -1) {

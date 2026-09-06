@@ -114,6 +114,11 @@
        header rather than as another employee. */
     .minrow td{background:var(--color-bg);font-weight:700}
     .minrow .lv{cursor:default;background:transparent;color:var(--color-text)}
+    /* Marks the minimums as unsigned. Prints too — a draft that prints as
+       though it were policy is worse than no marking at all. */
+    .draft{display:inline-block;margin-left:7px;padding:1px 6px;border-radius:var(--radius-md);
+      background:var(--lv-pend-bg);color:var(--lv-pend);font:700 9px var(--font-mono);
+      text-transform:uppercase;letter-spacing:.5px;vertical-align:middle}
     .badge{display:inline-block;font:700 10px var(--font-mono);padding:3px 7px;
       border-radius:var(--radius-md)}
     .b-ok{background:var(--lv-met-bg);color:var(--lv-met)}
@@ -383,9 +388,10 @@
             '<div style="font-weight:700;color:var(--color-text);margin-bottom:4px">' +
               'No skills defined yet</div>' +
             '<div style="margin-bottom:14px">Load the skill library — the process skills ' +
-              'drawn from the training content, each mapped to the topics that build it.</div>' +
+              'drawn from the training content, each mapped to the topics that build it — ' +
+              'along with the topics and calendar those skills are earned from.</div>' +
             '<button type="button" class="btn btn-pri" onclick="seedSkills()">' +
-              'Set up the skill library</button>' +
+              'Set up training</button>' +
             '<div id="seedMsg" style="margin-top:10px"></div>' +
           '</td></tr></tbody>';
         renderKpis(); renderLegend();
@@ -404,7 +410,14 @@
          every visible person shares the same minimum for that skill. Where
          roles differ the row says so rather than picking one and printing a
          number the matrix does not actually hold people to. */
-      var minRow = '<tr class="minrow"><td class="emp">MIN REQUIRED</td>' +
+      /* Until somebody sets MinRequired per role in Config, these levels are
+         the seeded defaults — a derivation from the training content, not
+         policy anyone has signed. Saying so on the artefact itself is the
+         difference between a draft and a claim. */
+      var minRow = '<tr class="minrow"><td class="emp">MIN REQUIRED' +
+        (DATA.minSource === 'DEFAULT'
+          ? '<span class="draft" title="No per-role minimums are set in Config, so these are the seeded defaults. Have the SOP-SM-001 owner confirm them.">draft</span>'
+          : '') + '</td>' +
         skills.map(function (s, i) {
           var mins = people.map(function (p) { return (p.cells[i] || {}).min || ''; });
           var uniform = mins.every(function (m) { return m === mins[0]; });
@@ -672,17 +685,20 @@
       });
     }
 
+    /* The same one-shot setup the calendar offers. A skill library with no
+       topics or sessions behind it renders a matrix where every cell reads
+       "never trained" — technically correct and completely useless. */
     function seedSkills() {
       var box = function (t) { var b = document.getElementById('seedMsg'); if (b) b.textContent = t; };
-      withAdmin('Admin PIN to set up the skill library', box, function (token) {
+      withAdmin('Admin PIN to set up training', box, function (token) {
         google.script.run
           .withSuccessHandler(function (r) {
             if (!r || !r.success) { box((r && r.error) || 'Could not set it up.'); return; }
-            box(r.skillsAdded + ' skills added.');
+            box(r.skillsAdded + ' skills and ' + r.sessionsAdded + ' sessions added.');
             load();
           })
           .withFailureHandler(function (e) { box('Error: ' + (e && e.message)); })
-          .seedSkills(token);
+          .setupTraining(token, null);
       });
     }
 

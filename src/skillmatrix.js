@@ -49,6 +49,15 @@ function _ensureSkillSheets_() {
       sheet.setFrozenRows(1);
     }
   });
+
+  // The per-role minimum reads Employees.JobRole, and the bootstrap only
+  // writes headers on a NEW sheet — so on every existing install the column
+  // is simply absent and every role silently falls back to the skill default.
+  // _ensureEmployeeColumns_ already adds missing columns on employee save;
+  // calling it here means the matrix does not depend on somebody having
+  // edited an employee first. A failure degrades to the skill defaults,
+  // which is a working matrix, so it must not take the page down.
+  try { _ensureEmployeeColumns_(getSheet(SHEETS.EMPLOYEES)); } catch (e) {}
 }
 
 // ── Reading ────────────────────────────────────────────────────────────────
@@ -162,6 +171,11 @@ function getSkillMatrix(group) {
       };
     }),
     people:   rows,
+    // Whether the minimums on this matrix are anybody's policy or just the
+    // seeded defaults. The page marks the printed row "draft" when nobody
+    // has set MinRequired, because an unsigned level printed as though it
+    // were policy is exactly what an auditor is entitled to object to.
+    minSource: _isEmptyObject_(byRole) ? 'DEFAULT' : 'CONFIG',
     passMark: pass,
     levelNames: _levelNames_(),
     kpis:     _matrixKpis_(rows),
@@ -200,6 +214,12 @@ function _minByRole_() {
     });
   });
   return out;
+}
+
+/** GAS runs ES5 — no Object.keys().length shortcut worth reading. */
+function _isEmptyObject_(o) {
+  for (var k in o) { if (Object.prototype.hasOwnProperty.call(o, k)) return false; }
+  return true;
 }
 
 /** The role's line if it has one, otherwise the skill's own default. */
@@ -531,6 +551,53 @@ function _skillSeed_() {
     ['SKL-18', 'Spill Control',           'रिसाव नियंत्रण',          'Engineering', 'DRL-04',        'L2'],
     ['SKL-19', 'Electrical Safety',       'विद्युत सुरक्षा',          'Engineering', 'TRN-05',        'L3']
   ];
+}
+
+/**
+ * Bring the whole training module up in one action: the topic library, the
+ * historical 2025 calendar, the derived plan for the current and next year,
+ * and the skill library.
+ *
+ * One call rather than four because every one of them is idempotent and the
+ * useful state is "all of it present" — asking a supervisor to run four
+ * separate setup steps in the right order is how a module ends up half
+ * seeded, which reads exactly like a bug.
+ *
+ * Years: 2025 is history (sessions carry their actual date, because the
+ * records exist), and every later year is a plan derived from 2025's months
+ * and frequencies.
+ */
+function setupTraining(token, years) {
+  _requireAdmin_(token);
+
+  var wanted = (years && years.length) ? years : _defaultSeedYears_();
+  var out = { success: true, years: [], skillsAdded: 0, sessionsAdded: 0, topicsAdded: 0 };
+
+  wanted.forEach(function (y) {
+    var r = seedTrainingYear(y, token);
+    if (!r.success) { out.success = false; out.error = r.error; return; }
+    out.years.push({ year: r.year, sessionsAdded: r.sessionsAdded, note: r.note || '' });
+    out.sessionsAdded += r.sessionsAdded || 0;
+    out.topicsAdded   += r.topicsAdded || 0;
+  });
+
+  var s = seedSkills(token);
+  if (s.success) out.skillsAdded = s.skillsAdded;
+
+  return out;
+}
+
+/**
+ * 2025 (the year the paper records cover) plus this year and next, so the
+ * calendar is never empty and next year's plan exists before it is needed.
+ */
+function _defaultSeedYears_() {
+  var now = new Date().getFullYear();
+  var years = [2025];
+  [now, now + 1].forEach(function (y) {
+    if (years.indexOf(y) === -1) years.push(y);
+  });
+  return years.sort();
 }
 
 /**

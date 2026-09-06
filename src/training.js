@@ -257,16 +257,24 @@ function _trainingDateSeed_() {
 }
 
 /**
- * Move a date into the target year, off the weekly off.
+ * Move a date into the target year, off the weekly off and off a holiday.
  *
- * Sunday is the only non-working day — 2nd and 4th Saturdays are half days
- * but still worked, so only Sunday shifts. Deliberately mechanical: the
- * next year's plan should be defensibly derived from the last one rather
- * than re-invented, and anything a human wants moved, they move in the app.
+ * Sunday is the only non-working day of the week — 2nd and 4th Saturdays are
+ * half days but still worked, so only Sunday shifts. Holidays shift too: the
+ * app already knows which dates those are, and scheduling training on
+ * Republic Day is the kind of thing nobody notices until the day itself.
+ *
+ * Deliberately mechanical: next year's plan should be defensibly derived
+ * from the last one rather than re-invented, and anything a human wants
+ * moved, they move in the app.
+ *
+ * `holidays` is passed in rather than read here so seeding 36 sessions costs
+ * one Config read instead of 36.
  */
-function _planDateFor_(ddmm, year) {
+function _planDateFor_(ddmm, year, holidays) {
   var parts = ddmm.split('/');
   var day = Number(parts[0]), month = Number(parts[1]);
+  var off = holidays || {};
 
   // Step back off a day that does not exist in the target year (29 Feb).
   var d = new Date(year, month - 1, day);
@@ -274,8 +282,26 @@ function _planDateFor_(ddmm, year) {
     day -= 1;
     d = new Date(year, month - 1, day);
   }
-  if (d.getDay() === 0) d.setDate(d.getDate() + 1);   // Sunday -> Monday
+
+  // Walk forward to the next working day. Bounded at 10 so a pathological
+  // holiday list cannot spin here — a fortnight of consecutive non-working
+  // days is not a real calendar, and hanging the seeder would be worse than
+  // scheduling one session badly.
+  for (var i = 0; i < 10; i++) {
+    var iso = Utilities.formatDate(d, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+    if (d.getDay() !== 0 && !off[iso]) return iso;
+    d.setDate(d.getDate() + 1);
+  }
   return Utilities.formatDate(d, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+}
+
+/** Holiday dates as a lookup, read once per seed rather than per session. */
+function _holidayLookup_() {
+  var map = {};
+  try {
+    getHolidays().dates.forEach(function (d) { map[d] = true; });
+  } catch (e) {}
+  return map;
 }
 
 /**
@@ -318,12 +344,14 @@ function seedTrainingYear(year, token) {
   var dates = _trainingDateSeed_();
   var headers = planSheet.getRange(1, 1, 1, planSheet.getLastColumn()).getValues()[0];
   var isHistory = (y === 2025);
+  // Read once for the whole year rather than once per session.
+  var holidays = _holidayLookup_();
   var n = 0, rows = [];
 
   Object.keys(dates).forEach(function (topicId) {
     dates[topicId].forEach(function (ddmm) {
       n++;
-      var planned = _planDateFor_(ddmm, y);
+      var planned = _planDateFor_(ddmm, y, holidays);
       var values = {
         PlanID: 'PLN-' + y + '-' + ('00' + n).slice(-3),
         Year: y,

@@ -272,6 +272,7 @@ function _dispatchPost_(params) {
   if (action === 'getSkillHistory')       return jsonResponse(getSkillHistory(params.empId, params.skillId));
   if (action === 'setSkillLevel')         return jsonResponse(setSkillLevel(params.entry, params.token));
   if (action === 'seedSkills')            return jsonResponse(seedSkills(params.token));
+  if (action === 'setupTraining')          return jsonResponse(setupTraining(params.token, params.years));
   if (action === 'getTrainingCalendar') return jsonResponse(getTrainingCalendar(params.year));
   if (action === 'getSessionAttendance')  return jsonResponse(getSessionAttendance(params.planId));
   if (action === 'saveSessionAttendance') return jsonResponse(saveSessionAttendance(params.planId, params.rows));

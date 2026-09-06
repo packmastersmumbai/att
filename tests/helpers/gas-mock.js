@@ -8,7 +8,7 @@ const GAS_MOCK_SCRIPT = `
   window.__gasDelay = 150;
 
   var MOCK_EMPLOYEES = [
-    { EmpID: 'EMP001', Name: 'Priya Sharma', Department: 'Operations', Phone: '+91 98765 00001', Status: 'ACTIVE', QRCode: 'EMP001', QRImageURL: '' },
+    { EmpID: 'EMP001', Name: 'Priya Sharma', Department: 'Operations', JobRole: 'Packaging Operator', Phone: '+91 98765 00001', Status: 'ACTIVE', QRCode: 'EMP001', QRImageURL: '' },
     { EmpID: 'EMP002', Name: 'Rahul Mehta',  Department: 'Engineering', Phone: '+91 98765 00002', Status: 'INACTIVE', QRCode: 'EMP002', QRImageURL: '' },
     { EmpID: 'EMP003', Name: 'Anita Rao',    Department: 'HR',          Phone: '+91 98765 00003', Status: 'ACTIVE', QRCode: 'EMP003', QRImageURL: '' },
   ];
@@ -241,6 +241,8 @@ const GAS_MOCK_SCRIPT = `
           skills: SKILLS, people: people, passMark: 70,
           levelNames: { L1: 'Beginner', L2: 'Under supervision',
                         L3: 'Independent', L4: 'Can train others' },
+          // No per-role minimums set, so the matrix must mark itself a draft.
+          minSource: window.__mockMinSource || 'DEFAULT',
           kpis: { people: people.length, required: required,
                   coverage: required ? Math.round(met / required * 100) : 0,
                   gaps: gaps, never: never, expired: expired, pending: pending },
@@ -284,13 +286,39 @@ const GAS_MOCK_SCRIPT = `
         respond({ success: true, skillsAdded: 19, total: 19 });
       },
 
+      setupTraining: function(token, years) {
+        if (token !== 'test-admin-token') { respond({ success: false, error: 'Admin PIN required' }); return; }
+        window.__mockSetup = (window.__mockSetup || 0) + 1;
+        respond({
+          success: true, skillsAdded: 19, topicsAdded: 14, sessionsAdded: 108,
+          years: [{ year: 2025, sessionsAdded: 36 }, { year: 2026, sessionsAdded: 36 },
+                  { year: 2027, sessionsAdded: 36 }]
+        });
+      },
+
       getEmployees: function() {
         respond({ success: true, data: JSON.parse(JSON.stringify(MOCK_EMPLOYEES)) });
       },
 
       saveEmployee: function(emp) {
-        MOCK_EMPLOYEES.push({ EmpID: emp.EmpID || 'EMP999', Name: emp.Name, Department: emp.Department || '', Phone: emp.Phone || '', Status: 'ACTIVE', QRCode: emp.EmpID || 'EMP999', QRImageURL: '' });
-        respond({ success: true, empId: emp.EmpID || 'EMP999', qrCode: emp.EmpID || 'EMP999' });
+        // Captured so a test can assert what the form actually sent — a field
+        // dropped on the way out looks identical to one that saved fine.
+        window.__mockSavedEmp = emp;
+        var id = emp.EmpID || 'EMP999';
+        // Update in place when the id already exists. The real saveEmployee
+        // updates an existing row and only creates a new one for an unknown
+        // id; an append-always mock produces two rows with one EmpID, which
+        // breaks every later lookup by id rather than the save under test.
+        var existing = MOCK_EMPLOYEES.find(function(e) { return e.EmpID === id; });
+        if (existing) {
+          ['Name','Department','JobRole','Phone','Email','Gender','BloodGroup','PhotoURL']
+            .forEach(function(k) { if (emp[k] !== undefined) existing[k] = emp[k]; });
+        } else {
+          MOCK_EMPLOYEES.push({ EmpID: id, Name: emp.Name, Department: emp.Department || '',
+            JobRole: emp.JobRole || '', Phone: emp.Phone || '', Status: 'ACTIVE',
+            QRCode: id, QRImageURL: '' });
+        }
+        respond({ success: true, empId: id, qrCode: id });
       },
 
       deleteEmployee: function(empId) {
@@ -371,10 +399,19 @@ const GAS_MOCK_SCRIPT = `
           { Key: 'CallMeBotKey', Value: '' },
           { Key: 'SummaryHr', Value: '19' },
           { Key: 'AutoCheckoutHr', Value: '23' },
+          // Training & competency. PassMark is set; LevelNames and MinRequired
+          // are absent, so the page must show the in-force fallback for one
+          // and an honest blank for the other.
+          { Key: 'PassMark', Value: '65' },
         ]});
       },
 
-      saveConfig: function() { respond({ success: true }); },
+      // Captures the payload so a test can assert what was actually sent —
+      // a save that silently drops a field looks identical to one that works.
+      saveConfig: function(config) {
+        window.__mockSavedConfig = config;
+        respond({ success: true });
+      },
 
       // India holidays (Phase 3): catalog is static 2026 dates; selection is
       // held in-memory for the duration of the test run, mirroring the

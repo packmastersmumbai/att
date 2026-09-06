@@ -292,6 +292,21 @@ Two details settled during implementation, both departures worth recording:
   skill. A single number there would be a claim the matrix does not hold
   anybody to; the per-cell minimum remains exact.
 
+**Setup is one action, not four.** `setupTraining()` seeds the topics, the
+2025 history, plans for the current year and the next derived from it, and the
+skill library — all idempotent. Running them separately in the wrong order is
+how a module ends up half seeded, which reads exactly like a bug.
+
+**Everything the SOP owner controls is in Config, editable from Admin:**
+`PassMark`, `LevelNames`, and `MinRequired` (per job role). `JobRole` is a
+column on `Employees`, added automatically by `_ensureEmployeeColumns_` and
+editable on the employee form.
+
+**Until `MinRequired` is set, the matrix marks its own MIN REQUIRED row
+`draft`** — on screen and on paper. The seeded levels are a derivation from
+the training content, and printing them as though they were signed policy is
+precisely what an auditor is entitled to object to.
+
 ## 9. Testing
 
 Follows the existing e2e harness (`e2e-lib.js`, suites registered in

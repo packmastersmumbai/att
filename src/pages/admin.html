@@ -944,6 +944,39 @@
             </div>
 
             <div class="cfg-block">
+              <div class="cfg-section-title">Training &amp; Competency</div>
+              <div class="form-hint" style="margin-bottom:8px">
+                Governs the training calendar and the skill matrix. The minimum
+                levels below are the claim an auditor will hold you to, so they
+                belong to whoever owns <b>SOP-SM-001</b> — not to whoever set the
+                system up.
+              </div>
+              <div class="form-grid-2">
+                <div class="form-group">
+                  <label>Pass Mark</label>
+                  <input type="number" id="cfgPassMark" class="input" min="1" max="100" placeholder="70">
+                  <div class="form-hint">Score at or above which an attendee counts as assessed. A blank score stays “not assessed”, never a fail.</div>
+                </div>
+                <div class="form-group">
+                  <label>Level Names</label>
+                  <input type="text" id="cfgLevelNames" class="input"
+                         placeholder="Beginner|Under supervision|Independent|Can train others">
+                  <div class="form-hint">Four names for L1–L4, separated by <b>|</b>. Wording should match your SOP.</div>
+                </div>
+              </div>
+              <div class="form-group">
+                <label>Minimum Required Level, per job role</label>
+                <textarea id="cfgMinRequired" class="input" rows="4"
+                          placeholder="Packaging Operator: SKL-01=L3, SKL-04=L3, SKL-16=NA&#10;Security Guard: SKL-16=L3, SKL-01=NA"></textarea>
+                <div class="form-hint">
+                  One line per job role — <code>Role: SKILL=LEVEL, …</code> using L1–L4 or NA.
+                  A role with no line, or a skill it does not mention, falls back to that
+                  skill’s own default. Leave this blank and every role uses the defaults.
+                </div>
+              </div>
+            </div>
+
+            <div class="cfg-block">
               <div class="cfg-section-title">India Holidays (2026)</div>
               <div class="form-hint" style="margin-bottom:8px">
                 The 3 gazetted national holidays are always observed and cannot be unchecked.
@@ -996,6 +1029,11 @@
           <div class="form-group">
             <label>Department</label>
             <input type="text" id="eDept" class="input" placeholder="e.g. Operations">
+          </div>
+          <div class="form-group">
+            <label>Job Role</label>
+            <input type="text" id="eJobRole" class="input" placeholder="e.g. Packaging Operator">
+            <div class="form-hint">Sets which minimum competency levels apply on the skill matrix. Blank = the default for every skill.</div>
           </div>
           <div class="form-group">
             <label>Gender</label>
@@ -1364,6 +1402,7 @@
         EmpID:      code || undefined,
         Name:       document.getElementById('eName').value.trim(),
         Department: document.getElementById('eDept').value.trim(),
+        JobRole:    document.getElementById('eJobRole').value.trim(),
         Gender:     document.getElementById('eGender').value,
         BloodGroup: document.getElementById('eBlood').value,
         Phone:      document.getElementById('ePhone').value.trim(),
@@ -1393,6 +1432,7 @@
       document.getElementById('eCode').value  = e.EmpID || '';
       document.getElementById('eName').value  = e.Name || '';
       document.getElementById('eDept').value  = e.Department || '';
+      document.getElementById('eJobRole').value = e.JobRole || '';
       document.getElementById('eGender').value = e.Gender || '';
       document.getElementById('eBlood').value = e.BloodGroup || '';
       document.getElementById('ePhone').value = e.Phone || '';
@@ -1540,6 +1580,13 @@
       document.getElementById('cfgSummaryMin').value    = map['SummaryMin']    || '0';
       document.getElementById('cfgAutoCheckoutHr').value = map['AutoCheckoutHr'] || '23';
 
+      // Training & competency. Declared once in TRAINING_KEYS and iterated on
+      // both sides, so a new setting is added in one place rather than three.
+      TRAINING_KEYS.forEach(function(k) {
+        var el = document.getElementById('cfg' + k.key);
+        if (el) el.value = map[k.key] != null && map[k.key] !== '' ? map[k.key] : k.fallback;
+      });
+
       // Alert toggles. Default ON when the Config row is missing, matching
       // _alertOn_() on the server — a fresh install notifies rather than
       // going silently dark.
@@ -1549,6 +1596,17 @@
       });
       loadAlertPreview();
     }
+
+    /* Training & competency settings. The fallback is what the server assumes
+       when the row is blank, repeated here so the field shows the value that
+       is actually in force rather than an empty box. */
+    var TRAINING_KEYS = [
+      { key: 'PassMark',    fallback: '70' },
+      { key: 'LevelNames',  fallback: 'Beginner|Under supervision|Independent|Can train others' },
+      // Deliberately blank: an empty MinRequired means every role falls back
+      // to each skill's own default, which is the honest starting state.
+      { key: 'MinRequired', fallback: '' }
+    ];
 
     /* Config 'on'/'off' flags, mirrored from _alertOn_() on the server. */
     var ALERT_KEYS = ['AlertVisitorArrival','AlertGatepassApproval','AlertItemsKept',
@@ -1605,6 +1663,10 @@
       ALERT_KEYS.forEach(function(k) {
         var el = document.getElementById('cfg' + k);
         if (el) config.push({ Key: k, Value: el.checked ? 'on' : 'off' });
+      });
+      TRAINING_KEYS.forEach(function(k) {
+        var el = document.getElementById('cfg' + k.key);
+        if (el) config.push({ Key: k.key, Value: el.value });
       });
 
       post({ action: 'saveConfig', config: config }, function(res) {

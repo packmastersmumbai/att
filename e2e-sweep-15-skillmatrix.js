@@ -158,6 +158,35 @@ async function run() {
         throw new Error('signature blocks read: ' + t);
     });
 
+    await R.check('unsigned minimums are marked draft, and the mark prints', async () => {
+      // Nobody has set MinRequired, so these levels are a derivation. Printing
+      // them as though they were policy is what an auditor objects to.
+      const d = await page.evaluate(() => {
+        const el = document.querySelector('.minrow .draft');
+        if (!el) return null;
+        return { txt: el.textContent.trim(), title: el.getAttribute('title') || '' };
+      });
+      if (!d) throw new Error('no draft mark on defaulted minimums');
+      if (!/draft/i.test(d.txt)) throw new Error('mark reads: ' + d.txt);
+      if (!/SOP-SM-001/.test(d.title)) throw new Error('the mark does not say who must confirm');
+      await page.emulateMedia({ media: 'print' });
+      await settle(page, 250);
+      const shown = await page.evaluate(() =>
+        getComputedStyle(document.querySelector('.minrow .draft')).display !== 'none');
+      await page.emulateMedia({ media: 'screen' });
+      await settle(page, 250);
+      if (!shown) throw new Error('the draft mark is hidden on paper');
+    });
+
+    await R.check('minimums set in Config are NOT marked draft', async () => {
+      await page.evaluate(() => { window.__mockMinSource = 'CONFIG'; load(); });
+      await settle(page, 800);
+      const still = await page.evaluate(() => !!document.querySelector('.minrow .draft'));
+      await page.evaluate(() => { window.__mockMinSource = 'DEFAULT'; load(); });
+      await settle(page, 800);
+      if (still) throw new Error('signed-off minimums were still marked draft');
+    });
+
     await R.check('printing neither clips columns nor truncates a skill name', async () => {
       // This is the audit artefact. A scroller that clips would silently drop
       // skill columns from the paper, and a truncated header cannot be
@@ -502,6 +531,20 @@ async function run() {
         if (!/^(L[1-4]|NA)$/.test(s[5])) throw new Error(s[0] + ' has a bad minimum: ' + s[5]);
       });
       if (skills.length !== 19) throw new Error('expected 19 skills, got ' + skills.length);
+    });
+
+    await R.check('setup seeds 2025 plus this year and next, without duplicates', async () => {
+      // 2025 is the year the paper records cover; this year and next are
+      // derived from it. A year already present must not appear twice.
+      const years = lift('_defaultSeedYears_', {})();
+      const now = new Date().getFullYear();
+      if (years.indexOf(2025) === -1) throw new Error('2025 is not seeded: ' + years);
+      if (years.indexOf(now) === -1)  throw new Error('this year is not seeded: ' + years);
+      if (years.indexOf(now + 1) === -1) throw new Error('next year is not seeded: ' + years);
+      if (years.length !== new Set(years).size) throw new Error('a year is seeded twice: ' + years);
+      for (let i = 1; i < years.length; i++) {
+        if (years[i] <= years[i - 1]) throw new Error('years are not in order: ' + years);
+      }
     });
 
     await R.check('the quarterly review date is the end of the quarter', async () => {

@@ -158,6 +158,55 @@ async function run() {
       await settle(page, 200);
     });
 
+    await R.check('an empty year offers the setup, and it seeds everything', async () => {
+      // The empty state is the first thing anyone sees on a fresh install, and
+      // its button is the only way to fill the module. Untested, it is a dead
+      // end that looks like a working page.
+      await page.evaluate(() => {
+        window.prompt = () => '1234';
+        DATA.topics = []; DATA.plan = [];
+        render();
+      });
+      await settle(page, 300);
+      const btn = await page.evaluate(() => {
+        const b = document.querySelector('#grid .empty button');
+        return b ? b.textContent.trim() : null;
+      });
+      if (!btn) throw new Error('the empty state offers no way out');
+      if (!/set up/i.test(btn)) throw new Error('button reads: ' + btn);
+
+      await page.evaluate(() => document.querySelector('#grid .empty button').click());
+      await settle(page, 900);
+      const ran = await page.evaluate(() => window.__mockSetup || 0);
+      if (!ran) throw new Error('the setup never reached the server');
+      // The report must survive the grid repaint that seeding triggers, and
+      // must name the years AND the skills — otherwise a supervisor cannot
+      // tell whether the matrix half of the module came up too.
+      const note = await page.evaluate(() => {
+        const m = document.getElementById('setupNote');
+        return m && m.style.display !== 'none' ? m.textContent : '';
+      });
+      if (!note) throw new Error('the setup result did not survive the repaint');
+      if (!/2025/.test(note) || !/skill/i.test(note))
+        throw new Error('setup did not report what it did: ' + note);
+      const onward = await page.evaluate(() =>
+        !!document.querySelector('#setupNote a[href*="skillmatrix"]'));
+      if (!onward) throw new Error('nothing points at the matrix that was just seeded');
+    });
+
+    await R.check('a wrong PIN seeds nothing', async () => {
+      await page.evaluate(() => {
+        window.__mockSetup = 0;
+        window.prompt = () => '9999';
+        DATA.topics = []; DATA.plan = [];
+        render();
+        document.querySelector('#grid .empty button').click();
+      });
+      await settle(page, 900);
+      const ran = await page.evaluate(() => window.__mockSetup || 0);
+      if (ran) throw new Error('training was seeded without a valid PIN');
+    });
+
     summary.push(R.report());
     await context.close();
   }
@@ -350,6 +399,31 @@ async function run() {
       if (planDate('25/01', 2026) !== '2026-01-26') throw new Error('Sun 25 Jan -> ' + planDate('25/01', 2026));
       if (planDate('10/05', 2026) !== '2026-05-11') throw new Error('Sun 10 May -> ' + planDate('10/05', 2026));
       if (planDate('10/01', 2026) !== '2026-01-10') throw new Error('Sat 10 Jan must not move');
+    });
+
+    await R.check('a holiday moves too, and Sunday-into-a-holiday keeps walking', async () => {
+      // 25 Jan 2026 is a Sunday and 26 Jan is Republic Day, which the app
+      // already knows about. Shifting onto it would put training on a
+      // gazetted holiday — nobody notices until the day itself.
+      const off = { '2026-01-26': true };
+      const d = planDate('25/01', 2026, off);
+      if (d !== '2026-01-27') throw new Error('Sun into Republic Day -> ' + d);
+      // A plain working day next to a holiday must not move.
+      if (planDate('28/01', 2026, off) !== '2026-01-28')
+        throw new Error('a working day was moved for a nearby holiday');
+      // And a holiday on its own steps forward one.
+      if (planDate('26/01', 2026, off) !== '2026-01-27')
+        throw new Error('the holiday itself was not avoided');
+    });
+
+    await R.check('a pathological holiday list cannot hang the seeder', async () => {
+      // Bounded rather than unbounded: a fortnight of consecutive non-working
+      // days is not a real calendar, and hanging the seeder is worse than
+      // scheduling one session badly.
+      const off = {};
+      for (let i = 1; i <= 28; i++) off['2026-03-' + String(i).padStart(2, '0')] = true;
+      const d = planDate('02/03', 2026, off);
+      if (!/^2026-03-\d\d$/.test(d)) throw new Error('returned ' + d);
     });
 
     await R.check('29 February steps back in a non-leap year', async () => {
