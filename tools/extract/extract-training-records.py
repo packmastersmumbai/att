@@ -5,10 +5,21 @@ attendance roster where one was typed, and the observations/actions —
 so the seed can carry what the documents actually say rather than a
 reconstruction.
 """
-import os, glob, json, re
+import os, sys, glob, json, re
 import win32com.client as win32
 
-folder = r"C:\Users\Appex\My Drive (packmasters.mumbai@gmail.com)\# TRAINING\TRAINING RECORD\2025 Training"
+# Where the 2025 training records live. Override with the QRATT_TRAINING_DIR
+# environment variable or by passing the path as the first argument.
+DEFAULT = os.path.join(
+    os.path.expanduser("~"),
+    "My Drive (packmasters.mumbai@gmail.com)",
+    "# TRAINING", "TRAINING RECORD", "2025 Training")
+
+folder = (sys.argv[1] if len(sys.argv) > 1
+          else os.environ.get("QRATT_TRAINING_DIR", DEFAULT))
+if not os.path.isdir(folder):
+    raise SystemExit("Training records not found: " + folder)
+
 files = sorted(glob.glob(os.path.join(folder, "*.doc")))
 
 def clean(t):
