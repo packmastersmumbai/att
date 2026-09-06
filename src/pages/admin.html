@@ -968,6 +968,29 @@
                   <div class="form-hint">Four names for L1–L4, separated by <b>|</b>. Wording should match your SOP.</div>
                 </div>
               </div>
+              <div class="form-grid-2">
+                <div class="form-group">
+                  <label>Document Owner</label>
+                  <input type="text" id="cfgDocOwner" class="input" placeholder="Who owns the controlled formats">
+                </div>
+                <div class="form-group">
+                  <label>Approved By</label>
+                  <input type="text" id="cfgDocApprover" class="input" placeholder="Who approved them">
+                </div>
+                <div class="form-group">
+                  <label>Approval Date</label>
+                  <input type="text" id="cfgDocApprovedOn" class="input" placeholder="01/04/2025">
+                </div>
+                <div class="form-group">
+                  <label>Version</label>
+                  <input type="text" id="cfgDocVersion" class="input" placeholder="1.0">
+                </div>
+                <div class="form-group">
+                  <label>Next Review Date</label>
+                  <input type="text" id="cfgDocNextReview" class="input" placeholder="01/04/2026">
+                  <div class="form-hint">Printed at the foot of the mock drill report and every controlled format.</div>
+                </div>
+              </div>
               <div class="form-group">
                 <label>Minimum Required Level, per job role</label>
                 <textarea id="cfgMinRequired" class="input" rows="4"
@@ -1609,7 +1632,15 @@
       { key: 'LevelNames',  fallback: 'Beginner|Under supervision|Independent|Can train others' },
       // Deliberately blank: an empty MinRequired means every role falls back
       // to each skill's own default, which is the honest starting state.
-      { key: 'MinRequired', fallback: '' }
+      { key: 'MinRequired', fallback: '' },
+      // Document control, printed at the foot of every controlled format.
+      // Fallbacks mirror _docControl_() on the server, so the field shows the
+      // value actually in force rather than an empty box.
+      { key: 'DocOwner',      fallback: 'Balkrishna Mishra' },
+      { key: 'DocApprover',   fallback: 'Balkrishna Mishra' },
+      { key: 'DocApprovedOn', fallback: '01/04/2025' },
+      { key: 'DocVersion',    fallback: '1.0' },
+      { key: 'DocNextReview', fallback: '01/04/2026' }
     ];
 
     /* Config 'on'/'off' flags, mirrored from _alertOn_() on the server. */

@@ -868,12 +868,16 @@ function _docControl_() {
       return v === null || v === '' ? fallback : String(v);
     } catch (e) { return fallback; }
   }
+  // The fallbacks are the values printed on the customer's own 2025 format.
+  // Defaults added to _bootstrapIfNeeded only reach a NEW install — an
+  // existing Config was written long before these keys existed, so without
+  // a fallback here the controlled document prints with no owner at all.
   return {
-    owner:      cfg('DocOwner', ''),
-    approver:   cfg('DocApprover', ''),
-    approvedOn: cfg('DocApprovedOn', ''),
+    owner:      cfg('DocOwner', 'Balkrishna Mishra'),
+    approver:   cfg('DocApprover', 'Balkrishna Mishra'),
+    approvedOn: cfg('DocApprovedOn', '01/04/2025'),
     version:    cfg('DocVersion', '1.0'),
-    nextReview: cfg('DocNextReview', '')
+    nextReview: cfg('DocNextReview', '01/04/2026')
   };
 }
 

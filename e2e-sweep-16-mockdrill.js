@@ -487,6 +487,21 @@ async function run() {
         throw new Error(known.size + ' drill topics but ' + seed.length + ' procedures');
     });
 
+    await R.check('the controlled document never prints without an owner', async () => {
+      // The Config defaults only reach a NEW install; an existing Config was
+      // written before these keys existed. Without a fallback here the audit
+      // artefact prints with an empty document-control block.
+      const docControl = lift('_docControl_', {
+        getConfigValue: () => null   // key absent, as on an existing install
+      })();
+      if (!docControl.owner) throw new Error('no owner on an existing install');
+      if (!docControl.approver) throw new Error('no approver');
+      if (!docControl.version) throw new Error('no version');
+      // And a value that IS set must win over the fallback.
+      const set = lift('_docControl_', { getConfigValue: () => 'Someone Else' })();
+      if (set.owner !== 'Someone Else') throw new Error('Config did not override the default');
+    });
+
     await R.check('the four 2025 drill reports are transcribed, not invented', async () => {
       const seed = lift('_drillReportSeed_', {})();
       if (seed.length !== 4) throw new Error('expected 4 conducted drills, got ' + seed.length);
