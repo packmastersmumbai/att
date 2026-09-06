@@ -286,6 +286,144 @@ const GAS_MOCK_SCRIPT = `
         respond({ success: true, skillsAdded: 19, total: 19 });
       },
 
+      // ── Mock drills ──────────────────────────────────────────────────
+      // The register deliberately mixes a conducted drill that met its
+      // target, one that ran over, and one still planned — a register where
+      // every row reads SATISFACTORY tests nothing.
+      getDrillRegister: function(year) {
+        var y = String(year || '2026');
+        respond({
+          success: true, year: y, years: ['2025', '2026'],
+          docControl: { owner: 'Balkrishna Mishra', approver: 'Balkrishna Mishra',
+                        approvedOn: '2023-04-01', version: '1.0', nextReview: '2027-04-01' },
+          drills: [
+            { planId: 'PLN-D1', topicId: 'DRL-01', name: 'First Aid', type: 'FIRST AID',
+              plannedDate: y + '-02-04', actualDate: y + '-02-04', status: 'DONE',
+              targetMinutes: 40, responseMinutes: 35, score: 100, outcome: 'SATISFACTORY',
+              conducted: true, photos: 2, videos: 1, openActions: 0 },
+            // Over its target AND a step missed: the two ways a drill fails.
+            { planId: 'PLN-D2', topicId: 'DRL-04', name: 'Spill Control', type: 'SPILL CONTROL',
+              plannedDate: y + '-11-24', actualDate: y + '-11-24', status: 'DONE',
+              targetMinutes: 20, responseMinutes: 28, score: 90, outcome: 'NEEDS IMPROVEMENT',
+              conducted: true, photos: 1, videos: 0, openActions: 2 },
+            { planId: 'PLN-D3', topicId: 'DRL-03', name: 'Fire Safety', type: 'FIRE SAFETY',
+              plannedDate: y + '-08-10', actualDate: '', status: 'OVERDUE',
+              targetMinutes: 30, responseMinutes: '', score: '', outcome: '',
+              conducted: false, photos: 0, videos: 0, openActions: 0 }
+          ],
+          kpis: { planned: 3, conducted: 2, overdue: 1, onTimePct: 50,
+                  avgScore: 95, openActions: 2 }
+        });
+      },
+
+      getDrillProcedures: function() {
+        respond({
+          success: true,
+          roles: [
+            { key: 'SiteInCharge', label: 'Site In-charge', note: 'Overall control of the emergency scenario' },
+            { key: 'SecurityLead', label: 'Security', note: 'To ensure smooth evacuation' },
+            { key: 'FireFighter',  label: 'Fire fighter', note: 'Fire fighter responded on time' },
+            { key: 'FirstAider',   label: 'First Aider', note: '' }
+          ],
+          procedures: [
+            { drillId: 'MD-FIRE', topicId: 'DRL-03', name: 'Fire Safety', nameHi: '',
+              type: 'FIRE SAFETY', scenario: 'A FIRE scenario is created outside the premises.',
+              location: 'Outside Gate', targetMinutes: 30,
+              steps: ['Raise the alarm', 'Evacuate to the assembly point', 'Head count',
+                      'Deploy the extinguisher'],
+              stepsHi: [], equipment: ['ABC fire extinguisher', 'Fire hydrant system'] },
+            { drillId: 'MD-SPILL', topicId: 'DRL-04', name: 'Spill Control', nameHi: '',
+              type: 'SPILL CONTROL', scenario: 'A jerry can is spilled onto the floor.',
+              location: 'Loading Bay', targetMinutes: 20,
+              steps: ['Stop the source', 'Cordon the area', 'Consult the MSDS',
+                      'Deploy the spill kit'],
+              stepsHi: [], equipment: ['Spill kit', 'Absorbent pads'] }
+          ]
+        });
+      },
+
+      getDrillReport: function(planId) {
+        var saved = (window.__mockDrillReports || {})[planId];
+        var proc = { drillId: 'MD-SPILL', topicId: 'DRL-04', name: 'Spill Control',
+          type: 'SPILL CONTROL', scenario: 'A jerry can is spilled onto the floor.',
+          location: 'Loading Bay', targetMinutes: 20,
+          steps: ['Stop the source', 'Cordon the area', 'Consult the MSDS', 'Deploy the spill kit'],
+          stepsHi: [], equipment: ['Spill kit', 'Absorbent pads'] };
+        respond({
+          success: true, planId: planId,
+          roles: [
+            { key: 'SiteInCharge', label: 'Site In-charge', note: 'Overall control of the emergency scenario' },
+            { key: 'SecurityLead', label: 'Security', note: 'To ensure smooth evacuation' },
+            { key: 'FireFighter',  label: 'Fire fighter', note: 'Fire fighter responded on time' },
+            { key: 'FirstAider',   label: 'First Aider', note: '' }
+          ],
+          procedure: proc,
+          plannedDate: '2026-11-24', actualDate: '',
+          conducted: !!saved,
+          report: saved || {
+            drillId: 'MD-SPILL', drillDate: '2026-11-24', type: 'SPILL CONTROL',
+            location: 'Loading Bay', reportedBy: '', startTime: '', endTime: '',
+            responseMinutes: '',
+            team: { SiteInCharge: '', SecurityLead: '', FireFighter: '', FirstAider: '' },
+            scenario: proc.scenario, observations: '',
+            stepResults: proc.steps.map(function(s, i) {
+              return { step: i + 1, text: s, done: false, remark: '' };
+            }),
+            recommendations: [], minutes: '', photoURLs: [], videoURLs: [],
+            score: '', outcome: '', conductedBy: ''
+          }
+        });
+      },
+
+      // Mirrors the server's validation, so a test cannot pass against a mock
+      // that accepts what production would reject.
+      saveDrillReport: function(report, token) {
+        if (token !== 'test-admin-token') { respond({ success: false, error: 'Admin PIN required' }); return; }
+        function mins(a, b) {
+          function m(t) { var p = String(t).split(':'); return Number(p[0]) * 60 + Number(p[1]); }
+          return m(b) - m(a);
+        }
+        if (!report || !report.planId) { respond({ success: false, error: 'Missing plan id' }); return; }
+        if (!report.drillDate) { respond({ success: false, error: 'Give the date the drill was run' }); return; }
+        if (!/^\\d\\d:\\d\\d$/.test(report.startTime || '') || !/^\\d\\d:\\d\\d$/.test(report.endTime || '')) {
+          respond({ success: false, error: 'Give the start and end time as HH:MM' }); return;
+        }
+        if (mins(report.startTime, report.endTime) <= 0) {
+          respond({ success: false, error: 'The drill must end after it starts' }); return;
+        }
+        if (!(report.team || {}).SiteInCharge) {
+          respond({ success: false, error: 'Name the site in-charge' }); return;
+        }
+        var steps = report.stepResults || [];
+        var unexplained = steps.filter(function(s) { return s && !s.done && !s.remark; });
+        if (unexplained.length) {
+          respond({ success: false, error: 'Say why step ' + unexplained[0].step + ' was not completed' });
+          return;
+        }
+        window.__mockDrillReports = window.__mockDrillReports || {};
+        window.__mockDrillReports[report.planId] = report;
+        window.__mockSavedDrill = report;
+        var done = steps.filter(function(s) { return s.done; }).length;
+        var score = steps.length ? Math.round(done / steps.length * 100) : '';
+        var m = mins(report.startTime, report.endTime);
+        var late = m > 20;
+        respond({ success: true, planId: report.planId, score: score, responseMinutes: m,
+                  outcome: score === 100 ? (late ? 'OVER TIME' : 'SATISFACTORY')
+                         : score >= 80 ? 'NEEDS IMPROVEMENT' : 'UNSATISFACTORY' });
+      },
+
+      addDrillMedia: function(planId, dataUrl, kind) {
+        if (!dataUrl) { respond({ success: false, error: 'No file supplied' }); return; }
+        window.__mockDrillMedia = (window.__mockDrillMedia || []).concat([{ planId: planId, kind: kind }]);
+        respond({ success: true, kind: kind, count: 1,
+                  url: 'https://example.test/' + kind + '.' + (kind === 'video' ? 'mp4' : 'jpg') });
+      },
+
+      seedDrillProcedures: function(token) {
+        if (token !== 'test-admin-token') { respond({ success: false, error: 'Admin PIN required' }); return; }
+        respond({ success: true, proceduresAdded: 4, total: 4 });
+      },
+
       setupTraining: function(token, years) {
         if (token !== 'test-admin-token') { respond({ success: false, error: 'Admin PIN required' }); return; }
         window.__mockSetup = (window.__mockSetup || 0) + 1;

@@ -1,0 +1,1057 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mock Drills — QR Att.</title>
+  <style>
+    /* Colours, spacing and type come from the shared tokens injected by
+       doGet(); only what is specific to this page is declared here. */
+    :root{
+      --ok:#0f766e;   --ok-bg:#ccfbf1;
+      --warn:#b45309; --warn-bg:#fef3c7;
+      --bad:#b91c1c;  --bad-bg:#fee2e2;
+      --plan:#3730a3; --plan-bg:#eef2ff;
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    html,body{height:100%}
+    body{font-family:var(--font-sans);background:var(--color-bg);color:var(--color-text);
+      font-size:13px;line-height:1.45;display:flex}
+
+    /* ── Sidebar (matches training/skillmatrix) ── */
+    .sb{width:238px;flex-shrink:0;background:var(--color-surface);
+      border-right:1px solid var(--color-border);display:flex;flex-direction:column}
+    .sb-logo{display:flex;align-items:center;gap:10px;padding:16px;border-bottom:1px solid var(--color-border)}
+    .sb-logo-icon{width:32px;height:32px;border-radius:var(--radius-md);background:var(--color-primary);
+      color:#fff;display:grid;place-items:center;font-weight:800;font-size:12px}
+    .sb-logo-name{font-weight:800;font-size:16px;color:var(--color-primary);line-height:1}
+    .sb-logo-sub{font-size:9px;color:var(--color-text-muted);letter-spacing:1.4px;text-transform:uppercase}
+    .sb-nav{padding:12px 10px;flex:1}
+    .sb-section{font-size:9px;font-weight:700;color:var(--color-text-muted);letter-spacing:1.2px;
+      text-transform:uppercase;padding:8px 8px 4px}
+    .sb-item{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:var(--radius-md);
+      color:var(--color-text);text-decoration:none;font-size:13px;font-weight:500}
+    .sb-item:hover{background:#f5f0ee}
+    .sb-item.active{background:var(--color-primary);color:#fff}
+    .sb-icon{width:17px;height:17px;flex-shrink:0}
+
+    /* ── Main ── */
+    .main{flex:1;overflow:auto;padding:20px 24px;display:flex;flex-direction:column;gap:18px}
+    .doc{background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-md)}
+    .doc-hd{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;
+      padding:14px 16px;border-bottom:1px solid var(--color-border);flex-wrap:wrap}
+    .doc-t{font-size:16px;font-weight:800}
+    .doc-meta{font-family:var(--font-mono);font-size:11px;color:var(--color-text-muted);margin-top:2px}
+    .ctrls{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+    .seg{display:flex;border:1px solid var(--color-border);border-radius:var(--radius-md);overflow:hidden}
+    .seg button{border:0;background:var(--color-surface);color:var(--color-text-muted);cursor:pointer;
+      font:600 11px var(--font-sans);padding:7px 12px;min-height:34px}
+    .seg button[aria-pressed="true"]{background:var(--color-primary);color:#fff}
+    .btn{border:1px solid var(--color-border);background:var(--color-surface);color:var(--color-text);
+      border-radius:var(--radius-md);font:600 11px var(--font-sans);padding:7px 12px;
+      min-height:34px;cursor:pointer}
+    .btn-pri{background:var(--color-primary);border-color:var(--color-primary);color:#fff}
+    .btn-sm{padding:4px 8px;min-height:28px;font-size:10px}
+    .btn:disabled{opacity:.5;cursor:default}
+
+    .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));
+      border-bottom:1px solid var(--color-border)}
+    .kpi{padding:10px 16px;border-right:1px solid var(--color-border)}
+    .kpi:last-child{border-right:0}
+    .kpi-l{font-size:10px;font-weight:700;color:var(--color-text-muted);
+      text-transform:uppercase;letter-spacing:.6px}
+    .kpi-v{font:800 20px/1.1 var(--font-mono);margin-top:3px;font-variant-numeric:tabular-nums}
+    .kpi-v.warn{color:var(--color-warning)} .kpi-v.bad{color:var(--color-danger)}
+
+    .scroll{overflow-x:auto}
+    table{border-collapse:collapse;width:100%;font-size:12px}
+    th,td{border:1px solid var(--color-border);padding:7px 9px;text-align:left;vertical-align:top}
+    thead th{background:var(--color-bg);font-size:10px;font-weight:700;color:var(--color-text-muted);
+      text-transform:uppercase;letter-spacing:.5px;white-space:nowrap}
+    .num{font-family:var(--font-mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+    .tag{display:inline-block;font:700 10px var(--font-mono);padding:3px 7px;
+      border-radius:var(--radius-md);white-space:nowrap}
+    .t-ok{background:var(--ok-bg);color:var(--ok)}
+    .t-warn{background:var(--warn-bg);color:var(--warn)}
+    .t-bad{background:var(--bad-bg);color:var(--bad)}
+    .t-plan{background:var(--plan-bg);color:var(--plan)}
+    .empty{padding:34px 16px;text-align:center;color:var(--color-text-muted);font-size:13px}
+
+    /* ── Procedure reference ── */
+    .procs{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:0}
+    .proc{border-right:1px solid var(--color-border);border-bottom:1px solid var(--color-border);
+      padding:14px 16px}
+    .proc-t{font-weight:800;font-size:13px;margin-bottom:2px}
+    .proc-m{font-family:var(--font-mono);font-size:10px;color:var(--color-text-muted);
+      text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
+    .proc-s{font-size:12px;color:var(--color-text-muted);margin-bottom:10px}
+    .proc ol{margin:0 0 10px 18px;font-size:12px}
+    .proc li{margin-bottom:3px}
+    .proc-eq{font-size:11px;color:var(--color-text-muted)}
+    .proc-eq b{display:block;font-size:9px;text-transform:uppercase;letter-spacing:.5px;
+      color:var(--color-text);margin-bottom:3px}
+
+    /* ── Report panel ── */
+    .backdrop{display:none;position:fixed;inset:0;background:rgba(2,6,16,.45);z-index:40}
+    .backdrop.on{display:block}
+    .panel{position:fixed;top:0;right:0;bottom:0;width:520px;max-width:96vw;z-index:41;
+      background:var(--color-surface);border-left:1px solid var(--color-border);
+      transform:translateX(100%);transition:transform .18s ease;display:flex;flex-direction:column}
+    .panel.on{transform:none}
+    .panel-hd{padding:14px 16px;border-bottom:1px solid var(--color-border);
+      display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+    .panel-b{padding:14px 16px;overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:14px}
+    /* Same reason as .grp below: direct children of the scrolling column must
+       not shrink, or the form squashes instead of the panel scrolling. */
+    .panel-b > *{flex-shrink:0}
+    /* flex-shrink:0 is load-bearing. .panel-b is a column flex container, so
+       every .grp is a flex item and defaults to shrinking below its own
+       content — which collapsed each section to little more than its header
+       and hid every field inside it. */
+    .grp{border:1px solid var(--color-border);border-radius:var(--radius-md);
+      overflow:hidden;flex-shrink:0}
+    .grp-h{background:var(--color-bg);padding:7px 11px;font:700 10px var(--font-sans);
+      text-transform:uppercase;letter-spacing:.6px;color:var(--color-text-muted);
+      border-bottom:1px solid var(--color-border)}
+    .grp-b{padding:11px;display:flex;flex-direction:column;gap:10px}
+    .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .fld{display:flex;flex-direction:column;gap:5px}
+    /* Direct child only — a descendant selector uppercases the step labels,
+       which are sentences, not field names. */
+    .fld > label{font-size:10px;font-weight:700;color:var(--color-text-muted);
+      text-transform:uppercase;letter-spacing:.5px}
+    .fld > label .req{color:var(--color-danger);margin-left:2px}
+    .inp{border:1px solid var(--color-border);border-radius:var(--radius-md);padding:8px 10px;
+      font:400 13px var(--font-sans);background:var(--color-surface);color:var(--color-text);
+      min-height:38px;width:100%}
+    .inp:focus{outline:none;border-color:var(--color-primary);box-shadow:0 0 0 3px rgba(0,6,102,.10)}
+    /* An invalid field must be findable without reading every label, and the
+       message sits with the field rather than only in a summary at the end. */
+    .inp.bad{border-color:var(--color-danger);box-shadow:0 0 0 3px rgba(185,28,28,.10)}
+    .err{font-size:11px;color:var(--color-danger);font-weight:600}
+    .hint{font-size:11px;color:var(--color-text-muted)}
+    .inp:focus-visible,.btn:focus-visible,.seg button:focus-visible{
+      outline:2px solid var(--color-primary);outline-offset:2px}
+
+    /* The computed response time, shown as it is typed — the number the
+       report is actually judged on should not be a surprise at save time. */
+    .clock{display:flex;align-items:baseline;gap:8px;padding:9px 11px;
+      background:var(--color-bg);border-radius:var(--radius-md)}
+    .clock-v{font:800 20px var(--font-mono);font-variant-numeric:tabular-nums}
+    .clock-l{font-size:11px;color:var(--color-text-muted)}
+
+    /* Step assessment */
+    .step{display:flex;gap:9px;padding:9px 11px;border-bottom:1px solid var(--color-border)}
+    .step:last-child{border-bottom:0}
+    .step input[type=checkbox]{width:18px;height:18px;flex-shrink:0;margin-top:2px;
+      accent-color:var(--color-primary);cursor:pointer}
+    .step-b{flex:1;min-width:0;display:flex;flex-direction:column;gap:5px}
+    .step-n{font-size:12.5px}
+    .step-n .n{font-family:var(--font-mono);color:var(--color-muted);margin-right:6px}
+    .step.miss .step-n{color:var(--color-danger)}
+    .step .inp{min-height:32px;padding:5px 8px;font-size:12px}
+
+    /* Recommendations */
+    .rec{display:grid;grid-template-columns:1fr;gap:7px;padding:10px 11px;
+      border-bottom:1px solid var(--color-border)}
+    .rec:last-child{border-bottom:0}
+    .rec-3{display:grid;grid-template-columns:1fr 1fr auto;gap:7px;align-items:end}
+
+    .thumbs{display:flex;gap:7px;flex-wrap:wrap}
+    .thumbs img,.thumbs video{width:64px;height:64px;object-fit:cover;
+      border-radius:var(--radius-md);border:1px solid var(--color-border);background:#000}
+    .thumbs a{position:relative;display:block;text-decoration:none}
+    .thumbs .vtag{position:absolute;left:3px;bottom:3px;background:rgba(0,0,0,.72);color:#fff;
+      font:700 8px var(--font-mono);padding:1px 4px;border-radius:3px}
+
+    /* ── The printed MOCK DRILL REPORT ─────────────────────────────────
+       Hidden on screen, and the only thing that prints. The layout is the
+       customer's own format, field for field, so the digital record and
+       the 2025 paper records are the same document. */
+    .print{display:none}
+    .p-title{text-align:center;font-size:20px;font-weight:800;letter-spacing:.5px;
+      margin-bottom:12px}
+    .p-title span{font-weight:400;font-size:14px}
+    .print table{width:100%;margin-bottom:9px;font-size:11px}
+    .print th,.print td{border:1px solid #000;padding:4px 6px}
+    .print .lbl{width:42%;font-weight:600}
+    .p-sec{font-weight:700;font-size:11px;margin:9px 0 3px}
+    .p-foot{margin-top:16px;border-top:1px solid #000;padding-top:5px;font-size:9px;
+      display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+    .p-foot b{display:block;font-size:8px;text-transform:uppercase;letter-spacing:.4px}
+    .p-note{font-size:9px;margin-top:5px;font-style:italic}
+    .p-imgs{display:flex;flex-wrap:wrap;gap:6px}
+    .p-imgs img{width:31%;border:1px solid #000}
+
+    @media (max-width:900px){
+      body{flex-direction:column}
+      .sb{width:100%;border-right:0;border-bottom:1px solid var(--color-border)}
+      .sb-logo{padding:10px 14px}
+      .sb-nav{display:flex;gap:4px;overflow-x:auto;padding:8px 10px}
+      .sb-section{display:none}
+      .sb-item{white-space:nowrap;padding:8px 12px}
+      .main{padding:14px}
+      .doc-hd{flex-direction:column;align-items:stretch}
+      .panel{width:100%}
+      .row2,.rec-3{grid-template-columns:1fr}
+      .proc{border-right:0}
+    }
+    @media print{
+      .sb,.main,.panel,.backdrop{display:none!important}
+      .print{display:block}
+      @page{size:A4 portrait;margin:12mm}
+    }
+  </style>
+</head>
+<body>
+  <aside class="sb">
+    <div class="sb-logo">
+      <div class="sb-logo-icon">QR</div>
+      <div>
+        <div class="sb-logo-name">QR Att.</div>
+        <div class="sb-logo-sub">Attendance System</div>
+      </div>
+    </div>
+    <nav class="sb-nav">
+      <div class="sb-section">Operations</div>
+      <a class="sb-item" href="?page=kiosk" data-page="kiosk">
+        <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18"/>
+        </svg>
+        Kiosk
+      </a>
+      <a class="sb-item" href="?page=scanner" data-page="scanner">
+        <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="5" height="5"/><rect x="16" y="3" width="5" height="5"/><rect x="3" y="16" width="5" height="5"/><path d="M21 16h-3v3m0-3v3h-3"/></svg>
+        Scanner
+      </a>
+      <a class="sb-item" href="?page=dashboard" data-page="dashboard">
+        <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+          <rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>
+        </svg>
+        Dashboard
+      </a>
+      <a class="sb-item" href="?page=reports" data-page="reports">
+        <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/>
+        </svg>
+        Reports
+      </a>
+      <a class="sb-item" href="?page=visitors" data-page="visitors">
+        <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+        </svg>
+        Visitors
+      </a>
+      <a class="sb-item" href="?page=training" data-page="training">
+        <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/>
+          <line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+        </svg>
+        Training
+      </a>
+      <a class="sb-item" href="?page=skillmatrix" data-page="skillmatrix">
+        <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/>
+          <line x1="9" y1="9" x2="9" y2="21"/>
+        </svg>
+        Skill matrix
+      </a>
+      <a class="sb-item active" href="?page=mockdrill" data-page="mockdrill">
+        <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 2 3 7v6c0 5 3.8 8.6 9 9 5.2-.4 9-4 9-9V7z"/><path d="M12 8v5"/>
+          <line x1="12" y1="16" x2="12" y2="16"/>
+        </svg>
+        Mock drills
+      </a>
+      <div class="sb-section" style="margin-top:8px">System</div>
+      <a class="sb-item" href="?page=admin" data-page="admin">
+        <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 1 0-16 0"/>
+        </svg>
+        Admin
+      </a>
+    </nav>
+  </aside>
+
+  <main class="main">
+    <section class="doc">
+      <div class="doc-hd">
+        <div>
+          <div class="doc-t">Mock Drill Register <span id="hdYear">—</span></div>
+          <div class="doc-meta">Format F-MD-01 · Rev 00 · <?= orgName ?></div>
+        </div>
+        <div class="ctrls">
+          <div class="seg" id="yearSeg"></div>
+          <button class="btn" onclick="window.print()">Print register</button>
+        </div>
+      </div>
+
+      <div class="kpis" id="kpis"></div>
+      <div class="scroll"><table id="grid"></table></div>
+    </section>
+
+    <section class="doc">
+      <div class="doc-hd">
+        <div>
+          <div class="doc-t">Drill procedures</div>
+          <div class="doc-meta">What each team is assessed against</div>
+        </div>
+      </div>
+      <div class="procs" id="procs"></div>
+    </section>
+  </main>
+
+  <div class="backdrop" id="backdrop" onclick="closePanel()"></div>
+  <aside class="panel" id="panel" aria-hidden="true">
+    <div class="panel-hd">
+      <div>
+        <div style="font-weight:700;font-size:15px" id="pTitle">—</div>
+        <div class="doc-meta" id="pMeta">—</div>
+      </div>
+      <button class="btn" onclick="closePanel()" aria-label="Close">&times;</button>
+    </div>
+    <div class="panel-b">
+      <div class="grp">
+        <div class="grp-h">Scenario</div>
+        <div class="grp-b">
+          <div class="fld">
+            <textarea class="inp" id="fScenario" rows="3"></textarea>
+            <div class="hint" id="fEquip"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grp">
+        <div class="grp-h">Emergency details</div>
+        <div class="grp-b">
+          <div class="row2">
+            <div class="fld"><label for="fDate">Date <span class="req">*</span></label>
+              <input type="date" class="inp" id="fDate"></div>
+            <div class="fld"><label for="fType">Emergency type</label>
+              <input type="text" class="inp" id="fType" readonly></div>
+          </div>
+          <div class="row2">
+            <div class="fld"><label for="fLocation">Location <span class="req">*</span></label>
+              <input type="text" class="inp" id="fLocation" placeholder="Where it was run"></div>
+            <div class="fld"><label for="fReportedBy">Initially reported by</label>
+              <input type="text" class="inp" id="fReportedBy" placeholder="e.g. Supervisor"></div>
+          </div>
+          <div class="row2">
+            <div class="fld"><label for="fStart">Start time <span class="req">*</span></label>
+              <input type="time" class="inp" id="fStart" oninput="recalc()"></div>
+            <div class="fld"><label for="fEnd">End time <span class="req">*</span></label>
+              <input type="time" class="inp" id="fEnd" oninput="recalc()"></div>
+          </div>
+          <div class="clock">
+            <span class="clock-v" id="fMins">—</span>
+            <span class="clock-l" id="fMinsNote">Total time taken for handling the emergency</span>
+          </div>
+          <div class="err" id="eTime" hidden></div>
+        </div>
+      </div>
+
+      <div class="grp">
+        <div class="grp-h">Emergency response team</div>
+        <div class="grp-b" id="fTeam"></div>
+      </div>
+
+      <div class="grp">
+        <div class="grp-h">Procedure assessment <span id="fStepCount"></span></div>
+        <div id="fSteps"></div>
+        <div class="grp-b" style="border-top:1px solid var(--color-border)">
+          <div class="err" id="eSteps" hidden></div>
+          <div class="hint">Untick a step that was not completed and say why — an
+            unexplained gap is the first thing an auditor asks about.</div>
+        </div>
+      </div>
+
+      <div class="grp">
+        <div class="grp-h">Observations</div>
+        <div class="grp-b">
+          <div class="fld">
+            <textarea class="inp" id="fObs" rows="3"
+              placeholder="What actually happened during the drill"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <div class="grp">
+        <div class="grp-h">Recommendations</div>
+        <div id="fRecs"></div>
+        <div class="grp-b" style="border-top:1px solid var(--color-border)">
+          <div class="err" id="eRecs" hidden></div>
+          <button type="button" class="btn btn-sm" onclick="addRec()">Add a recommendation</button>
+        </div>
+      </div>
+
+      <div class="grp">
+        <div class="grp-h">Minutes of meeting</div>
+        <div class="grp-b">
+          <div class="fld">
+            <textarea class="inp" id="fMinutes" rows="2"
+              placeholder="What was agreed at the debrief"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <div class="grp">
+        <div class="grp-h">Evidence</div>
+        <div class="grp-b">
+          <div class="thumbs" id="fMedia"></div>
+          <input type="file" id="fPhotoFile" accept="image/*" capture="environment"
+                 style="display:none" onchange="uploadMedia(this,'photo')">
+          <input type="file" id="fVideoFile" accept="video/*" capture="environment"
+                 style="display:none" onchange="uploadMedia(this,'video')">
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            <button type="button" class="btn btn-sm"
+              onclick="document.getElementById('fPhotoFile').click()">Add photo</button>
+            <button type="button" class="btn btn-sm"
+              onclick="document.getElementById('fVideoFile').click()">Add video</button>
+          </div>
+          <div class="hint" id="fMediaNote">A short clip shows the response actually
+            happening in a way a posed photograph cannot. Keep videos under
+            <b>25&nbsp;MB</b> — anything larger has to go to Drive directly.</div>
+        </div>
+      </div>
+
+      <div class="fld"><label for="fBy">Conducted by</label>
+        <input type="text" class="inp" id="fBy" placeholder="Who ran the drill"></div>
+
+      <button class="btn btn-pri" id="fSave" onclick="saveReport()" style="min-height:44px">
+        Save drill report</button>
+      <button class="btn" onclick="printReport()">Print this report</button>
+      <div id="fMsg" style="font-size:12px;color:var(--color-text-muted)"></div>
+    </div>
+  </aside>
+
+  <!-- The printed artefact. Rendered from the same state as the form, so what
+       prints can never drift from what was entered. -->
+  <div class="print" id="printArea"></div>
+
+  <script>
+    var DATA = { drills: [], years: [], kpis: {}, year: '' };
+    var PROCS = [];
+    var ROLES = [];
+    var OPEN = null;      // { planId, name, procedure, report }
+    var MODE = 'register';
+
+    function esc(s){ return String(s == null ? '' : s)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+    function msg(t){ document.getElementById('fMsg').textContent = t || ''; }
+    function el(id){ return document.getElementById(id); }
+
+    function load(year) {
+      google.script.run
+        .withSuccessHandler(function (res) {
+          if (!res || !res.success) return;
+          DATA = res;
+          el('hdYear').textContent = res.year;
+          renderYears(); renderKpis(); renderRegister(); renderPrintRegister();
+        })
+        .withFailureHandler(function (e) {
+          el('grid').innerHTML =
+            '<tr><td class="empty">Could not load the register: ' + esc(e && e.message) + '</td></tr>';
+        })
+        .getDrillRegister(year || '');
+    }
+
+    function loadProcedures() {
+      google.script.run
+        .withSuccessHandler(function (res) {
+          if (!res || !res.success) return;
+          PROCS = res.procedures || [];
+          ROLES = res.roles || [];
+          renderProcs();
+        })
+        .withFailureHandler(function () {})
+        .getDrillProcedures();
+    }
+
+    function renderYears() {
+      el('yearSeg').innerHTML = (DATA.years || []).map(function (y) {
+        return '<button type="button" onclick="load(\'' + y + '\')" aria-pressed="' +
+               (String(y) === String(DATA.year)) + '">' + esc(y) + '</button>';
+      }).join('');
+    }
+
+    function renderKpis() {
+      var k = DATA.kpis || {};
+      el('kpis').innerHTML = [
+        ['Conducted', (k.conducted || 0) + '/' + (k.planned || 0), ''],
+        ['Overdue', String(k.overdue || 0), k.overdue ? 'bad' : ''],
+        ['Within target time', (k.onTimePct || 0) + '%', (k.onTimePct || 0) < 80 ? 'warn' : ''],
+        ['Average score', (k.avgScore || 0) + '%', (k.avgScore || 0) < 80 ? 'warn' : ''],
+        ['Open actions', String(k.openActions || 0), k.openActions ? 'warn' : '']
+      ].map(function (x) {
+        return '<div class="kpi"><div class="kpi-l">' + x[0] + '</div>' +
+               '<div class="kpi-v ' + x[2] + '">' + x[1] + '</div></div>';
+      }).join('');
+    }
+
+    function renderRegister() {
+      var head = '<thead><tr><th>Scenario</th><th>Planned</th><th>Conducted</th>' +
+        '<th>Response</th><th>Steps</th><th>Outcome</th><th>Evidence</th><th>Actions</th>' +
+        '</tr></thead>';
+
+      if (!(DATA.drills || []).length) {
+        el('grid').innerHTML = head +
+          '<tbody><tr><td class="empty" colspan="8">' +
+            '<div style="font-weight:700;color:var(--color-text);margin-bottom:4px">' +
+              'No drills scheduled for ' + esc(DATA.year) + '</div>' +
+            '<div style="margin-bottom:14px">Set up training first — the drill calendar ' +
+              'is the training calendar filtered to drills.</div>' +
+            '<a class="btn btn-pri" href="?page=training" ' +
+              'style="text-decoration:none;display:inline-block">Go to training</a>' +
+          '</td></tr></tbody>';
+        return;
+      }
+
+      var body = DATA.drills.map(function (d) {
+        var status = d.conducted
+          ? outcomeTag(d.outcome)
+          : '<span class="tag ' + (d.status === 'OVERDUE' ? 't-bad' : 't-plan') + '">' +
+            (d.status === 'OVERDUE' ? 'OVERDUE' : 'PLANNED') + '</span>';
+        // The response time only means something beside its target.
+        var resp = d.responseMinutes === '' ? '—'
+          : d.responseMinutes + '/' + d.targetMinutes + ' min';
+        var respCls = (d.responseMinutes !== '' && d.targetMinutes &&
+                       d.responseMinutes > d.targetMinutes) ? 'color:var(--bad)' : '';
+        var media = [];
+        if (d.photos) media.push(d.photos + ' photo' + (d.photos === 1 ? '' : 's'));
+        if (d.videos) media.push(d.videos + ' video' + (d.videos === 1 ? '' : 's'));
+
+        return '<tr>' +
+          '<td><b>' + esc(d.name) + '</b>' +
+            (d.type ? '<div class="doc-meta">' + esc(d.type) + '</div>' : '') + '</td>' +
+          '<td class="num">' + esc(d.plannedDate || '—') + '</td>' +
+          '<td class="num">' + esc(d.actualDate || '—') + '</td>' +
+          '<td class="num" style="' + respCls + '">' + esc(resp) + '</td>' +
+          '<td class="num">' + (d.score === '' ? '—' : d.score + '%') + '</td>' +
+          '<td>' + status +
+            (d.openActions ? '<div class="doc-meta">' + d.openActions + ' open</div>' : '') + '</td>' +
+          '<td class="num">' + esc(media.join(', ') || '—') + '</td>' +
+          '<td><button type="button" class="btn btn-sm" onclick="openReport(\'' +
+            esc(d.planId) + '\')">' + (d.conducted ? 'Open report' : 'Record drill') +
+            '</button></td>' +
+        '</tr>';
+      }).join('');
+
+      el('grid').innerHTML = head + '<tbody>' + body + '</tbody>';
+    }
+
+    function outcomeTag(o) {
+      var cls = o === 'SATISFACTORY' ? 't-ok'
+              : o === 'UNSATISFACTORY' ? 't-bad'
+              : o ? 't-warn' : 't-plan';
+      return '<span class="tag ' + cls + '">' + esc(o || 'RECORDED') + '</span>';
+    }
+
+    function renderProcs() {
+      if (!PROCS.length) {
+        el('procs').innerHTML =
+          '<div class="empty" style="grid-column:1/-1">' +
+            '<div style="margin-bottom:14px">No drill procedures yet — load the four ' +
+              'scenarios with their step-by-step procedures.</div>' +
+            '<button type="button" class="btn btn-pri" onclick="seedProcedures()">' +
+              'Set up drill procedures</button>' +
+            '<div id="seedMsg" style="margin-top:10px"></div>' +
+          '</div>';
+        return;
+      }
+      el('procs').innerHTML = PROCS.map(function (p) {
+        return '<div class="proc">' +
+          '<div class="proc-t">' + esc(p.name) + '</div>' +
+          '<div class="proc-m">' + esc(p.type) + ' · ' + esc(p.location) +
+            ' · target ' + p.targetMinutes + ' min</div>' +
+          '<div class="proc-s">' + esc(p.scenario) + '</div>' +
+          '<ol>' + p.steps.map(function (s) { return '<li>' + esc(s) + '</li>'; }).join('') + '</ol>' +
+          (p.equipment.length
+            ? '<div class="proc-eq"><b>Equipment</b>' + esc(p.equipment.join(' · ')) + '</div>'
+            : '') +
+        '</div>';
+      }).join('');
+    }
+
+    // ── The report form ───────────────────────────────────────────────────
+
+    function openReport(planId) {
+      msg('');
+      google.script.run
+        .withSuccessHandler(function (res) {
+          if (!res || !res.success) { alert((res && res.error) || 'Could not open it'); return; }
+          OPEN = res;
+          fillForm(res);
+          el('panel').classList.add('on');
+          el('panel').setAttribute('aria-hidden', 'false');
+          el('backdrop').classList.add('on');
+        })
+        .withFailureHandler(function (e) { alert('Error: ' + (e && e.message)); })
+        .getDrillReport(planId);
+    }
+
+    function fillForm(res) {
+      var r = res.report, p = res.procedure || {};
+      ROLES = res.roles || ROLES;
+
+      el('pTitle').textContent = p.name || 'Mock drill';
+      el('pMeta').textContent = (p.type || '') +
+        (p.targetMinutes ? ' · target ' + p.targetMinutes + ' min' : '') +
+        (res.conducted ? ' · recorded' : ' · not yet recorded');
+
+      el('fScenario').value = r.scenario || p.scenario || '';
+      el('fEquip').innerHTML = (p.equipment || []).length
+        ? '<b>Equipment:</b> ' + esc(p.equipment.join(' · ')) : '';
+      el('fDate').value = r.drillDate || res.actualDate || res.plannedDate || '';
+      el('fType').value = r.type || p.type || '';
+      el('fLocation').value = r.location || p.location || '';
+      el('fReportedBy').value = r.reportedBy || '';
+      el('fStart').value = r.startTime || '';
+      el('fEnd').value = r.endTime || '';
+      el('fObs').value = r.observations || '';
+      el('fMinutes').value = r.minutes || '';
+      el('fBy').value = r.conductedBy || '';
+
+      el('fTeam').innerHTML = ROLES.map(function (role) {
+        var v = (r.team || {})[role.key] || '';
+        return '<div class="fld"><label for="team_' + role.key + '">' + esc(role.label) +
+          (role.key === 'SiteInCharge' ? ' <span class="req">*</span>' : '') + '</label>' +
+          // The role's remit is the placeholder, not a hint underneath as
+          // well — the same sentence twice reads as a rendering fault.
+          '<input type="text" class="inp" id="team_' + esc(role.key) + '" value="' + esc(v) + '" ' +
+            'placeholder="' + esc(role.note || 'Name') + '">' +
+        '</div>';
+      }).join('');
+
+      // Steps come from the saved report when it exists, so a revised
+      // procedure never silently rewrites what a team was actually assessed on.
+      var steps = (r.stepResults && r.stepResults.length)
+        ? r.stepResults
+        : (p.steps || []).map(function (s, i) {
+            return { step: i + 1, text: s, done: false, remark: '' };
+          });
+      renderSteps(steps);
+      renderRecs(r.recommendations || []);
+      renderMedia(r.photoURLs || [], r.videoURLs || []);
+      recalc();
+      clearErrors();
+    }
+
+    function renderSteps(steps) {
+      el('fStepCount').textContent = '· ' + steps.length + ' steps';
+      el('fSteps').innerHTML = steps.map(function (s, i) {
+        return '<div class="step' + (s.done ? '' : ' miss') + '" data-i="' + i + '">' +
+          '<input type="checkbox" id="st_' + i + '"' + (s.done ? ' checked' : '') +
+            ' onchange="stepToggled(' + i + ')" aria-label="Step ' + (i + 1) + ' completed">' +
+          '<div class="step-b">' +
+            '<label class="step-n" for="st_' + i + '">' +
+              '<span class="n">' + (i + 1) + '</span>' + esc(s.text) + '</label>' +
+            '<input type="text" class="inp st-r" id="sr_' + i + '" value="' + esc(s.remark || '') +
+              '" placeholder="' + (s.done ? 'Remark (optional)' : 'Why was this not done?') + '">' +
+          '</div>' +
+        '</div>';
+      }).join('');
+    }
+
+    function stepToggled(i) {
+      var done = el('st_' + i).checked;
+      var row = document.querySelector('.step[data-i="' + i + '"]');
+      row.classList.toggle('miss', !done);
+      var remark = el('sr_' + i);
+      remark.placeholder = done ? 'Remark (optional)' : 'Why was this not done?';
+      if (!done) remark.focus();
+      clearErrors();
+    }
+
+    function renderRecs(recs) {
+      if (!recs.length) recs = [{ text: '', action: '', owner: '', targetDate: '' }];
+      el('fRecs').innerHTML = recs.map(function (r, i) {
+        return '<div class="rec" data-i="' + i + '">' +
+          '<div class="fld"><label for="rc_' + i + '">Recommendation ' + (i + 1) + '</label>' +
+            '<input type="text" class="inp" id="rc_' + i + '" value="' + esc(r.text || '') +
+              '" placeholder="What should change"></div>' +
+          '<div class="fld"><input type="text" class="inp" id="ra_' + i + '" value="' +
+            esc(r.action || '') + '" placeholder="Action required"></div>' +
+          '<div class="rec-3">' +
+            '<div class="fld"><label for="ro_' + i + '">Responsibility</label>' +
+              '<input type="text" class="inp" id="ro_' + i + '" value="' + esc(r.owner || '') +
+                '" placeholder="Who"></div>' +
+            '<div class="fld"><label for="rt_' + i + '">Target date</label>' +
+              '<input type="date" class="inp" id="rt_' + i + '" value="' + esc(r.targetDate || '') +
+                '"></div>' +
+            '<button type="button" class="btn btn-sm" onclick="dropRec(' + i + ')" ' +
+              'aria-label="Remove recommendation ' + (i + 1) + '">Remove</button>' +
+          '</div>' +
+        '</div>';
+      }).join('');
+    }
+
+    function collectRecs() {
+      return [].map.call(document.querySelectorAll('#fRecs .rec'), function (row) {
+        var i = row.dataset.i;
+        return {
+          text: el('rc_' + i).value.trim(),
+          action: el('ra_' + i).value.trim(),
+          owner: el('ro_' + i).value.trim(),
+          targetDate: el('rt_' + i).value
+        };
+      });
+    }
+
+    function addRec() { renderRecs(collectRecs().concat([{ text:'', action:'', owner:'', targetDate:'' }])); }
+    function dropRec(i) {
+      var recs = collectRecs();
+      recs.splice(i, 1);
+      renderRecs(recs);
+    }
+
+    /* The response time is shown as it is typed. It is the headline number on
+       the report, and a supervisor should see it fail the target while they
+       can still check the clock — not after they press save. */
+    function recalc() {
+      var s = el('fStart').value, e = el('fEnd').value;
+      var out = el('fMins'), note = el('fMinsNote');
+      if (!s || !e) { out.textContent = '—'; out.style.color = '';
+        note.textContent = 'Total time taken for handling the emergency'; return; }
+      var mins = toMin(e) - toMin(s);
+      if (mins <= 0) {
+        out.textContent = '—'; out.style.color = 'var(--bad)';
+        note.textContent = 'The drill must end after it starts.';
+        return;
+      }
+      var target = (OPEN && OPEN.procedure && OPEN.procedure.targetMinutes) || 0;
+      out.textContent = mins + ' min';
+      if (target && mins > target) {
+        out.style.color = 'var(--bad)';
+        note.textContent = 'Over the ' + target + ' minute target by ' + (mins - target) + '.';
+      } else if (target) {
+        out.style.color = 'var(--ok)';
+        note.textContent = 'Within the ' + target + ' minute target.';
+      } else {
+        out.style.color = '';
+        note.textContent = 'Total time taken for handling the emergency';
+      }
+    }
+
+    function toMin(hhmm) {
+      var p = String(hhmm).split(':');
+      return Number(p[0]) * 60 + Number(p[1]);
+    }
+
+    function renderMedia(photos, videos) {
+      var html = (photos || []).map(function (u) {
+        return '<a href="' + esc(u) + '" target="_blank" rel="noopener">' +
+               '<img src="' + esc(u) + '" alt="Drill photo"></a>';
+      }).join('') + (videos || []).map(function (u) {
+        // Drive links do not play inline, so the tile is a labelled link
+        // rather than a <video> that would render as a black square.
+        return '<a href="' + esc(u) + '" target="_blank" rel="noopener" title="Open the video">' +
+               '<img src="' + esc(u) + '" alt="Drill video">' +
+               '<span class="vtag">VIDEO</span></a>';
+      }).join('');
+      el('fMedia').innerHTML = html ||
+        '<span class="hint">Nothing attached yet.</span>';
+    }
+
+    /* Video is why this is not the training page's photo upload. google.script.run
+       serialises the whole file as a base64 string, so a phone clip becomes a
+       multi-megabyte argument — checked here rather than letting the call fail
+       opaquely after a long wait. */
+    var MAX_BYTES = 25 * 1024 * 1024;
+
+    function uploadMedia(input, kind) {
+      var f = input.files && input.files[0];
+      input.value = '';
+      if (!f || !OPEN) return;
+      if (f.size > MAX_BYTES) {
+        msg('That ' + kind + ' is ' + Math.round(f.size / 1048576) + ' MB. The limit is 25 MB — ' +
+            'record a shorter clip, or put it on Drive and link it in the observations.');
+        return;
+      }
+      msg('Uploading the ' + kind + '…');
+      var reader = new FileReader();
+      reader.onload = function () {
+        google.script.run
+          .withSuccessHandler(function (r) {
+            if (!r || !r.success) { msg((r && r.error) || 'Upload failed.'); return; }
+            msg(kind === 'video' ? 'Video attached.' : 'Photo attached.');
+            var list = OPEN.report[kind === 'video' ? 'videoURLs' : 'photoURLs'] || [];
+            list.push(r.url);
+            OPEN.report[kind === 'video' ? 'videoURLs' : 'photoURLs'] = list;
+            renderMedia(OPEN.report.photoURLs, OPEN.report.videoURLs);
+          })
+          .withFailureHandler(function (e) { msg('Error: ' + (e && e.message)); })
+          .addDrillMedia(OPEN.planId, reader.result, kind);
+      };
+      reader.readAsDataURL(f);
+    }
+
+    // ── Validation and save ───────────────────────────────────────────────
+
+    function clearErrors() {
+      ['eTime', 'eSteps', 'eRecs'].forEach(function (id) {
+        var e = el(id); e.hidden = true; e.textContent = '';
+      });
+      [].forEach.call(document.querySelectorAll('.inp.bad'), function (i) {
+        i.classList.remove('bad');
+      });
+    }
+
+    function fail(fieldId, errId, text) {
+      var f = el(fieldId);
+      if (f) { f.classList.add('bad'); f.focus(); }
+      if (errId) { var e = el(errId); e.textContent = text; e.hidden = false; }
+      msg(text);
+      return false;
+    }
+
+    /* Validated here so the person filling it in is told exactly which field
+       is wrong, and again on the server because the page is not the only way
+       in — and a half-filled drill report is worse than none, since it looks
+       like evidence. */
+    function validate() {
+      clearErrors();
+      if (!el('fDate').value) return fail('fDate', null, 'Give the date the drill was run.');
+      if (!el('fLocation').value.trim()) return fail('fLocation', null, 'Say where the drill was run.');
+      if (!el('fStart').value || !el('fEnd').value)
+        return fail('fStart', 'eTime', 'Give both the start and the end time.');
+      if (toMin(el('fEnd').value) - toMin(el('fStart').value) <= 0)
+        return fail('fEnd', 'eTime', 'The drill must end after it starts.');
+      if (!el('team_SiteInCharge').value.trim())
+        return fail('team_SiteInCharge', null, 'Name the site in-charge — somebody owns this drill.');
+
+      var steps = collectSteps();
+      if (!steps.length) return fail(null, 'eSteps', 'This drill has no procedure to assess.');
+      for (var i = 0; i < steps.length; i++) {
+        if (!steps[i].done && !steps[i].remark) {
+          return fail('sr_' + i, 'eSteps',
+            'Say why step ' + (i + 1) + ' was not completed.');
+        }
+      }
+
+      var recs = collectRecs();
+      for (var j = 0; j < recs.length; j++) {
+        if (!recs[j].text) continue;
+        if (!recs[j].owner) return fail('ro_' + j, 'eRecs',
+          'Who owns recommendation ' + (j + 1) + '?');
+        if (!recs[j].targetDate) return fail('rt_' + j, 'eRecs',
+          'Give a target date for recommendation ' + (j + 1) + '.');
+      }
+      return true;
+    }
+
+    function collectSteps() {
+      return [].map.call(document.querySelectorAll('#fSteps .step'), function (row) {
+        var i = row.dataset.i;
+        return {
+          step: Number(i) + 1,
+          text: row.querySelector('.step-n').textContent.replace(/^\s*\d+\s*/, '').trim(),
+          done: el('st_' + i).checked,
+          remark: el('sr_' + i).value.trim()
+        };
+      });
+    }
+
+    function collectReport() {
+      var team = {};
+      ROLES.forEach(function (r) { team[r.key] = el('team_' + r.key).value.trim(); });
+      return {
+        planId: OPEN.planId,
+        drillId: (OPEN.procedure && OPEN.procedure.drillId) || '',
+        drillDate: el('fDate').value,
+        type: el('fType').value,
+        location: el('fLocation').value.trim(),
+        reportedBy: el('fReportedBy').value.trim(),
+        startTime: el('fStart').value,
+        endTime: el('fEnd').value,
+        team: team,
+        scenario: el('fScenario').value.trim(),
+        observations: el('fObs').value.trim(),
+        stepResults: collectSteps(),
+        recommendations: collectRecs().filter(function (r) { return r.text; }),
+        minutes: el('fMinutes').value.trim(),
+        photoURLs: (OPEN.report.photoURLs || []),
+        videoURLs: (OPEN.report.videoURLs || []),
+        conductedBy: el('fBy').value.trim()
+      };
+    }
+
+    function saveReport() {
+      if (!OPEN) return;
+      if (!validate()) return;
+      var report = collectReport();
+
+      var pin = window.prompt('Admin PIN to record this drill');
+      if (!pin) return;
+      msg('Checking…');
+      google.script.run
+        .withSuccessHandler(function (v) {
+          if (!v || !v.success || !v.token) { msg('That PIN was not accepted.'); return; }
+          msg('Saving…');
+          google.script.run
+            .withSuccessHandler(function (r) {
+              if (!r || !r.success) { msg((r && r.error) || 'Could not save it.'); return; }
+              msg('Saved — ' + r.score + '% of steps, ' + r.responseMinutes +
+                  ' min, ' + r.outcome + '.');
+              OPEN.report = report;
+              OPEN.report.score = r.score;
+              OPEN.report.outcome = r.outcome;
+              OPEN.report.responseMinutes = r.responseMinutes;
+              load(DATA.year);
+            })
+            .withFailureHandler(function (e) { msg('Error: ' + (e && e.message)); })
+            .saveDrillReport(report, v.token);
+        })
+        .withFailureHandler(function (e) { msg('Error: ' + (e && e.message)); })
+        .verifyPIN(pin);
+    }
+
+    function closePanel() {
+      OPEN = null;
+      el('panel').classList.remove('on');
+      el('panel').setAttribute('aria-hidden', 'true');
+      el('backdrop').classList.remove('on');
+      renderPrintRegister();
+    }
+
+    // ── Printing ──────────────────────────────────────────────────────────
+
+    /* The printed MOCK DRILL REPORT, rendered from the same state the form
+       holds — so the paper and the screen cannot disagree. */
+    function printReport() {
+      if (!OPEN) return;
+      var r = collectReport(), p = OPEN.procedure || {};
+      var steps = r.stepResults;
+      var done = steps.filter(function (s) { return s.done; }).length;
+      var mins = toMin(r.endTime) - toMin(r.startTime);
+
+      el('printArea').innerHTML =
+        '<div class="p-title">MOCK DRILL REPORT <span>Date: ' + esc(r.drillDate) + '</span></div>' +
+        '<table><tr><td><b>Mock drill scenario — ' + esc(p.name || '') + '</b><br>' +
+          esc(r.scenario) + '</td></tr></table>' +
+
+        '<div class="p-sec">Emergency details:</div>' +
+        '<table>' +
+          row2('Date and Time', r.drillDate + ' ' + r.startTime) +
+          row2('Emergency Type', r.type) +
+          row2('Location', r.location) +
+          row2('Emergency Initially reported by', r.reportedBy) +
+          row2('Emergency start time/ end time', r.startTime + ' to ' + r.endTime) +
+          row2('Total Time taken for handling emergency',
+               (mins > 0 ? mins + ' Minutes' : '') +
+               (p.targetMinutes ? ' (target ' + p.targetMinutes + ')' : '')) +
+        '</table>' +
+
+        '<div class="p-sec">Emergency Response Team:</div>' +
+        '<table>' + ROLES.map(function (role) {
+          return row2(role.label + (role.note ? ' (' + role.note + ')' : ''), r.team[role.key]);
+        }).join('') + '</table>' +
+
+        '<div class="p-sec">Procedure assessment: ' + done + ' of ' + steps.length +
+          ' steps completed</div>' +
+        '<table><tr><th style="width:6%">#</th><th>Step</th><th style="width:12%">Done</th>' +
+          '<th style="width:28%">Remark</th></tr>' +
+          steps.map(function (s) {
+            return '<tr><td>' + s.step + '</td><td>' + esc(s.text) + '</td>' +
+                   '<td>' + (s.done ? 'Yes' : 'NO') + '</td>' +
+                   '<td>' + esc(s.remark) + '</td></tr>';
+          }).join('') + '</table>' +
+
+        '<div class="p-sec">Observations:</div>' +
+        '<table><tr><td>' + esc(r.observations).replace(/\n/g, '<br>') + '</td></tr></table>' +
+
+        '<table><tr><th>Recommendation</th><th>Actions required</th>' +
+          '<th>Responsibility</th><th>Target Date</th></tr>' +
+          (r.recommendations.length ? r.recommendations : [{}]).map(function (x) {
+            return '<tr><td>' + esc(x.text || '') + '</td><td>' + esc(x.action || '') +
+                   '</td><td>' + esc(x.owner || '') + '</td><td>' +
+                   esc(x.targetDate || '') + '</td></tr>';
+          }).join('') + '</table>' +
+
+        '<table><tr><td><b>Minutes of meeting</b><br>' + esc(r.minutes) + '</td></tr></table>' +
+
+        '<div class="p-sec">Pictures attached:</div>' +
+        '<div class="p-imgs">' +
+          (r.photoURLs || []).map(function (u) {
+            return '<img src="' + esc(u) + '" alt="">';
+          }).join('') +
+        '</div>' +
+        ((r.videoURLs || []).length
+          ? '<div class="p-note">' + r.videoURLs.length + ' video(s) attached to the ' +
+            'electronic record; not reproducible on paper.</div>'
+          : '') +
+        docFooter();
+
+      window.print();
+    }
+
+    function row2(label, value) {
+      return '<tr><td class="lbl">' + esc(label) + '</td><td>' + esc(value || '') + '</td></tr>';
+    }
+
+    /* Document control, as printed on the customer's own format. Held in
+       Config so a revision does not need a deploy. */
+    function docFooter() {
+      var c = (DATA.docControl || {});
+      return '<div class="p-foot">' +
+        '<div><b>Document Owner</b>' + esc(c.owner || '') + '</div>' +
+        '<div><b>Approved by</b>' + esc(c.approver || '') + '</div>' +
+        '<div><b>Approval Date</b>' + esc(c.approvedOn || '') + '</div>' +
+        '<div><b>Version</b>' + esc(c.version || '') + '</div>' +
+        '<div><b>Next Review Date</b>' + esc(c.nextReview || '') + '</div>' +
+      '</div>' +
+      '<div class="p-note">A paper copy is not the official document; ' +
+        'newer versions might be available.</div>';
+    }
+
+    /* Printing from the register prints the register, not a blank report. */
+    function renderPrintRegister() {
+      var rows = (DATA.drills || []).map(function (d) {
+        return '<tr><td>' + esc(d.name) + '</td><td>' + esc(d.plannedDate || '') + '</td>' +
+          '<td>' + esc(d.actualDate || '') + '</td>' +
+          '<td>' + (d.responseMinutes === '' ? '' : d.responseMinutes + '/' + d.targetMinutes) + '</td>' +
+          '<td>' + (d.score === '' ? '' : d.score + '%') + '</td>' +
+          '<td>' + esc(d.outcome || (d.status === 'OVERDUE' ? 'OVERDUE' : 'PLANNED')) + '</td></tr>';
+      }).join('');
+      el('printArea').innerHTML =
+        '<div class="p-title">MOCK DRILL REGISTER <span>' + esc(DATA.year) + '</span></div>' +
+        '<table><tr><th>Scenario</th><th>Planned</th><th>Conducted</th>' +
+          '<th>Response (min/target)</th><th>Steps</th><th>Outcome</th></tr>' +
+          (rows || '<tr><td colspan="6">No drills scheduled.</td></tr>') + '</table>' +
+        docFooter();
+    }
+
+    function seedProcedures() {
+      var box = function (t) { var b = el('seedMsg'); if (b) b.textContent = t; };
+      var pin = window.prompt('Admin PIN to set up the drill procedures');
+      if (!pin) return;
+      box('Checking…');
+      google.script.run
+        .withSuccessHandler(function (v) {
+          if (!v || !v.success || !v.token) { box('That PIN was not accepted.'); return; }
+          box('Setting up…');
+          google.script.run
+            .withSuccessHandler(function (r) {
+              if (!r || !r.success) { box((r && r.error) || 'Could not set it up.'); return; }
+              box(r.proceduresAdded + ' procedures added.');
+              loadProcedures();
+            })
+            .withFailureHandler(function (e) { box('Error: ' + (e && e.message)); })
+            .seedDrillProcedures(v.token);
+        })
+        .withFailureHandler(function (e) { box('Error: ' + (e && e.message)); })
+        .verifyPIN(pin);
+    }
+
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') closePanel();
+    });
+
+    load('');
+    loadProcedures();
+  </script>
+</body>
+</html>

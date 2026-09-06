@@ -328,8 +328,10 @@ Follows the existing e2e harness (`e2e-lib.js`, suites registered in
   when someone wants workers taking quizzes on a phone.
 - **KPI dashboard page.** Every number is a formula over two sheets; the reports
   page already exists.
-- **Separate mock drill screen.** Four rows a year with the same shape as
-  training. Same grid, `Type=DRILL`.
+- ~~**Separate mock drill screen.**~~ **Built** — see §12. The claim that a
+  drill is "the same shape as training" turned out to be wrong: a drill has a
+  written procedure, a clock, a named response team and a pass/fail verdict,
+  none of which a classroom session has.
 - **Stored skill matrix sheet.** Derived on read; only overrides persist.
 - **Client dimension on skills.** A client-specific process is a skill row with
   its own group. Add when two clients' processes genuinely run side by side.
@@ -345,3 +347,63 @@ Follows the existing e2e harness (`e2e-lib.js`, suites registered in
   the app, and should be reviewed by a native speaker before a client sees them.
 - **2025 attendance depends on manual backfill.** Until that happens the matrix
   shows a year of sessions with no attendees, and coverage reads 0%.
+
+
+---
+
+## 12. Mock drills
+
+The drill CALENDAR was always the training grid filtered to `Type=DRILL`, and
+that part stands. What a drill needs beyond a training session is everything
+that makes it a drill rather than a lecture:
+
+- a written **procedure** per scenario, with numbered steps a team is scored
+  against, instead of a one-line agenda
+- the **clock** — start, end, and the response time between them, judged
+  against the scenario's target
+- the named **emergency response team** for that run
+- a step-by-step **assessment**, each step done or not with a remark
+- **recommendations** with an owner and a target date
+- **photo and video** evidence
+
+### 12.1 Grounded in the customer's own format
+
+The printed artefact is `MOCK DRILL REPORT`, reproduced field for field from
+`# TRAINING/TRAINING RECORD/2025 Training/2025 Mock drill/`, down to the
+document-control footer (owner, approver, approval date, version, next
+review, and "a paper copy is not the official document"). The digital record
+and the 2025 paper records are the same document.
+
+Every default is lifted from those records rather than invented: the four
+scenarios, their locations, and their target times — spill 20 min, fire 30,
+suspicious transaction 15, first aid 40 — are the 2025 actuals. The numbered
+steps are a decomposition of the Observations those reports recorded plus the
+recommendations they raised, so a team is scored against what the site
+already says it does.
+
+### 12.2 The verdict needs both halves
+
+`SATISFACTORY` requires every procedure step completed **and** the response
+inside the target time. A team that did everything but took twice as long has
+not demonstrated readiness (`OVER TIME`); one that was fast because half the
+procedure was skipped certainly has not (`NEEDS IMPROVEMENT` /
+`UNSATISFACTORY`). The target is read from the procedure server-side, never
+from the request — otherwise a caller could widen its own target.
+
+### 12.3 What the record refuses to be
+
+Validated in the form AND on the server, because the page is not the only way
+in and a half-filled drill report is worse than none: it looks like evidence.
+A report is refused without a date, a location, both clock times running
+forwards, and a named site in-charge. A step marked NOT done needs a reason —
+an unexplained gap is the first thing an auditor asks about. A recommendation
+needs an owner and a target date, or it is a wish.
+
+### 12.4 Deliberately not built
+
+- **Video playing inline.** Drive links do not embed; the tile is a labelled
+  link. The printed report states how many videos are attached rather than
+  silently dropping them.
+- **Unlimited upload size.** `google.script.run` serialises the file as
+  base64, so a phone clip becomes a multi-megabyte argument. Capped at 25 MB
+  with the limit stated, rather than failing opaquely after a long wait.

@@ -584,6 +584,15 @@ function setupTraining(token, years) {
   var s = seedSkills(token);
   if (s.success) out.skillsAdded = s.skillsAdded;
 
+  // Drill procedures come up with everything else. A drill on the calendar
+  // with no procedure behind it is a date nobody can be assessed against.
+  try {
+    var d = seedDrillProcedures(token);
+    if (d.success) out.proceduresAdded = d.proceduresAdded;
+  } catch (e) {
+    out.proceduresAdded = 0;
+  }
+
   return out;
 }
 

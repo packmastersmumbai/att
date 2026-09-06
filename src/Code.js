@@ -47,7 +47,7 @@ function doGet(e) {
   }
 
   var page = (e && e.parameter && e.parameter.page) ? e.parameter.page : 'scanner';
-  var validPages = ['scanner', 'scanner_popup', 'dashboard', 'reports', 'visitors', 'kiosk', 'admin', 'idcards', 'e2e', 'vreg', 'vpass', 'gatepass_approve', 'training', 'skillmatrix'];
+  var validPages = ['scanner', 'scanner_popup', 'dashboard', 'reports', 'visitors', 'kiosk', 'admin', 'idcards', 'e2e', 'vreg', 'vpass', 'gatepass_approve', 'training', 'skillmatrix', 'mockdrill'];
   if (validPages.indexOf(page) === -1) page = 'scanner';
 
   var template = HtmlService.createTemplateFromFile('pages/' + page);
@@ -229,6 +229,14 @@ function _bootstrapIfNeeded() {
       // job role, one role per line ("Packaging Operator: SKL-01=L3, SKL-16=NA");
       // blank means every role falls back to the skill's own default.
       ['PassMark',           '70'],
+      // Document control, printed at the foot of the mock drill report and
+      // any other controlled format. A revision is a settings change, which
+      // is the point of a controlled document carrying a version.
+      ['DocOwner',           ''],
+      ['DocApprover',        ''],
+      ['DocApprovedOn',      ''],
+      ['DocVersion',         '1.0'],
+      ['DocNextReview',      ''],
       ['MinRequired',        ''],
       ['LevelNames',         'Beginner|Under supervision|Independent|Can train others']
     ];
@@ -268,6 +276,12 @@ function _dispatchPost_(params) {
 
   var action = params.action;
 
+  if (action === 'getDrillRegister')      return jsonResponse(getDrillRegister(params.year));
+  if (action === 'getDrillProcedures')    return jsonResponse(getDrillProcedures());
+  if (action === 'getDrillReport')        return jsonResponse(getDrillReport(params.planId));
+  if (action === 'saveDrillReport')       return jsonResponse(saveDrillReport(params.report, params.token));
+  if (action === 'addDrillMedia')         return jsonResponse(addDrillMedia(params.planId, params.dataUrl, params.kind));
+  if (action === 'seedDrillProcedures')   return jsonResponse(seedDrillProcedures(params.token));
   if (action === 'getSkillMatrix')        return jsonResponse(getSkillMatrix(params.group));
   if (action === 'getSkillHistory')       return jsonResponse(getSkillHistory(params.empId, params.skillId));
   if (action === 'setSkillLevel')         return jsonResponse(setSkillLevel(params.entry, params.token));

@@ -27,6 +27,7 @@ const SUITES = [
   { n: 13, label: 'Safety induction', mod: './e2e-sweep-13-safety'      },
   { n: 14, label: 'Training calendar', mod: './e2e-sweep-14-training'    },
   { n: 15, label: 'Skill matrix',    mod: './e2e-sweep-15-skillmatrix' },
+  { n: 16, label: 'Mock drills',     mod: './e2e-sweep-16-mockdrill' },
 ];
 
 async function main() {

@@ -70,6 +70,16 @@ const CHECKS = {
       ['session panel closed',     async page => !(await page.locator('#panel').evaluate(el => el.classList.contains('on')))],
     ],
   },
+  mockdrill: {
+    label: 'Mock drills',
+    checks: [
+      ['sidebar visible',          page => page.locator('.sb').isVisible()],
+      ['register grid present',    page => page.locator('#grid').isVisible()],
+      ['KPI strip present',        async page => (await page.locator('#kpis').count()) > 0],
+      ['procedure list present',   async page => (await page.locator('#procs').count()) > 0],
+      ['report panel closed',      async page => !(await page.locator('#panel').evaluate(el => el.classList.contains('on')))],
+    ],
+  },
   skillmatrix: {
     label: 'Skill matrix',
     checks: [

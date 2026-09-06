@@ -41,7 +41,7 @@ const TOKENS_PARTIAL = fs.readFileSync(path.join(__dirname, 'src', 'tokens.html'
 
 /** All testable pages (maps to src/pages/<name>.html) */
 const PAGES = ['kiosk', 'dashboard', 'scanner', 'admin', 'reports', 'visitors',
-               'training', 'skillmatrix'];
+               'training', 'skillmatrix', 'mockdrill'];
 
 // ── Browser helpers ──────────────────────────────────────────────────────────
 
