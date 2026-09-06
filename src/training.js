@@ -239,6 +239,85 @@ function _trainingTopicSeed_() {
     // the calendar just because it was skipped one year.
     ['DRL-05', 'Mock Drill — Earthquake', 'मॉक ड्रिल — भूकंप', 'DRILL',
      'Alarm signal and drop, cover, hold|Orderly single-file evacuation|Assembly point roll call', 'Drill', 0.5, 12]
+  ].concat(_libraryTopicSeed_());
+}
+
+/**
+ * Training that EXISTS but has not been scheduled — the QA course modules
+ * and the process videos in "# TRAINING".
+ *
+ * Deliberately NOT in _trainingDateSeed_, so none of these appear on the
+ * annual calendar or count towards adherence. Scheduling training nobody has
+ * committed to running would make every one of them overdue on day one and
+ * turn the adherence figure into noise.
+ *
+ * They are here so that when somebody IS trained on one, the session can be
+ * recorded against a real topic and credit a real skill. Type VIDEO and
+ * COURSE keep them off the TRAIN/DRILL calendar views while leaving them
+ * available everywhere a topic is chosen.
+ *
+ * Durations are estimates, marked as such: none of these has a delivery
+ * record to take an actual duration from.
+ */
+function _libraryTopicSeed_() {
+  return [
+    // ── Process videos (# TRAINING/Videos) ────────────────────────────────
+    // These are the only training the site holds that is specific to the
+    // Packaging and Labelling process skills, which otherwise have no
+    // evidence source at all.
+    ['VID-01', 'Ribbon Printer Roll Change', 'रिबन प्रिंटर रोल परिवर्तन', 'VIDEO',
+     'Ribbon printer roll change procedure', 'Video', 0.25, 12],
+    ['VID-02', 'Henkel Filling Line Nozzle', 'हेंकेल फिलिंग लाइन नोज़ल', 'VIDEO',
+     'Filling line nozzle operation and change', 'Video', 0.25, 12],
+    ['VID-03', 'Winder Rewinder Roll Change', 'वाइंडर रीवाइंडर रोल परिवर्तन', 'VIDEO',
+     'Winder and rewinder roll change procedure', 'Video', 0.25, 12],
+    ['VID-04', 'Sachet Packing — Pack of 5', 'सैशे पैकिंग — 5 का पैक', 'VIDEO',
+     'Packing sachets in a pack of five', 'Video', 0.25, 12],
+    ['VID-05', 'QR Labelling', 'क्यूआर लेबलिंग', 'VIDEO',
+     'Applying and verifying QR labels', 'Video', 0.25, 12],
+    ['VID-06', 'Weight and QR Stamp', 'वज़न एवं क्यूआर स्टाम्प', 'VIDEO',
+     'Weight check and QR stamping', 'Video', 0.25, 12],
+    ['VID-07', 'Henkel Label Printing', 'हेंकेल लेबल प्रिंटिंग', 'VIDEO',
+     'Printing labels on the Henkel line', 'Video', 0.25, 12],
+    ['VID-08', 'Leakage Testing', 'रिसाव परीक्षण', 'VIDEO',
+     'Leakage testing procedure', 'Video', 0.25, 12],
+    ['VID-09', 'Wrap-around Labelling Setting', 'रैप-अराउंड लेबलिंग सेटिंग', 'VIDEO',
+     'Setting up the wrap-around labelling machine', 'Video', 0.25, 12],
+    ['VID-10', 'Bottle Filling and Capping', 'बोतल भराई एवं कैपिंग', 'VIDEO',
+     'Bottle filling and capping on the Yara line', 'Video', 0.25, 12],
+    ['VID-11', 'Fire Training', 'अग्नि प्रशिक्षण', 'VIDEO',
+     'Fire safety training video', 'Video', 0.5, 12],
+    ['VID-12', 'Superprocure', 'सुपरप्रोक्योर', 'VIDEO',
+     'Superprocure system walkthrough', 'Video', 0.5, 12],
+
+    // ── QA course modules (# TRAINING/QA Course) ──────────────────────────
+    // AYT India course material. Quality and management technique rather
+    // than shop-floor process; relevant to supervisors and QA.
+    ['QAC-01', 'Daily Rejection & Rework, COPQ', 'दैनिक अस्वीकृति एवं पुनःकार्य, COPQ', 'COURSE',
+     'Daily rejection and rework report|PPM and graphs|Red bin analysis|Cost of poor quality',
+     'Classroom', 2.0, 24],
+    ['QAC-02', 'Skill Matrix', 'कौशल मैट्रिक्स', 'COURSE',
+     'How to create a skill matrix|Skill matrix formats', 'Classroom', 1.0, 24],
+    ['QAC-03', 'Office Filing & Storage System', 'कार्यालय फाइलिंग एवं भंडारण', 'COURSE',
+     'Office filing and storage system', 'Classroom', 1.0, 24],
+    ['QAC-04', '4M Change Management', '4M परिवर्तन प्रबंधन', 'COURSE',
+     'Man, machine, material, method change management', 'Classroom', 1.5, 24],
+    ['QAC-06', 'Cause & Effect (Fishbone) Diagram', 'कारण एवं प्रभाव आरेख', 'COURSE',
+     'Cause and effect analysis|Fishbone diagram', 'Classroom', 1.5, 24],
+    ['QAC-07', 'Quality & NPD Department', 'गुणवत्ता एवं एनपीडी विभाग', 'COURSE',
+     'Quality and new product development department', 'Classroom', 1.0, 24],
+    ['QAC-08', 'PPM, DPU and DPMO', 'PPM, DPU एवं DPMO', 'COURSE',
+     'How to calculate PPM, DPU and DPMO', 'Classroom', 1.5, 24],
+    ['QAC-09', '5S Champion Course', '5S चैंपियन कोर्स', 'COURSE',
+     '5S for managers and supervisors|5S audit check sheet|Red tag and liquidation plan|Zone leaders',
+     'Classroom', 3.0, 24],
+    ['QAC-10', 'SOP, PCS, OPS and PCQT Formats', 'एसओपी, पीसीएस, ओपीएस एवं पीसीक्यूटी प्रारूप', 'COURSE',
+     'Ready-to-use formats for SOP, PCS, OPS and PCQT', 'Classroom', 1.5, 24],
+    ['QAC-11', 'Poison Test', 'पॉइज़न टेस्ट', 'COURSE',
+     'Poison test in quality|Checking the effectiveness of quality inspection|8D CAPA',
+     'Classroom', 1.5, 24],
+    ['QAC-12', 'Pareto Analysis', 'पैरेटो विश्लेषण', 'COURSE',
+     'Pareto analysis technique', 'Classroom', 1.0, 24]
   ];
 }
 

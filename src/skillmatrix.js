@@ -531,16 +531,16 @@ function setSkillLevel(entry, token) {
 function _skillSeed_() {
   return [
     // SkillID, Name, NameHi, Group, TopicIDs, MinRequired
-    ['SKL-01', 'Filling',                 'भराई',                  'Packaging',   'TRN-01,TRN-04', 'L3'],
-    ['SKL-02', 'Packing',                 'पैकिंग',                 'Packaging',   'TRN-01,TRN-02', 'L3'],
-    ['SKL-03', 'Calibration',             'अंशांकन',                'Packaging',   'TRN-01,TRN-04', 'L2'],
-    ['SKL-04', 'Capping',                 'कैपिंग',                 'Packaging',   'TRN-02',        'L3'],
-    ['SKL-05', 'Sealing',                 'सीलिंग',                 'Packaging',   'TRN-02',        'L3'],
-    ['SKL-06', 'Coding & Numbering',      'कोडिंग एवं नंबरिंग',      'Labelling',   'TRN-02,TRN-04', 'L3'],
-    ['SKL-07', 'Visual Inspection',       'दृश्य निरीक्षण',          'Labelling',   'TRN-02',        'L3'],
-    ['SKL-08', 'Rejection & Rework',      'अस्वीकृति एवं पुनःकार्य',  'Labelling',   'TRN-04',        'L2'],
-    ['SKL-09', 'Material Verification',   'सामग्री सत्यापन',         'Labelling',   'TRN-04',        'L2'],
-    ['SKL-10', 'Line Clearance & CLIT',   'लाइन क्लीयरेंस एवं CLIT', 'Packaging',   'TRN-04',        'L2'],
+    ['SKL-01', 'Filling',                 'भराई',                  'Packaging',   'TRN-01,TRN-04,VID-02,VID-10', 'L3'],
+    ['SKL-02', 'Packing',                 'पैकिंग',                 'Packaging',   'TRN-01,TRN-02,VID-04', 'L3'],
+    ['SKL-03', 'Calibration',             'अंशांकन',                'Packaging',   'TRN-01,TRN-04,VID-06', 'L2'],
+    ['SKL-04', 'Capping',                 'कैपिंग',                 'Packaging',   'TRN-02,VID-10', 'L3'],
+    ['SKL-05', 'Sealing',                 'सीलिंग',                 'Packaging',   'TRN-02,VID-08',        'L3'],
+    ['SKL-06', 'Coding & Numbering',      'कोडिंग एवं नंबरिंग',      'Labelling',   'TRN-02,TRN-04,VID-01,VID-05,VID-06,VID-07', 'L3'],
+    ['SKL-07', 'Visual Inspection',       'दृश्य निरीक्षण',          'Labelling',   'TRN-02,VID-08,QAC-11',        'L3'],
+    ['SKL-08', 'Rejection & Rework',      'अस्वीकृति एवं पुनःकार्य',  'Labelling',   'TRN-04,QAC-01',        'L2'],
+    ['SKL-09', 'Material Verification',   'सामग्री सत्यापन',         'Labelling',   'TRN-04,VID-05,VID-09',        'L2'],
+    ['SKL-10', 'Line Clearance & CLIT',   'लाइन क्लीयरेंस एवं CLIT', 'Packaging',   'TRN-04,VID-03,QAC-04',        'L2'],
     // ── Site-wide competencies ────────────────────────────────────────────
     //
     // These four replaced eleven narrower ones (Waste Segregation, PPE
@@ -565,15 +565,15 @@ function _skillSeed_() {
     // filters nothing. These four apply to every role on site, which is
     // exactly what makes them a department-independent set.
     ['SKL-11', 'Emergency Response',      'आपातकालीन प्रतिक्रिया',    'Site-wide',
-     'TRN-07,DRL-01,DRL-02,DRL-03,DRL-04,DRL-05', 'L2'],
+     'TRN-07,DRL-01,DRL-02,DRL-03,DRL-04,DRL-05,VID-11', 'L2'],
     ['SKL-12', 'Safety & Security',       'सुरक्षा एवं संरक्षा',      'Site-wide',
      'TRN-05,TRN-08,TRN-09,TRN-10,DRL-02', 'L2'],
     ['SKL-13', 'Waste Handling',          'अपशिष्ट प्रबंधन',          'Site-wide',
-     'TRN-03,TRN-04', 'L2'],
+     'TRN-03,TRN-04,QAC-09,QAC-03', 'L2'],
     // Reporting and Responsibility are one skill rather than two: both are
     // about owning what you produce and saying so when it goes wrong.
     ['SKL-14', 'Reporting & Responsibility', 'रिपोर्टिंग एवं उत्तरदायित्व', 'Site-wide',
-     'TRN-01,TRN-06,TRN-11', 'L2']
+     'TRN-01,TRN-06,TRN-11,QAC-01,QAC-02,QAC-06,QAC-07,QAC-08,QAC-10,QAC-12,VID-12', 'L2']
   ];
 }
 

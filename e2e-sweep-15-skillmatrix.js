@@ -522,7 +522,11 @@ async function run() {
     await R.check('the seeded skills map only to topics that exist', async () => {
       const skills = lift('_skillSeed_', {})();
       const topicSrc = fs.readFileSync(path.join(__dirname, 'src', 'training.js'), 'utf8');
-      const known = new Set((topicSrc.match(/'(TRN|DRL)-\d\d'/g) || [])
+      // Every topic id the library defines, whatever its prefix — TRN and DRL
+      // are delivered training, VID and QAC are the video and course library.
+      // Matching on a hardcoded prefix list would silently stop checking the
+      // moment a new kind of topic is added.
+      const known = new Set((topicSrc.match(/'[A-Z]{3}-\d\d'/g) || [])
         .map(s => s.replace(/'/g, '')));
       skills.forEach(s => {
         String(s[4]).split(',').map(t => t.trim()).forEach(t => {
