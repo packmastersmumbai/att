@@ -25,6 +25,7 @@ const SUITES = [
   { n: 11, label: 'Kiosk gatepass',  mod: './e2e-sweep-11-kiosk-gatepass' },
   { n: 12, label: 'Design tokens',   mod: './e2e-sweep-12-tokens'        },
   { n: 13, label: 'Safety induction', mod: './e2e-sweep-13-safety'      },
+  { n: 14, label: 'Training calendar', mod: './e2e-sweep-14-training'    },
 ];
 
 async function main() {

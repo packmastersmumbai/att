@@ -47,7 +47,7 @@ function doGet(e) {
   }
 
   var page = (e && e.parameter && e.parameter.page) ? e.parameter.page : 'scanner';
-  var validPages = ['scanner', 'scanner_popup', 'dashboard', 'reports', 'visitors', 'kiosk', 'admin', 'idcards', 'e2e', 'vreg', 'vpass', 'gatepass_approve'];
+  var validPages = ['scanner', 'scanner_popup', 'dashboard', 'reports', 'visitors', 'kiosk', 'admin', 'idcards', 'e2e', 'vreg', 'vpass', 'gatepass_approve', 'training'];
   if (validPages.indexOf(page) === -1) page = 'scanner';
 
   var template = HtmlService.createTemplateFromFile('pages/' + page);
@@ -256,6 +256,10 @@ function _dispatchPost_(params) {
 
   var action = params.action;
 
+  if (action === 'getTrainingCalendar') return jsonResponse(getTrainingCalendar(params.year));
+  if (action === 'saveTrainingSession') return jsonResponse(saveTrainingSession(params.session));
+  if (action === 'addTrainingSession')  return jsonResponse(addTrainingSession(params.session));
+  if (action === 'seedTrainingYear')    return jsonResponse(seedTrainingYear(params.year, params.token));
   if (action === 'submitFeedback')   return jsonResponse(submitFeedback(params.text, params.meta));
   if (action === 'processQRScan')    return jsonResponse(processQRScan(params.qrCode, params.gate));
   if (action === 'registerVisitor')  return jsonResponse(registerVisitor(params.visitor));

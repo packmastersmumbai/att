@@ -91,6 +91,50 @@ const GAS_MOCK_SCRIPT = `
         else    respond({ success: false, error: 'Incorrect PIN' });
       },
 
+      // Training calendar. Deliberately mixes states so the grid renders every
+      // one: a completed session, one due this month, one overdue, one future,
+      // and a drill — otherwise a test can pass against a grid that only ever
+      // draws green.
+      getTrainingCalendar: function(year) {
+        var y = String(year || '2026');
+        var today = new Date();
+        var iso = function(d) { return d.toISOString().slice(0, 10); };
+        var thisMonth = iso(new Date(today.getFullYear(), today.getMonth(), 15));
+        var past      = iso(new Date(today.getFullYear(), today.getMonth() - 2, 10));
+        var future    = iso(new Date(today.getFullYear() + 1, 5, 20));
+        respond({
+          success: true, year: y, years: ['2025', '2026'],
+          topics: [
+            { TopicID: 'TRN-01', Title: 'SOP, Product Safety', Type: 'TRAIN',
+              Agenda: 'Filling, Packing, Calibration|Standard Operating Procedure',
+              Method: 'Classroom', DurationHrs: 3, ValidityMonths: 12, Active: 'YES' },
+            { TopicID: 'TRN-05', Title: 'Electrical Safety', Type: 'TRAIN',
+              Agenda: 'Electrical safety training|PPE Matrix compliance',
+              Method: 'Classroom + demonstration', DurationHrs: 1, ValidityMonths: 12, Active: 'YES' },
+            { TopicID: 'DRL-03', Title: 'Mock Drill — Fire Safety', Type: 'DRILL',
+              Agenda: 'Alarm and evacuation|Assembly point roll call',
+              Method: 'Drill', DurationHrs: 0.5, ValidityMonths: 12, Active: 'YES' }
+          ],
+          plan: [
+            { planId: 'PLN-1', topicId: 'TRN-01', type: 'TRAIN', plannedDate: past,
+              actualDate: past, status: 'DONE', trainer: 'Anuj Pathak', rating: '4' },
+            { planId: 'PLN-2', topicId: 'TRN-05', type: 'TRAIN', plannedDate: past,
+              actualDate: '', status: 'OVERDUE', trainer: '', rating: '' },
+            { planId: 'PLN-3', topicId: 'TRN-05', type: 'TRAIN', plannedDate: thisMonth,
+              actualDate: '', status: 'DUE', trainer: '', rating: '' },
+            { planId: 'PLN-4', topicId: 'TRN-01', type: 'TRAIN', plannedDate: future,
+              actualDate: '', status: 'PLANNED', trainer: '', rating: '' },
+            { planId: 'PLN-5', topicId: 'DRL-03', type: 'DRILL', plannedDate: future,
+              actualDate: '', status: 'PLANNED', trainer: '', rating: '' }
+          ]
+        });
+      },
+
+      saveTrainingSession: function(session) {
+        if (!session || !session.planId) { respond({ success: false, error: 'Missing plan id' }); return; }
+        respond({ success: true, planId: session.planId });
+      },
+
       getEmployees: function() {
         respond({ success: true, data: JSON.parse(JSON.stringify(MOCK_EMPLOYEES)) });
       },
