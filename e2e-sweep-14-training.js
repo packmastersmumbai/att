@@ -158,6 +158,39 @@ async function run() {
       await settle(page, 200);
     });
 
+    await R.check('the session panel shows the module and flags a draft', async () => {
+      // A trainer opening a session should see what to teach without going
+      // looking for it, and must be told when the module is still a draft.
+      await page.click('#grid .c-done');
+      await settle(page, 900);
+      const m = await page.evaluate(() => {
+        const b = document.getElementById('pModule');
+        return { shown: b.style.display !== 'none', text: b.textContent,
+                 height: Math.round(b.getBoundingClientRect().height) };
+      });
+      if (!m.shown) throw new Error('the module block is hidden');
+      if (!/By the end, an attendee can/.test(m.text))
+        throw new Error('objectives missing: ' + m.text.slice(0, 90));
+      if (!/What an SOP is/.test(m.text)) throw new Error('content sections missing');
+      if (!/pass mark 70%/.test(m.text)) throw new Error('the pass mark is not stated');
+      if (!/site training records/.test(m.text))
+        throw new Error('the module does not say where its content came from');
+      if (!/DRAFT/.test(m.text))
+        throw new Error('an unreviewed module does not say it is a draft');
+      // The same flex trap that collapsed the drill panel: a block in a
+      // column flex container shrinks below its own content unless told not
+      // to. Compare rendered height against what the content needs, rather
+      // than against a fixed number that a longer module would outgrow.
+      const fit = await page.evaluate(() => {
+        const b = document.getElementById('pModule');
+        return { h: Math.round(b.getBoundingClientRect().height), need: b.scrollHeight };
+      });
+      if (fit.h < fit.need - 1)
+        throw new Error('the module block is squashed: ' + fit.h + 'px for ' + fit.need + 'px of content');
+      await page.keyboard.press('Escape');
+      await settle(page, 250);
+    });
+
     await R.check('an empty year offers the setup, and it seeds everything', async () => {
       // The empty state is the first thing anyone sees on a fresh install, and
       // its button is the only way to fill the module. Untested, it is a dead

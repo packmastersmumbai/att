@@ -279,6 +279,12 @@ function _dispatchPost_(params) {
 
   var action = params.action;
 
+  if (action === 'getTrainingModule')     return jsonResponse(getTrainingModule(params.topicId));
+  if (action === 'getTrainingModules')    return jsonResponse(getTrainingModules());
+  if (action === 'saveTrainingModule')    return jsonResponse(saveTrainingModule(params.module, params.token));
+  if (action === 'reviewTrainingModule')  return jsonResponse(reviewTrainingModule(params.topicId, params.by, params.token));
+  if (action === 'scoreModuleTest')       return jsonResponse(scoreModuleTest(params.topicId, params.answers));
+  if (action === 'seedTrainingModules')   return jsonResponse(seedTrainingModules(params.token));
   if (action === 'getDrillRegister')      return jsonResponse(getDrillRegister(params.year));
   if (action === 'getDrillProcedures')    return jsonResponse(getDrillProcedures());
   if (action === 'getDrillReport')        return jsonResponse(getDrillReport(params.planId));

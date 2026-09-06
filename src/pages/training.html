@@ -117,6 +117,11 @@
     .panel-hd{padding:14px 16px;border-bottom:1px solid var(--color-border);
       display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
     .panel-b{padding:14px 16px;overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:14px}
+    /* Direct children of the scrolling column must not shrink. As a flex
+       item each defaults to shrinking below its own content, which collapses
+       a section to little more than its first line — the module block is
+       long enough to make that visible where the short agenda was not. */
+    .panel-b > *{flex-shrink:0}
     .fld{display:flex;flex-direction:column;gap:5px}
     /* Direct child only. Each attendee row is itself a <label> nested inside
        .fld, and a descendant selector rendered every worker's name in
@@ -294,6 +299,7 @@
     </div>
     <div class="panel-b">
       <div class="agenda" id="pAgenda"></div>
+      <div class="agenda" id="pModule" style="display:none"></div>
       <div class="fld"><label for="pActual">Actual date</label>
         <input type="date" class="inp" id="pActual"></div>
       <div class="fld"><label for="pTrainer">Trainer</label>
@@ -478,6 +484,7 @@
         String(t.Agenda || '').split('|').filter(Boolean)
           .map(function (a) { return '<li>' + esc(a) + '</li>'; }).join('') +
         '</ul>' + (t.Method ? 'Method: ' + esc(t.Method) : '');
+      loadModule(p.topicId);
       document.getElementById('pActual').value = p.actualDate || '';
       document.getElementById('pTrainer').value = p.trainer || '';
       document.getElementById('pObs').value = '';
@@ -583,6 +590,45 @@
         present.length + ' of ' + ROSTER.length + ' present' +
         (scored.length ? ' \u00b7 ' + scored.length + ' scored \u00b7 pass mark ' + PASS_MARK : '') +
         (below ? ' \u00b7 ' + below + ' below' : '');
+    }
+
+    /* The module: what this session must teach and how it is checked. A
+       trainer opening a session should see the objectives without going
+       looking for them, and should be told plainly when a module is still
+       an unreviewed draft. */
+    function loadModule(topicId) {
+      var box = document.getElementById('pModule');
+      box.style.display = 'none';
+      box.innerHTML = '';
+      if (!topicId) return;
+      google.script.run
+        .withSuccessHandler(function (r) {
+          if (!r || !r.success) return;   // no module yet: show nothing
+          var m = r.module;
+          box.innerHTML =
+            '<b>Module — what this session teaches</b>' +
+            (m.objectives.length
+              ? '<div style="margin-bottom:6px">By the end, an attendee can:</div><ul>' +
+                m.objectives.map(function (o) { return '<li>' + esc(o) + '</li>'; }).join('') +
+                '</ul>'
+              : '') +
+            (m.sections.length
+              ? '<div style="margin-top:4px">' + m.sections.map(function (x) {
+                  return '<div style="margin-bottom:4px"><b style="display:inline;font-size:11px;' +
+                         'text-transform:none;letter-spacing:0">' + esc(x.heading) + '</b> ' +
+                         esc(x.body) + '</div>';
+                }).join('') + '</div>'
+              : '') +
+            '<div style="margin-top:6px;font-size:11px">' +
+              m.questions.length + ' check questions · pass mark ' + m.passMark + '%' +
+              ' · ' + esc(m.sourceLabel) +
+              (m.reviewed ? ''
+                : ' <span style="color:var(--due);font-weight:700">DRAFT — not yet reviewed</span>') +
+            '</div>';
+          box.style.display = '';
+        })
+        .withFailureHandler(function () {})
+        .getTrainingModule(topicId);
     }
 
     function setRating(v) {

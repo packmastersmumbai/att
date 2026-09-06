@@ -133,6 +133,28 @@ const GAS_MOCK_SCRIPT = `
       // Attendance is kept per session so a save can be read back — a mock
       // that always returns a blank roster hides the double-count bug the
       // real rewrite-on-save exists to prevent.
+      // A module: what the session teaches and how it is checked. Marked
+      // unreviewed, because that is the state every generated module starts
+      // in and the panel must say so.
+      getTrainingModule: function(topicId) {
+        if (!topicId) { respond({ success: false, error: 'Missing topic id' }); return; }
+        respond({
+          success: true,
+          module: {
+            topicId: topicId,
+            objectives: ['State what an SOP is', 'Follow the SOP for your process'],
+            sections: [
+              { heading: 'What an SOP is', body: 'The agreed written way a task is done.' },
+              { heading: 'Why it matters', body: 'The same steps every time.' }
+            ],
+            questions: [{ n:1, text:'What is an SOP?', options:['A method','A machine'], answer:0 }],
+            passMark: 70, source: 'RECORD',
+            sourceLabel: 'From the site training records',
+            reviewed: false
+          }
+        });
+      },
+
       getSessionAttendance: function(planId) {
         var saved = (window.__mockAttendance || {})[planId] || {};
         respond({
