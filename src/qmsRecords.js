@@ -245,6 +245,31 @@ function getTrainingMatrixDoc(year) {
   var skillById = {};
   (m.skills || []).forEach(function (s) { skillById[s.skillId] = s; });
 
+  // ONE ROW PER PERSON, skills as columns — not a row per person per skill.
+  //
+  // The long form is what the QMS column list literally describes, and it is
+  // unusable: 29 people against 14 competences is 406 rows, roughly twenty
+  // printed pages of mostly-empty cells, against a format that lays out 20
+  // rows to a sheet. Nobody reads that, and an unreadable register is not a
+  // register. The site's own F-HR-01 puts people down and skills across for
+  // exactly this reason, and it fits on one landscape page.
+  var skillCols = (m.skills || []).map(function (s) { return s.name; });
+  var wide = (m.people || []).map(function (p) {
+    var byId = {};
+    (p.cells || []).forEach(function (c) { byId[c.skillId] = c; });
+    var row = [p.name || '', p.jobRole || ''];
+    (m.skills || []).forEach(function (s) {
+      var c = byId[s.skillId] || {};
+      // N.A. is printed as N.A., never blank: a blank cell in a competence
+      // register reads as a gap, and "this job does not need it" is not a gap.
+      row.push(c.level === 'NA' ? 'N.A.' : (c.level || '—'));
+    });
+    row.push(String(p.gaps == null ? '' : p.gaps));
+    return row;
+  });
+
+  // The long form is still built, as the annexure that carries the detail a
+  // single letter per cell cannot: what set the level, and why it is short.
   var rows = [];
   (m.people || []).forEach(function (p) {
     (p.cells || []).forEach(function (c) {
@@ -282,15 +307,28 @@ function getTrainingMatrixDoc(year) {
       { label: 'Sheet No.',   value: '1 of 1' }
     ]},
     { type: 'table', title: 'Competence & Training Matrix',
+      columns: ['Employee Name', 'Designation'].concat(skillCols).concat(['Gaps']),
+      rows: wide },
+    { type: 'note',
+      text: 'Levels: ' + Object.keys(m.levelNames || {}).map(function (k) {
+              return k + ' ' + m.levelNames[k];
+            }).join(' · ') + '. N.A. = not required for that job role. ' +
+            'A level above L2 is a supervisor judgement and is signed, per ' +
+            'SOP-SM-001 §6.2 — this system never sets one.' },
+    { type: 'note',
+      text: 'Coverage ' + (m.kpis || {}).coverage + '% · ' +
+            (m.kpis || {}).gaps + ' gaps across ' + (m.kpis || {}).required +
+            ' required competences · ' + (m.kpis || {}).people + ' people. ' +
+            'Next review ' + _qmsDate_(m.nextReview || '') + '.' },
+    // The detail behind the grid. Only the cells that are SHORT — a full
+    // annexure repeats what the grid already says, and the reader is looking
+    // for what is missing.
+    { type: 'table', title: 'Annexure A · Competences below the required level',
       columns: ['Employee Name', 'Designation', 'Qualification',
                 'Required Competence', 'Training Identified', 'Training Date',
                 'Trainer', 'Assessment Method', 'Result',
                 'Effectiveness Verified', 'Next Training Due', 'Remarks'],
-      rows: rows },
-    { type: 'note',
-      text: 'Coverage ' + (m.kpis || {}).coverage + '% · ' +
-            (m.kpis || {}).gaps + ' gaps across ' + (m.kpis || {}).required +
-            ' required competences · ' + (m.kpis || {}).people + ' people.' },
+      rows: rows.filter(function (r) { return r[9] === 'NO'; }) },
     { type: 'signoff' }
   ];
 

@@ -144,6 +144,38 @@ async function run() {
     return /if \(c\.level === 'NA'\) return;/.test(body);
   });
 
+  // ---- the matrix has to fit on a page ----------------------------------
+  await R.check('the matrix is people down and skills across', () => {
+    const body = (SRC.match(/function getTrainingMatrixDoc[\s\S]*?\n}/) || [])[0];
+    // A row per person per competence is what the QMS column list literally
+    // describes and it runs to 406 rows — twenty pages of mostly-empty cells
+    // against a format laid out for 20 rows a sheet. An unreadable register
+    // is not a register.
+    return /var wide = \(m\.people \|\| \[\]\)\.map/.test(body) &&
+           /columns: \['Employee Name', 'Designation'\]\.concat\(skillCols\)/.test(body);
+  });
+
+  await R.check('N.A. prints as N.A., never as an empty cell', () => {
+    const body = (SRC.match(/function getTrainingMatrixDoc[\s\S]*?\n}/) || [])[0];
+    // Blank reads as a gap. "This job does not need it" is not a gap, and the
+    // difference is the whole point of a competence matrix.
+    return /c\.level === 'NA' \? 'N\.A\.'/.test(body);
+  });
+
+  await R.check('the annexure lists only what is short', () => {
+    const body = (SRC.match(/function getTrainingMatrixDoc[\s\S]*?\n}/) || [])[0];
+    // Repeating every cell in longhand says nothing the grid did not. The
+    // reader opened the annexure to find what is missing.
+    return /rows\.filter\(function \(r\) \{ return r\[9\] === 'NO'; \}\)/.test(body);
+  });
+
+  await R.check('the level key travels with the document', () => {
+    const body = (SRC.match(/function getTrainingMatrixDoc[\s\S]*?\n}/) || [])[0];
+    // L1..L4 on a page with no key is unreadable to the auditor it is for,
+    // and the L3 rule is the one an assessor most needs in front of them.
+    return /m\.levelNames/.test(body) && /SOP-SM-001 §6\.2/.test(body);
+  });
+
   // ---- the new drill fields ---------------------------------------------
   await R.check('the head count is now part of the drill schema', () => {
     // PM/OH/REC-007 asks for persons on site and persons accounted for. The
