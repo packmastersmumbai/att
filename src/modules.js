@@ -51,16 +51,42 @@ var MODULE_SOURCES = {
 };
 
 function _ensureModuleSheets_() {
+  _ensureSheetsWithHeaders_(MODULE_HEADERS);
+}
+
+/**
+ * Create each tab if missing, and add any header the schema has grown since
+ * the tab was created.
+ *
+ * The second part is the one that matters. Every writer in this codebase maps
+ * values BY HEADER NAME, so a column the sheet does not have is silently
+ * dropped rather than erroring — which is exactly how the Hindi columns wrote
+ * nothing: the sheet had eight headers and the code was handing it eleven,
+ * and every call reported success.
+ *
+ * Shared because training.js, mockdrill.js and skillmatrix.js all had the
+ * same gap waiting for the first time their schema changed.
+ */
+function _ensureSheetsWithHeaders_(schema) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-  Object.keys(MODULE_HEADERS).forEach(function (tab) {
+  Object.keys(schema).forEach(function (tab) {
     var sheet = ss.getSheetByName(tab);
     if (!sheet) {
       sheet = ss.insertSheet(tab);
-      sheet.getRange(1, 1, 1, MODULE_HEADERS[tab].length)
-           .setValues([MODULE_HEADERS[tab]])
+      sheet.getRange(1, 1, 1, schema[tab].length)
+           .setValues([schema[tab]])
            .setFontWeight('bold').setBackground('#F0F0F0');
       sheet.setFrozenRows(1);
+      return;
     }
+    var last = sheet.getLastColumn();
+    var have = last ? sheet.getRange(1, 1, 1, last).getValues()[0] : [];
+    schema[tab].forEach(function (h) {
+      if (have.indexOf(h) !== -1) return;
+      sheet.getRange(1, sheet.getLastColumn() + 1)
+           .setValue(h).setFontWeight('bold').setBackground('#F0F0F0');
+      have = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+    });
   });
 }
 

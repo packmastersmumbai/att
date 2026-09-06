@@ -54,17 +54,9 @@ var DRILL_ROLES = [
 ];
 
 function _ensureDrillSheets_() {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  Object.keys(DRILL_HEADERS).forEach(function (tab) {
-    var sheet = ss.getSheetByName(tab);
-    if (!sheet) {
-      sheet = ss.insertSheet(tab);
-      sheet.getRange(1, 1, 1, DRILL_HEADERS[tab].length)
-           .setValues([DRILL_HEADERS[tab]])
-           .setFontWeight('bold').setBackground('#F0F0F0');
-      sheet.setFrozenRows(1);
-    }
-  });
+  // Adds any header the schema has grown since the tab was made;
+  // writers map by header name, so a missing column writes nothing.
+  _ensureSheetsWithHeaders_(DRILL_HEADERS);
 }
 
 // ── The procedures ─────────────────────────────────────────────────────────

@@ -171,6 +171,39 @@ async function run() {
   {
     const R = makeRunner('17b · Modules — parsing and marking');
 
+    await R.check('a sheet made before a column existed gains that column', async () => {
+      // This bug has now bitten three times: Employees.JobRole, the document
+      // control keys, and the Hindi module columns. Every writer maps values
+      // BY HEADER NAME, so a column the sheet lacks is silently dropped and
+      // the call still reports success — the Hindi wrote nothing for a whole
+      // deploy while seedTrainingModules said "39 updated".
+      const added = [];
+      let headers = ['TopicID', 'Objectives'];   // an old, narrower sheet
+      lift('_ensureSheetsWithHeaders_', {
+        SpreadsheetApp: { getActiveSpreadsheet: () => ({
+          getSheetByName: () => ({
+            getLastColumn: () => headers.length,
+            getRange: () => ({
+              getValues: () => [headers],
+              setValue: v => { added.push(v); headers.push(v);
+                               return { setFontWeight: () => ({ setBackground: () => {} }) }; },
+              setValues: () => ({ setFontWeight: () => ({ setBackground: () => {} }) })
+            }),
+            setFrozenRows: () => {}
+          }),
+          insertSheet: () => { throw new Error('should not create an existing sheet'); }
+        }) }
+      })({ T: ['TopicID', 'Objectives', 'ObjectivesHi', 'Questions'] });
+
+      if (added.indexOf('ObjectivesHi') === -1)
+        throw new Error('a new column was not added: ' + JSON.stringify(added));
+      if (added.indexOf('Questions') === -1)
+        throw new Error('a second new column was missed: ' + JSON.stringify(added));
+      // Existing columns must not be duplicated.
+      if (added.indexOf('TopicID') !== -1)
+        throw new Error('an existing column was added again');
+    });
+
     await R.check('a question parses into text, options and an answer', async () => {
       const qs = parseQuestions('What is 2+2? ?? three ~ four ~ five ?? 1');
       if (qs.length !== 1) throw new Error('parsed ' + qs.length + ' questions');
