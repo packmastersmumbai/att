@@ -189,9 +189,28 @@ async function run() {
       if (!note) throw new Error('the setup result did not survive the repaint');
       if (!/2025/.test(note) || !/skill/i.test(note))
         throw new Error('setup did not report what it did: ' + note);
+      // The 2025 history the documents recorded must be reported too, or a
+      // supervisor cannot tell it came across.
+      if (!/attendance/i.test(note)) throw new Error('attendance not reported: ' + note);
+      if (!/drill report/i.test(note)) throw new Error('drill reports not reported: ' + note);
       const onward = await page.evaluate(() =>
         !!document.querySelector('#setupNote a[href*="skillmatrix"]'));
       if (!onward) throw new Error('nothing points at the matrix that was just seeded');
+    });
+
+    await R.check('names that match no employee are named, not swallowed', async () => {
+      // Their training is on paper but cannot be credited to anyone, so the
+      // matrix will understate them. Saying nothing would let that pass for
+      // a complete import.
+      const warn = await page.evaluate(() => {
+        const w = document.querySelector('#setupNote .setup-warn');
+        return w ? w.textContent : '';
+      });
+      if (!warn) throw new Error('the unmatched names were not surfaced');
+      if (!/TARUN MISHRA/.test(warn)) throw new Error('a missing person is not listed: ' + warn);
+      // And it must say what to do about it, or it is just a complaint.
+      if (!/Admin/.test(warn) || !/again/.test(warn))
+        throw new Error('no remedy offered: ' + warn);
     });
 
     await R.check('a wrong PIN seeds nothing', async () => {
@@ -441,6 +460,53 @@ async function run() {
         .map(d => planDate(d, 2026))
         .filter(iso => new Date(iso + 'T00:00:00').getDay() === 0);
       if (sundays.length) throw new Error('sessions landed on a Sunday: ' + sundays.join(', '));
+    });
+
+    await R.check('the 2025 attendance seed matches the records it came from', async () => {
+      // 7 of the 33 Word records carry a typed attendance table; the other 26
+      // are blank. 57 rows across those seven.
+      const att = lift('_attendanceSeed_', {})();
+      if (att.length !== 7) throw new Error('expected 7 sessions, got ' + att.length);
+      const rows = att.reduce((n, [, names]) => n + names.length, 0);
+      if (rows !== 57) throw new Error('expected 57 attendance rows, got ' + rows);
+      // Spot-check the largest against the document.
+      const dec = att.filter(([d]) => d === '2025-12-17')[0];
+      if (!dec) throw new Error('the 17 Dec session is missing');
+      if (dec[1].length !== 11) throw new Error('17 Dec had 11 attendees, got ' + dec[1].length);
+      // Every date must be one the plan actually seeds, or the rows attach to
+      // nothing and vanish silently.
+      const planDates = lift('_trainingDateSeed_', {})();
+      const known = new Set();
+      Object.values(planDates).forEach(ds => ds.forEach(dd => {
+        const [d, m] = dd.split('/');
+        known.add(`2025-${m}-${d}`);
+      }));
+      att.forEach(([d]) => {
+        if (!known.has(d)) throw new Error('attendance on ' + d + ' has no planned session');
+      });
+    });
+
+    await R.check('a name is matched exactly, never fuzzily', async () => {
+      // 'RAJNI' in the records loosely matches 'DHRUV RAJ NISHAD' on the
+      // employee sheet. Crediting that person with safety training they did
+      // not attend is exactly the failure an audit looks for.
+      const norm = lift('_normName_', {});
+      if (norm('Anuj Pathak') !== norm('ANUJ  PATHAK'))
+        throw new Error('case and spacing should not matter');
+      if (norm('RAJNI') === norm('DHRUV RAJ NISHAD'))
+        throw new Error('a substring match would credit the wrong person');
+      if (norm('ASHOK PATOLE') === norm('ASHOK POTALE'))
+        throw new Error('a transposed spelling must NOT match silently');
+    });
+
+    await R.check('no attendance carries a fabricated score', async () => {
+      // The paper records no scores. A zero would read as a failed test on
+      // the matrix; blank correctly reads as "not assessed".
+      const src = fs.readFileSync(path.join(__dirname, 'src', 'training.js'), 'utf8');
+      const fn = (src.match(/function seedTrainingAttendance[\s\S]*?\n}/) || [])[0] || '';
+      if (!fn) throw new Error('seedTrainingAttendance not found');
+      if (!/Score:\s*''/.test(fn)) throw new Error('the seed does not store a blank score');
+      if (/Score:\s*0\b/.test(fn)) throw new Error('the seed stores a zero score');
     });
 
     await R.check('the seed matches the 2025 records it came from', async () => {

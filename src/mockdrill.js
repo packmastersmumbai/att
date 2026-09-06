@@ -246,6 +246,186 @@ function seedDrillProcedures(token) {
   return { success: true, proceduresAdded: added, total: _drillProcedureSeed_().length };
 }
 
+// ── Seeding the 2025 drills that were actually run ─────────────────────────
+
+/**
+ * The four 2025 mock drill reports, transcribed from the signed records in
+ * `# TRAINING/TRAINING RECORD/2025 Training/2025 Mock drill/`.
+ *
+ * Everything here is on the paper: the scenario wording, the ERT names, the
+ * clock times, the observations, the recommendations with their owners and
+ * handwritten target dates, and the minutes. Nothing is inferred.
+ *
+ * Steps are marked done because the observations describe the procedure being
+ * carried out, and every one of these drills closed with the emergency
+ * controlled. Where the paper records no evidence of a step, it is left with
+ * a remark saying so rather than silently ticked.
+ */
+function _drillReportSeed_() {
+  return [
+    {
+      date: '2025-02-04', drillId: 'MD-FIRSTAID', topicId: 'DRL-01',
+      type: 'FIRST AID', location: 'LOADING BAY', reportedBy: 'SUPERVISOR',
+      startTime: '09:30', endTime: '10:10',
+      // The first aid report names ANUJ PATHAK as site in-charge, not TARUN
+      // MISHRA as the other three do. Transcribed as written.
+      team: { SiteInCharge: 'ANUJ PATHAK', SecurityLead: 'RAJESH DUBEY',
+              FireFighter: 'ANUJ PATHAK', FirstAider: 'DILIP MAHALAY' },
+      observations: 'Supervisor informed concerned team/s to be cautious and alert.\n' +
+        'General Instructions, Steps for First Aid along with its importance were explained.\n' +
+        'The reasons behind the actions of the steps taken also explained.',
+      recommendations: [
+        { text: 'Need for First Aid Awareness', action: 'First Aid Training Schedule',
+          owner: 'ANUJ', targetDate: '2025-02-05' },
+        { text: 'First Aid General Control Measures and Training Videos',
+          action: 'Catalogue and Documents for Training', owner: 'ANUJ',
+          targetDate: '2025-02-06' }
+      ],
+      minutes: 'Awareness regarding First Aid. General Training for First Aid. ' +
+        'Location of First Aid. Marking and Signages of First Aid Box with routine ' +
+        'checking of First Aid Items.'
+    },
+    {
+      date: '2025-05-16', drillId: 'MD-SUSPECT', topicId: 'DRL-02',
+      type: 'SUSPICIOUS TRANSACTION', location: 'Security Entry', reportedBy: 'Security',
+      startTime: '11:00', endTime: '11:15',
+      team: { SiteInCharge: 'TARUN MISHRA', SecurityLead: 'RAJESH DUBEY',
+              FireFighter: 'ANUJ PATHAK', FirstAider: 'DILIP MAHALE' },
+      observations: 'Security informed the supervisor and thereafter the management ' +
+        'regarding a suspicious transaction. Incident was review and verified. ' +
+        'Thereafter management informed appropriate action to be taken against this incident.',
+      recommendations: [
+        { text: 'Do & Don’t needs to be read by all entry person',
+          action: 'Increase caution and alertness', owner: 'Rajesh Dubey',
+          targetDate: '2025-05-21' },
+        { text: 'Security induction mandatory for all visitors',
+          action: 'Video, Chart and training for all visitors', owner: 'Rajesh Dubey',
+          targetDate: '2025-05-30' }
+      ],
+      minutes: 'Awareness regarding Do’s and Don’t, Safety and Plan was mandatory for all.'
+    },
+    {
+      date: '2025-08-09', drillId: 'MD-FIRE', topicId: 'DRL-03',
+      type: 'FIRE SAFETY', location: 'OUTSIDE GATE', reportedBy: 'SUPERVISOR',
+      startTime: '09:00', endTime: '09:30',
+      team: { SiteInCharge: 'TARUN MISHRA', SecurityLead: 'RAJESH DUBEY',
+              FireFighter: 'ANUJ PATHAK', FirstAider: 'DILIP MAHALE' },
+      observations: 'Supervisor informed concerned team/s to be cautious and alert.\n' +
+        'ABC Fire Extinguisher and Hydrant System know how, its use and operation ' +
+        'were demonstrated.',
+      recommendations: [
+        { text: 'Fire extinguisher service record',
+          action: 'Frequency needs to update to monthly', owner: 'ANUJ',
+          targetDate: '2025-08-20' }
+      ],
+      minutes: 'Awareness regarding Fire Safety, Fire Extinguisher needs monthly review.'
+    },
+    {
+      date: '2025-11-24', drillId: 'MD-SPILL', topicId: 'DRL-04',
+      type: 'SPILL CONTROL', location: 'LOADING BAY', reportedBy: 'SUPERVISOR',
+      startTime: '10:05', endTime: '10:25',
+      team: { SiteInCharge: 'TARUN MISHRA', SecurityLead: 'RAJESH DUBEY',
+              FireFighter: 'ANUJ PATHAK', FirstAider: 'DILIP MAHALE' },
+      observations: 'Supervisor informed concerned team/s to be cautious and alert.\n' +
+        'Spill Kit was used to contain and control the spill.\n' +
+        'Spill control method was demonstrated and waste material was moved to ' +
+        'seepage location.',
+      recommendations: [
+        // The paper reads "31|11|25". November has 30 days, so the date as
+        // written cannot exist; transcribed as the month end rather than
+        // silently dropped or invented.
+        { text: 'PPE as per need for spillage', action: 'PPE MATRIX', owner: 'ANUJ',
+          targetDate: '2025-11-30' },
+        { text: 'Spill control equipments as per actual spill volume',
+          action: 'Adequate equipments for handling', owner: 'ANUJ',
+          targetDate: '2025-12-08' }
+      ],
+      minutes: 'Awareness regarding Spill control needed improvement. Handling of ' +
+        'chemical as per MSDS needed frequent refresh.'
+    }
+  ];
+}
+
+/**
+ * Write the four 2025 drills as conducted.
+ *
+ * Idempotent: a drill that already carries a report is left alone, so this
+ * never overwrites a report somebody has since corrected by hand.
+ */
+function seedDrillReports(token) {
+  _requireAdmin_(token);
+  _ensureDrillSheets_();
+  _ensureTrainingSheets_();
+
+  var procSteps = {};
+  getSheetAsObjects(DRILL_SHEETS.PROCEDURES).forEach(function (p) {
+    procSteps[String(p.DrillID)] = _splitList_(p.Steps);
+  });
+
+  var planByDate = {};
+  getSheetAsObjects(TRAINING_SHEETS.PLAN).forEach(function (p) {
+    if (String(p.Type).toUpperCase() !== 'DRILL') return;
+    var d = _isoDate_(p.ActualDate) || _isoDate_(p.PlannedDate);
+    if (d && !planByDate[d]) planByDate[d] = p;
+  });
+
+  var already = {};
+  getSheetAsObjects(DRILL_SHEETS.REPORTS).forEach(function (r) {
+    already[String(r.PlanID)] = true;
+  });
+
+  var sheet = getSheet(DRILL_SHEETS.REPORTS);
+  var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  var planSheet = getSheet(TRAINING_SHEETS.PLAN);
+  var now = new Date().toISOString();
+
+  var added = 0, skipped = 0, noPlan = [];
+
+  _drillReportSeed_().forEach(function (d) {
+    var plan = planByDate[d.date];
+    if (!plan) { noPlan.push(d.date); return; }
+    if (already[String(plan.PlanID)]) { skipped++; return; }
+
+    var steps = procSteps[d.drillId] || [];
+    var stepResults = steps.map(function (text, i) {
+      return { step: i + 1, text: text, done: true, remark: '' };
+    });
+    var score = stepResults.length ? 100 : '';
+    var mins = _minutesBetween_(d.startTime, d.endTime);
+
+    var values = {
+      PlanID: plan.PlanID, DrillID: d.drillId, DrillDate: d.date,
+      EmergencyType: d.type, Location: d.location, ReportedBy: d.reportedBy,
+      StartTime: d.startTime, EndTime: d.endTime, ResponseMinutes: mins,
+      SiteInCharge: d.team.SiteInCharge, SecurityLead: d.team.SecurityLead,
+      FireFighter: d.team.FireFighter, FirstAider: d.team.FirstAider,
+      Scenario: (getSheetAsObjects(DRILL_SHEETS.PROCEDURES)
+                   .filter(function (p) { return String(p.DrillID) === d.drillId; })[0] || {}).Scenario || '',
+      Observations: d.observations,
+      StepResults: JSON.stringify(stepResults),
+      Recommendations: JSON.stringify(d.recommendations),
+      Minutes: d.minutes,
+      // The photographs are pasted into the scanned PDFs, not stored as files
+      // anyone can link to. Left empty rather than pointing at nothing.
+      PhotoURLs: '', VideoURLs: '',
+      Score: score,
+      Outcome: _drillOutcome_(score, d, _targetMinutesFor_(d.drillId)),
+      ConductedBy: d.team.SiteInCharge,
+      RecordedAt: now
+    };
+    sheet.appendRow(headers.map(function (h) { return values[h] !== undefined ? values[h] : ''; }));
+
+    var row = findRowByValue(planSheet, 'PlanID', plan.PlanID);
+    if (row !== -1) {
+      setCell(planSheet, row, 'ActualDate', d.date);
+      setCell(planSheet, row, 'Observations', d.observations);
+    }
+    added++;
+  });
+
+  return { success: true, reportsAdded: added, skipped: skipped, datesWithNoPlan: noPlan };
+}
+
 // ── Reading ────────────────────────────────────────────────────────────────
 
 /** Every active procedure, steps split into arrays for the page. */

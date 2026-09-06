@@ -372,6 +372,127 @@ function seedTrainingYear(year, token) {
   return { success: true, year: y, topicsAdded: addedTopics, sessionsAdded: rows.length };
 }
 
+// ── Seeding 2025 attendance ────────────────────────────────────────────────
+
+/**
+ * The attendance that WAS typed into the 2025 records.
+ *
+ * Seven of the 33 Word documents carry a filled-in attendance table — the
+ * other 26 are blank and exist only as ink on the scans. These 57 rows are
+ * transcribed from those seven, keyed by the session date so they attach to
+ * whichever plan row holds that date.
+ *
+ * Names are as written in the documents. They are matched to Employees by
+ * name at seed time and anything that does not match is REPORTED, never
+ * guessed: crediting the wrong person with safety training is precisely the
+ * failure an audit is looking for. Six of these fourteen people are not on
+ * the employee sheet at all, and 'RAJNI' is ambiguous.
+ */
+function _attendanceSeed_() {
+  return [
+    ['2025-03-07', ['ANUJ PATHAK', 'SATENDRA YADAV', 'ATUL WAGHMARE', 'TARUN MISHRA',
+                    'ANITA RAJBHAR', 'SUMAN RAJBHAR', 'KRIPASANKAR', 'AVINASH VASANT']],
+    ['2025-03-15', ['TARUN MISHRA', 'ANITA RAJBHAR', 'SUMAN RAJBHAR', 'KRIPASANKAR',
+                    'AVINASH VASANT', 'ANUJ PATHAK', 'ATUL WAGHMARE', 'SATENDRA YADAV']],
+    ['2025-06-18', ['TARUN MISHRA', 'ANITA RAJBHAR', 'SUMAN RAJBHAR', 'ANUJ PATHAK',
+                    'ATUL WAGHMARE', 'RIDDHI MESTRY', 'SANTOSH MAURYA', 'HARISH SINGH']],
+    ['2025-07-30', ['ANUJ PATHAK', 'SATENDRA YADAV', 'ATUL WAGHMARE', 'TARUN MISHRA',
+                    'ANITA RAJBHAR', 'SUMAN RAJBHAR', 'KRIPASANKAR', 'AVINASH VASANT']],
+    ['2025-10-14', ['ANUJ PATHAK', 'SATENDRA YADAV', 'ATUL WAGHMARE', 'TARUN MISHRA',
+                    'ANITA RAJBHAR', 'SUMAN RAJBHAR']],
+    ['2025-10-24', ['TARUN MISHRA', 'ANITA RAJBHAR', 'SUMAN RAJBHAR', 'ANUJ PATHAK',
+                    'ATUL WAGHMARE', 'RIDDHI MESTRY', 'SANTOSH MAURYA', 'HARISH SINGH']],
+    ['2025-12-17', ['ANUJ PATHAK', 'HARISH SINGH', 'ATUL WAGHMARE', 'RAJNI', 'TARUN MISHRA',
+                    'ANITA RAJBHAR', 'SUMAN RAJBHAR', 'RIDDHI MESTRY', 'ASHOK PATOLE',
+                    'DILIP MAHALE', 'SANTOSH MAURYA']]
+  ];
+}
+
+/**
+ * Write the 2025 attendance that the documents actually recorded.
+ *
+ * Exact name match only, after normalising case and spacing. A near miss is
+ * NOT accepted: 'RAJNI' in the records fuzzy-matches 'DHRUV RAJ NISHAD' on
+ * the employee sheet, which is a different person — and a matrix that says
+ * the wrong worker is trained is worse than one that admits it does not know.
+ *
+ * Unmatched names come back in `unmatched` so they can be added to Employees
+ * or the spelling corrected, and the seed re-run. Idempotent: a session that
+ * already has rows is left alone.
+ */
+function seedTrainingAttendance(token) {
+  _requireAdmin_(token);
+  _ensureTrainingSheets_();
+
+  var byName = {};
+  getSheetAsObjects(SHEETS.EMPLOYEES).forEach(function (e) {
+    var k = _normName_(e.Name);
+    // First writer wins; a duplicate name is reported rather than resolved.
+    if (k && !byName[k]) byName[k] = e;
+  });
+
+  var planByDate = {};
+  getSheetAsObjects(TRAINING_SHEETS.PLAN).forEach(function (p) {
+    var d = _isoDate_(p.ActualDate) || _isoDate_(p.PlannedDate);
+    if (d && !planByDate[d]) planByDate[d] = p;
+  });
+
+  var already = {};
+  getSheetAsObjects(TRAINING_SHEETS.ATTENDANCE).forEach(function (a) {
+    already[String(a.PlanID)] = true;
+  });
+
+  var sheet = getSheet(TRAINING_SHEETS.ATTENDANCE);
+  var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  var now = new Date().toISOString();
+
+  var rows = [], unmatched = {}, sessions = 0, skipped = 0, noPlan = [];
+
+  _attendanceSeed_().forEach(function (entry) {
+    var date = entry[0], names = entry[1];
+    var plan = planByDate[date];
+    if (!plan) { noPlan.push(date); return; }
+    if (already[String(plan.PlanID)]) { skipped++; return; }
+
+    var wrote = 0;
+    names.forEach(function (n) {
+      var emp = byName[_normName_(n)];
+      if (!emp) { unmatched[n] = true; return; }
+      var values = {
+        PlanID: plan.PlanID, EmpID: emp.EmpID, Name: emp.Name,
+        Present: 'YES',
+        // No score was recorded on paper. Blank means "not assessed", which
+        // is the truth; a zero would read as a failed test on the matrix.
+        Score: '',
+        RecordedAt: now
+      };
+      rows.push(headers.map(function (h) { return values[h] !== undefined ? values[h] : ''; }));
+      wrote++;
+    });
+    if (wrote) sessions++;
+  });
+
+  if (rows.length) {
+    sheet.getRange(sheet.getLastRow() + 1, 1, rows.length, headers.length).setValues(rows);
+  }
+
+  return {
+    success: true,
+    sessions: sessions,
+    rows: rows.length,
+    skipped: skipped,
+    datesWithNoPlan: noPlan,
+    // The honest half of the result: who the documents name that the system
+    // could not identify. Nothing was guessed for these.
+    unmatched: Object.keys(unmatched).sort()
+  };
+}
+
+/** Case- and space-insensitive name key. Deliberately NOT fuzzy. */
+function _normName_(v) {
+  return String(v == null ? '' : v).toUpperCase().replace(/[^A-Z]/g, '');
+}
+
 // ── Attendance (Stage 2) ───────────────────────────────────────────────────
 
 /**

@@ -593,6 +593,31 @@ function setupTraining(token, years) {
     out.proceduresAdded = 0;
   }
 
+  // The 2025 history the documents actually recorded: the attendance typed
+  // into seven of the 33 training records, and the four completed mock drill
+  // reports. Both must run AFTER the plan and procedures exist, because they
+  // attach to plan rows by date.
+  try {
+    var a = seedTrainingAttendance(token);
+    if (a.success) {
+      out.attendanceRows = a.rows;
+      out.attendanceSessions = a.sessions;
+      // Who the records name that the system could not identify. Surfaced
+      // rather than swallowed: these are people whose training is on paper
+      // but cannot be credited to anyone.
+      out.unmatchedAttendees = a.unmatched;
+    }
+  } catch (e) {
+    out.attendanceRows = 0;
+  }
+
+  try {
+    var r = seedDrillReports(token);
+    if (r.success) out.drillReportsAdded = r.reportsAdded;
+  } catch (e) {
+    out.drillReportsAdded = 0;
+  }
+
   return out;
 }
 

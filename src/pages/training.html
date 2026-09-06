@@ -102,6 +102,10 @@
     .empty{padding:34px 16px;text-align:center;color:var(--color-text-muted);font-size:13px}
     .setup-note{padding:9px 16px;background:var(--done-bg);color:var(--done);
       font-size:12px;font-weight:600;border-bottom:1px solid var(--color-border)}
+    /* A partial success is still a success, but the gap must not read as
+       part of the good news. */
+    .setup-warn{margin-top:6px;padding-top:6px;border-top:1px solid var(--due);
+      color:var(--due);font-weight:500}
 
     /* ── Session panel ── */
     .backdrop{display:none;position:fixed;inset:0;background:rgba(2,6,16,.45);z-index:40}
@@ -655,10 +659,21 @@
     /* A note that outlives the grid repaint. It also links onward to the
        matrix, because seeding is the moment the second half of the module
        becomes worth visiting. */
-    function setupNote(text) {
+    function setupNote(text, unmatched) {
       var el = document.getElementById('setupNote');
-      el.innerHTML = esc(text) +
+      var html = esc(text) +
         ' <a href="?page=skillmatrix" style="color:inherit">Open the skill matrix →</a>';
+      /* Names the 2025 records list that no employee matches. Surfaced rather
+         than swallowed: their training is on paper but cannot be credited to
+         anybody, so the matrix will understate them until somebody adds them
+         to Employees or fixes the spelling. Re-running the setup then picks
+         them up — it is idempotent. */
+      if (unmatched && unmatched.length) {
+        html += '<div class="setup-warn">Not credited to anyone — no matching employee for ' +
+          esc(unmatched.join(', ')) + '. Add them under Admin → Employees ' +
+          '(or correct the spelling) and run this again.</div>';
+      }
+      el.innerHTML = html;
       el.style.display = '';
     }
 
@@ -685,7 +700,10 @@
               // the result there and the supervisor never learns the skill
               // library came up too.
               setupNote(r.sessionsAdded + ' sessions across ' + years +
-                        ', and ' + r.skillsAdded + ' skills.');
+                        ', ' + r.skillsAdded + ' skills, ' +
+                        (r.attendanceRows || 0) + ' attendance rows from the 2025 ' +
+                        'records and ' + (r.drillReportsAdded || 0) + ' drill reports.',
+                        r.unmatchedAttendees || []);
               load(DATA.year);
             })
             .withFailureHandler(function (e) { box.textContent = 'Error: ' + (e && e.message); })

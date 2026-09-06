@@ -487,6 +487,62 @@ async function run() {
         throw new Error(known.size + ' drill topics but ' + seed.length + ' procedures');
     });
 
+    await R.check('the four 2025 drill reports are transcribed, not invented', async () => {
+      const seed = lift('_drillReportSeed_', {})();
+      if (seed.length !== 4) throw new Error('expected 4 conducted drills, got ' + seed.length);
+
+      // Dates, times and locations exactly as they appear on the signed reports.
+      const want = {
+        '2025-02-04': { type: 'FIRST AID', s: '09:30', e: '10:10', mins: 40 },
+        '2025-05-16': { type: 'SUSPICIOUS TRANSACTION', s: '11:00', e: '11:15', mins: 15 },
+        '2025-08-09': { type: 'FIRE SAFETY', s: '09:00', e: '09:30', mins: 30 },
+        '2025-11-24': { type: 'SPILL CONTROL', s: '10:05', e: '10:25', mins: 20 }
+      };
+      seed.forEach(d => {
+        const w = want[d.date];
+        if (!w) throw new Error('unexpected drill date ' + d.date);
+        if (d.type !== w.type) throw new Error(d.date + ' type drifted to ' + d.type);
+        if (d.startTime !== w.s || d.endTime !== w.e)
+          throw new Error(d.date + ' clock drifted to ' + d.startTime + '-' + d.endTime);
+        // The recorded duration must follow from the two clock times beside it.
+        if (minutesBetween(d.startTime, d.endTime) !== w.mins)
+          throw new Error(d.date + ' does not span ' + w.mins + ' minutes');
+        if (!d.team.SiteInCharge) throw new Error(d.date + ' names no site in-charge');
+        if (!d.observations) throw new Error(d.date + ' has no observations');
+        if (!d.minutes) throw new Error(d.date + ' has no minutes of meeting');
+      });
+    });
+
+    await R.check('every seeded recommendation carries an owner and a real date', async () => {
+      // An impossible date on the paper ("31|11|25") must be transcribed as
+      // something a date field can hold, not passed through or dropped.
+      lift('_drillReportSeed_', {})().forEach(d => {
+        d.recommendations.forEach((r, i) => {
+          if (!r.text) throw new Error(d.date + ' recommendation ' + (i + 1) + ' is empty');
+          if (!r.owner) throw new Error(d.date + ' recommendation ' + (i + 1) + ' has no owner');
+          if (!/^\d{4}-\d{2}-\d{2}$/.test(r.targetDate || ''))
+            throw new Error(d.date + ' target date is not a date: ' + r.targetDate);
+          const dt = new Date(r.targetDate + 'T00:00:00');
+          if (isNaN(dt) || r.targetDate.slice(8) !== String(dt.getDate()).padStart(2, '0'))
+            throw new Error(d.date + ' has an impossible target date: ' + r.targetDate);
+        });
+      });
+    });
+
+    await R.check('a seeded drill points at a procedure and a real topic', async () => {
+      const reports = lift('_drillReportSeed_', {})();
+      const procs = lift('_drillProcedureSeed_', {})();
+      const ids = new Set(procs.map(p => p.DrillID));
+      const topics = new Set(procs.map(p => p.TopicID));
+      reports.forEach(d => {
+        if (!ids.has(d.drillId)) throw new Error(d.date + ' names unknown procedure ' + d.drillId);
+        if (!topics.has(d.topicId)) throw new Error(d.date + ' names unknown topic ' + d.topicId);
+      });
+      // All four scenarios were run in 2025 — one each.
+      if (new Set(reports.map(r => r.drillId)).size !== 4)
+        throw new Error('the four 2025 drills are not four distinct scenarios');
+    });
+
     await R.check('the 2025 targets match the records they came from', async () => {
       // Spill 20, fire 30, suspicious 15, first aid 40 — the actual times in
       // the 2025 mock drill reports, not invented benchmarks.

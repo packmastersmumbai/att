@@ -429,6 +429,13 @@ const GAS_MOCK_SCRIPT = `
         window.__mockSetup = (window.__mockSetup || 0) + 1;
         respond({
           success: true, skillsAdded: 19, topicsAdded: 14, sessionsAdded: 108,
+          proceduresAdded: 4, drillReportsAdded: 4,
+          attendanceRows: 43, attendanceSessions: 7,
+          // Six of the fourteen names in the 2025 records match no employee.
+          // The setup must SAY so rather than quietly crediting nobody.
+          unmatchedAttendees: ['ASHOK PATOLE', 'ATUL WAGHMARE', 'AVINASH VASANT',
+                               'KRIPASANKAR', 'RAJNI', 'RIDDHI MESTRY',
+                               'SATENDRA YADAV', 'TARUN MISHRA'],
           years: [{ year: 2025, sessionsAdded: 36 }, { year: 2026, sessionsAdded: 36 },
                   { year: 2027, sessionsAdded: 36 }]
         });

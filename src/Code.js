@@ -232,11 +232,11 @@ function _bootstrapIfNeeded() {
       // Document control, printed at the foot of the mock drill report and
       // any other controlled format. A revision is a settings change, which
       // is the point of a controlled document carrying a version.
-      ['DocOwner',           ''],
-      ['DocApprover',        ''],
-      ['DocApprovedOn',      ''],
+      ['DocOwner',           'Balkrishna Mishra'],
+      ['DocApprover',        'Balkrishna Mishra'],
+      ['DocApprovedOn',      '01/04/2025'],
       ['DocVersion',         '1.0'],
-      ['DocNextReview',      ''],
+      ['DocNextReview',      '01/04/2026'],
       ['MinRequired',        ''],
       ['LevelNames',         'Beginner|Under supervision|Independent|Can train others']
     ];
@@ -282,6 +282,8 @@ function _dispatchPost_(params) {
   if (action === 'saveDrillReport')       return jsonResponse(saveDrillReport(params.report, params.token));
   if (action === 'addDrillMedia')         return jsonResponse(addDrillMedia(params.planId, params.dataUrl, params.kind));
   if (action === 'seedDrillProcedures')   return jsonResponse(seedDrillProcedures(params.token));
+  if (action === 'seedDrillReports')      return jsonResponse(seedDrillReports(params.token));
+  if (action === 'seedTrainingAttendance') return jsonResponse(seedTrainingAttendance(params.token));
   if (action === 'getSkillMatrix')        return jsonResponse(getSkillMatrix(params.group));
   if (action === 'getSkillHistory')       return jsonResponse(getSkillHistory(params.empId, params.skillId));
   if (action === 'setSkillLevel')         return jsonResponse(setSkillLevel(params.entry, params.token));
