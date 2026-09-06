@@ -80,6 +80,12 @@
     .rule .rtxt{font-size:12px;line-height:1.55;color:#1f2937;transition:filter .35s ease}
     .rule .rtxt .en{color:#64748b;display:block;margin-top:2px}
     .rule .rnum{font-weight:800;color:#b45309;margin-right:5px}
+    /* SQCDP letter heading. Stays sharp while the rules under it are
+       blurred, so the visitor can see WHAT they are about to uncover and
+       how many blocks are left. */
+    .rule .rsec{font-size:11px;font-weight:800;color:#92400e;text-transform:uppercase;
+      letter-spacing:.8px;margin-bottom:6px;padding-bottom:5px;border-bottom:1px solid #fde68a}
+    .rule .rtxt+.rtxt{margin-top:6px}
     .rule.blurred .rtxt{filter:blur(4.5px);user-select:none}
     .rule .tap{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
       font-size:12px;font-weight:800;color:#92400e;background:rgba(255,251,235,.35)}
@@ -188,6 +194,18 @@
         <div class="fg">
           <label data-i18n="vreg_vehicle">Vehicle Number</label>
           <input type="text" id="vVehicle" class="input" placeholder="MH-01-AB-1234">
+        </div>
+        <!-- Who to call if this visitor is hurt on site. A chemical plant should
+             never be holding an injured visitor with no next of kin on record. -->
+        <div class="row">
+          <div class="fg">
+            <label data-i18n="vreg_emg_name">Emergency contact name</label>
+            <input type="text" id="vEmgName" class="input" data-i18n-ph="vreg_emg_name_ph" placeholder="Family member">
+          </div>
+          <div class="fg">
+            <label data-i18n="vreg_emg_phone">Emergency contact phone</label>
+            <input type="tel" id="vEmgPhone" class="input" placeholder="98765 43210">
+          </div>
         </div>
       </div>
 
@@ -325,6 +343,7 @@
        deploy. Register stays disabled until the visitor ticks the acknowledgement. */
     var SAFETY_DEFAULT='https://youtu.be/TJv6eO_L9LQ';
     var vSafetyAckAt='';
+    var vSafetyVersion='';   // which rule set was agreed to (see QRATT_SAFETY_VERSION)
 
     function _ytId_(url){
       var m=String(url||'').match(/(?:youtu\.be\/|v=|\/embed\/|\/shorts\/)([A-Za-z0-9_-]{6,})/);
@@ -344,20 +363,33 @@
         wrap.innerHTML='<div class="novid" data-i18n="vreg_video_unavailable">'+qrattT('vreg_video_unavailable')+'</div>';
       }
     }
-    /* Safety rules. Each starts blurred; the visitor must tap every one to reveal
-       it. Only when all are revealed does the acknowledgement checkbox unlock, and
-       only when that is ticked does the Register button appear. Keys match the
-       shared safety_rule_N dictionary entries (identical text also used on vpass). */
-    var SAFETY_RULE_KEYS=['safety_rule_1','safety_rule_2','safety_rule_3','safety_rule_4',
-                           'safety_rule_5','safety_rule_6','safety_rule_7'];
-    var rulesRevealed=0;
+    /* Safety induction, grouped by SQCDP. The list and its grouping live in
+       i18n.html (QRATT_SAFETY_SECTIONS) so vreg and vpass cannot drift apart.
+
+       Reveal is per SECTION, not per rule. The induction grew from 7 rules to
+       19; nineteen separate taps at a gate is not a reading exercise, it is an
+       obstacle people learn to defeat. Five blocks keep the deliberate act of
+       uncovering each block while showing the visitor the SQCDP structure the
+       site actually runs on.
+
+       Gating is unchanged: every section must be opened before the
+       acknowledgement unlocks, and only a ticked acknowledgement reveals the
+       Register button. */
+    var SAFETY_SECTIONS = (typeof QRATT_SAFETY_SECTIONS !== 'undefined') ? QRATT_SAFETY_SECTIONS : [];
+    var sectionsRevealed = 0;
 
     function renderRules(){
       var list=document.getElementById('rulesList');
-      list.innerHTML=SAFETY_RULE_KEYS.map(function(key,i){
-        return '<div class="rule blurred" data-i="'+i+'" onclick="revealRule(this)">'+
-                 '<div class="rtxt"><span class="rnum">'+(i+1)+'.</span>'+
-                   '<span data-i18n="'+key+'">'+qrattT(key)+'</span></div>'+
+      var n=0;
+      list.innerHTML=SAFETY_SECTIONS.map(function(sec,si){
+        var rows=sec.rules.map(function(key){
+          n++;
+          return '<div class="rtxt"><span class="rnum">'+n+'.</span>'+
+                   '<span data-i18n="'+key+'">'+qrattT(key)+'</span></div>';
+        }).join('');
+        return '<div class="rule blurred" data-i="'+si+'" onclick="revealRule(this)">'+
+                 '<div class="rsec" data-i18n="'+sec.key+'">'+qrattT(sec.key)+'</div>'+
+                 rows+
                  '<div class="tap">👆 <span data-i18n="vreg_tap_to_read">'+qrattT('vreg_tap_to_read')+'</span></div>'+
                '</div>';
       }).join('');
@@ -367,22 +399,26 @@
       if(!el.classList.contains('blurred')) return;
       el.classList.remove('blurred');
       el.classList.add('revealed');
-      rulesRevealed++;
+      sectionsRevealed++;
       updateRulesCount();
     }
     function updateRulesCount(){
-      var n=SAFETY_RULE_KEYS.length;
+      var n=SAFETY_SECTIONS.length;
       var c=document.getElementById('rulesCount');
-      c.textContent=rulesRevealed+' / '+n;
-      var all=rulesRevealed>=n;
+      c.textContent=sectionsRevealed+' / '+n;
+      var all=n>0 && sectionsRevealed>=n;
       c.classList.toggle('done',all);
       var cb=document.getElementById('vSafetyAck');
-      cb.disabled=!all;                       // can't acknowledge until every rule is read
+      cb.disabled=!all;                       // can't acknowledge until every section is read
       if(!all){ cb.checked=false; onSafetyAck(); }
     }
     function onSafetyAck(){
-      var ok=document.getElementById('vSafetyAck').checked && rulesRevealed>=SAFETY_RULE_KEYS.length;
+      var ok=document.getElementById('vSafetyAck').checked &&
+             SAFETY_SECTIONS.length>0 && sectionsRevealed>=SAFETY_SECTIONS.length;
       vSafetyAckAt = ok ? new Date().toISOString() : '';
+      // Record WHICH version of the rules was agreed to. A timestamp alone is
+      // unattributable the moment the wording is edited.
+      vSafetyVersion = ok ? (typeof QRATT_SAFETY_VERSION !== 'undefined' ? QRATT_SAFETY_VERSION : '') : '';
       document.getElementById('regBtn').style.display = ok ? 'block' : 'none';
     }
 
@@ -474,13 +510,16 @@
         IDNumber:    document.getElementById('vIDNumber').value.trim(),
         Vehicle:     document.getElementById('vVehicle').value.trim(),
         PhotoData:   vPhotoData,
-        SafetyAckAt: vSafetyAckAt
+        SafetyAckAt: vSafetyAckAt,
+        SafetyVersion: vSafetyVersion,
+        EmergencyName:  document.getElementById('vEmgName').value.trim(),
+        EmergencyPhone: document.getElementById('vEmgPhone').value.trim()
       };
       if(!v.Name || !v.Phone){ toast(qrattT('vreg_toast_required'),'error'); return; }
       if(!v.PhotoData){ toast(qrattT('vreg_toast_photo_required'),'error');
         var pb=document.getElementById('photoBox'); if(pb){ pb.scrollIntoView({block:'center'}); }
         return; }
-      if(rulesRevealed < SAFETY_RULE_KEYS.length || !document.getElementById('vSafetyAck').checked){
+      if(sectionsRevealed < SAFETY_SECTIONS.length || !document.getElementById('vSafetyAck').checked){
         toast(qrattT('vreg_toast_rules_pending'),'error'); return;
       }
       var btn=document.getElementById('regBtn');

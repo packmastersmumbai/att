@@ -34,8 +34,14 @@ async function run() {
     const I18N_SCRIPT = fs.readFileSync(path.join(__dirname, 'src', 'i18n.html'), 'utf8');
     html = html.replace('<head>', '<head><script>' + GAS_MOCK_SCRIPT + '</script>' + I18N_SCRIPT);
 
-    const encoded = Buffer.from(html).toString('base64');
-    await page.goto('data:text/html;base64,' + encoded);
+    // charset MUST be on the data URL, as e2e-lib's openPage does. A page's own
+    // <meta charset> only counts inside the first 1024 bytes, and the injected
+    // mock + i18n push it far past that — the browser then falls back to
+    // Latin-1 and every Devanagari string renders as mojibake. This suite built
+    // its page by hand and omitted the charset; it passed only while i18n.html
+    // happened to be small enough.
+    const encoded = Buffer.from(html, 'utf8').toString('base64');
+    await page.goto('data:text/html;charset=utf-8;base64,' + encoded);
     await page.waitForLoadState('domcontentloaded');
     await settle(page);
 

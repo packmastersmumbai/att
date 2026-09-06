@@ -65,8 +65,17 @@
       border-radius:12px;padding:12px}
     .rules-hd{display:flex;align-items:center;justify-content:space-between;cursor:pointer;
       font-size:12px;font-weight:800;color:#fcd34d;letter-spacing:.3px}
-    .rules-body{margin:10px 0 0;padding-left:20px}
-    .rules-body li{font-size:12px;line-height:1.6;color:#e2e8f0;margin-bottom:9px}
+    /* Numbering is rendered explicitly (.rules-num) rather than by list
+       markers, so the SQCDP headings can sit in the same list without being
+       numbered themselves. */
+    .rules-body{margin:10px 0 0;padding-left:0;list-style:none}
+    .rules-body li{font-size:12px;line-height:1.6;color:#e2e8f0;margin-bottom:9px;
+      display:flex;gap:6px}
+    .rules-body .rules-num{color:#94a3b8;font-weight:700;flex-shrink:0}
+    .rules-body .rules-sec{display:block;font-size:11px;font-weight:800;color:var(--primary-on-dark,#7dd3fc);
+      text-transform:uppercase;letter-spacing:.8px;margin:12px 0 7px;padding-bottom:4px;
+      border-bottom:1px solid var(--border)}
+    .rules-body .rules-sec:first-child{margin-top:0}
     .rules-body li:last-child{margin-bottom:0}
     .rules-body .en{display:block;color:#94a3b8;font-size:11px;margin-top:2px}
 
@@ -286,22 +295,31 @@
     }
 
     /* ── Safety rules — ALWAYS readable (never hidden/blurred). This is the copy
-          the visitor carries on site; obscuring it would be unsafe. Keys match
-          the shared safety_rule_N dictionary entries (identical text on vreg). ── */
-    var SAFETY_RULE_KEYS=['safety_rule_1','safety_rule_2','safety_rule_3','safety_rule_4',
-                           'safety_rule_5','safety_rule_6','safety_rule_7'];
+          the visitor carries on site; obscuring it would be unsafe.
+
+          The list and its SQCDP grouping come from QRATT_SAFETY_SECTIONS in
+          i18n.html. This page used to hardcode its own copy of the key array,
+          so adding a rule updated vreg and silently left the carried pass
+          showing the old set — the visitor would have acknowledged rules their
+          own pass did not list. ── */
+    var SAFETY_SECTIONS = (typeof QRATT_SAFETY_SECTIONS !== 'undefined') ? QRATT_SAFETY_SECTIONS : [];
 
     function renderSafetyRules(){
+      var n=0;
+      var body=SAFETY_SECTIONS.map(function(sec){
+        return '<li class="rules-sec" data-i18n="'+sec.key+'">'+qrattT(sec.key)+'</li>'+
+          sec.rules.map(function(key){
+            n++;
+            return '<li><span class="rules-num">'+n+'.</span> '+
+                   '<span data-i18n="'+key+'">'+qrattT(key)+'</span></li>';
+          }).join('');
+      }).join('');
       return '<div class="rules-card">'+
         '<div class="rules-hd" onclick="toggleRules()">'+
           '<span data-i18n="vpass_safety_rules_title">🦺 '+qrattT('vpass_safety_rules_title')+'</span>'+
           '<span id="rulesArrow">▾</span>'+
         '</div>'+
-        '<ol id="rulesBody" class="rules-body">'+
-          SAFETY_RULE_KEYS.map(function(key){
-            return '<li data-i18n="'+key+'">'+qrattT(key)+'</li>';
-          }).join('')+
-        '</ol>'+
+        '<ul id="rulesBody" class="rules-body">'+body+'</ul>'+
       '</div>';
     }
     function toggleRules(){

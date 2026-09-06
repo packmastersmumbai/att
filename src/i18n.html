@@ -52,6 +52,9 @@ var QRATT_I18N = {
   vreg_video_unavailable:{ en: 'Video unavailable',                   hi: 'वीडियो उपलब्ध नहीं' },
   vreg_tap_each_rule:  { en: 'Tap each rule to reveal',                hi: 'हर नियम पर टैप करें' },
   vreg_tap_to_read:    { en: 'Tap to read',                            hi: 'टैप करें' },
+  vreg_emg_name:      { en: 'Emergency contact name',  hi: 'आपातकालीन संपर्क का नाम' },
+  vreg_emg_name_ph:   { en: 'Family member',           hi: 'परिवार का सदस्य' },
+  vreg_emg_phone:     { en: 'Emergency contact phone', hi: 'आपातकालीन संपर्क फ़ोन' },
   vreg_safety_ack:     { en: 'I have read and understood all the rules.', hi: 'मैंने सभी नियम पढ़े और समझ लिए हैं' },
   vreg_register_btn:   { en: 'Register & Get Pass',                   hi: 'पंजीकरण करें' },
   vreg_registering:    { en: 'Registering…',                          hi: 'पंजीकरण हो रहा है…' },
@@ -66,21 +69,64 @@ var QRATT_I18N = {
   vreg_toast_photo_required:{ en: 'A photo is required — tap "Add Photo" to capture one', hi: 'फ़ोटो आवश्यक है — फ़ोटो लेने के लिए "फ़ोटो लें" पर टैप करें' },
   vreg_toast_rules_pending: { en: 'Please read all safety rules first',  hi: 'कृपया सभी नियम पढ़ें' },
 
-  // ── Shared safety rules (identical text on vreg + vpass) ──────────────
-  safety_rule_1: { en: 'The entire site is a NO SMOKING area.',
-                   hi: 'पूरा परिसर धूम्रपान निषेध क्षेत्र है।' },
-  safety_rule_2: { en: 'Photography inside the premises is strictly prohibited.',
-                   hi: 'परिसर के अंदर फ़ोटोग्राफ़ी सख़्त वर्जित है।' },
-  safety_rule_3: { en: 'No mobile phone use outside the office. Phones must be switched OFF elsewhere.',
-                   hi: 'ऑफिस के अलावा कहीं भी मोबाइल का उपयोग न करें; बाहर मोबाइल बंद रखें।' },
-  safety_rule_4: { en: 'Please do not litter. Help us keep the site clean.',
-                   hi: 'कूड़ा न फैलाएँ। परिसर को साफ़ रखने में मदद करें।' },
-  safety_rule_5: { en: 'Entry to any area outside the office is prohibited unless authorised and accompanied by your host.',
-                   hi: 'ऑफिस के बाहर किसी भी क्षेत्र में बिना अनुमति और बिना साथी के प्रवेश वर्जित है — आपका मेज़बान आपके साथ रहेगा।' },
-  safety_rule_6: { en: 'Be alert to safety signs and internal traffic. Do not play with any equipment.',
-                   hi: 'सुरक्षा संकेतों और आंतरिक यातायात का ध्यान रखें। किसी भी उपकरण से छेड़छाड़ न करें।' },
-  safety_rule_7: { en: 'If the alarm sounds, follow the instructions of your contact person.',
-                   hi: 'अलार्म बजने पर संपर्क व्यक्ति के निर्देशों का पालन करें।' },
+  // ── Shared safety induction (identical text on vreg + vpass) ────────
+  // Grouped by SQCDP — Safety, Quality, Cost, Delivery, People — the daily
+  // management framework the site already runs on. QRATT_SAFETY_SECTIONS below
+  // is the single source of truth for the order and grouping; vreg reveals a
+  // whole section at a time and vpass lists them all.
+  sqcdp_s: { en: 'S · Safety',   hi: 'S · सुरक्षा' },
+  sqcdp_q: { en: 'Q · Quality',  hi: 'Q · गुणवत्ता' },
+  sqcdp_c: { en: 'C · Cost',     hi: 'C · लागत' },
+  sqcdp_d: { en: 'D · Delivery', hi: 'D · डिलीवरी' },
+  sqcdp_p: { en: 'P · People',   hi: 'P · लोग' },
+
+  // ── S · Safety ───────────────────────────────────────
+  safety_rule_1: { en: 'The entire site is a NO SMOKING and NO NAKED FLAME area. Adhesives and solvents are flammable.',
+                   hi: 'पूरा परिसर धूम्रपान एवं खुली आग निषेध क्षेत्र है। चिपकने वाले पदार्थ और सॉल्वेंट ज्वलनशील हैं।' },
+  safety_rule_2: { en: 'Mobile phones must be switched OFF outside the office — they are an ignition source.',
+                   hi: 'ऑफिस के बाहर मोबाइल फ़ोन बंद रखें — ये आग का कारण बन सकते हैं।' },
+  safety_rule_3: { en: 'Wear the PPE issued to you: safety shoes, hi-vis vest and safety glasses. Add helmet or hearing protection where signed.',
+                   hi: 'दिए गए सुरक्षा उपकरण पहनें: सेफ़्टी शूज़, हाई-विज़ जैकेट और सुरक्षा चश्मा। जहाँ संकेत हो वहाँ हेलमेट या कान के सुरक्षा उपकरण भी पहनें।' },
+  safety_rule_4: { en: 'Give way to forklifts and internal traffic. Walk only in marked pedestrian walkways. Never pass behind a reversing vehicle.',
+                   hi: 'फोर्कलिफ्ट और आंतरिक यातायात को रास्ता दें। केवल चिह्नित पैदल मार्ग पर चलें। पीछे जा रहे वाहन के पीछे से कभी न गुज़रें।' },
+  safety_rule_5: { en: 'Do not touch, operate or adjust any machine, valve or control.',
+                   hi: 'किसी भी मशीन, वाल्व या नियंत्रण को न छुएँ, न चलाएँ और न ही उसमें बदलाव करें।' },
+  safety_rule_6: { en: 'If the alarm sounds, stop work, leave by the nearest marked exit and go to the assembly point. Do not use lifts.',
+                   hi: 'अलार्म बजने पर काम रोकें, निकटतम चिह्नित निकास से बाहर जाएँ और असेंबली पॉइंट पर पहुँचें। लिफ्ट का उपयोग न करें।' },
+  safety_rule_7: { en: 'Report any injury, spill, leak, fire or near-miss immediately to your host or the nearest supervisor.',
+                   hi: 'किसी भी चोट, रिसाव, फैलाव, आग या निकट-दुर्घटना की सूचना तुरंत अपने मेज़बान या निकटतम पर्यवेक्षक को दें।' },
+  safety_rule_8: { en: 'Alcohol and drugs are prohibited. Declare any medical condition that may need assistance in an emergency.',
+                   hi: 'शराब और नशीले पदार्थ वर्जित हैं। यदि कोई ऐसी चिकित्सा स्थिति है जिसमें आपात स्थिति में सहायता चाहिए, तो बताएँ।' },
+
+  // ── Q · Quality ───────────────────────────────────
+  safety_rule_9:  { en: 'Do not open, sample, touch or taste any drum, container or product.',
+                    hi: 'किसी भी ड्रम, कंटेनर या उत्पाद को न खोलें, न नमूना लें, न छुएँ और न ही चखें।' },
+  safety_rule_10: { en: 'No food, drink or chewing gum in production and warehouse areas.',
+                    hi: 'उत्पादन और गोदाम क्षेत्रों में खाना, पेय या च्युइंग गम वर्जित है।' },
+  safety_rule_11: { en: 'Do not remove, alter or obscure any product label, batch card or status tag.',
+                    hi: 'किसी भी उत्पाद लेबल, बैच कार्ड या स्थिति टैग को न हटाएँ, न बदलें और न ही ढकें।' },
+
+  // ── C · Cost ──────────────────────────────────────
+  safety_rule_12: { en: 'Do not litter. Segregate all waste into the correct bin.',
+                    hi: 'कूड़ा न फैलाएँ। सारा कचरा सही डिब्बे में अलग-अलग डालें।' },
+  safety_rule_13: { en: 'Report any leak, drip or running utility you notice — spilled material is lost product.',
+                    hi: 'कोई रिसाव, टपकन या चालू छूटी हुई सुविधा दिखे तो सूचित करें — बहा हुआ माल नुक़सान है।' },
+
+  // ── D · Delivery ─────────────────────────────────
+  safety_rule_14: { en: 'Stay with your host. Do not enter production or warehouse aisles unaccompanied.',
+                    hi: 'अपने मेज़बान के साथ रहें। उत्पादन या गोदाम के गलियारों में अकेले प्रवेश न करें।' },
+  safety_rule_15: { en: 'Park only in designated visitor bays. Keep loading bays and fire routes clear.',
+                    hi: 'केवल निर्धारित विज़िटर पार्किंग में वाहन खड़ा करें। लोडिंग बे और फ़ायर रूट खाली रखें।' },
+
+  // ── P · People ───────────────────────────────────
+  safety_rule_16: { en: 'Wear your visitor badge visibly at all times.',
+                    hi: 'अपना विज़िटर बैज हमेशा दिखाई देने वाली जगह पर पहनें।' },
+  safety_rule_17: { en: 'Photography, video and audio recording are strictly prohibited.',
+                    hi: 'फ़ोटोग्राफ़ी, वीडियो और ऑडियो रिकॉर्डिंग सख़्त वर्जित है।' },
+  safety_rule_18: { en: 'Follow all instructions from site personnel. Anyone may stop unsafe work.',
+                    hi: 'साइट कर्मियों के सभी निर्देशों का पालन करें। असुरक्षित कार्य को कोई भी रोक सकता है।' },
+  safety_rule_19: { en: 'Sign out at reception before leaving.',
+                    hi: 'जाने से पहले रिसेप्शन पर साइन आउट करें।' },
 
   // ── vpass.html ─────────────────────────────────────────────────────────
   vpass_exit_note:     { en: '⚠ Show this pass to security when leaving.', hi: '⚠ बाहर जाते समय यह पास सुरक्षा को दिखाएँ' },
@@ -390,6 +436,29 @@ var QRATT_I18N = {
                         hi: 'इस विज़िटर के वापसी योग्य सामान अभी बाहर हैं। चेक-आउट जारी रखें?' },
   gp_checkout_reason: { en: 'Reason for override',   hi: 'ओवरराइड का कारण' }
 };
+
+/* The safety induction, grouped by SQCDP. Defined ONCE here because both vreg
+   (which gates registration on it) and vpass (which reprints it) need the same
+   list — they each used to hardcode their own copy of the key array, so adding
+   a rule silently updated one page and not the other.
+
+   Bump QRATT_SAFETY_VERSION whenever the wording or the list changes: it is
+   stored against each visitor's acknowledgement, so a signature always says
+   WHICH rules were agreed to. A timestamp alone is unattributable once the
+   rules are edited. */
+var QRATT_SAFETY_VERSION = '2026-09-06.sqcdp.v1';
+var QRATT_SAFETY_SECTIONS = [
+  { key: 'sqcdp_s', rules: ['safety_rule_1','safety_rule_2','safety_rule_3','safety_rule_4',
+                            'safety_rule_5','safety_rule_6','safety_rule_7','safety_rule_8'] },
+  { key: 'sqcdp_q', rules: ['safety_rule_9','safety_rule_10','safety_rule_11'] },
+  { key: 'sqcdp_c', rules: ['safety_rule_12','safety_rule_13'] },
+  { key: 'sqcdp_d', rules: ['safety_rule_14','safety_rule_15'] },
+  { key: 'sqcdp_p', rules: ['safety_rule_16','safety_rule_17','safety_rule_18','safety_rule_19'] }
+];
+/** Every rule key, in display order. */
+function qrattSafetyRuleKeys(){
+  return QRATT_SAFETY_SECTIONS.reduce(function(a, s){ return a.concat(s.rules); }, []);
+}
 
 (function(){
   function lang(){ return sessionStorage.getItem('qratt_lang') === 'hi' ? 'hi' : 'en'; }
