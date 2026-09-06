@@ -178,6 +178,46 @@ async function run() {
     return /'SKL-12'[\s\S]{0,200}TRN-IND/.test(sm);
   });
 
+  // ---- induction opens its own session -----------------------------------
+  // Induction is not on the calendar, so no plan row exists for it. But the
+  // matrix counts attendance against a PLAN — with no row the test is taken
+  // and then counts for nothing, which is the whole point of the feature.
+  const MODS = fs.readFileSync(path.join(__dirname, 'src', 'modules.js'), 'utf8');
+
+  await R.check('a scheduled topic still requires its session', () => {
+    const body = (MODS.match(/function recordAssessment[\s\S]*?\n  var marked/) || [])[0];
+    return !!body && /_isSelfScheduled_\(topicId\)\) return \{ success: false, error: 'Missing session' \}/.test(body);
+  });
+
+  await R.check('self-scheduling is read from Type, not a hardcoded id', () => {
+    const body = (MODS.match(/function _isSelfScheduled_[\s\S]*?\n}/) || [])[0];
+    return !!body && /'INDUCT'/.test(body) && !/TRN-IND/.test(body);
+  });
+
+  await R.check('the induction session is one per person per day', () => {
+    const body = (MODS.match(/function _inductionPlanFor_[\s\S]*?\n}/) || [])[0];
+    // A shared row would make the second person inducted that week look like
+    // they attended the first person's session.
+    return !!body && /topicId \+ '-' \+ empId \+ '-' \+ today/.test(body);
+  });
+
+  await R.check('the induction session carries an ActualDate', () => {
+    const body = (MODS.match(/function _inductionPlanFor_[\s\S]*?\n}/) || [])[0];
+    // The matrix counts only sessions that demonstrably happened. Without
+    // this the induction is recorded and still credits nothing.
+    //
+    // Matched off the values object rather than the whole body: the first
+    // version of this check passed against ActualDate:'' because `today`
+    // appears on the PlannedDate line right above it.
+    const vals = (body.match(/var values = \{[\s\S]*?\n  \};/) || [''])[0];
+    return /ActualDate:\s*today\b/.test(vals) && /Status:\s*'HELD'/.test(vals);
+  });
+
+  await R.check('an existing induction session is reused, not duplicated', () => {
+    const body = (MODS.match(/function _inductionPlanFor_[\s\S]*?\n}/) || [])[0];
+    return !!body && /findRowByValue\(sheet, 'PlanID', planId\) !== -1\) return planId/.test(body);
+  });
+
   // ---- the visitor safety block ------------------------------------------
   const VREG = fs.readFileSync(
     path.join(__dirname, 'src', 'pages', 'vreg.html'), 'utf8');

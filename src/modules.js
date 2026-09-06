@@ -358,6 +358,47 @@ function getModuleTest(topicId, lang) {
  * department head or supervisor decides that, and the system must not quietly
  * decide it instead.
  */
+/**
+ * A topic nobody schedules, taken when the person is ready rather than when
+ * the calendar says. Only induction today.
+ *
+ * Read from the topic's Type rather than a hardcoded id, so a second
+ * self-scheduled topic works without touching this file.
+ */
+function _isSelfScheduled_(topicId) {
+  var t = getSheetAsObjects(TRAINING_SHEETS.TOPICS)
+            .filter(function (x) { return String(x.TopicID) === String(topicId); })[0];
+  return !!t && String(t.Type || '').toUpperCase() === 'INDUCT';
+}
+
+/**
+ * The plan row for one person's induction on one day, created if missing.
+ *
+ * Keyed per person per day, not one shared row: two people inducted in the
+ * same week were inducted separately, and a single row would make the second
+ * one look like they attended the first one's session. ActualDate is set
+ * because it demonstrably happened — that is exactly what the matrix counts.
+ */
+function _inductionPlanFor_(topicId, empId) {
+  var today = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd');
+  var planId = 'PLN-' + topicId + '-' + empId + '-' + today.replace(/-/g, '');
+  var sheet  = getSheet(TRAINING_SHEETS.PLAN);
+
+  if (findRowByValue(sheet, 'PlanID', planId) !== -1) return planId;
+
+  var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  var values = {
+    PlanID: planId, Year: Number(today.slice(0, 4)), TopicID: topicId,
+    Type: 'INDUCT', PlannedDate: today, ActualDate: today,
+    Status: 'HELD', Trainer: 'Self — phone or kiosk',
+    Content: 'Worker induction taken on the site rules'
+  };
+  sheet.appendRow(headers.map(function (h) {
+    return values[h] !== undefined ? values[h] : '';
+  }));
+  return planId;
+}
+
 function recordAssessment(entry) {
   _ensureModuleSheets_();
   _ensureTrainingSheets_();
@@ -365,9 +406,21 @@ function recordAssessment(entry) {
   var planId = String((entry && entry.planId) || '').trim();
   var empId  = String((entry && entry.empId) || '').trim();
   var topicId = String((entry && entry.topicId) || '').trim();
-  if (!planId) return { success: false, error: 'Missing session' };
   if (!empId)  return { success: false, error: 'Pick your name first' };
   if (!topicId) return { success: false, error: 'Missing topic' };
+
+  // Induction has no scheduled session — it is due when somebody joins, not
+  // in March, so nothing put it on the calendar for a plan row to exist. But
+  // the matrix counts attendance against a PLAN, so with no row the induction
+  // is taken and then counts for nothing.
+  //
+  // So the session is created on the day it is taken, one per person per day.
+  // That is what actually happened: this person was inducted on this date.
+  if (!planId) {
+    if (!_isSelfScheduled_(topicId)) return { success: false, error: 'Missing session' };
+    planId = _inductionPlanFor_(topicId, empId);
+    if (!planId) return { success: false, error: 'Could not open an induction session' };
+  }
 
   var marked = scoreModuleTest(topicId, entry.answers || []);
   if (!marked.success) return marked;
