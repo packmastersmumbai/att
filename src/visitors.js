@@ -211,7 +211,8 @@ function recordSafetyAck(visitorId, ackAt, ackVersion) {
  *
  * Two ways it expires:
  *  - age. An induction is a point-in-time briefing, not a permanent licence.
- *    SafetyInductionMonths in Config sets the window (default 12; 0 disables).
+ *    SafetyInductionDays in Config sets the window (default 7; 0 disables).
+ *    SafetyInductionMonths still works for sites that set it, but Days wins.
  *  - version. If the rules have been reworded since, what the visitor agreed
  *    to is not what the site now requires, so they re-read regardless of age.
  */
@@ -222,17 +223,29 @@ function _safetyAckValid_(ackAt, ackVersion) {
   try { current = String(getConfigValue('SafetyRulesVersion') || '').trim(); } catch (e) {}
   if (current && String(ackVersion || '').trim() !== current) return false;
 
-  var months = 12;
+  // Validity is expressed in DAYS. SafetyInductionDays wins where it is set;
+  // SafetyInductionMonths is kept because sites already have it configured,
+  // and a month is taken as 30.44 days exactly as before.
+  var validDays = 7;
+  var haveDays = false;
   try {
-    var raw = getConfigValue('SafetyInductionMonths');
-    if (raw !== '' && raw != null && !isNaN(Number(raw))) months = Number(raw);
+    var rawD = getConfigValue('SafetyInductionDays');
+    if (rawD !== '' && rawD != null && !isNaN(Number(rawD))) {
+      validDays = Number(rawD); haveDays = true;
+    }
   } catch (e) {}
-  if (months <= 0) return true;   // 0 = never expires, an explicit site choice
+  if (!haveDays) {
+    try {
+      var raw = getConfigValue('SafetyInductionMonths');
+      if (raw !== '' && raw != null && !isNaN(Number(raw))) validDays = Number(raw) * 30.44;
+    } catch (e) {}
+  }
+  if (validDays <= 0) return true;   // 0 = never expires, an explicit site choice
 
   var then = new Date(ackAt);
   if (isNaN(then.getTime())) return false;   // unparseable = treat as unsigned
   var ageDays = (new Date().getTime() - then.getTime()) / 86400000;
-  return ageDays <= months * 30.44;
+  return ageDays <= validDays;
 }
 
 /** Strips a phone to bare digits (no length coercion). */
