@@ -257,7 +257,7 @@ function _computeDashboardData_() {
   var empNameMap = {};
   allEmps.forEach(function(e) { empNameMap[String(e.EmpID)] = e.Name || ''; });
 
-  var openVisitorLogs = logs.filter(function(r) { return r.Type === 'VIS' && r.TimeOUT === ''; });
+  var openVisitorLogs = todayLogs.filter(function(r) { return r.Type === 'VIS' && r.TimeOUT === ''; });
 
   var nowDate = new Date();
   var nowH = nowDate.getHours(), nowM = nowDate.getMinutes();

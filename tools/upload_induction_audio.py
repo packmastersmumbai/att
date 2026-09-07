@@ -72,7 +72,14 @@ def clips_from(folder, prefix, manifest_name="manifest.json"):
     for m in man:
         for key, suffix in (("en", "_en"), ("hi", "_hi"),
                             ("qen", "_qen"), ("qhi", "_qhi")):
-            path = os.path.join(folder, m["id"] + suffix + ".opus")
+            # Safari plays neither Ogg nor Opus. Where an AAC re-encode exists
+            # in m4a/, it is the clip that ships — the .opus is kept only as
+            # the build output it came from.
+            path = os.path.join(folder, "m4a", m["id"] + suffix + ".m4a")
+            fmt = "m4a"
+            if not os.path.exists(path):
+                path = os.path.join(folder, m["id"] + suffix + ".opus")
+                fmt = "opus"
             if not os.path.exists(path):
                 continue
             lang = "hi" if key.endswith("hi") else "en"
@@ -81,14 +88,14 @@ def clips_from(folder, prefix, manifest_name="manifest.json"):
                 # A rule clip: named by rule, and the only one with cues,
                 # because it is the only one with text to follow along.
                 cues = m.get("cues", {}).get(key, [])
-                yield ("%s/%s/%s" % (prefix, m["id"], key), path, lang, cues)
+                yield ("%s/%s/%s" % (prefix, m["id"], key), path, lang, cues, fmt)
             else:
                 # A question clip: only uploaded if this rule is actually
                 # asked, and named by its position in the test.
                 if m["id"] not in asked:
                     continue
                 n = asked.index(m["id"]) + 1
-                yield ("%s/Q%d/%s" % (prefix, n, key), path, lang, [])
+                yield ("%s/Q%d/%s" % (prefix, n, key), path, lang, [], fmt)
 
 
 def main():
@@ -109,24 +116,25 @@ def main():
     for prefix, folder in sets:
         work.extend(clips_from(folder, prefix))
 
-    total_kb = sum(os.path.getsize(p) for _, p, _, _ in work) / 1024
+    total_kb = sum(os.path.getsize(p) for _, p, _, _, _ in work) / 1024
     print("%d clips, %.0f KB" % (len(work), total_kb))
     if args.dry_run:
-        for name, path, lang, cues in work[:5]:
-            print("  %-22s %-4s %5d B  %d cues"
-                  % (name, lang, os.path.getsize(path), len(cues)))
+        for name, path, lang, cues, fmt in work[:5]:
+            print("  %-22s %-4s %-5s %5d B  %d cues"
+                  % (name, lang, fmt, os.path.getsize(path), len(cues)))
         print("  … dry run, nothing uploaded")
         return
 
     token = login(args.pin)
     ok = fail = 0
     t0 = time.time()
-    for i, (name, path, lang, cues) in enumerate(work, 1):
+    for i, (name, path, lang, cues, fmt) in enumerate(work, 1):
         b64 = base64.b64encode(open(path, "rb").read()).decode()
         try:
             res = post("putInductionClip",
                        {"name": name, "audio": b64, "lang": lang,
-                        "cues": cues, "voice": "tts", "token": token})
+                        "cues": cues, "voice": "tts", "token": token,
+                        "format": fmt})
             if res.get("success"):
                 ok += 1
             else:

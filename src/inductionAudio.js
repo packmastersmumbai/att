@@ -51,8 +51,20 @@ function _audioFolder_() {
 }
 
 /** A logical clip name flattened for use as a filename. */
-function _audioFileName_(name) {
-  return String(name).replace(/[^A-Za-z0-9_-]+/g, '_') + '.opus';
+// Safari plays neither Ogg nor Opus, so a clip may arrive as AAC/M4A instead.
+// The stored extension and MIME must follow the bytes, not a fixed guess:
+// a mislabelled blob is refused by the very browsers m4a exists to serve.
+var AUDIO_FORMATS = {
+  opus: { ext: '.opus', mime: 'audio/ogg' },
+  m4a:  { ext: '.m4a',  mime: 'audio/mp4' }
+};
+
+function _audioFormat_(fmt) {
+  return AUDIO_FORMATS[String(fmt || 'opus').toLowerCase()] || AUDIO_FORMATS.opus;
+}
+
+function _audioFileName_(name, fmt) {
+  return String(name).replace(/[^A-Za-z0-9_-]+/g, '_') + _audioFormat_(fmt).ext;
 }
 
 /**
@@ -65,7 +77,7 @@ function _audioFileName_(name) {
  * measured against a different recording drifts further behind with every
  * phrase, and a highlight that lags the voice is worse than no highlight.
  */
-function putInductionClip(name, base64, lang, cues, voice, token) {
+function putInductionClip(name, base64, lang, cues, voice, token, format) {
   // Admin-gated: this writes a public file to Drive. An unauthenticated
   // caller could otherwise fill the folder, or worse, replace the clip that
   // states a safety rule with anything at all — the audio IS the instruction
@@ -76,13 +88,20 @@ function putInductionClip(name, base64, lang, cues, voice, token) {
   if (!base64) return { success: false, error: 'audio required' };
 
   var folder   = _audioFolder_();
-  var fileName = _audioFileName_(name);
+  var fmt      = _audioFormat_(format);
+  var fileName = _audioFileName_(name, format);
 
-  var existing = folder.getFilesByName(fileName);
-  while (existing.hasNext()) existing.next().setTrashed(true);
+  // Trash EVERY format of this clip, not just the one being written. A clip
+  // re-encoded from .opus to .m4a would otherwise leave the old file behind,
+  // and the sheet row — which is addressed by name — would point at the new
+  // one while the stale file stayed public in the folder forever.
+  Object.keys(AUDIO_FORMATS).forEach(function (f) {
+    var old = folder.getFilesByName(_audioFileName_(name, f));
+    while (old.hasNext()) old.next().setTrashed(true);
+  });
 
   var blob = Utilities.newBlob(Utilities.base64Decode(base64),
-                               'audio/ogg', fileName);
+                               fmt.mime, fileName);
   var file = folder.createFile(blob);
   file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
 
