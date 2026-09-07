@@ -20,6 +20,18 @@ const SUITES = [
   { n: 6, label: 'Dashboard',      mod: './e2e-sweep-6-dashboard'  },
   { n: 7, label: 'Login',          mod: './e2e-sweep-7-login'      },
   { n: 8, label: 'i18n toggle',    mod: './e2e-sweep-8-i18n'       },
+  { n: 9, label: 'Gatepass',       mod: './e2e-sweep-9-gatepass'   },
+  { n: 10, label: 'Gatepass wiring', mod: './e2e-sweep-10-gatepass-connect' },
+  { n: 11, label: 'Kiosk gatepass',  mod: './e2e-sweep-11-kiosk-gatepass' },
+  { n: 12, label: 'Design tokens',   mod: './e2e-sweep-12-tokens'        },
+  { n: 13, label: 'Safety induction', mod: './e2e-sweep-13-safety'      },
+  { n: 14, label: 'Training calendar', mod: './e2e-sweep-14-training'    },
+  { n: 15, label: 'Skill matrix',    mod: './e2e-sweep-15-skillmatrix' },
+  { n: 16, label: 'Mock drills',     mod: './e2e-sweep-16-mockdrill' },
+  { n: 17, label: 'Training modules', mod: './e2e-sweep-17-modules' },
+  { n: 18, label: 'Self-assessment', mod: './e2e-sweep-18-selftest' },
+  { n: 19, label: 'Induction audio', mod: './e2e-sweep-19-inductionaudio' },
+  { n: 20, label: 'Controlled records', mod: './e2e-sweep-20-qmsrecords' },
 ];
 
 async function main() {

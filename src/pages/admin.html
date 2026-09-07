@@ -10,27 +10,7 @@
   <style>
     /* ── Reset & Tokens ───────────────────────────────── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    :root {
-      --primary:       #000666;
-      --primary-dk:    #000444;
-      --success:       #006b5f;
-      --danger:        #DC2626;
-      --warning:       #D97706;
-      --blocked:       #7C3AED;
-      --bg:            #fcf9f8;
-      --surface:       #ffffff;
-      --border:        #e8e3e0;
-      --text:          #1b1c1c;
-      --muted:         #4a5568;
-      --muted-light:   #6b7280;
-      --radius-sm:     2px;
-      --radius-md:     4px;
-      --radius-lg:     8px;
-      --shadow-sm:     0 1px 3px rgba(0,0,0,.08);
-      --shadow-md:     0 4px 16px rgba(0,0,0,.12);
-      --font:          'Public Sans', system-ui, sans-serif;
-      --mono:          'Roboto Mono', monospace;
-    }
+    
     html, body { height: 100%; }
     body {
       font-family: var(--font);
@@ -397,6 +377,51 @@
     .cfg-block { padding: 24px; border-bottom: 1px solid var(--border); }
     .cfg-block:last-child { border-bottom: none; }
 
+    /* ── Alert toggles ────────────────────────────────── */
+    .alert-toggle {
+      display: flex; align-items: center; justify-content: space-between; gap: 16px;
+      padding: 11px 14px; margin-bottom: 8px;
+      border: 1px solid var(--border); border-radius: 8px;
+      cursor: pointer; transition: background .12s, border-color .12s;
+    }
+    .alert-toggle:hover { background: var(--bg); border-color: var(--border-strong, var(--border)); }
+    .alert-toggle-locked { cursor: default; background: rgba(248,113,113,.05); border-color: rgba(248,113,113,.3); }
+    .alert-toggle-locked:hover { background: rgba(248,113,113,.05); }
+    .alert-name { font-size: 13px; font-weight: 600; color: var(--text); }
+    .alert-desc { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+    .alert-check { width: 18px; height: 18px; flex-shrink: 0; cursor: pointer; accent-color: var(--primary, #2563EB); }
+    .alert-always {
+      flex-shrink: 0; font-size: 10px; font-weight: 700; letter-spacing: .5px;
+      text-transform: uppercase; color: #DC2626;
+      background: rgba(220,38,38,.1); border-radius: 5px; padding: 4px 9px;
+    }
+
+    /* ── Telegram preview ─────────────────────────────── */
+    .tg-preview-wrap { display: flex; flex-direction: column; gap: 14px; }
+    .tg-msg-label {
+      font-size: 11px; font-weight: 700; color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: .5px; margin-bottom: 5px;
+    }
+    .tg-msg-off { opacity: .4; }
+    .tg-off-tag {
+      background: rgba(148,163,184,.25); color: var(--text-muted);
+      border-radius: 4px; padding: 1px 6px; font-size: 9px; letter-spacing: 0;
+    }
+    /* Approximates the Telegram bubble so the preview reads as a message, not
+       a config field — line length and wrapping are what actually differ. */
+    .tg-bubble {
+      background: #E7F3FF; border-radius: 10px; padding: 11px 14px;
+      font-size: 13px; line-height: 1.5; color: #0F172A;
+      max-width: 460px; word-break: break-word;
+      font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+    }
+    .tg-bubble b { font-weight: 700; }
+    .tg-bubble code { background: rgba(0,0,0,.06); border-radius: 3px; padding: 1px 4px; }
+    .tg-btn {
+      margin-top: 8px; background: rgba(255,255,255,.75); border-radius: 7px;
+      padding: 8px; text-align: center; font-size: 12px; font-weight: 600; color: #2563EB;
+    }
+
     /* ── Modal overlay ────────────────────────────────── */
     .modal-overlay {
       position: fixed;
@@ -553,6 +578,9 @@
       <a href="?page=kiosk"   data-page="kiosk"   class="sb-item">
         <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18"/></svg>
         Kiosk
+      </a><a href="?page=scanner"   data-page="scanner"   class="sb-item">
+        <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="5" height="5"/><rect x="16" y="3" width="5" height="5"/><rect x="3" y="16" width="5" height="5"/><path d="M21 16h-3v3m0-3v3h-3"/></svg>
+        Scanner
       </a>
       <a href="?page=dashboard" data-page="dashboard" class="sb-item">
         <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
@@ -566,9 +594,17 @@
         <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
         Visitors
       </a>
-      <a href="?page=kiosk"     data-page="kiosk"     class="sb-item">
-        <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
-        Kiosk
+      <a href="?page=training" data-page="training" class="sb-item">
+        <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        Training
+      </a>
+      <a href="?page=skillmatrix" data-page="skillmatrix" class="sb-item">
+        <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="9" x2="9" y2="21"/></svg>
+        Skill matrix
+      </a>
+      <a href="?page=mockdrill" data-page="mockdrill" class="sb-item">
+        <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2 3 7v6c0 5 3.8 8.6 9 9 5.2-.4 9-4 9-9V7z"/><path d="M12 8v5"/><line x1="12" y1="16" x2="12" y2="16"/></svg>
+        Mock drills
       </a>
 
       <div class="sb-section" style="margin-top:8px">System</div>
@@ -718,11 +754,11 @@
               <div class="cfg-section-title">Organisation</div>
               <div class="form-grid-2">
                 <div class="form-group">
-                  <label>Organisation Name</label>
+                  <label>Organisation Name <span style="color:var(--danger)">*</span></label>
                   <input type="text" id="cfgOrgName" class="input" placeholder="e.g. Acme Corp">
                 </div>
                 <div class="form-group">
-                  <label>Admin PIN</label>
+                  <label>Admin PIN <span style="color:var(--danger)">*</span></label>
                   <input type="password" id="cfgAdminPIN" class="input" maxlength="6" placeholder="6-digit PIN">
                 </div>
               </div>
@@ -772,16 +808,131 @@
                 <button class="btn btn-ghost btn-sm" onclick="setTelegramWebhook(this)">Enable Bot Commands</button>
                 <button class="btn btn-ghost btn-sm" onclick="installTriggers(this)">Install Daily Triggers</button>
               </div>
-              <div class="form-hint" style="margin-top:6px">Save settings first. <b>Enable Bot Commands</b> starts 1-min polling for /today, /present, etc. — <b>message the bot directly (DM @your_bot)</b>, not the channel. <b>Install Daily Triggers</b> schedules the daily summary, auto-checkout &amp; hours rebuild.</div>
+              <div class="form-hint" style="margin-top:6px">Save settings first. <b>Enable Bot Commands</b> starts 5-min polling for /today, /present, /outstanding, etc. — <b>message the bot directly (DM @your_bot)</b>, not the channel. <b>Install Daily Triggers</b> schedules the daily summary, auto-checkout &amp; hours rebuild.</div>
+            </div>
+
+            <!-- ── Which alerts are sent ── -->
+            <div class="cfg-block">
+              <div class="cfg-section-title">Alerts</div>
+              <div class="form-hint" style="margin-bottom:10px">
+                Choose which events post to Telegram. Turning one off stops that message entirely —
+                the underlying record is still written either way.
+              </div>
+
+              <div class="alert-toggle alert-toggle-locked">
+                <div>
+                  <div class="alert-name">🚨 Blacklisted entry attempt</div>
+                  <div class="alert-desc">Someone on the blacklist scanned at a gate</div>
+                </div>
+                <span class="alert-always">Always on</span>
+              </div>
+
+              <label class="alert-toggle">
+                <div>
+                  <div class="alert-name">🔔 Visitor arrived</div>
+                  <div class="alert-desc">Host is being summoned to reception</div>
+                </div>
+                <input type="checkbox" id="cfgAlertVisitorArrival" class="alert-check">
+              </label>
+
+              <label class="alert-toggle">
+                <div>
+                  <div class="alert-name">📦 Gatepass approval needed</div>
+                  <div class="alert-desc">Visitor declared items; host must approve</div>
+                </div>
+                <input type="checkbox" id="cfgAlertGatepassApproval" class="alert-check">
+              </label>
+
+              <label class="alert-toggle">
+                <div>
+                  <div class="alert-name">📤 Visitor left with items</div>
+                  <div class="alert-desc">Items marked "kept" at check-out</div>
+                </div>
+                <input type="checkbox" id="cfgAlertItemsKept" class="alert-check">
+              </label>
+
+              <label class="alert-toggle">
+                <div>
+                  <div class="alert-name">⚠️ Auto-checkout: unreturned items</div>
+                  <div class="alert-desc">Nightly sweep closed a visitor still holding items</div>
+                </div>
+                <input type="checkbox" id="cfgAlertUnreturned" class="alert-check">
+              </label>
+
+              <label class="alert-toggle">
+                <div>
+                  <div class="alert-name">🛠️ App issue reported</div>
+                  <div class="alert-desc">Someone used the "Report an issue" button</div>
+                </div>
+                <input type="checkbox" id="cfgAlertFeedback" class="alert-check">
+              </label>
+
+              <label class="alert-toggle">
+                <div>
+                  <div class="alert-name">📊 Daily attendance digest</div>
+                  <div class="alert-desc">Present / absent / late roster, once a day</div>
+                </div>
+                <input type="checkbox" id="cfgAlertDigest" class="alert-check">
+              </label>
+            </div>
+
+            <!-- ── What each message contains ── -->
+            <div class="cfg-block">
+              <div class="cfg-section-title">Message content</div>
+              <div class="form-grid-2">
+                <label class="alert-toggle">
+                  <div>
+                    <div class="alert-name">Action buttons</div>
+                    <div class="alert-desc">Tap-to-act buttons on alerts (Mark returned, Acknowledge)</div>
+                  </div>
+                  <input type="checkbox" id="cfgAlertButtons" class="alert-check">
+                </label>
+                <label class="alert-toggle">
+                  <div>
+                    <div class="alert-name">Site name</div>
+                    <div class="alert-desc">🏢 stamp at the foot of every message</div>
+                  </div>
+                  <input type="checkbox" id="cfgAlertShowSite" class="alert-check">
+                </label>
+                <label class="alert-toggle">
+                  <div>
+                    <div class="alert-name">Gate name</div>
+                    <div class="alert-desc">Which entrance a scan happened at</div>
+                  </div>
+                  <input type="checkbox" id="cfgAlertShowGate" class="alert-check">
+                </label>
+              </div>
+              <div class="form-hint" style="margin-top:8px">
+                Buttons act on the bot's next poll — up to 5 minutes, not instantly.
+              </div>
+            </div>
+
+            <!-- ── Live preview ── -->
+            <div class="cfg-block">
+              <div class="cfg-section-title">
+                Preview
+                <button class="btn btn-ghost btn-sm" style="float:right;margin-top:-4px" onclick="loadAlertPreview(this)">Refresh</button>
+              </div>
+              <div class="form-hint" style="margin-bottom:10px">
+                Rendered by the same code that sends the real messages. <b>Save first</b> — the preview
+                reflects saved settings, not unsaved edits.
+              </div>
+              <div id="alertPreview" class="tg-preview-wrap">
+                <div class="form-hint">Loading preview…</div>
+              </div>
             </div>
 
             <div class="cfg-block">
               <div class="cfg-section-title">Scheduling</div>
               <div class="form-grid-2">
                 <div class="form-group">
-                  <label>Daily Summary Hour (0–23)</label>
-                  <input type="number" id="cfgSummaryHr" class="input" min="0" max="23" placeholder="9">
-                  <div class="form-hint">Hour to send daily attendance digest</div>
+                  <label>Daily Digest Time</label>
+                  <div style="display:flex;align-items:center;gap:6px">
+                    <input type="number" id="cfgSummaryHr" class="input" min="0" max="23" placeholder="9" style="flex:1">
+                    <span style="font-weight:700;color:var(--color-text-muted)">:</span>
+                    <input type="number" id="cfgSummaryMin" class="input" min="0" max="59" step="5" placeholder="00" style="flex:1">
+                  </div>
+                  <div class="form-hint">Google fires this within ~15 min of the chosen time — it cannot be exact.</div>
                 </div>
                 <div class="form-group">
                   <label>Auto Checkout Hour (0–23)</label>
@@ -792,6 +943,73 @@
                   <label>Late After (HH:MM)</label>
                   <input type="time" id="cfgLateAfter" class="input" placeholder="09:30">
                   <div class="form-hint">Check-in after this time counts as late</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="cfg-block">
+              <div class="cfg-section-title">Training &amp; Competency</div>
+              <div class="form-hint" style="margin-bottom:8px">
+                Governs the training calendar and the skill matrix. The minimum
+                levels below are the claim an auditor will hold you to, so they
+                belong to whoever owns <b>SOP-SM-001</b> — not to whoever set the
+                system up.
+              </div>
+              <div class="form-grid-2">
+                <div class="form-group">
+                  <label>Pass Mark</label>
+                  <input type="number" id="cfgPassMark" class="input" min="1" max="100" placeholder="70">
+                  <div class="form-hint">Score at or above which an attendee counts as assessed. A blank score stays “not assessed”, never a fail.</div>
+                </div>
+                <div class="form-group">
+                  <label>Level Names</label>
+                  <input type="text" id="cfgLevelNames" class="input"
+                         placeholder="Beginner|Under supervision|Independent|Can train others">
+                  <div class="form-hint">Four names for L1–L4, separated by <b>|</b>. Wording should match your SOP.</div>
+                </div>
+              </div>
+              <div class="form-grid-2">
+                <div class="form-group">
+                  <label>Document Owner</label>
+                  <input type="text" id="cfgDocOwner" class="input" placeholder="Who owns the controlled formats">
+                </div>
+                <div class="form-group">
+                  <label>Approved By</label>
+                  <input type="text" id="cfgDocApprover" class="input" placeholder="Who approved them">
+                </div>
+                <div class="form-group">
+                  <label>Approval Date</label>
+                  <input type="text" id="cfgDocApprovedOn" class="input" placeholder="01/04/2025">
+                </div>
+                <div class="form-group">
+                  <label>Version</label>
+                  <input type="text" id="cfgDocVersion" class="input" placeholder="1.0">
+                </div>
+                <div class="form-group">
+                  <label>Next Review Date</label>
+                  <input type="text" id="cfgDocNextReview" class="input" placeholder="01/04/2026">
+                  <div class="form-hint">Printed at the foot of the mock drill report and every controlled format.</div>
+                </div>
+              </div>
+              <div class="form-group">
+                <label>Name substitutions in the 2025 records</label>
+                <textarea id="cfgNameAliases" class="input" rows="3"
+                          placeholder="ATUL WAGHMARE = SHIKHA KUMAR&#10;SATENDRA YADAV = HARISH SINGH"></textarea>
+                <div class="form-hint">
+                  One per line — <code>name in the record = name on the employee sheet</code>.
+                  Used when the 2025 training attendance is seeded. Leave a
+                  right-hand side blank to cancel a substitution. Anything not
+                  listed here stays uncredited rather than being guessed.
+                </div>
+              </div>
+              <div class="form-group">
+                <label>Minimum Required Level, per job role</label>
+                <textarea id="cfgMinRequired" class="input" rows="4"
+                          placeholder="Packaging Operator: SKL-01=L3, SKL-04=L3, SKL-16=NA&#10;Security Guard: SKL-16=L3, SKL-01=NA"></textarea>
+                <div class="form-hint">
+                  One line per job role — <code>Role: SKILL=LEVEL, …</code> using L1–L4 or NA.
+                  A role with no line, or a skill it does not mention, falls back to that
+                  skill’s own default. Leave this blank and every role uses the defaults.
                 </div>
               </div>
             </div>
@@ -849,6 +1067,11 @@
           <div class="form-group">
             <label>Department</label>
             <input type="text" id="eDept" class="input" placeholder="e.g. Operations">
+          </div>
+          <div class="form-group">
+            <label>Job Role</label>
+            <input type="text" id="eJobRole" class="input" placeholder="e.g. Packaging Operator">
+            <div class="form-hint">Sets which minimum competency levels apply on the skill matrix. Blank = the default for every skill.</div>
           </div>
           <div class="form-group">
             <label>Gender</label>
@@ -1039,6 +1262,7 @@
       else if (action === 'sendDigestNow')  r.sendDigestNow(t);
       else if (action === 'setTelegramWebhook') r.setTelegramWebhook(t);
       else if (action === 'installTriggers') r.installTriggers(t);
+      else if (action === 'previewAlertTemplates') r.previewAlertTemplates();
       else if (action === 'getBlacklist')   r.getBlacklist();
       else if (action === 'addBlacklist')   r.addToBlacklist(data.entry, t);
       else if (action === 'removeBlacklist') r.removeFromBlacklist(data.qrCode, t);
@@ -1216,6 +1440,7 @@
         EmpID:      code || undefined,
         Name:       document.getElementById('eName').value.trim(),
         Department: document.getElementById('eDept').value.trim(),
+        JobRole:    document.getElementById('eJobRole').value.trim(),
         Gender:     document.getElementById('eGender').value,
         BloodGroup: document.getElementById('eBlood').value,
         Phone:      document.getElementById('ePhone').value.trim(),
@@ -1245,6 +1470,7 @@
       document.getElementById('eCode').value  = e.EmpID || '';
       document.getElementById('eName').value  = e.Name || '';
       document.getElementById('eDept').value  = e.Department || '';
+      document.getElementById('eJobRole').value = e.JobRole || '';
       document.getElementById('eGender').value = e.Gender || '';
       document.getElementById('eBlood').value = e.BloodGroup || '';
       document.getElementById('ePhone').value = e.Phone || '';
@@ -1389,7 +1615,83 @@
       document.getElementById('cfgTelegramLiveScans').value = (String(map['TelegramLiveScans']||'off').toLowerCase()==='on'?'on':'off');
       document.getElementById('cfgLateAfter').value     = map['LateAfter']     || '09:30';
       document.getElementById('cfgSummaryHr').value     = map['SummaryHr']     || '9';
+      document.getElementById('cfgSummaryMin').value    = map['SummaryMin']    || '0';
       document.getElementById('cfgAutoCheckoutHr').value = map['AutoCheckoutHr'] || '23';
+
+      // Training & competency. Declared once in TRAINING_KEYS and iterated on
+      // both sides, so a new setting is added in one place rather than three.
+      TRAINING_KEYS.forEach(function(k) {
+        var el = document.getElementById('cfg' + k.key);
+        if (el) el.value = map[k.key] != null && map[k.key] !== '' ? map[k.key] : k.fallback;
+      });
+
+      // Alert toggles. Default ON when the Config row is missing, matching
+      // _alertOn_() on the server — a fresh install notifies rather than
+      // going silently dark.
+      ALERT_KEYS.forEach(function(k) {
+        var el = document.getElementById('cfg' + k);
+        if (el) el.checked = _isOn(map[k]);
+      });
+      loadAlertPreview();
+    }
+
+    /* Training & competency settings. The fallback is what the server assumes
+       when the row is blank, repeated here so the field shows the value that
+       is actually in force rather than an empty box. */
+    var TRAINING_KEYS = [
+      { key: 'PassMark',    fallback: '70' },
+      { key: 'LevelNames',  fallback: 'Beginner|Under supervision|Independent|Can train others' },
+      // Deliberately blank: an empty MinRequired means every role falls back
+      // to each skill's own default, which is the honest starting state.
+      { key: 'MinRequired', fallback: '' },
+      // Document control, printed at the foot of every controlled format.
+      // Fallbacks mirror _docControl_() on the server, so the field shows the
+      // value actually in force rather than an empty box.
+      { key: 'DocOwner',      fallback: 'Balkrishna Mishra' },
+      { key: 'DocApprover',   fallback: 'Balkrishna Mishra' },
+      { key: 'DocApprovedOn', fallback: '01/04/2025' },
+      { key: 'DocVersion',    fallback: '1.0' },
+      { key: 'DocNextReview', fallback: '01/04/2026' },
+      // Blank fallback: the server's own defaults apply when this is unset,
+      // and pre-filling the box would save them back as if hand-entered.
+      { key: 'NameAliases',   fallback: '' }
+    ];
+
+    /* Config 'on'/'off' flags, mirrored from _alertOn_() on the server. */
+    var ALERT_KEYS = ['AlertVisitorArrival','AlertGatepassApproval','AlertItemsKept',
+                      'AlertUnreturned','AlertFeedback','AlertDigest',
+                      'AlertButtons','AlertShowSite','AlertShowGate'];
+
+    function _isOn(v) {
+      if (v === undefined || v === null || v === '') return true;   // default ON
+      v = String(v).trim().toLowerCase();
+      return !(v === 'off' || v === 'false' || v === 'no' || v === '0');
+    }
+
+    /* Renders sample cards produced by the real server-side builder, so the
+       preview cannot drift from what is actually sent. */
+    function loadAlertPreview(btn) {
+      var wrap = document.getElementById('alertPreview');
+      if (!wrap) return;
+      if (btn) { btn.disabled = true; btn.textContent = '…'; }
+      post({ action: 'previewAlertTemplates' }, function(res) {
+        if (btn) { btn.disabled = false; btn.textContent = 'Refresh'; }
+        if (!res || !res.success) {
+          wrap.innerHTML = '<div class="form-hint">Preview unavailable: ' +
+                           ((res && res.error) || 'failed') + '</div>';
+          return;
+        }
+        wrap.innerHTML = res.samples.map(function(s) {
+          var btns = (s.buttons || []).map(function(b) {
+            return '<div class="tg-btn">' + b + '</div>';
+          }).join('');
+          return '<div class="tg-msg' + (s.enabled ? '' : ' tg-msg-off') + '">' +
+            '<div class="tg-msg-label">' + s.label +
+              (s.enabled ? '' : ' <span class="tg-off-tag">off</span>') + '</div>' +
+            '<div class="tg-bubble">' + s.msg.replace(/\n/g, '<br>') + btns + '</div>' +
+          '</div>';
+        }).join('');
+      });
     }
 
     function saveConfig() {
@@ -1404,10 +1706,25 @@
         { Key: 'TelegramLiveScans', Value: document.getElementById('cfgTelegramLiveScans').value },
         { Key: 'LateAfter',     Value: document.getElementById('cfgLateAfter').value },
         { Key: 'SummaryHr',     Value: document.getElementById('cfgSummaryHr').value },
+        { Key: 'SummaryMin',    Value: document.getElementById('cfgSummaryMin').value },
         { Key: 'AutoCheckoutHr', Value: document.getElementById('cfgAutoCheckoutHr').value }
       ];
+      ALERT_KEYS.forEach(function(k) {
+        var el = document.getElementById('cfg' + k);
+        if (el) config.push({ Key: k, Value: el.checked ? 'on' : 'off' });
+      });
+      TRAINING_KEYS.forEach(function(k) {
+        var el = document.getElementById('cfg' + k.key);
+        if (el) config.push({ Key: k.key, Value: el.value });
+      });
+
       post({ action: 'saveConfig', config: config }, function(res) {
-        showToast(res.success ? 'Settings saved successfully' : 'Error: ' + res.error, res.success ? 'success' : 'error');
+        if (!res.success) return showToast('Error: ' + res.error, 'error');
+        // saveConfig reinstalls the daily triggers when a time changed, so say
+        // so — otherwise the admin cannot tell whether the new time took effect.
+        showToast(res.rescheduled ? 'Settings saved · daily triggers rescheduled'
+                                  : 'Settings saved successfully', 'success');
+        loadAlertPreview();
       });
     }
 
@@ -1453,6 +1770,9 @@
   <a class="mob-admin-tab" data-page="kiosk">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18"/></svg>
     Kiosk
+  </a><a class="mob-admin-tab" data-page="scanner">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="5" height="5"/><rect x="16" y="3" width="5" height="5"/><rect x="3" y="16" width="5" height="5"/><path d="M21 16h-3v3m0-3v3h-3"/></svg>
+    Scanner
   </a>
   <a class="mob-admin-tab active" data-page="admin">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M12 14c-5 0-8 2-8 3v1h16v-1c0-1-3-3-8-3z"/></svg>
@@ -1485,8 +1805,10 @@
 </script>
 <script>
   function openIdCards() {
-    // Open the GitHub Pages wrapper (not the raw GAS URL) in a new tab
-    window.open('https://packmastersmumbai.github.io/att/?page=idcards', '_blank');
+    // Open the idcards page directly on the GAS app (no launcher landing hop).
+    var base = (typeof PUBLIC_URL !== 'undefined' && /^https?:\/\//.test(PUBLIC_URL)) ? PUBLIC_URL
+             : (typeof APP_URL !== 'undefined' ? APP_URL : '');
+    window.open(base + '?page=idcards', '_blank');
   }
 </script>
 <script>
@@ -1501,8 +1823,13 @@
     var PUBLIC_URL = '<?= publicUrl ?>';
     function navigate(page) {
       if (!page) return;
-      var base = /^https?:\/\//.test(PUBLIC_URL) ? PUBLIC_URL + '/' : (APP_URL + '?');
-      var url = base + (base.slice(-1) === '/' ? '?page=' : 'page=') + encodeURIComponent(page);
+      // In-app page→page nav must land ON the working GAS app, not the GitHub
+      // Pages launcher. The launcher (PUBLIC_URL) is a manual landing page — it
+      // cannot frame the app, so routing nav through it dropped the user on the
+      // launcher home every time. APP_URL is the raw GAS /exec that renders the
+      // requested page directly. Shared/external entry links stay pretty via the
+      // launcher; navigation between pages, once inside, stays inside the app.
+      var url = APP_URL + '?page=' + encodeURIComponent(page);
       try {
         (window.top || window).location.href = url;
       } catch(e) {

@@ -78,6 +78,9 @@ async function run() {
       await page.fill('#vCompany', 'TestCorp');
       await page.selectOption('#vPurpose', { index: 1 });
       await page.fill('#vExpOut', '17:00');
+      // Photo is now mandatory; simulate a successful capture (the form stores
+      // the captured base64 in the vPhotoData var, which the submit reads).
+      await page.evaluate(() => { window.vPhotoData = 'data:image/jpeg;base64,/9j/AAAA'; });
       await page.click('#regBtn');
       // Wait for pass panel to appear
       await page.waitForSelector('#passPanel', { state: 'visible', timeout: 6000 });
@@ -106,6 +109,13 @@ async function run() {
 
     await R.check('WhatsApp share button visible', async () => {
       if (!await page.locator('#waShareBtn').isVisible()) throw new Error('WA share btn not visible');
+    });
+
+    await R.check('WhatsApp share button links to pass URL', async () => {
+      const href = await page.locator('#waShareBtn').getAttribute('href');
+      if (!href || !/wa\.me\/\d+/.test(href) || !/page=vpass/.test(decodeURIComponent(href))) {
+        throw new Error('waShareBtn href not a pass wa.me link: ' + href);
+      }
     });
 
     summary.push(R.report());

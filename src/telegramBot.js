@@ -34,6 +34,7 @@ function _tgHelp_() {
     '/absent — who has not shown up\n' +
     '/late — late arrivals\n' +
     '/visitors — visitors today\n' +
+    '/outstanding — items not yet returned\n' +
     '/find &lt;name&gt; — look up a person';
 }
 

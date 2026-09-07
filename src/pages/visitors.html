@@ -9,15 +9,7 @@
   <title>Visitor Management</title>
   <style>
     /* ── Design Tokens ─────────────────────────────────────── */
-    :root {
-      --color-primary: #000666; --color-primary-dk: #000444;
-      --color-success: #006b5f; --color-danger: #DC2626; --color-warning: #D97706;
-      --color-bg: #fcf9f8; --color-surface: #ffffff; --color-border: #e8e3e0;
-      --color-text: #1b1c1c; --color-text-muted: #4a5568;
-      --radius-sm: 2px; --radius-md: 4px; --radius-lg: 8px;
-      --shadow-sm: 0 1px 3px rgba(0,0,0,.08); --shadow-md: 0 4px 16px rgba(0,0,0,.12);
-      --font-sans: 'Public Sans', system-ui, sans-serif; --font-mono: 'Roboto Mono', monospace;
-    }
+    
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html, body { height: 100%; }
     body {
@@ -113,6 +105,9 @@
     }
     .btn-primary { background: var(--color-primary); color: #fff; }
     .btn-primary:hover { background: var(--color-primary-dk); }
+    .link-btn { border: none; background: none; color: var(--color-primary);
+      font-weight: 700; font-size: 12.5px; cursor: pointer; padding: 4px 6px; border-radius: 6px; font-family: inherit; }
+    .link-btn:hover { background: var(--color-bg); }
     .btn-success { background: var(--color-success); color: #fff; }
     .btn-success:hover { background: #005a50; }
     .btn-danger { background: var(--color-danger); color: #fff; }
@@ -296,6 +291,13 @@
       transition: background .15s;
     }
     .btn-checkout-teal:hover { background: #0F766E; }
+    .btn-items {
+      background: #fff; color: var(--color-primary); border: 1px solid var(--color-primary);
+      border-radius: 3px; padding: 5px 12px; font-size: 11px; font-weight: 700;
+      cursor: pointer; letter-spacing: .5px; font-family: inherit; transition: background .15s;
+      margin-right: 6px;
+    }
+    .btn-items:hover { background: var(--color-bg); }
     .purpose-pill {
       display: inline-block;
       padding: 2px 8px;
@@ -434,6 +436,9 @@
           <rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18"/>
         </svg>
         Kiosk
+      </a><a href="?page=scanner" data-page="scanner" class="sb-item">
+        <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="5" height="5"/><rect x="16" y="3" width="5" height="5"/><rect x="3" y="16" width="5" height="5"/><path d="M21 16h-3v3m0-3v3h-3"/></svg>
+        Scanner
       </a>
       <a href="?page=dashboard" data-page="dashboard" class="sb-item">
         <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -457,15 +462,19 @@
           <circle cx="9" cy="7" r="4"/>
           <path d="M23 21v-2a4 4 0 0 0-3-3.87m-4-12a4 4 0 0 1 0 7.75"/>
         </svg>
-        Visitor Log
+        Visitors
       </a>
-      <a href="?page=kiosk" data-page="kiosk" class="sb-item">
-        <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
-          <line x1="8" y1="21" x2="16" y2="21"/>
-          <line x1="12" y1="17" x2="12" y2="21"/>
-        </svg>
-        Kiosk
+      <a href="?page=training" data-page="training" class="sb-item">
+        <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        Training
+      </a>
+      <a href="?page=skillmatrix" data-page="skillmatrix" class="sb-item">
+        <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="9" x2="9" y2="21"/></svg>
+        Skill matrix
+      </a>
+      <a href="?page=mockdrill" data-page="mockdrill" class="sb-item">
+        <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2 3 7v6c0 5 3.8 8.6 9 9 5.2-.4 9-4 9-9V7z"/><path d="M12 8v5"/><line x1="12" y1="16" x2="12" y2="16"/></svg>
+        Mock drills
       </a>
       <div class="sb-section-label" style="margin-top:8px">Settings</div>
       <a href="?page=admin" data-page="admin" class="sb-item">
@@ -536,7 +545,7 @@
               <div id="photoPlaceholder">
                 <div class="photo-placeholder-icon">📷</div>
                 <div class="photo-label-text">Tap to capture visitor photo</div>
-                <div class="photo-sublabel-text">Optional · for identification</div>
+                <div class="photo-sublabel-text">Required · for identification</div>
               </div>
             </div>
 
@@ -573,8 +582,13 @@
             <!-- HOST INFORMATION -->
             <div class="form-section-label">Host Information</div>
             <div class="form-group">
-              <label>Host Official (Employee ID)</label>
-              <input type="text" id="vHost" class="input" placeholder="EMP-000001">
+              <label>Host Official (type a name or pick)</label>
+              <!-- Was a bare text box demanding a raw "EMP-000001", which a guard
+                   cannot know from memory. A datalist lets them type a name to
+                   filter or open the full list; resolveHostId() maps whatever
+                   they land on back to the EmpID the server expects. -->
+              <input type="text" id="vHost" class="input" list="vHostList" placeholder="Type a name…" autocomplete="off">
+              <datalist id="vHostList"></datalist>
             </div>
             <div class="form-group">
               <label>Scheduled Arrival / Expected Out (time)</label>
@@ -924,13 +938,15 @@
     /* Self-registration QR + link (visitors register on their own phone) */
     (function(){
       var appUrl = '<?= appUrl ?>';
-      var publicUrl = '<?= publicUrl ?>';   // pretty base for the shareable register link
-      var regUrl = (/^https?:\/\//.test(publicUrl) ? publicUrl + '/?page=vreg' : appUrl + '?page=vreg');
+      var publicUrl = '<?= publicUrl ?>';   // GAS app base for the shareable register link (direct, no launcher)
+      var regBase = /^https?:\/\//.test(publicUrl) ? publicUrl : appUrl;
+      var regUrl = regBase + '?page=vreg';
       var qrEl = document.getElementById('selfRegQR');
       var linkEl = document.getElementById('selfRegLink');
       if (qrEl) qrEl.src = 'https://api.qrserver.com/v1/create-qr-code/?size=192x192&ecc=M&data=' + encodeURIComponent(regUrl);
       if (linkEl) linkEl.href = regUrl;
       window.__selfRegUrl = regUrl;
+      window.__passBase = regBase;   // GAS app base for building vpass links (used by showPass)
     })();
     function copySelfRegLink(btn){
       var url = window.__selfRegUrl || '';
@@ -939,7 +955,7 @@
         navigator.clipboard.writeText(url).then(done, function(){ window.prompt('Copy this link:', url); });
       } else { window.prompt('Copy this link:', url); }
     }
-    function post(data,callback){var action=data.action;var onErr=function(e){callback({success:false,error:e?e.message:'Unknown error'});};if(typeof google==='undefined'||!google.script){callback({success:false,error:'Not in GAS'});return;}var r=google.script.run.withSuccessHandler(callback).withFailureHandler(onErr);if(action==='registerVisitor')r.registerVisitor(data.visitor);else if(action==='checkoutVisitor')r.checkoutVisitor(data.visitorId);else if(action==='getLogs')r.getLogs(data.filters);else if(action==='getDashboardData')r.getDashboardData();else if(action==='exportCSV')r.exportCSV(data.filters);else if(action==='getVisitorDetail')r.getVisitorDetail(data.visitorId);else callback({success:false,error:'Unknown: '+action});}
+    function post(data,callback){var action=data.action;var onErr=function(e){callback({success:false,error:e?e.message:'Unknown error'});};if(typeof google==='undefined'||!google.script){callback({success:false,error:'Not in GAS'});return;}var r=google.script.run.withSuccessHandler(callback).withFailureHandler(onErr);if(action==='registerVisitor')r.registerVisitor(data.visitor);else if(action==='checkoutVisitor')r.checkoutVisitor(data.visitorId);else if(action==='getLogs')r.getLogs(data.filters);else if(action==='getDashboardData')r.getDashboardData();else if(action==='exportCSV')r.exportCSV(data.filters);else if(action==='getVisitorDetail')r.getVisitorDetail(data.visitorId);else if(action==='getGatepass')r.getGatepass(data.visitorId);else if(action==='addGatepassItem')r.addGatepassItem(data.visitorId,data.item);else if(action==='markItemReturned')r.markItemReturned(data.gatepassId);else if(action==='voidGatepassItem')r.voidGatepassItem(data.gatepassId,data.reason);else if(action==='notifyHostForApproval')r.notifyHostForApproval(data.visitorId);else if(action==='getMaterialList')r.getMaterialList();else if(action==='getEmployees')r.getEmployees();else if(action==='settleVisitorGatepass')r.settleVisitorGatepass(data.visitorId,data.mode,data.reason,data.token);else callback({success:false,error:'Unknown: '+action});}
   </script>
   <script>
     var COLORS = ['#3B82F6','#8B5CF6','#EC4899','#F59E0B','#10B981','#06B6D4','#EF4444','#6366F1','#84CC16','#F97316'];
@@ -986,6 +1002,45 @@
       if (ev) ev.preventDefault();
       var f = document.getElementById('regForm');
       if (f) { f.style.display = ''; f.scrollIntoView({ behavior: 'smooth' }); }
+      if (!_HOSTS.length) loadHostList();
+    }
+
+    /* ── Host picker ────────────────────────────────────────────────────────
+       The host field accepts a typed name OR a pick from the list, but the
+       server stores an EmpID. Options are labelled "Name — EMP-000001" so the
+       id stays visible and two people with the same name remain separable;
+       resolveHostId maps whatever the guard leaves in the box back to an id,
+       and passes an unrecognised value through untouched so a raw EmpID typed
+       from memory still works. */
+    var _HOSTS = [];
+
+    function loadHostList() {
+      post({ action: 'getEmployees' }, function(res) {
+        var emps = (res && res.data) || [];
+        _HOSTS = emps.filter(function(e) {
+          return String(e.Status || 'ACTIVE').toUpperCase() === 'ACTIVE';
+        }).sort(function(a, b) { return String(a.Name || '').localeCompare(String(b.Name || '')); });
+        var dl = document.getElementById('vHostList');
+        if (!dl) return;
+        dl.innerHTML = _HOSTS.map(function(e) {
+          return '<option value="' + esc((e.Name || e.EmpID) + ' — ' + e.EmpID) + '"></option>';
+        }).join('');
+      });
+    }
+
+    function resolveHostId(raw) {
+      var v = String(raw || '').trim();
+      if (!v) return '';
+      // "Name — EMP-000001" (the datalist label) → the id after the dash.
+      var m = v.match(/([A-Za-z0-9_-]+)\s*$/);
+      var tail = m ? m[1] : v;
+      var byId = _HOSTS.filter(function(e) { return String(e.EmpID) === tail; })[0];
+      if (byId) return byId.EmpID;
+      var byName = _HOSTS.filter(function(e) {
+        return String(e.Name || '').toLowerCase() === v.toLowerCase();
+      })[0];
+      if (byName) return byName.EmpID;
+      return v;   // unrecognised — let the server judge it
     }
 
     // ── Register ──────────────────────────────────────────
@@ -995,7 +1050,7 @@
         Phone:       document.getElementById('vPhone').value.trim(),
         Company:     document.getElementById('vCompany').value.trim(),
         Purpose:     document.getElementById('vPurpose').value,
-        HostEmpID:   document.getElementById('vHost').value.trim(),
+        HostEmpID:   resolveHostId(document.getElementById('vHost').value),
         ExpectedOut: document.getElementById('vExpOut').value,
         IDType:      document.getElementById('vIDType').value,
         IDNumber:    document.getElementById('vIDNumber').value.trim(),
@@ -1003,6 +1058,7 @@
         PhotoData:   vPhotoData
       };
       if (!v.Name || !v.Phone) { showToast('Name and Phone are required', 'error'); return; }
+      if (!v.PhotoData) { showToast('A photo is required — tap the photo box to capture one', 'error'); return; }
       var btn = document.getElementById('regBtn');
       btn.textContent = 'Registering…'; btn.disabled = true;
       post({ action: 'registerVisitor', visitor: v }, function(res) {
@@ -1049,10 +1105,24 @@
       var traceID = 'TR-' + qrCode.replace(/[^A-Z0-9]/g,'').substring(0,8) + '-' + new Date().getFullYear() + '-VNC';
       document.getElementById('passTraceID').textContent = traceID;
 
-      var msg = 'Your visitor pass for ' + (v.Purpose || 'visit') + ' has been generated.\nPass ID: ' + qrCode + '\nExpected Out: ' + (v.ExpectedOut || 'N/A');
+      // Include the tappable pass link so the visitor can flash the QR on
+      // arrival (not just the text pass id). Direct-to-GAS, no launcher.
+      var passLink = (window.__passBase || '') + '?page=vpass&id=' + encodeURIComponent(qrCode);
+      var msg = qrattT('vreg_wa_pass_msg').replace('{org}', 'us').replace('{link}', passLink);
       var phone = v.Phone.replace(/\D/g, '');
       document.getElementById('waShareBtn').href  = 'https://wa.me/' + phone + '?text=' + encodeURIComponent(msg);
       document.getElementById('smsShareBtn').href = 'sms:' + phone + '?body=' + encodeURIComponent(msg);
+
+      // Let the guard log gate-pass items for this visitor right after
+      // registration — reuses the shared gatepass card, mounted in the pass panel.
+      var gpMount = document.getElementById('passGpCard');
+      if (!gpMount) {
+        gpMount = document.createElement('div');
+        gpMount.id = 'passGpCard';
+        gpMount.style.marginTop = '18px';
+        document.getElementById('passPanel').appendChild(gpMount);
+      }
+      loadGatepassCard(qrCode, 'passGpCard');
     }
 
     function resetForm() {
@@ -1164,6 +1234,7 @@
               '</td>' +
               '<td>' + activeStatusBadge(v) + '</td>' +
               '<td>' +
+                '<button class="btn-items" onclick="openVisitorDetail(\'' + esc(v.VisitorID || v.ID || '') + '\')">📦 ' + qrattT('gp_items') + '</button>' +
                 (v.TimeOUT
                   ? '<span style="color:#6b7280;font-size:11px">Done</span>'
                   : '<button class="btn-checkout-teal" data-vid="' + esc(v.VisitorID || v.ID || '') + '" onclick="checkoutClick(this)">CHECKOUT</button>') +
@@ -1175,7 +1246,24 @@
     }
 
     function checkoutClick(btn) { checkout(btn.getAttribute('data-vid')); }
+
+    /* Ask about unreturned items BEFORE writing the check-out, not after.
+       The old order checked out first and then alerted, so "Continue
+       check-out?" asked a question already answered — the visitor was out and
+       the guard had no decision left. Both callers (Active row, detail modal)
+       route through here, so the guard gets one prompt naming the items. */
     function checkout(visitorId) {
+      post({ action: 'getGatepass', visitorId: visitorId }, function(gp) {
+        var out = (gp && gp.items || []).filter(function(i){ return i.status === 'OUT_PENDING'; });
+        if (out.length) {
+          var list = out.map(function(i){ return '• ' + i.qty + '× ' + i.itemDesc; }).join('\n');
+          if (!window.confirm(qrattT('gp_checkout_warn') + '\n\n' + list)) return;
+        }
+        _doCheckout(visitorId);
+      });
+    }
+
+    function _doCheckout(visitorId) {
       post({ action: 'checkoutVisitor', visitorId: visitorId }, function(res) {
         showToast(res.success ? 'Checked out successfully' : 'Error: ' + res.error, res.success ? 'success' : 'error');
         loadActive();
@@ -1299,14 +1387,14 @@
       if (!vid) return;
       var back = document.getElementById('vdBackdrop');
       var body = document.getElementById('vdBody');
-      document.getElementById('vdName').textContent = 'Loading…';
+      document.getElementById('vdName').textContent = qrattT('vd_loading');
       document.getElementById('vdId').textContent = vid;
-      body.innerHTML = '<p style="padding:16px 0;color:var(--color-text-muted);font-size:13px">Loading…</p>';
+      body.innerHTML = '<p style="padding:16px 0;color:var(--color-text-muted);font-size:13px">' + qrattT('vd_loading') + '</p>';
       back.style.display = 'flex';
 
       post({ action: 'getVisitorDetail', visitorId: vid }, function(d) {
         if (!d || !d.success) {
-          body.innerHTML = '<p style="padding:16px 0;color:#DC2626;font-size:13px">' + esc((d && d.error) || 'Failed to load') + '</p>';
+          body.innerHTML = '<p style="padding:16px 0;color:#DC2626;font-size:13px">' + esc((d && d.error) || qrattT('vd_failed_to_load')) + '</p>';
           return;
         }
         document.getElementById('vdName').textContent = d.name || vid;
@@ -1319,8 +1407,8 @@
         }
 
         var status = d.status === 'IN'
-          ? '<span class="badge badge-green">Currently inside</span>'
-          : '<span class="badge" style="background:#e5e7eb;color:#374151">Checked out</span>';
+          ? '<span class="badge badge-green">' + qrattT('vd_currently_inside') + '</span>'
+          : '<span class="badge" style="background:#e5e7eb;color:#374151">' + qrattT('vd_checked_out') + '</span>';
 
         var photo = d.photoUrl
           ? '<div style="text-align:center;margin-bottom:12px"><img src="' + esc(d.photoUrl) +
@@ -1330,31 +1418,220 @@
 
         var info = photo +
           '<div style="margin-bottom:6px">' + status +
-            (d.blacklisted ? ' <span class="badge" style="background:#fee2e2;color:#991b1b">Blacklisted</span>' : '') + '</div>' +
-          field('Mobile', d.phone) +
-          field('Company', d.company) +
-          field('Host', d.hostName) +
-          field('Purpose', d.purpose) +
-          field('Vehicle', d.vehicle) +
-          field('ID Type', d.idType) +
-          field('Type', d.visitorType) +
-          field('Safety acknowledged', d.safetyAckAt ? new Date(d.safetyAckAt).toLocaleString() : '');
+            (d.blacklisted ? ' <span class="badge" style="background:#fee2e2;color:#991b1b">' + qrattT('vd_blacklisted') + '</span>' : '') + '</div>' +
+          field(qrattT('vd_mobile'), d.phone) +
+          field(qrattT('vd_company'), d.company) +
+          field(qrattT('vd_host'), d.hostName) +
+          field(qrattT('vd_purpose'), d.purpose) +
+          field(qrattT('vd_vehicle'), d.vehicle) +
+          field(qrattT('vd_id_type'), d.idType) +
+          field(qrattT('vd_id_number'), d.idNumber) +
+          field(qrattT('vd_type'), d.visitorType) +
+          field(qrattT('vd_safety_acknowledged'), d.safetyAckAt ? new Date(d.safetyAckAt).toLocaleString() : '');
 
-        var logHd = '<div style="margin:16px 0 8px;font-size:12px;font-weight:700;color:var(--color-text-muted);text-transform:uppercase;letter-spacing:.5px">Visit Log (' + d.visitCount + ')</div>';
+        var logHd = '<div style="margin:16px 0 8px;font-size:12px;font-weight:700;color:var(--color-text-muted);text-transform:uppercase;letter-spacing:.5px">' + qrattT('vd_visit_log') + ' (' + d.visitCount + ')</div>';
         var logTbl = d.visits.length
           ? '<div style="overflow-x:auto"><table style="width:100%"><thead><tr>' +
-              '<th>Date</th><th>In</th><th>Out</th><th>Duration</th><th>Gate</th></tr></thead><tbody>' +
+              '<th>' + qrattT('vd_col_date') + '</th><th>' + qrattT('vd_col_in') + '</th><th>' + qrattT('vd_col_out') +
+              '</th><th>' + qrattT('vd_col_duration') + '</th><th>' + qrattT('vd_col_gate') + '</th></tr></thead><tbody>' +
               d.visits.map(function(v) {
                 return '<tr><td>' + esc(v.date) + '</td><td>' + esc(v.timeIn || '–') + '</td><td>' +
                   esc(v.timeOut || '–') + '</td><td>' + esc(v.duration || '–') + '</td><td>' + esc(v.gate || '–') + '</td></tr>';
               }).join('') +
               '</tbody></table></div>'
-          : '<p style="color:var(--color-text-muted);font-size:13px">No visits recorded.</p>';
+          : '<p style="color:var(--color-text-muted);font-size:13px">' + qrattT('vd_no_visits') + '</p>';
 
-        body.innerHTML = info + logHd + logTbl;
+        // Gatepass sits ABOVE the visit log. Mounted last it landed after ten
+        // info fields and the whole visit history, below the fold of an
+        // 85vh modal — present, but invisible on exactly the returning
+        // visitors whose items most need settling. Items are the actionable
+        // part of this modal; the visit log is reference.
+        // Checking the items and checking the visitor out are one job, so the
+        // action lives with the items rather than only on the Active-tab row.
+        var checkoutBar = d.status === 'IN'
+          ? '<div style="margin-top:14px;display:flex;justify-content:flex-end">' +
+              '<button class="btn-checkout-teal" onclick="checkoutFromDetail(\'' + esc(vid) + '\')">' +
+                qrattT('vd_checkout_btn') + '</button></div>'
+          : '';
+
+        body.innerHTML = info +
+          '<div id="gpCard" style="margin-top:16px"></div>' +
+          checkoutBar + logHd + logTbl;
+        loadGatepassCard(vid);
       });
     }
     function closeVisitorDetail() { document.getElementById('vdBackdrop').style.display = 'none'; }
+
+    /* Check out from inside the detail modal. Reuses checkout(), so the
+       unreturned-items warning fires here exactly as it does on the Active
+       tab, then closes the modal and refreshes the list behind it. */
+    function checkoutFromDetail(vid) {
+      // Close only after checkout() resolves — closing synchronously used to
+      // pull the modal out from under the confirm prompt.
+      closeVisitorDetail();
+      checkout(vid);
+    }
+
+    /* ── Item gatepass card — reusable; mounts into any element by id ──
+       Rendered in the visitor detail modal, the staff-form pass screen, and
+       (via the modal) from the Active tab. Only one card is visible at a time,
+       so it keeps single element ids and just parameterizes the mount + a
+       remembered mountId so the action handlers reload the right card. ── */
+    var GP_MATERIALS = null;
+    var GP_MOUNT = 'gpCard';   // element id the current card is rendered into
+    var GP_PHOTO = '';         // captured (compressed) photo for the item being added
+
+    function loadGatepassCard(vid, mountId) {
+      GP_MOUNT = mountId || 'gpCard';
+      if (GP_MATERIALS === null) {
+        post({ action:'getMaterialList' }, function(m){
+          GP_MATERIALS = (m && m.materials) || [];
+          var dl = document.getElementById('gpMatList');
+          if (dl) {
+            dl.innerHTML = GP_MATERIALS.slice(0,500).map(function(mm){
+              return '<option value="'+esc(mm.desc||mm.code)+'">'+esc(mm.code)+'</option>';
+            }).join('');
+          }
+        });
+      }
+      post({ action:'getGatepass', visitorId: vid }, function(d){
+        renderGatepassCard(vid, d || { items:[], returnableOutstanding:0 });
+      });
+    }
+
+    function gpChip(status){
+      var map = { OUT_PENDING:['gp_st_awaiting','#fbeed6','#9a5b00'], RETURNED:['gp_st_returned','#e4f4ec','#0f7a4d'],
+                  LEFT:['gp_st_left','#e8ecf1','#334155'], VOID:['gp_st_void','#fbe9e7','#b42318'] };
+      var c = map[status] || map.LEFT;
+      return '<span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;background:'+c[1]+';color:'+c[2]+'">'+qrattT(c[0])+'</span>';
+    }
+
+    // Compress a captured photo to a small thumbnail (downscale + JPEG) so a
+    // gatepass with several item photos stays well within google.script.run
+    // limits and Drive stays lean.
+    function _gpCompressPhoto_(dataUrl, cb){
+      try{
+        var img=new Image();
+        img.onload=function(){
+          var max=320, w=img.width, h=img.height;
+          if(w>h && w>max){ h=Math.round(h*max/w); w=max; }
+          else if(h>=w && h>max){ w=Math.round(w*max/h); h=max; }
+          var cv=document.createElement('canvas'); cv.width=w; cv.height=h;
+          cv.getContext('2d').drawImage(img,0,0,w,h);
+          cb(cv.toDataURL('image/jpeg',0.5));
+        };
+        img.onerror=function(){ cb(dataUrl); };
+        img.src=dataUrl;
+      }catch(e){ cb(dataUrl); }
+    }
+    function gpPreviewPhoto(input){
+      if(!input.files || !input.files[0]) return;
+      var reader=new FileReader();
+      reader.onload=function(e){
+        _gpCompressPhoto_(e.target.result, function(small){
+          GP_PHOTO=small;
+          var lbl=document.getElementById('gpPhotoLbl');
+          if(lbl) lbl.textContent='📷 ✓';
+        });
+      };
+      reader.readAsDataURL(input.files[0]);
+    }
+
+    function renderGatepassCard(vid, d){
+      GP_PHOTO='';   // reset per render
+      var items = d.items || [];
+      var rows = items.map(function(i){
+        var thumb = i.photoUrl ? '<img src="'+esc(i.photoUrl)+'" alt="" style="width:28px;height:28px;border-radius:5px;object-fit:cover;vertical-align:middle;margin-right:6px" onerror="this.style.display=\'none\'">' : '';
+        var act = i.status==='OUT_PENDING'
+          ? '<button class="link-btn" onclick="gpReturn(\''+i.gatepassId+'\',\''+vid+'\')">'+qrattT('gp_mark_returned')+'</button>'
+          : (i.status!=='VOID' ? '<button class="link-btn" onclick="gpVoid(\''+i.gatepassId+'\',\''+vid+'\')">'+qrattT('gp_void')+'</button>' : '');
+        // Age badge on a carried-over item, so a guard can tell at a glance
+        // which rows belong to this visit and which are old debt.
+        var age = (i.status==='OUT_PENDING' && i.daysOut!=='' && i.daysOut>=1)
+          ? ' <span title="Outstanding from an earlier visit" style="font-size:10px;font-weight:800;padding:1px 6px;border-radius:999px;background:#fee2e2;color:#b42318">'+i.daysOut+'d</span>'
+          : '';
+        return '<tr><td style="padding:6px 8px">'+thumb+esc(i.itemDesc)+age+(i.unit?' <span style="color:#94a3b8">'+esc(i.unit)+'</span>':'')+'</td>'+
+          '<td style="padding:6px 8px">'+esc(i.direction)+'</td><td style="padding:6px 8px">'+esc(i.qty)+'</td>'+
+          '<td style="padding:6px 8px">'+gpChip(i.status)+
+            // HostApproved was written on every row and read by nothing, so the
+            // approval loop was invisible. Show it next to the status.
+            (i.hostApproved ? ' <span title="Host approved" style="color:#0f7a4d;font-weight:800">✓</span>' : '')+
+          '</td><td style="padding:6px 8px;text-align:right">'+act+'</td></tr>';
+      }).join('');
+      var outstanding = d.returnableOutstanding||0;
+      var stale = d.staleOutstanding||0;
+      var mats = GP_MATERIALS||[];
+      var mount = document.getElementById(GP_MOUNT);
+      if(!mount) return;
+      mount.innerHTML =
+        '<div style="border:1px solid var(--color-border);border-radius:12px;overflow:hidden">'+
+        '<div style="padding:11px 13px;background:var(--color-bg);border-bottom:1px solid var(--color-border);font-weight:800;font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--color-text-muted)">'+qrattT('gp_title')+'</div>'+
+        '<div style="display:flex;gap:10px;padding:10px 12px 4px"><label style="font-size:12px"><input type="radio" name="gpDir" value="IN" checked> '+qrattT('gp_bringing_in')+'</label>'+
+          '<label style="font-size:12px"><input type="radio" name="gpDir" value="OUT"> '+qrattT('gp_taking_out')+'</label></div>'+
+        // Adder: item name on its own full-width row (datalist needs room and is
+        // flaky when squeezed on mobile); qty / photo / returnable / Add wrap
+        // below via flex so nothing overflows a narrow phone screen.
+        '<div style="padding:6px 12px 12px">'+
+          '<input id="gpDesc" list="gpMatList" placeholder="'+qrattT('gp_item_desc')+'" style="width:100%;box-sizing:border-box;padding:9px;border:1px solid var(--color-border);border-radius:8px;margin-bottom:8px">'+
+          '<datalist id="gpMatList">'+mats.slice(0,500).map(function(m){return '<option value="'+esc(m.desc||m.code)+'">'+esc(m.code)+'</option>';}).join('')+'</datalist>'+
+          '<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">'+
+            '<input id="gpQty" type="number" value="1" min="1" style="width:64px;padding:8px;border:1px solid var(--color-border);border-radius:8px" title="'+qrattT('gp_qty')+'">'+
+            '<label id="gpPhotoLbl" title="'+qrattT('gp_add_photo')+'" style="font-size:15px;cursor:pointer;padding:7px 10px;border:1px solid var(--color-border);border-radius:8px">📷<input type="file" accept="image/*" capture="environment" style="display:none" onchange="gpPreviewPhoto(this)"></label>'+
+            '<label style="font-size:12px;display:flex;gap:5px;align-items:center;white-space:nowrap"><input type="checkbox" id="gpRet" checked>'+qrattT('gp_returnable')+'</label>'+
+            '<button class="btn btn-primary" style="white-space:nowrap;margin-left:auto" onclick="gpAdd(\''+vid+'\')">'+qrattT('gp_add_item')+'</button>'+
+          '</div>'+
+        '</div>'+
+        (items.length ? '<table style="width:100%;font-size:13px;border-collapse:collapse">'+
+          '<tbody>'+rows+'</tbody></table>' :
+          '<p style="padding:8px 13px 12px;color:var(--color-text-muted);font-size:13px">'+qrattT('gp_no_items')+'</p>')+
+        (outstanding ? '<div style="padding:9px 13px;background:#fbeed6;color:#9a5b00;font-size:12px;font-weight:700">'+qrattT('gp_outstanding').replace('{n}',outstanding)+
+          // A returning visitor keeps one VisitorID for life, so an item never
+          // marked returned follows them into every later visit. Call the
+          // carried-over ones out and offer a one-click way to clear the lot,
+          // otherwise the warning cries wolf on every future arrival.
+          (stale ? '<div style="margin-top:6px;font-weight:600">'+qrattT('gp_stale_note').replace('{n}',stale)+'</div>'+
+            '<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">'+
+              '<button class="link-btn" onclick="gpSettleAll(\''+vid+'\',\'RETURNED\')">'+qrattT('gp_settle_returned')+'</button>'+
+              '<button class="link-btn" onclick="gpSettleAll(\''+vid+'\',\'VOID\')">'+qrattT('gp_settle_void')+'</button>'+
+            '</div>' : '')+
+          '</div>' : '')+
+        '<div style="padding:10px 13px;border-top:1px solid var(--color-border);display:flex;justify-content:flex-end">'+
+          '<button class="btn" onclick="gpNotify(\''+vid+'\',this)">'+qrattT('gp_notify_host')+'</button></div>'+
+        '</div>';
+    }
+
+    function gpAdd(vid){
+      var descEl=document.getElementById('gpDesc');
+      var desc=(descEl.value||'').trim();
+      if(!desc) return;
+      var dir=(document.querySelector('input[name=gpDir]:checked')||{}).value||'IN';
+      var mat=(GP_MATERIALS||[]).filter(function(m){return (m.desc||m.code)===desc;})[0]||{};
+      post({action:'addGatepassItem',visitorId:vid,item:{
+        direction:dir, materialCode:mat.code||'', itemDesc:desc, unit:mat.unit||'',
+        qty:Number(document.getElementById('gpQty').value)||1,
+        returnable:document.getElementById('gpRet').checked,
+        photoData:GP_PHOTO
+      }},function(res){ if(res&&res.success) loadGatepassCard(vid, GP_MOUNT); });
+    }
+    function gpReturn(id,vid){ post({action:'markItemReturned',gatepassId:id},function(res){ if(res&&res.success) loadGatepassCard(vid, GP_MOUNT); }); }
+    function gpVoid(id,vid){ post({action:'voidGatepassItem',gatepassId:id,reason:''},function(res){ if(res&&res.success) loadGatepassCard(vid, GP_MOUNT); }); }
+
+    /* Clear every still-out item for this visitor at once. RETURNED is the
+       honest default (the items did come back and nobody ticked them off);
+       VOID is for rows that should never have been raised. Confirmed first —
+       it settles several rows and there is no undo. */
+    function gpSettleAll(vid, mode){
+      var msg = mode==='VOID' ? qrattT('gp_confirm_void_all') : qrattT('gp_confirm_returned_all');
+      if(!window.confirm(msg)) return;
+      post({action:'settleVisitorGatepass',visitorId:vid,mode:mode,
+            reason: mode==='VOID' ? 'Bulk void — stale rows' : 'Bulk settle at gate'},
+        function(res){
+          if(res&&res.success){ showToast(qrattT('gp_settled').replace('{n}',res.settled), 'success'); loadGatepassCard(vid, GP_MOUNT); }
+          else showToast('Error: '+((res&&res.error)||'failed'), 'error');
+        });
+    }
+    function gpNotify(vid,btn){ if(btn){btn.disabled=true;} post({action:'notifyHostForApproval',visitorId:vid},function(res){ if(btn){btn.disabled=false; btn.textContent=(res&&res.success)?'✓':qrattT('gp_notify_host');} }); }
+    window.openVisitorDetail = openVisitorDetail;
 
     function exportHistoryCSV() {
       post({ action: 'exportCSV', filters: { type: 'VIS' } }, function(res) {
@@ -1372,6 +1649,9 @@
     <a href="?page=kiosk" data-page="kiosk">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18"/></svg>
       Kiosk
+    </a><a href="?page=scanner" data-page="scanner">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="5" height="5"/><rect x="16" y="3" width="5" height="5"/><rect x="3" y="16" width="5" height="5"/><path d="M21 16h-3v3m0-3v3h-3"/></svg>
+      Scanner
     </a>
     <a href="?page=dashboard" data-page="dashboard">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
@@ -1399,8 +1679,13 @@
     var PUBLIC_URL = '<?= publicUrl ?>';
     function navigate(page) {
       if (!page) return;
-      var base = /^https?:\/\//.test(PUBLIC_URL) ? PUBLIC_URL + '/' : (APP_URL + '?');
-      var url = base + (base.slice(-1) === '/' ? '?page=' : 'page=') + encodeURIComponent(page);
+      // In-app page→page nav must land ON the working GAS app, not the GitHub
+      // Pages launcher. The launcher (PUBLIC_URL) is a manual landing page — it
+      // cannot frame the app, so routing nav through it dropped the user on the
+      // launcher home every time. APP_URL is the raw GAS /exec that renders the
+      // requested page directly. Shared/external entry links stay pretty via the
+      // launcher; navigation between pages, once inside, stays inside the app.
+      var url = APP_URL + '?page=' + encodeURIComponent(page);
       try {
         (window.top || window).location.href = url;
       } catch(e) {

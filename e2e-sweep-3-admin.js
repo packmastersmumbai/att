@@ -64,6 +64,28 @@ async function run() {
       if (rows < 3) throw new Error(`Only ${rows} rows`);
     });
 
+    await R.check('editing an employee loads and saves their job role', async () => {
+      // JobRole decides which minimum levels apply to a person on the skill
+      // matrix. Without somewhere to set it, the whole per-role mechanism is
+      // unreachable and every role silently uses the skill default.
+      await page.evaluate(() => editEmployee('EMP001'));
+      await settle(page, 300);
+      const loaded = await page.locator('#eJobRole').inputValue();
+      if (loaded !== 'Packaging Operator')
+        throw new Error('job role did not load: "' + loaded + '"');
+
+      await page.fill('#eJobRole', 'Line Supervisor');
+      await page.evaluate(() => { window.__mockSavedEmp = null; saveEmployeeForm(); });
+      await settle(page, 600);
+      const sent = await page.evaluate(() => window.__mockSavedEmp);
+      if (!sent) throw new Error('the save never reached the server');
+      if (sent.JobRole !== 'Line Supervisor')
+        throw new Error('job role was dropped on save: ' + JSON.stringify(sent.JobRole));
+      // The fields that were already there must survive the addition.
+      if (!sent.Name || !sent.Department)
+        throw new Error('adding job role dropped an existing field');
+    });
+
     await R.check('EMP001 has green ACTIVE badge', async () => {
       const cls = await page.locator('#badge-EMP001').getAttribute('class');
       const txt = await page.locator('#badge-EMP001').textContent();
@@ -168,6 +190,45 @@ async function run() {
       const btn = page.locator('#tab-config button.btn-primary, #tab-config button:has-text("Save"), button[onclick*="saveConfig"]');
       const count = await btn.count();
       if (count === 0) throw new Error('Save Config button not found');
+    });
+
+    await R.check('training settings load, falling back to what is in force', async () => {
+      // PassMark is set in Config; LevelNames is not. An empty box for the
+      // second would imply no level names exist, when the server is in fact
+      // using its own default.
+      await settle(page, 200);
+      const v = await page.evaluate(() => ({
+        pass: document.getElementById('cfgPassMark').value,
+        names: document.getElementById('cfgLevelNames').value,
+        min: document.getElementById('cfgMinRequired').value
+      }));
+      if (v.pass !== '65') throw new Error('PassMark read ' + v.pass + ', expected the stored 65');
+      if (!/Beginner/.test(v.names)) throw new Error('LevelNames did not fall back: ' + v.names);
+      // MinRequired must stay blank — a fabricated example here would be
+      // saved back as policy the first time anyone touches Save.
+      if (v.min !== '') throw new Error('MinRequired pre-filled with ' + v.min);
+    });
+
+    await R.check('saving sends every training setting', async () => {
+      await page.evaluate(() => {
+        document.getElementById('cfgPassMark').value = '75';
+        document.getElementById('cfgMinRequired').value = 'Packaging Operator: SKL-01=L3';
+        saveConfig();
+      });
+      await settle(page, 500);
+      const sent = await page.evaluate(() => {
+        const c = window.__mockSavedConfig || [];
+        const m = {};
+        c.forEach(r => { m[r.Key] = r.Value; });
+        return m;
+      });
+      if (sent.PassMark !== '75') throw new Error('PassMark not sent: ' + sent.PassMark);
+      if (!/SKL-01=L3/.test(sent.MinRequired || ''))
+        throw new Error('MinRequired not sent: ' + sent.MinRequired);
+      if (!/Beginner/.test(sent.LevelNames || ''))
+        throw new Error('LevelNames not sent: ' + sent.LevelNames);
+      // The pre-existing keys must survive alongside the new ones.
+      if (!sent.OrgName) throw new Error('adding training keys dropped OrgName');
     });
 
     await R.check('holiday picker shows ≥3 disabled national checkboxes', async () => {

@@ -150,19 +150,24 @@ function getConfigValue(key) {
 
 /**
  * Canonical PUBLIC base URL for links shown to people (visitor pass, register).
- * This is the GitHub Pages launcher, NOT the raw script.google.com/exec URL, so
- * links stay on the pretty domain. Config key 'PublicUrl' overrides the default
- * without a redeploy. Always returned WITHOUT a trailing slash.
+ * Returns the raw GAS web-app URL (script.google.com/.../exec) so every
+ * user-facing link opens the app DIRECTLY — no GitHub Pages launcher hop, no
+ * landing page. The launcher can't frame the app and was dropping users on its
+ * home page, so all links now go straight to GAS. Config key 'PublicUrl' can
+ * still override this (e.g. to point at a proxy). Always WITHOUT a trailing slash.
  */
 function publicBaseUrl() {
   var configured = String(getConfigValue('PublicUrl') || '').trim();
-  var base = configured || 'https://packmastersmumbai.github.io/att';
+  var base = configured || ScriptApp.getService().getUrl();
   return base.replace(/\/+$/, '');
 }
 
-/** Public visitor-pass URL on the pretty domain. */
+/**
+ * Public visitor-pass URL. Appends the page query directly to the app URL
+ * (…/exec?page=vpass&id=…) — no launcher path segment.
+ */
 function publicPassUrl(visitorId) {
-  return publicBaseUrl() + '/?page=vpass&id=' + encodeURIComponent(String(visitorId || ''));
+  return publicBaseUrl() + '?page=vpass&id=' + encodeURIComponent(String(visitorId || ''));
 }
 
 /**

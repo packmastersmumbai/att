@@ -9,14 +9,12 @@
   <script src="https://www.gstatic.com/charts/loader.js"></script>
   <style>
     :root {
-      --color-primary: #000666; --color-primary-dk: #000444;
-      --color-success: #006b5f; --color-danger: #DC2626; --color-warning: #D97706;
-      --color-bg: #fcf9f8; --color-surface: #ffffff; --color-border: #e8e3e0;
-      --color-text: #1b1c1c; --color-text-muted: #4a5568; --color-blocked: #7C3AED;
-      --radius-sm: 2px; --radius-md: 4px; --radius-lg: 8px;
-      --shadow-sm: 0 1px 3px rgba(0,0,0,.08); --shadow-md: 0 4px 12px rgba(0,0,0,.12);
-      --font-sans: 'Public Sans', system-ui, sans-serif; --font-mono: 'Roboto Mono', monospace;
+      /* Only what differs from the shared tokens in src/tokens.html, which
+         doGet() injects ahead of this block. This dashboard's cards use a
+         tighter 12px blur than the shared 16px. */
+      --shadow-md: 0 4px 12px rgba(0,0,0,.12);
     }
+
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html, body { height: 100%; }
     body {
@@ -584,7 +582,19 @@
       </a>
       <a href="?page=visitors" class="sb-item" data-page="visitors">
         <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
-        <span>Visitor Log</span>
+        <span>Visitors</span>
+      </a>
+      <a href="?page=training" class="sb-item" data-page="training">
+        <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        <span>Training</span>
+      </a>
+      <a href="?page=skillmatrix" class="sb-item" data-page="skillmatrix">
+        <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="9" x2="9" y2="21"/></svg>
+        <span>Skill matrix</span>
+      </a>
+      <a href="?page=mockdrill" data-page="mockdrill" class="sb-item">
+        <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2 3 7v6c0 5 3.8 8.6 9 9 5.2-.4 9-4 9-9V7z"/><path d="M12 8v5"/><line x1="12" y1="16" x2="12" y2="16"/></svg>
+        <span>Mock drills</span>
       </a>
       <a href="?page=reports" class="sb-item" data-page="reports">
         <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>
@@ -593,10 +603,13 @@
       <a href="?page=kiosk" class="sb-item" data-page="kiosk">
         <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18"/></svg>
         <span>Kiosk</span>
+      </a><a href="?page=scanner" class="sb-item" data-page="scanner">
+        <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="5" height="5"/><rect x="16" y="3" width="5" height="5"/><rect x="3" y="16" width="5" height="5"/><path d="M21 16h-3v3m0-3v3h-3"/></svg>
+        <span>Scanner</span>
       </a>
       <a href="?page=admin" class="sb-item" data-page="admin">
         <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M12 14c-5 0-8 2-8 3v1h16v-1c0-1-3-3-8-3z"/></svg>
-        <span>Settings</span>
+        <span>Admin</span>
       </a>
     </nav>
     <div class="sb-bottom">
@@ -1312,8 +1325,13 @@
     var PUBLIC_URL = '<?= publicUrl ?>';
     function navigate(page) {
       if (!page) return;
-      var base = /^https?:\/\//.test(PUBLIC_URL) ? PUBLIC_URL + '/' : (APP_URL + '?');
-      var url = base + (base.slice(-1) === '/' ? '?page=' : 'page=') + encodeURIComponent(page);
+      // In-app page→page nav must land ON the working GAS app, not the GitHub
+      // Pages launcher. The launcher (PUBLIC_URL) is a manual landing page — it
+      // cannot frame the app, so routing nav through it dropped the user on the
+      // launcher home every time. APP_URL is the raw GAS /exec that renders the
+      // requested page directly. Shared/external entry links stay pretty via the
+      // launcher; navigation between pages, once inside, stays inside the app.
+      var url = APP_URL + '?page=' + encodeURIComponent(page);
       try {
         (window.top || window).location.href = url;
       } catch(e) {

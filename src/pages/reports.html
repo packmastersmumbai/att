@@ -7,22 +7,17 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700;800;900&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <!-- SheetJS: a CSV cannot carry formulas (Excel and Sheets read a leading
+       "=" in a .csv as literal text), so the formula-bearing monthly export
+       has to be a real .xlsx. Pinned to an exact version. -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <style>
     /* ── Design tokens ── */
     :root {
-      --primary:    #000666;
-      --primary-dk: #000444;
+      /* Only what differs from the shared tokens in
+         src/tokens.html, which doGet() injects ahead of this block. */
       --teal:       #006b5f;
       --teal-dk:    #005549;
-      --danger:     #DC2626;
-      --warning:    #D97706;
-      --bg:         #fcf9f8;
-      --surface:    #ffffff;
-      --border:     #e8e3e0;
-      --text:       #1b1c1c;
-      --muted:      #4a5568;
-      --font:       'Public Sans', system-ui, sans-serif;
-      --mono:       'Roboto Mono', monospace;
     }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html, body { height: 100%; }
@@ -191,15 +186,19 @@
     .fs-select:focus { border-color: var(--primary); }
 
     /* Presence toggle */
+    /* One segmented control on ONE row. This was a 2-column grid with ALL
+       spanning both, so a single four-state filter took three rows — more
+       vertical space than Timeframe, Identification and Categorization
+       combined. */
     .presence-grid {
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 4px;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0;
       margin-bottom: 4px;
     }
     .pt-btn {
-      padding: 6px 4px;
-      border-radius: 3px;
+      padding: 7px 2px;
+      border-radius: 0;
       font-size: 11px; font-weight: 600;
       text-align: center;
       cursor: pointer;
@@ -210,7 +209,10 @@
     }
     .pt-btn:hover  { background: #f5f0ee; color: var(--text); }
     .pt-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
-    .pt-btn.all    { grid-column: 1 / -1; }
+    /* Segmented: rounded outer ends, single shared internal borders. */
+    .pt-btn + .pt-btn { border-left: none; }
+    .pt-btn:first-child { border-radius: var(--radius-md) 0 0 var(--radius-md); }
+    .pt-btn:last-child  { border-radius: 0 var(--radius-md) var(--radius-md) 0; }
 
     /* Department checkboxes */
     .dept-check {
@@ -231,7 +233,7 @@
       margin-top: 18px;
       width: 100%;
       padding: 9px 12px;
-      background: var(--teal);
+      background: var(--primary);
       color: #fff;
       border-radius: 3px;
       font-size: 12px; font-weight: 700;
@@ -241,7 +243,7 @@
       border: none;
       transition: background .15s;
     }
-    .fs-apply:hover { background: var(--teal-dk); }
+    .fs-apply:hover { background: var(--primary-dk); }
 
     .fs-clear {
       margin-top: 6px;
@@ -310,14 +312,6 @@
     .stat-pill.red         { color: var(--danger); }
     .stat-pill.amber .dot { background: var(--warning); }
     .stat-pill.amber       { color: var(--warning); }
-    .avg-dur {
-      font-size: 12px;
-      font-weight: 500;
-      color: var(--muted);
-      white-space: nowrap;
-    }
-    .avg-dur strong { color: var(--text); font-weight: 700; }
-
     /* Export / print buttons on the right */
     .stats-actions {
       margin-left: auto;
@@ -403,7 +397,6 @@
     tbody tr.row-absent:hover { background: #fee2e2; }
 
     /* Row number */
-    .row-num { font-size: 10px; color: var(--muted); font-family: var(--mono); }
 
     /* Person cell */
     .person-cell { display: flex; align-items: center; gap: 8px; }
@@ -857,6 +850,9 @@
           <rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18"/>
         </svg>
         Kiosk
+      </a><a class="sb-item" href="?page=scanner" data-page="scanner">
+        <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="5" height="5"/><rect x="16" y="3" width="5" height="5"/><rect x="3" y="16" width="5" height="5"/><path d="M21 16h-3v3m0-3v3h-3"/></svg>
+        Scanner
       </a>
       <a class="sb-item" href="?page=dashboard" data-page="dashboard">
         <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -882,11 +878,17 @@
         </svg>
         Visitors
       </a>
-      <a class="sb-item" href="?page=kiosk" data-page="kiosk">
-        <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18"/>
-        </svg>
-        Kiosk
+      <a href="?page=training" data-page="training" class="sb-item">
+        <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        Training
+      </a>
+      <a href="?page=skillmatrix" data-page="skillmatrix" class="sb-item">
+        <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="9" x2="9" y2="21"/></svg>
+        Skill matrix
+      </a>
+      <a href="?page=mockdrill" data-page="mockdrill" class="sb-item">
+        <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2 3 7v6c0 5 3.8 8.6 9 9 5.2-.4 9-4 9-9V7z"/><path d="M12 8v5"/><line x1="12" y1="16" x2="12" y2="16"/></svg>
+        Mock drills
       </a>
       <a class="sb-item" href="?page=admin" data-page="admin">
         <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -983,6 +985,7 @@
       <button class="rtab" id="rtabAnalytics" onclick="switchReportTab('analytics')">Analytics</button>
       <button class="rtab" id="rtabMonthly" onclick="switchReportTab('monthly')">Monthly View</button>
       <button class="rtab" id="rtabHours" onclick="switchReportTab('hours')">Hours Summary</button>
+      <button class="rtab" id="rtabGatepass" onclick="switchReportTab('gatepass')">Gatepass</button>
       <button class="filter-toggle-btn" onclick="openFilterDrawer()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/></svg>
         Filters
@@ -1036,8 +1039,6 @@
           <span class="stat-pill green"><span class="dot"></span><span id="sumPresent">–</span> Present</span>
           <span class="stat-pill red">  <span class="dot"></span><span id="sumAbsent">–</span> Absent</span>
           <span class="stat-pill amber"><span class="dot"></span><span id="sumVisitors">–</span> Visitors</span>
-          <div class="stats-sep"></div>
-          <span class="avg-dur">Avg Duration: <strong id="sumAvgDur">–</strong></span>
           <div class="stats-actions">
             <button class="act-btn" onclick="exportCSV()">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -1065,7 +1066,6 @@
           <table id="logsTable">
             <thead>
               <tr>
-                <th style="width:40px">#</th>
                 <th>Name</th>
                 <th style="width:90px">ID</th>
                 <th style="width:90px">Type</th>
@@ -1080,7 +1080,7 @@
             </thead>
             <tbody id="logsBody">
               <tr>
-                <td colspan="11" class="empty-state">
+                <td colspan="10" class="empty-state">
                   Click <strong>APPLY FILTERS</strong> to load records
                 </td>
               </tr>
@@ -1186,6 +1186,7 @@
         <button onclick="loadMonthly()" style="padding:7px 18px;background:var(--primary);color:#fff;border:none;border-radius:3px;font-size:12px;font-weight:700;cursor:pointer;letter-spacing:.5px;">LOAD</button>
         <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--muted);cursor:pointer;white-space:nowrap"><input type="checkbox" id="monthInactive" onchange="loadMonthly()"> Include inactive</label>
         <button onclick="exportMonthlyCSV()" id="monthExportBtn" style="padding:7px 14px;background:var(--surface);color:var(--muted);border:1px solid var(--border);border-radius:3px;font-size:12px;font-weight:600;cursor:pointer;display:none;">↓ Export CSV</button>
+        <button onclick="exportMonthlyXLSX(this)" id="monthExportXlsxBtn" title="Excel file with live formulas — hours recompute if a punch time is edited" style="padding:7px 14px;background:var(--primary);color:#fff;border:none;border-radius:3px;font-size:12px;font-weight:700;cursor:pointer;display:none;">↓ Export Excel (formulas)</button>
         <span id="monthlyKpi" style="margin-left:auto;font-size:12px;color:var(--muted);font-family:var(--mono)"></span>
       </div>
 
@@ -1228,6 +1229,23 @@
 
     </div><!-- /reportsViewHours -->
 
+    <!-- ── Outstanding Gatepass Items ──
+         The read side of the gatepass. Items were previously visible only by
+         opening one visitor's detail modal, so "what is still out?" could not
+         be answered at all. Oldest-first, because the longest-outstanding item
+         is the one that needs chasing. ── -->
+    <div class="analytics-view" id="reportsViewGatepass" style="padding:0;display:none;flex-direction:column;overflow:hidden;">
+      <div style="display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0;flex-wrap:wrap;">
+        <span style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Returnable items still out</span>
+        <button onclick="loadOutstandingGatepass()" style="padding:7px 16px;background:var(--primary);color:#fff;border:none;border-radius:3px;font-size:12px;font-weight:700;cursor:pointer;letter-spacing:.5px;">RELOAD</button>
+        <button onclick="exportGatepassCSV()" style="padding:7px 14px;background:var(--surface);color:var(--muted);border:1px solid var(--border);border-radius:3px;font-size:12px;font-weight:600;cursor:pointer;">&#8595; Export CSV</button>
+        <span id="gpOutKpi" style="margin-left:auto;font-size:12px;color:var(--muted);font-family:var(--mono)"></span>
+      </div>
+      <div style="flex:1;overflow:auto;min-height:0;padding:0;" id="gpOutWrap">
+        <div style="padding:40px;text-align:center;color:var(--muted);font-size:13px;">Loading&#8230;</div>
+      </div>
+    </div><!-- /reportsViewGatepass -->
+
   </div><!-- /main-content -->
 
   <!-- Mobile filter overlay -->
@@ -1238,6 +1256,9 @@
     <a href="?page=kiosk" data-page="kiosk">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18"/></svg>
       Kiosk
+    </a><a href="?page=scanner" data-page="scanner">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="5" height="5"/><rect x="16" y="3" width="5" height="5"/><rect x="3" y="16" width="5" height="5"/><path d="M21 16h-3v3m0-3v3h-3"/></svg>
+      Scanner
     </a>
     <a href="?page=dashboard" data-page="dashboard">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
@@ -1271,7 +1292,7 @@
     function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
     function fmtDate(d){var mn=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];var p=String(d||'').split('-');if(p.length===3&&p[0].length===4)return p[2]+' '+mn[parseInt(p[1],10)-1]+' '+p[0];return d||'–';}
     function fmtDur(d){if(!d)return '–';var m=String(d).match(/^(\d+)h\s*(\d+)m$/);if(!m){var m2=String(d).match(/^(\d+)m$/);if(m2){var mi2=parseInt(m2[1]);return (mi2/60).toFixed(2);}return d;}var h=parseInt(m[1]),mi=parseInt(m[2]);if(h>23)return '–';return (h+mi/60).toFixed(2);}
-    function post(data,callback){var action=data.action;var onErr=function(e){callback({success:false,error:e?e.message:'Unknown error'});};if(typeof google==='undefined'||!google.script){callback({success:false,error:'Not in GAS'});return;}var r=google.script.run.withSuccessHandler(callback).withFailureHandler(onErr);if(action==='getLogs')r.getLogs(data.filters);else if(action==='exportCSV')r.exportCSV(data.filters);else if(action==='getDashboardData')r.getDashboardData();else if(action==='getAnalyticsData')r.getAnalyticsData(data.range||30);else if(action==='getMonthlyAttendance')r.getMonthlyAttendance(data.year,data.month,data.includeInactive);else if(action==='getHoursSummary')r.getHoursSummary(data.opts||{});else if(action==='getHoursKpis')r.getHoursKpis(data.year,data.month);else if(action==='rebuildHoursSummarySheet')r.rebuildHoursSummarySheet();else callback({success:false,error:'Unknown: '+action});}
+    function post(data,callback){var action=data.action;var onErr=function(e){callback({success:false,error:e?e.message:'Unknown error'});};if(typeof google==='undefined'||!google.script){callback({success:false,error:'Not in GAS'});return;}var r=google.script.run.withSuccessHandler(callback).withFailureHandler(onErr);if(action==='getLogs')r.getLogs(data.filters);else if(action==='exportCSV')r.exportCSV(data.filters);else if(action==='getDashboardData')r.getDashboardData();else if(action==='getAnalyticsData')r.getAnalyticsData(data.range||30);else if(action==='getMonthlyAttendance')r.getMonthlyAttendance(data.year,data.month,data.includeInactive);else if(action==='getHoursSummary')r.getHoursSummary(data.opts||{});else if(action==='getHoursKpis')r.getHoursKpis(data.year,data.month);else if(action==='rebuildHoursSummarySheet')r.rebuildHoursSummarySheet();else if(action==='getOutstandingGatepass')r.getOutstandingGatepass();else if(action==='markItemReturned')r.markItemReturned(data.gatepassId);else if(action==='notifyHostForApproval')r.notifyHostForApproval(data.visitorId);else callback({success:false,error:'Unknown: '+action});}
   </script>
 
   <script>
@@ -1429,7 +1450,7 @@
       post({ action: 'getLogs', filters: f }, function(res) {
         if (!res.success) {
           document.getElementById('logsBody').innerHTML =
-            '<tr><td colspan="11" class="empty-state">Error loading records</td></tr>';
+            '<tr><td colspan="10" class="empty-state">Error loading records</td></tr>';
           return;
         }
 
@@ -1462,11 +1483,10 @@
         document.getElementById('sumPresent').textContent  = presCount;
         document.getElementById('sumAbsent').textContent   = absCount;
         document.getElementById('sumVisitors').textContent = visCount;
-        document.getElementById('sumAvgDur').textContent   = avgStr;
 
         if (!data.length) {
           document.getElementById('logsBody').innerHTML =
-            '<tr><td colspan="11" class="empty-state">No records found for selected filters</td></tr>';
+            '<tr><td colspan="10" class="empty-state">No records found for selected filters</td></tr>';
           return;
         }
 
@@ -1476,7 +1496,6 @@
           var isAbsent = r.Status === 'ABSENT';
           var id  = r.EmpID || r.VisitorID || '';
           return '<tr' + (isAbsent ? ' class="row-absent"' : '') + '>' +
-            '<td><span class="row-num">' + String(idx+1).padStart(3,'0') + '</span></td>' +
             '<td><div class="person-cell">' +
               '<div class="p-av" style="background:' + c + '1a;color:' + c + '">' + esc(ini) + '</div>' +
               '<div>' +
@@ -1663,20 +1682,24 @@
       document.getElementById('rtabAnalytics').classList.toggle('active', tab === 'analytics');
       document.getElementById('rtabMonthly').classList.toggle('active', tab === 'monthly');
       document.getElementById('rtabHours').classList.toggle('active', tab === 'hours');
+      document.getElementById('rtabGatepass').classList.toggle('active', tab === 'gatepass');
 
       var logsView    = document.getElementById('reportsViewLogs');
       var anaView     = document.getElementById('reportsViewAnalytics');
       var monthlyView = document.getElementById('reportsViewMonthly');
       var hoursView   = document.getElementById('reportsViewHours');
+      var gpView      = document.getElementById('reportsViewGatepass');
 
       logsView.classList.toggle('hidden', tab !== 'logs');
       anaView.classList.toggle('active', tab === 'analytics');
       // Monthly + Hours views use display flex/none (different class pattern)
       monthlyView.style.display = tab === 'monthly' ? 'flex' : 'none';
       hoursView.style.display   = tab === 'hours'   ? 'flex' : 'none';
+      gpView.style.display      = tab === 'gatepass' ? 'flex' : 'none';
 
       if (tab === 'analytics' && !_anaLoaded) loadAnalytics();
       if (tab === 'hours' && !_hoursLoaded) loadHours();
+      if (tab === 'gatepass') loadOutstandingGatepass();
     }
 
     function generateInstitutionalReport() {
@@ -1729,6 +1752,7 @@
     wrap.innerHTML = '<div style="padding:40px;text-align:center;color:var(--muted);font-size:13px">Loading…</div>';
     document.getElementById('monthlyKpi').textContent = '';
     document.getElementById('monthExportBtn').style.display = 'none';
+    document.getElementById('monthExportXlsxBtn').style.display = 'none';
 
     var inc = document.getElementById('monthInactive');
     post({ action: 'getMonthlyAttendance', year: year, month: month, includeInactive: !!(inc && inc.checked) }, function(res) {
@@ -1818,6 +1842,317 @@
     var kpi = document.getElementById('monthlyKpi');
     if (kpi) kpi.textContent = rows.length + ' employees · ' + MON_NAMES[month-1] + ' ' + year;
     document.getElementById('monthExportBtn').style.display = '';
+    document.getElementById('monthExportXlsxBtn').style.display = '';
+  }
+
+  /* ── Monthly CSV export ───────────────────────────────────────────────────
+     Two deliberate differences from the on-screen grid:
+       1. In-times before 08:00 are floored to 08:00 (payroll counts the shift
+          from 8 a.m.; early arrival is not paid time). The grid keeps the raw
+          punch so supervisors still see who actually came at 07:20.
+       2. Each day occupies three columns (In / Out / Hrs) instead of one
+          "in/out/dur" string, so the sheet is sortable and summable.
+     Because the in-time moves, the per-day duration and the employee's total
+     hours must both be recomputed from the floored time — otherwise the day
+     columns would not add up to the Total Hours column. */
+  var MONTH_IN_FLOOR_MIN = 8 * 60;   // 08:00
+
+  /* Logs store times in 12-hour form ("9:14 AM") — see formatTime() in
+     utils.gs — so a bare HH:MM match parses nothing and every hours cell comes
+     out blank. Accepts both forms, mirroring _parseTimeMinutes_ server-side. */
+  function _minutesOf(t) {
+    if (!t) return null;
+    var s = String(t).trim();
+    var m12 = s.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+    if (m12) {
+      var h = parseInt(m12[1], 10), mn = parseInt(m12[2], 10), ap = m12[3].toUpperCase();
+      if (ap === 'PM' && h !== 12) h += 12;
+      if (ap === 'AM' && h === 12) h = 0;
+      return h * 60 + mn;
+    }
+    var m24 = s.match(/^(\d{1,2}):(\d{2})$/);
+    if (m24) return parseInt(m24[1], 10) * 60 + parseInt(m24[2], 10);
+    return null;
+  }
+  function _hhmm(mins) {
+    var h = Math.floor(mins / 60), m = mins % 60;
+    return (h < 10 ? '0' : '') + h + ':' + (m < 10 ? '0' : '') + m;
+  }
+  /* CSV cells must be values Excel/Sheets can calculate on, not labels.
+     Times go out as bare HH:MM (unquoted) which both parse as a time serial;
+     hours go out as a decimal number (9.5) rather than "9h 30m", so a column
+     SUM works without any re-keying. Only the machine format changes here —
+     the on-screen grid keeps the human "9h 30m" wording. */
+  function _decHours(mins) {
+    if (mins === null || mins < 0) return '';
+    return (mins / 60).toFixed(2);
+  }
+
+  /* Applies the 8 a.m. floor and returns {inT, outT, dur, mins} for export.
+     Falls back to the stored duration when either punch is unparseable. */
+  function _exportDay(rec) {
+    var rawIn  = _minutesOf(rec.timeIn);
+    var outMin = _minutesOf(rec.timeOut);
+    var inMin  = (rawIn !== null && rawIn < MONTH_IN_FLOOR_MIN) ? MONTH_IN_FLOOR_MIN : rawIn;
+    var inT  = inMin  !== null ? _hhmm(inMin)  : (rec.timeIn || '');
+    var outT = outMin !== null ? _hhmm(outMin) : (rec.timeOut || '');
+    // An out-time at or before the floored in-time cannot yield real hours.
+    // Report it as blank rather than 0.00 — a zero reads as "worked nothing",
+    // which is a claim about the day; blank correctly says "not computable"
+    // and keeps a bad punch visible instead of silently averaging it in.
+    var mins = (inMin !== null && outMin !== null && outMin > inMin) ? outMin - inMin : null;
+    return { inT: inT, outT: outT, dur: _decHours(mins), mins: mins };
+  }
+
+  /* Outstanding gatepass register --------------------------------------- */
+  var _gpOutData = null;
+
+  function loadOutstandingGatepass() {
+    var wrap = document.getElementById('gpOutWrap');
+    wrap.innerHTML = '<div style="padding:40px;text-align:center;color:var(--muted);font-size:13px;">Loading…</div>';
+    post({ action: 'getOutstandingGatepass' }, function(res) {
+      if (!res || !res.success) {
+        wrap.innerHTML = '<div style="padding:40px;text-align:center;color:#b42318;font-size:13px;">' +
+          esc((res && res.error) || 'Failed to load') + '</div>';
+        return;
+      }
+      _gpOutData = res;
+      renderOutstandingGatepass(res);
+    });
+  }
+
+  function renderOutstandingGatepass(res) {
+    var wrap = document.getElementById('gpOutWrap');
+    var items = res.items || [];
+    var kpi = document.getElementById('gpOutKpi');
+
+    if (!items.length) {
+      wrap.innerHTML = '<div style="padding:48px;text-align:center;color:var(--muted);font-size:13px;">' +
+        '✓ Nothing outstanding — every returnable item has come back.</div>';
+      if (kpi) kpi.textContent = '0 outstanding';
+      return;
+    }
+
+    // An item out for a day or more is overdue: a visitor gatepass is meant to
+    // settle within the visit.
+    var overdue = items.filter(function(i){ return i.daysOut !== '' && i.daysOut >= 1; }).length;
+    if (kpi) kpi.textContent = items.length + ' outstanding' + (overdue ? ' · ' + overdue + ' overdue' : '');
+
+    var rows = items.map(function(i) {
+      var od = i.daysOut !== '' && i.daysOut >= 1;
+      var ageTxt = i.daysOut === '' ? '–' : (i.daysOut === 0 ? 'today' : i.daysOut + 'd');
+      var thumb = i.photoUrl
+        ? '<img src="' + esc(i.photoUrl) + '" alt="" style="width:30px;height:30px;border-radius:5px;object-fit:cover;vertical-align:middle;margin-right:7px" onerror="this.style.display=&quot;none&quot;">'
+        : '';
+      return '<tr' + (od ? ' style="background:#fffbeb"' : '') + '>' +
+        '<td style="padding:9px 12px">' + thumb + esc(i.itemDesc) +
+          (i.materialCode ? ' <span style="color:var(--muted);font-family:var(--mono);font-size:11px">' + esc(i.materialCode) + '</span>' : '') + '</td>' +
+        '<td style="padding:9px 12px;text-align:right;font-family:var(--mono)">' + esc(i.qty) + (i.unit ? ' ' + esc(i.unit) : '') + '</td>' +
+        '<td style="padding:9px 12px">' + esc(i.visitorName) +
+          (i.company ? '<div style="font-size:11px;color:var(--muted)">' + esc(i.company) + '</div>' : '') + '</td>' +
+        '<td style="padding:9px 12px">' + esc(i.hostName || '–') + '</td>' +
+        '<td style="padding:9px 12px;text-align:center">' +
+          (i.hostApproved
+            ? '<span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;background:#e4f4ec;color:#0f7a4d">Approved</span>'
+            : '<span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;background:#fbeed6;color:#9a5b00">Unapproved</span>') +
+        '</td>' +
+        '<td style="padding:9px 12px;text-align:center;font-family:var(--mono);' + (od ? 'color:#b45309;font-weight:800' : 'color:var(--muted)') + '">' + esc(ageTxt) + '</td>' +
+        '<td style="padding:9px 12px;text-align:right;white-space:nowrap">' +
+          '<button onclick="gpOutReturn(\'' + esc(i.gatepassId) + '\')" style="padding:5px 10px;background:var(--primary);color:#fff;border:none;border-radius:3px;font-size:11px;font-weight:700;cursor:pointer">Returned</button>' +
+          (i.hostApproved ? '' : ' <button onclick="gpOutNudge(\'' + esc(i.visitorId) + '\',this)" title="Re-send the host approval link" style="padding:5px 10px;background:var(--surface);color:var(--muted);border:1px solid var(--border);border-radius:3px;font-size:11px;font-weight:700;cursor:pointer">Nudge host</button>') +
+        '</td></tr>';
+    }).join('');
+
+    wrap.innerHTML =
+      '<table style="width:100%;border-collapse:collapse;font-size:13px">' +
+      '<thead><tr style="background:var(--surface);position:sticky;top:0">' +
+        '<th style="padding:9px 12px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)">Item</th>' +
+        '<th style="padding:9px 12px;text-align:right;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)">Qty</th>' +
+        '<th style="padding:9px 12px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)">Visitor</th>' +
+        '<th style="padding:9px 12px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)">Host</th>' +
+        '<th style="padding:9px 12px;text-align:center;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)">Approval</th>' +
+        '<th style="padding:9px 12px;text-align:center;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)">Out for</th>' +
+        '<th></th>' +
+      '</tr></thead><tbody>' + rows + '</tbody></table>';
+  }
+
+  function gpOutReturn(gatepassId) {
+    post({ action: 'markItemReturned', gatepassId: gatepassId }, function(res) {
+      if (res && res.success) loadOutstandingGatepass();
+    });
+  }
+
+  function gpOutNudge(visitorId, btn) {
+    if (btn) { btn.disabled = true; btn.textContent = '…'; }
+    post({ action: 'notifyHostForApproval', visitorId: visitorId }, function(res) {
+      if (btn) { btn.disabled = false; btn.textContent = (res && res.success) ? '✓ Sent' : 'Nudge host'; }
+    });
+  }
+
+  function exportGatepassCSV() {
+    if (!_gpOutData || !_gpOutData.items) return;
+    function q(v){ return '"' + String(v == null ? '' : v).replace(/"/g,'""') + '"'; }
+    var rows = [['Gatepass ID','Item','Material Code','Qty','Unit','Visitor','Company','Phone','Host','Approved','Logged At','Days Out'].map(q).join(',')];
+    _gpOutData.items.forEach(function(i) {
+      rows.push([q(i.gatepassId), q(i.itemDesc), q(i.materialCode), i.qty, q(i.unit),
+        q(i.visitorName), q(i.company), q(i.phone), q(i.hostName),
+        q(i.hostApproved ? 'YES' : 'NO'), q(i.loggedAt), i.daysOut].join(','));
+    });
+    var blob = new Blob([rows.join('\n')], { type: 'text/csv' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'gatepass-outstanding.csv';
+    a.click();
+  }
+
+  /* ── Monthly Excel export, with live formulas ──────────────────────────────
+     A CSV cannot carry formulas — both Excel and Sheets read a leading "=" in
+     a .csv as literal text — so the formula-bearing export is a real .xlsx
+     built with SheetJS.
+
+     Cells rather than values:
+       · per-day Hours = (Out - In) * 24, guarded for blanks
+       · Total Hours   = SUM of that row's Hours cells
+       · Days Present  = COUNT of that row's In cells that hold a time
+     Editing a punch time in the sheet therefore recomputes the day, the row
+     total and the month total — the whole point of exporting formulas.
+
+     Times are written as Excel TIME SERIALS (a fraction of a day) with a
+     'hh:mm' number format, not as strings. A formula cannot subtract text, so
+     writing "08:00" as a string would leave every Hours cell as #VALUE!. The
+     8 a.m. floor is applied to the serial that gets written, so the sheet
+     opens already floored and the arithmetic stays consistent with the CSV. */
+
+  function _xlsxCol(n) {
+    // 0-based index → A1 column letters (needed past Z: 98 columns here).
+    var s = '';
+    n += 1;
+    while (n > 0) {
+      var r = (n - 1) % 26;
+      s = String.fromCharCode(65 + r) + s;
+      n = Math.floor((n - 1) / 26);
+    }
+    return s;
+  }
+
+  function exportMonthlyXLSX(btn) {
+    if (!_monthlyData) return;
+    if (typeof XLSX === 'undefined') {
+      window.alert('The spreadsheet library did not load. Check the connection and reload the page, or use Export CSV.');
+      return;
+    }
+    if (btn) { btn.disabled = true; btn.textContent = '…'; }
+
+    var res = _monthlyData;
+    var year = parseInt(res.year, 10);
+    var month = parseInt(res.month, 10);
+    var days = res.daysInMonth;
+    var rows = res.rows || [];
+
+    var dayMeta = [];
+    for (var d = 1; d <= days; d++) {
+      var dt = new Date(year, month - 1, d);
+      dayMeta.push({ d: d, dow: dt.getDay() });
+    }
+
+    var ws = {};
+    var maxCol = 3 + dayMeta.length * 3 + 2 - 1;
+    var maxRow = 1 + rows.length;   // 2 header rows (0,1) + one row per employee
+
+    function put(r, c, cell) { ws[_xlsxCol(c) + (r + 1)] = cell; }
+
+    // ── Header rows ────────────────────────────────────────────────────────
+    var merges = [];
+    put(0, 0, { t: 's', v: '' });
+    put(1, 0, { t: 's', v: 'Emp ID' });
+    put(1, 1, { t: 's', v: 'Name' });
+    put(1, 2, { t: 's', v: 'Department' });
+    dayMeta.forEach(function(dm, i) {
+      var c = 3 + i * 3;
+      var isWkd = dm.dow === 0 || dm.dow === 6;
+      put(0, c, { t: 's', v: dm.d + '/' + month + (isWkd ? ' (WO)' : '') });
+      merges.push({ s: { r: 0, c: c }, e: { r: 0, c: c + 2 } });
+      put(1, c,     { t: 's', v: 'In' });
+      put(1, c + 1, { t: 's', v: 'Out' });
+      put(1, c + 2, { t: 's', v: 'Hours' });
+    });
+    var cDays = 3 + dayMeta.length * 3;
+    var cTotal = cDays + 1;
+    put(1, cDays,  { t: 's', v: 'Days Present' });
+    put(1, cTotal, { t: 's', v: 'Total Hours' });
+
+    // ── Body ───────────────────────────────────────────────────────────────
+    rows.forEach(function(emp, ri) {
+      var r = 2 + ri;              // 0-based row index
+      var excelRow = r + 1;        // 1-based, for A1 refs inside formulas
+      put(r, 0, { t: 's', v: String(emp.empId) });
+      put(r, 1, { t: 's', v: String(emp.name || '') });
+      put(r, 2, { t: 's', v: String(emp.department || '') });
+
+      var hourCells = [], inCells = [];
+      // Mirror of what the formulas compute, cached into the totals cells.
+      var dayHours = [], presentCount = 0;
+      dayMeta.forEach(function(dm, i) {
+        var c = 3 + i * 3;
+        var colIn = _xlsxCol(c), colOut = _xlsxCol(c + 1), colHrs = _xlsxCol(c + 2);
+        var isWkd = dm.dow === 0 || dm.dow === 6;
+        var rec = emp.days[dm.d];
+        inCells.push(colIn + excelRow);
+        hourCells.push(colHrs + excelRow);
+
+        if (rec) {
+          // Presence wins over the weekend marker — a worked Sat/Sun shows its
+          // real punches, matching the on-screen grid.
+          var e = _exportDay(rec);
+          var inMin = _minutesOf(e.inT), outMin = _minutesOf(e.outT);
+          if (inMin !== null)  { put(r, c, { t: 'n', v: inMin / 1440, z: 'hh:mm' }); presentCount++; }
+          if (outMin !== null) put(r, c + 1, { t: 'n', v: outMin / 1440, z: 'hh:mm' });
+          // The formula is written for every present day, even one missing its
+          // out-punch: the IF collapses to "" now, and fills itself in the
+          // moment someone types the missing time into the sheet.
+          // The cached value is not optional: SheetJS DROPS a formula cell that
+          // carries no value, so writing f alone silently loses every Hours
+          // cell from the file. It also makes the numbers correct in viewers
+          // that never recalculate (Drive preview, Quick Look, most importers).
+          var fml = 'IF(OR(' + colIn + excelRow + '="",' + colOut + excelRow + '="",' +
+                    colOut + excelRow + '<=' + colIn + excelRow + '),"",(' +
+                    colOut + excelRow + '-' + colIn + excelRow + ')*24)';
+          if (e.mins !== null) {
+            put(r, c + 2, { t: 'n', v: Number((e.mins / 60).toFixed(2)), f: fml, z: '0.00' });
+          } else {
+            put(r, c + 2, { t: 's', v: '', f: fml });
+          }
+          if (e.mins !== null) dayHours.push(e.mins / 60);
+        } else if (isWkd) {
+          put(r, c, { t: 's', v: 'WO' });
+        } else {
+          put(r, c, { t: 's', v: 'A' });
+        }
+      });
+
+      // Row totals as formulas, so an edited punch flows through to the month.
+      // COUNT (not COUNTA) counts only numeric In cells — the "A"/"WO" text
+      // markers are correctly excluded from Days Present.
+      var totalHrs = dayHours.reduce(function(a, b) { return a + b; }, 0);
+      put(r, cDays,  { t: 'n', v: presentCount, f: 'COUNT(' + inCells.join(',') + ')' });
+      put(r, cTotal, { t: 'n', v: Number(totalHrs.toFixed(2)),
+                       f: 'SUM(' + hourCells.join(',') + ')', z: '0.00' });
+    });
+
+    ws['!ref'] = 'A1:' + _xlsxCol(maxCol) + (maxRow + 1);
+    ws['!merges'] = merges;
+    // Freeze the label columns and both header rows so the grid stays readable
+    // while scrolling across 90-odd day columns.
+    ws['!freeze'] = { xSplit: 3, ySplit: 2 };
+    ws['!cols'] = [{ wch: 10 }, { wch: 22 }, { wch: 16 }]
+      .concat(dayMeta.reduce(function(a) { return a.concat([{ wch: 7 }, { wch: 7 }, { wch: 7 }]); }, []))
+      .concat([{ wch: 13 }, { wch: 12 }]);
+
+    var wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, MON_NAMES[month - 1] + ' ' + year);
+    XLSX.writeFile(wb, 'monthly-attendance-' + res.year + '-' + res.month + '.xlsx');
+
+    if (btn) { btn.disabled = false; btn.textContent = '↓ Export Excel (formulas)'; }
   }
 
   function exportMonthlyCSV() {
@@ -1834,22 +2169,43 @@
       dayMeta.push({ d: d, dow: dt.getDay() });
     }
 
-    var header = ['Emp ID','Name','Department'];
-    dayMeta.forEach(function(dm) { header.push(dm.d + '/' + month); });
-    header.push('Days Present','Total Hours');
+    function q(v) { return '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"'; }
 
-    var csvRows = [header.join(',')];
+    // Two header rows: the day number spans its three sub-columns, the second
+    // row names them. Excel/Sheets read this as a normal 2-row header.
+    var h1 = ['', '', ''];
+    var h2 = ['Emp ID', 'Name', 'Department'];
+    dayMeta.forEach(function(dm) {
+      var isWkd = dm.dow === 0 || dm.dow === 6;
+      var label = dm.d + '/' + month + (isWkd ? ' (WO)' : '');
+      h1.push(q(label), '', '');
+      h2.push('In', 'Out', 'Hours');
+    });
+    h1.push('', '');
+    h2.push('Days Present', 'Total Hours');
+
+    var csvRows = [h1.join(','), h2.join(',')];
+
     rows.forEach(function(emp) {
-      var row = ['"'+emp.empId+'"', '"'+emp.name.replace(/"/g,'""')+'"', '"'+(emp.department||'').replace(/"/g,'""')+'"'];
-      var isWkd;
+      var row = [q(emp.empId), q(emp.name), q(emp.department || '')];
+      var totalMins = 0, presentDays = 0;
       dayMeta.forEach(function(dm) {
-        isWkd = dm.dow === 0 || dm.dow === 6;
+        var isWkd = dm.dow === 0 || dm.dow === 6;
         var rec = emp.days[dm.d];
-        if (isWkd) { row.push('WD'); }
-        else if (!rec) { row.push('A'); }
-        else { row.push('"'+(rec.timeIn||'')+'/'+(rec.timeOut||'')+'/'+(rec.duration||'')+'"'); }
+        if (rec) {
+          // Presence wins over the weekend marker — a worked Sat/Sun shows its
+          // real punches, matching the on-screen grid.
+          var e = _exportDay(rec);
+          row.push(e.inT, e.outT, e.dur);
+          presentDays++;
+          if (e.mins !== null) totalMins += e.mins;
+        } else if (isWkd) {
+          row.push('WO', '', '');
+        } else {
+          row.push('A', '', '');
+        }
       });
-      row.push(emp.presentDays, emp.totalHours);
+      row.push(presentDays, (totalMins / 60).toFixed(1));
       csvRows.push(row.join(','));
     });
 
@@ -1873,8 +2229,13 @@
     var PUBLIC_URL = '<?= publicUrl ?>';
     function navigate(page) {
       if (!page) return;
-      var base = /^https?:\/\//.test(PUBLIC_URL) ? PUBLIC_URL + '/' : (APP_URL + '?');
-      var url = base + (base.slice(-1) === '/' ? '?page=' : 'page=') + encodeURIComponent(page);
+      // In-app page→page nav must land ON the working GAS app, not the GitHub
+      // Pages launcher. The launcher (PUBLIC_URL) is a manual landing page — it
+      // cannot frame the app, so routing nav through it dropped the user on the
+      // launcher home every time. APP_URL is the raw GAS /exec that renders the
+      // requested page directly. Shared/external entry links stay pretty via the
+      // launcher; navigation between pages, once inside, stays inside the app.
+      var url = APP_URL + '?page=' + encodeURIComponent(page);
       try {
         (window.top || window).location.href = url;
       } catch(e) {

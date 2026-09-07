@@ -6,7 +6,8 @@
   <title>Visitor Pass</title>
   <style>
     :root{
-      --primary:#006b5f; --green:#16a34a; --green-dk:#15803d;
+      /* Navy, matching the rest of the app. */
+      --primary:#000666; --green:#16a34a; --green-dk:#15803d;
       --pink:#be185d; --danger:#dc2626;
       --bg:#0d1b2a; --surface:#13233a; --text:#f1f5f9; --muted:#94a3b8; --border:rgba(255,255,255,.12);
       --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
@@ -34,6 +35,7 @@
       font-size:16px;font-weight:800;font-family:inherit;cursor:pointer;color:#fff;transition:background .15s}
     .btn.checkin{background:var(--green)} .btn.checkin:hover{background:var(--green-dk)}
     .btn.checkout{background:var(--pink)} .btn.checkout:hover{background:#9d174d}
+    .btn.share{background:#25D366;margin-top:10px} .btn.share:hover{background:#1da851}
     .btn:disabled{opacity:.6;cursor:default}
     .hint{font-size:11px;color:var(--muted);margin-top:12px;line-height:1.6}
     .err{background:rgba(220,38,38,.12);border:1px solid rgba(220,38,38,.4);color:#fca5a5;
@@ -63,8 +65,17 @@
       border-radius:12px;padding:12px}
     .rules-hd{display:flex;align-items:center;justify-content:space-between;cursor:pointer;
       font-size:12px;font-weight:800;color:#fcd34d;letter-spacing:.3px}
-    .rules-body{margin:10px 0 0;padding-left:20px}
-    .rules-body li{font-size:12px;line-height:1.6;color:#e2e8f0;margin-bottom:9px}
+    /* Numbering is rendered explicitly (.rules-num) rather than by list
+       markers, so the SQCDP headings can sit in the same list without being
+       numbered themselves. */
+    .rules-body{margin:10px 0 0;padding-left:0;list-style:none}
+    .rules-body li{font-size:12px;line-height:1.6;color:#e2e8f0;margin-bottom:9px;
+      display:flex;gap:6px}
+    .rules-body .rules-num{color:#94a3b8;font-weight:700;flex-shrink:0}
+    .rules-body .rules-sec{display:block;font-size:11px;font-weight:800;color:var(--primary-on-dark,#7dd3fc);
+      text-transform:uppercase;letter-spacing:.8px;margin:12px 0 7px;padding-bottom:4px;
+      border-bottom:1px solid var(--border)}
+    .rules-body .rules-sec:first-child{margin-top:0}
     .rules-body li:last-child{margin-bottom:0}
     .rules-body .en{display:block;color:#94a3b8;font-size:11px;margin-top:2px}
 
@@ -91,9 +102,27 @@
 
   <script>
     var PASS = <?!= passJson ?>;
+    var APP_URL = '<?= appUrl ?>';
+    var PUBLIC_URL = '<?= publicUrl ?>';
 
     function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
     function toast(msg){var t=document.getElementById('toast');t.textContent=msg;t.className='toast show';setTimeout(function(){t.className='toast';},2400);}
+
+    // Share this pass on WhatsApp. The link MUST be built from the injected app
+    // URL + visitorId — NOT window.location.href: inside GAS the page runs in a
+    // sandbox iframe whose location is a userCodeAppPanel URL that only works in
+    // the original session and is useless to a recipient.
+    function sharePass(){
+      var base = /^https?:\/\//.test(PUBLIC_URL) ? PUBLIC_URL : APP_URL;
+      var link = base + '?page=vpass&id=' + encodeURIComponent((PASS && PASS.visitorId) || '');
+      var name = (PASS && PASS.name) ? PASS.name : '';
+      var msg = qrattT('vpass_share_msg').replace('{name}', name).replace('{link}', link);
+      if (navigator.share) {
+        navigator.share({ text: msg }).catch(function(){});
+      } else {
+        window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
+      }
+    }
 
     function render(p){
       var root=document.getElementById('root');
@@ -110,9 +139,12 @@
       // carries a state-specific data-i18n key — a later qrattApplyLang() (triggered by
       // the language toggle) re-translates it correctly without needing a full re-render.
       var statusKey = isIn ? 'vpass_status_in' : 'vpass_status_out';
-      var btnKey = isIn ? 'vpass_btn_checkout' : 'vpass_btn_checkin';
-      var actionKey = isIn ? 'vpass_hint_checkout' : 'vpass_hint_checkin';
-      var hint = qrattT('vpass_hint_tail').replace('{action}', qrattT(actionKey));
+      // No self check-in/out button. The pass URL is a bearer link — anyone it
+      // is forwarded to could have toggled the visitor's presence from
+      // anywhere, which is exactly the control the gate exists to hold. The
+      // visitor presents this QR at the gate and the scanner records the
+      // movement, so the person letting them in owns the decision. The pass is
+      // now identity + declaration; presence is recorded by the gate alone.
       root.innerHTML=
         '<div class="card">'+
           '<div class="name">'+esc(p.name)+'</div>'+
@@ -121,14 +153,122 @@
           '<div class="vid">'+esc(p.visitorId)+'</div>'+
           '<div class="status '+(isIn?'in':'out')+'"><span class="dot"></span>'+
             '<span data-i18n="'+statusKey+'">'+qrattT(statusKey)+'</span></div>'+
-          '<button class="btn '+(isIn?'checkout':'checkin')+'" id="toggleBtn" onclick="toggle()" data-i18n="'+btnKey+'">'+
-            qrattT(btnKey)+'</button>'+
-          '<div class="hint">'+hint+'</div>'+
+          '<div class="hint" data-i18n="vpass_show_at_gate">'+qrattT('vpass_show_at_gate')+'</div>'+
+          '<button class="btn share" onclick="sharePass()" data-i18n="vpass_share">'+qrattT('vpass_share')+'</button>'+
           '<div class="exit-note" data-i18n="vpass_exit_note">'+qrattT('vpass_exit_note')+'</div>'+
         '</div>'+
+        renderGatepass()+
         renderEmergency()+
         renderSafetyRules();
       qrattApplyLang();   // re-apply i18n + toggle active-state after the DOM was rebuilt
+      loadGp();
+    }
+
+    /* ── Self-declared items ────────────────────────────────────────────────
+       This flow is self-registration and self-check-in, so the visitor is the
+       only person at the gate — there is no guard to open the Visitors page
+       and log what they carried in. Without this, a self-registered visitor
+       had no way to declare items at all. They declare here; the guard or host
+       can still correct it later from the Visitors page, and the returnable
+       count still drives the unreturned-items warning at check-out. ── */
+    var GP_ITEMS = [];
+
+    function renderGatepass(){
+      return '<div class="card" id="gpCard" style="margin-top:14px;text-align:left">'+
+        '<div style="font-size:11px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;color:#64748b;margin-bottom:10px">'+
+          qrattT('vpass_gp_title')+'</div>'+
+        '<div id="gpList"></div>'+
+        '<input type="text" id="gpDesc" placeholder="'+qrattT('vpass_gp_item')+'" autocomplete="off" '+
+          'style="width:100%;box-sizing:border-box;padding:11px;border:1px solid #d7e0de;border-radius:10px;font-size:15px;margin-bottom:8px">'+
+        '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">'+
+          '<input type="number" id="gpQty" value="1" min="1" '+
+            'style="width:64px;padding:10px;border:1px solid #d7e0de;border-radius:10px;font-size:15px">'+
+          '<label style="font-size:13px;display:flex;align-items:center;gap:5px;color:#475569">'+
+            '<input type="checkbox" id="gpRet" checked> '+qrattT('vpass_gp_returnable')+'</label>'+
+          '<button class="btn" id="gpAddBtn" onclick="gpAdd()" '+
+            'style="margin:0 0 0 auto;width:auto;padding:11px 18px;font-size:14px;background:var(--primary)">'+
+            qrattT('vpass_gp_add')+'</button>'+
+        '</div>'+
+        '<div style="font-size:12px;color:#94a3b8;margin-top:9px">'+qrattT('vpass_gp_hint')+'</div>'+
+      '</div>';
+    }
+
+    function loadGp(){
+      if(typeof google==='undefined'||!google.script) return;
+      google.script.run
+        .withSuccessHandler(function(res){
+          GP_ITEMS=(res&&res.items)||[];
+          paintGp();
+        })
+        .withFailureHandler(function(){})
+        .getGatepass(PASS.visitorId);
+    }
+
+    function paintGp(){
+      var el=document.getElementById('gpList');
+      if(!el) return;
+      var live=GP_ITEMS.filter(function(i){ return i.status!=='VOID'; });
+      if(!live.length){ el.innerHTML=''; return; }
+      el.innerHTML=live.map(function(i){
+        var pending=i.status==='OUT_PENDING';
+        // Age marks an item carried over from an earlier visit — the visitor
+        // keeps one pass for life, so old rows would otherwise look current.
+        var old=(pending && i.daysOut!=='' && i.daysOut>=1);
+        return '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;'+
+          'padding:8px 0;border-bottom:1px solid #eef2f1;font-size:14px">'+
+          '<span>'+esc(i.direction)+' · '+esc(i.qty)+'× '+esc(i.itemDesc)+
+            (old?' <span style="font-size:11px;color:#b42318;font-weight:700">('+i.daysOut+'d)</span>':'')+'</span>'+
+          '<span style="display:flex;align-items:center;gap:6px">'+
+            '<span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;'+
+              (pending?'background:#fbeed6;color:#9a5b00':'background:#e8ecf1;color:#334155')+'">'+
+              esc(pending?qrattT('vpass_gp_pending'):i.status)+'</span>'+
+            // Remove is for a mistyped entry the visitor just added. It voids
+            // the row rather than deleting it, so the gate record stays intact.
+            '<button onclick="gpRemove(\''+esc(i.gatepassId)+'\')" title="'+qrattT('vpass_gp_remove')+'" '+
+              'style="border:none;background:none;color:#94a3b8;font-size:17px;line-height:1;cursor:pointer;padding:0 2px">×</button>'+
+          '</span>'+
+        '</div>';
+      }).join('')+'<div style="height:10px"></div>';
+    }
+
+    function gpRemove(gatepassId){
+      if(!window.confirm(qrattT('vpass_gp_remove_confirm'))) return;
+      if(typeof google==='undefined'||!google.script) return;
+      google.script.run
+        .withSuccessHandler(function(res){
+          if(res&&res.success){ toast(qrattT('vpass_gp_removed')); loadGp(); }
+          else toast('Error: '+((res&&res.error)||'failed'));
+        })
+        .withFailureHandler(function(e){ toast('Error: '+(e&&e.message||'server')); })
+        .voidGatepassItem(gatepassId, 'Removed by visitor');
+    }
+
+    function gpAdd(){
+      var descEl=document.getElementById('gpDesc');
+      var desc=(descEl&&descEl.value||'').trim();
+      if(!desc){ toast(qrattT('vpass_gp_need_item')); return; }
+      var btn=document.getElementById('gpAddBtn');
+      if(btn){ btn.disabled=true; btn.textContent=qrattT('vpass_wait'); }
+      function done(msg){
+        if(btn){ btn.disabled=false; btn.textContent=qrattT('vpass_gp_add'); }
+        if(msg) toast(msg);
+      }
+      if(typeof google==='undefined'||!google.script){ done('Not in app context'); return; }
+      google.script.run
+        .withSuccessHandler(function(res){
+          if(!res||!res.success){ done('Error: '+((res&&res.error)||'failed')); return; }
+          descEl.value=''; document.getElementById('gpQty').value='1';
+          done(qrattT('vpass_gp_added'));
+          loadGp();
+        })
+        .withFailureHandler(function(e){ done('Error: '+(e&&e.message||'server')); })
+        .addGatepassItem(PASS.visitorId, {
+          // A visitor declares what they are bringing IN; anything leaving is
+          // the guard's call, so this surface only writes IN.
+          direction:'IN', materialCode:'', itemDesc:desc, unit:'',
+          qty:Number(document.getElementById('gpQty').value)||1,
+          returnable:!!document.getElementById('gpRet').checked
+        });
     }
 
     /* ── Emergency contacts — tap to call. Always visible, above the rules,
@@ -155,22 +295,31 @@
     }
 
     /* ── Safety rules — ALWAYS readable (never hidden/blurred). This is the copy
-          the visitor carries on site; obscuring it would be unsafe. Keys match
-          the shared safety_rule_N dictionary entries (identical text on vreg). ── */
-    var SAFETY_RULE_KEYS=['safety_rule_1','safety_rule_2','safety_rule_3','safety_rule_4',
-                           'safety_rule_5','safety_rule_6','safety_rule_7'];
+          the visitor carries on site; obscuring it would be unsafe.
+
+          The list and its SQCDP grouping come from QRATT_SAFETY_SECTIONS in
+          i18n.html. This page used to hardcode its own copy of the key array,
+          so adding a rule updated vreg and silently left the carried pass
+          showing the old set — the visitor would have acknowledged rules their
+          own pass did not list. ── */
+    var SAFETY_SECTIONS = (typeof QRATT_SAFETY_SECTIONS !== 'undefined') ? QRATT_SAFETY_SECTIONS : [];
 
     function renderSafetyRules(){
+      var n=0;
+      var body=SAFETY_SECTIONS.map(function(sec){
+        return '<li class="rules-sec" data-i18n="'+sec.key+'">'+qrattT(sec.key)+'</li>'+
+          sec.rules.map(function(key){
+            n++;
+            return '<li><span class="rules-num">'+n+'.</span> '+
+                   '<span data-i18n="'+key+'">'+qrattT(key)+'</span></li>';
+          }).join('');
+      }).join('');
       return '<div class="rules-card">'+
         '<div class="rules-hd" onclick="toggleRules()">'+
           '<span data-i18n="vpass_safety_rules_title">🦺 '+qrattT('vpass_safety_rules_title')+'</span>'+
           '<span id="rulesArrow">▾</span>'+
         '</div>'+
-        '<ol id="rulesBody" class="rules-body">'+
-          SAFETY_RULE_KEYS.map(function(key){
-            return '<li data-i18n="'+key+'">'+qrattT(key)+'</li>';
-          }).join('')+
-        '</ol>'+
+        '<ul id="rulesBody" class="rules-body">'+body+'</ul>'+
       '</div>';
     }
     function toggleRules(){
@@ -180,22 +329,9 @@
       a.textContent=open?'▸':'▾';
     }
 
-    function toggle(){
-      var btn=document.getElementById('toggleBtn');
-      btn.disabled=true;
-      btn.removeAttribute('data-i18n');   // showing transient "please wait" state, not the static label
-      btn.textContent=qrattT('vpass_wait');
-      if(typeof google==='undefined'||!google.script){ toast('Not in app context'); btn.disabled=false; return; }
-      google.script.run
-        .withSuccessHandler(function(res){
-          if(!res||!res.success){ toast('Error: '+((res&&res.message)||(res&&res.error)||'failed')); render(PASS); return; }
-          PASS.status = res.status;       // updated by selfCheckVisitor
-          toast(res.status==='IN'?'Checked in ✓':'Checked out ✓');
-          render(PASS);
-        })
-        .withFailureHandler(function(e){ toast('Error: '+(e&&e.message||'server')); render(PASS); })
-        .selfCheckVisitor(PASS.visitorId);
-    }
+    /* No toggle() any more — the gate scanner is the only thing that records
+       a visitor's presence. selfCheckVisitor() is left in place server-side so
+       an already-open pass link cannot break mid-visit, but nothing calls it. */
 
     render(PASS);
   </script>

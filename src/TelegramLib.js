@@ -138,6 +138,57 @@ var TelegramLib = (function () {
     // ignore non-command chatter
   }
 
+  // ── Inline button callbacks ───────────────────────────────
+  // A button press arrives as callback_query, not a message. Telegram shows a
+  // spinner on the button until answerCallbackQuery is sent, so ALWAYS answer
+  // — even on failure — or the user is left staring at a hung button.
+  //
+  // Authorisation reuses isAuthorizedChat: the callback must come from the
+  // configured chat. Without this, anyone who learns the callback_data format
+  // could settle gatepass items by messaging the bot directly.
+  function answerCallback(id, text) {
+    var tok = token();
+    if (!tok || !id) return;
+    try {
+      UrlFetchApp.fetch(API + tok + '/answerCallbackQuery', {
+        method: 'post', contentType: 'application/json',
+        payload: JSON.stringify({ callback_query_id: id, text: text || '', show_alert: false }),
+        muteHttpExceptions: true
+      });
+    } catch (e) { Logger.log('answerCallback failed: ' + e.message); }
+  }
+
+  function routeCallback(cq) {
+    var chat = cq.message && cq.message.chat;
+    if (!isAuthorizedChat(chat)) {
+      Logger.log('TelegramLib: ignoring callback from unauthorized chat ' + (chat && chat.id));
+      answerCallback(cq.id, 'Not authorised');
+      return;
+    }
+    var data = String(cq.data || '');
+    var map = (typeof TELEGRAM_CALLBACKS === 'object' && TELEGRAM_CALLBACKS) || {};
+    var sep = data.indexOf(':');
+    var key = sep === -1 ? data : data.slice(0, sep);
+    var arg = sep === -1 ? '' : data.slice(sep + 1);
+
+    var handler = map[key];
+    if (typeof handler !== 'function') { answerCallback(cq.id, 'Unknown action'); return; }
+
+    var result;
+    try {
+      result = handler(arg, cq);
+    } catch (e) {
+      Logger.log('callback ' + key + ' failed: ' + e.message);
+      answerCallback(cq.id, 'Failed — see the app');
+      return;
+    }
+    // A handler returns {toast, reply}: toast is the small confirmation on the
+    // button itself; reply (optional) is posted to the chat as a record.
+    result = result || {};
+    answerCallback(cq.id, result.toast || 'Done');
+    if (result.reply) reply(chat.id, result.reply);
+  }
+
   // ── Polling ───────────────────────────────────────────────
   // Runs on a 1-minute trigger. Tracks last update_id in ScriptProperties so
   // each update is handled once; LockService guards against overlapping runs.
@@ -160,6 +211,7 @@ var TelegramLib = (function () {
       var maxId = offset;
       data.result.forEach(function (u) {
         if (u.update_id >= maxId) maxId = u.update_id + 1;
+        if (u.callback_query) { routeCallback(u.callback_query); return; }
         var msg = u.message || u.edited_message; // bots don't get channel posts
         if (msg && msg.text && msg.chat && msg.chat.id) route(msg.chat, msg.text);
       });
@@ -197,7 +249,7 @@ var TelegramLib = (function () {
   return {
     send: send, reply: reply, poll: poll,
     enable: enable, disable: disable,
-    esc: esc, route: route
+    esc: esc, route: route, routeCallback: routeCallback
   };
 })();
 

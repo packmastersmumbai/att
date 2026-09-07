@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Training Check — QR Att.</title>
+  <style>
+    /* Built for a worker's own phone, held one-handed, possibly with gloves
+       on and in poor light. Everything is large, high contrast and reachable
+       with a thumb. Shared tokens supply the palette. */
+    *{box-sizing:border-box;margin:0;padding:0}
+    html,body{height:100%}
+    body{font-family:var(--font-sans);background:var(--color-bg);color:var(--color-text);
+      font-size:17px;line-height:1.5;-webkit-text-size-adjust:100%}
+
+    .wrap{max-width:560px;margin:0 auto;padding:16px 16px 40px;min-height:100%}
+    .top{display:flex;justify-content:space-between;align-items:center;gap:10px;
+      padding:10px 0 14px}
+    .brand{font-weight:800;color:var(--color-primary);font-size:15px}
+    .brand small{display:block;font-weight:500;font-size:11px;color:var(--color-text-muted);
+      letter-spacing:.6px;text-transform:uppercase}
+    .lang{display:flex;border:1px solid var(--color-border);border-radius:var(--radius-md);
+      overflow:hidden;flex-shrink:0}
+    .lang button{border:0;background:var(--color-surface);color:var(--color-text-muted);
+      font:700 14px var(--font-sans);padding:10px 16px;min-height:44px;cursor:pointer}
+    .lang button[aria-pressed="true"]{background:var(--color-primary);color:#fff}
+
+    .card{background:var(--color-surface);border:1px solid var(--color-border);
+      border-radius:var(--radius-md);padding:18px;margin-bottom:14px}
+    h1{font-size:21px;font-weight:800;line-height:1.25;margin-bottom:4px}
+    .sub{font-size:14px;color:var(--color-text-muted);margin-bottom:14px}
+
+    label.fl{display:block;font-size:12px;font-weight:700;color:var(--color-text-muted);
+      text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px}
+    select,input{width:100%;border:1px solid var(--color-border);border-radius:var(--radius-md);
+      padding:14px;font:400 17px var(--font-sans);background:var(--color-surface);
+      color:var(--color-text);min-height:52px}
+    select:focus,input:focus{outline:none;border-color:var(--color-primary);
+      box-shadow:0 0 0 3px rgba(0,6,102,.12)}
+
+    .btn{display:block;width:100%;border:0;border-radius:var(--radius-md);
+      background:var(--color-primary);color:#fff;font:800 18px var(--font-sans);
+      padding:16px;min-height:56px;cursor:pointer;margin-top:14px}
+    .btn:disabled{opacity:.45}
+    .btn-ghost{background:var(--color-surface);color:var(--color-text);
+      border:1px solid var(--color-border);font-weight:600;font-size:16px}
+    .btn:focus-visible,select:focus-visible,.lang button:focus-visible,
+      .opt:focus-visible{outline:3px solid var(--color-primary);outline-offset:2px}
+
+    /* One question at a time. A scrolling list of twenty inputs on a phone is
+       how a test gets abandoned halfway. */
+    .prog{display:flex;gap:5px;margin-bottom:16px}
+    .prog i{flex:1;height:5px;border-radius:3px;background:var(--color-border)}
+    .prog i.done{background:var(--color-primary)}
+    .prog i.now{background:var(--color-primary);opacity:.5}
+    .qn{font:700 13px var(--font-mono);color:var(--color-text-muted);margin-bottom:6px}
+    .qt{font-size:19px;font-weight:700;line-height:1.35;margin-bottom:16px}
+
+    /* Options are big tap targets, not radio buttons. A gloved thumb needs
+       the whole row, and the selected state must be obvious at arm's length. */
+    .opt{display:flex;align-items:center;gap:12px;width:100%;text-align:left;
+      background:var(--color-surface);border:2px solid var(--color-border);
+      border-radius:var(--radius-md);padding:16px;margin-bottom:10px;
+      font:500 17px var(--font-sans);color:var(--color-text);cursor:pointer;
+      min-height:60px}
+    .opt:hover{border-color:var(--color-primary)}
+    .opt[aria-pressed="true"]{border-color:var(--color-primary);
+      background:rgba(0,6,102,.06);font-weight:700}
+    .opt .mark{width:28px;height:28px;border-radius:50%;flex-shrink:0;
+      border:2px solid var(--color-border);display:grid;place-items:center;
+      font:800 14px var(--font-mono);color:transparent}
+    .opt[aria-pressed="true"] .mark{border-color:var(--color-primary);
+      background:var(--color-primary);color:#fff}
+
+    /* Self-rating. Not a competency claim — a signal to the supervisor. */
+    .conf{display:flex;gap:8px}
+    .conf button{flex:1;border:2px solid var(--color-border);background:var(--color-surface);
+      border-radius:var(--radius-md);padding:14px 6px;font:700 14px var(--font-sans);
+      color:var(--color-text);cursor:pointer;min-height:64px}
+    .conf button[aria-pressed="true"]{border-color:var(--color-primary);
+      background:rgba(0,6,102,.06)}
+
+    .res{text-align:center;padding:8px 0 4px}
+    .res-score{font:800 56px/1 var(--font-mono);margin-bottom:6px}
+    .res-pass{color:#0f766e} .res-fail{color:#b45309}
+    .res-line{font-size:16px;margin-bottom:4px}
+    .note{font-size:14px;color:var(--color-text-muted);margin-top:12px;
+      padding-top:12px;border-top:1px solid var(--color-border)}
+    .err{background:#fee2e2;color:#b91c1c;border-radius:var(--radius-md);
+      padding:12px 14px;font-size:15px;font-weight:600;margin-bottom:12px}
+    .review{text-align:left;margin-top:14px}
+    .review .r{display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--color-border);
+      font-size:15px}
+    .review .r:last-child{border-bottom:0}
+    .review .ok{color:#0f766e;font-weight:800} .review .no{color:#b91c1c;font-weight:800}
+    /* Sits above the options and below the question: heard before answered. */
+    .listen{margin:0 0 14px;min-height:48px;font-size:16px}
+    [hidden]{display:none!important}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top">
+      <div class="brand">QR Att.<small><?= orgName ?></small></div>
+      <div class="lang" id="langSeg" role="group" aria-label="Language">
+        <button type="button" data-lang="en" aria-pressed="true">English</button>
+        <button type="button" data-lang="hi" aria-pressed="false">हिंदी</button>
+      </div>
+    </div>
+
+    <!-- Step 1: who is taking it -->
+    <div class="card" id="stepWho">
+      <h1 id="tTitle">Training check</h1>
+      <div class="sub" id="tTopic">—</div>
+      <div class="err" id="whoErr" hidden></div>
+      <label class="fl" for="who" id="lWho">Your name</label>
+      <select id="who"><option value="">—</option></select>
+      <button class="btn" id="bStart" onclick="start()">Start</button>
+      <div class="note" id="nWho">Answer a few questions about what was covered.
+        Your score is recorded against this session.</div>
+    </div>
+
+    <!-- Step 2: the questions, one at a time -->
+    <div class="card" id="stepQ" hidden>
+      <div class="prog" id="prog"></div>
+      <div class="qn" id="qn">—</div>
+      <div class="qt" id="qt">—</div>
+      <button type="button" class="btn btn-ghost listen" id="bListen"
+              onclick="listen()" hidden>🔊  Listen</button>
+      <div id="opts"></div>
+      <button class="btn" id="bNext" onclick="next()" disabled>Next</button>
+      <button class="btn btn-ghost" id="bBack" onclick="back()" hidden>Back</button>
+    </div>
+
+    <!-- Step 3: self-rating -->
+    <div class="card" id="stepConf" hidden>
+      <h1 id="cTitle">How confident do you feel?</h1>
+      <div class="sub" id="cSub">On doing this task on your own.</div>
+      <div class="conf" id="conf" role="group"></div>
+      <button class="btn" id="bSubmit" onclick="submit()" disabled>Submit</button>
+    </div>
+
+    <!-- Step 4: the result -->
+    <div class="card" id="stepDone" hidden>
+      <div class="res">
+        <div class="res-score" id="rScore">—</div>
+        <div class="res-line" id="rLine">—</div>
+        <div class="res-line" id="rSub" style="font-size:14px;color:var(--color-text-muted)"></div>
+      </div>
+      <div class="review" id="rReview"></div>
+      <div class="note" id="rNote"></div>
+      <button class="btn btn-ghost" onclick="location.reload()" id="bAgain">Next person</button>
+    </div>
+  </div>
+
+  <script>
+    var PLAN = '<?= planId ?>';
+    var TOPIC = '<?= topicId ?>';
+    var LANG = 'en';
+    var TEST = null;      // { questions, passMark, ... }
+    var ANS = [];
+    var IDX = 0;
+    var CONF = '';
+    var ME = '';
+
+    /* Every string on this page in both languages. The shared i18n runtime
+       covers the visitor pages; this page is standalone so a worker can open
+       it from a QR code with nothing else loaded. */
+    var T = {
+      title:   { en: 'Training check',            hi: 'प्रशिक्षण जाँच' },
+      who:     { en: 'Your name',                 hi: 'आपका नाम' },
+      start:   { en: 'Start',                     hi: 'शुरू करें' },
+      pick:    { en: 'Pick your name from the list.', hi: 'सूची में से अपना नाम चुनें।' },
+      intro:   { en: 'Answer a few questions about what was covered. Your score is recorded against this session.',
+                 hi: 'जो पढ़ाया गया उस पर कुछ प्रश्नों के उत्तर दें। आपका अंक इस सत्र के साथ दर्ज होगा।' },
+      next:    { en: 'Next',                      hi: 'आगे' },
+      listen:  { en: '🔊  Listen',                 hi: '🔊  सुनें' },
+      back:    { en: 'Back',                      hi: 'पीछे' },
+      qof:     { en: 'Question # of #',           hi: 'प्रश्न # / #' },
+      confT:   { en: 'How confident do you feel?', hi: 'आप कितना आत्मविश्वास महसूस करते हैं?' },
+      confS:   { en: 'On doing this task on your own.', hi: 'यह काम स्वयं करने में।' },
+      c1:      { en: 'Need help',                 hi: 'सहायता चाहिए' },
+      c2:      { en: 'With support',              hi: 'सहयोग से' },
+      c3:      { en: 'On my own',                 hi: 'स्वयं कर सकता/सकती हूँ' },
+      submit:  { en: 'Submit',                    hi: 'जमा करें' },
+      passed:  { en: 'Passed',                    hi: 'उत्तीर्ण' },
+      notyet:  { en: 'Not yet',                   hi: 'अभी नहीं' },
+      gotN:    { en: '# of # correct',            hi: '# / # सही' },
+      again:   { en: 'Next person',               hi: 'अगला व्यक्ति' },
+      noHindi: { en: 'This check is only in English.', hi: 'यह जाँच केवल अंग्रेज़ी में उपलब्ध है।' },
+      saving:  { en: 'Saving…',                   hi: 'सहेजा जा रहा है…' },
+      failSave:{ en: 'Could not save. Show this screen to your supervisor.',
+                 hi: 'सहेजा नहीं जा सका। यह स्क्रीन अपने सुपरवाइज़र को दिखाएँ।' }
+    };
+    function t(k){ var e = T[k]; return e ? (e[LANG] || e.en) : k; }
+    function esc(s){ return String(s == null ? '' : s)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+    function el(id){ return document.getElementById(id); }
+
+    // ── Language ──────────────────────────────────────────────────────────
+    el('langSeg').addEventListener('click', function (e) {
+      var b = e.target.closest('button[data-lang]');
+      if (!b) return;
+      LANG = b.dataset.lang;
+      [].forEach.call(this.querySelectorAll('button'), function (x) {
+        x.setAttribute('aria-pressed', String(x === b));
+      });
+      document.documentElement.lang = LANG;
+      applyLang();
+      // Reload the test in the chosen language, keeping answers by index —
+      // the two languages share the same question order and answer key.
+      if (TEST) loadTest(true);
+    });
+
+    function applyLang() {
+      el('tTitle').textContent = t('title');
+      el('lWho').textContent = t('who');
+      el('bStart').textContent = t('start');
+      el('nWho').textContent = t('intro');
+      el('bNext').textContent = t('next');
+      el('bBack').textContent = t('back');
+      el('cTitle').textContent = t('confT');
+      el('cSub').textContent = t('confS');
+      el('bSubmit').textContent = t('submit');
+      el('bAgain').textContent = t('again');
+      renderConf();
+      if (TEST) renderQ();
+    }
+
+    // ── Load ──────────────────────────────────────────────────────────────
+    function loadRoster() {
+      google.script.run
+        .withSuccessHandler(function (r) {
+          if (!r || !r.success) return;
+          var opts = ['<option value="">—</option>'].concat(
+            (r.roster || []).map(function (p) {
+              return '<option value="' + esc(p.empId) + '">' + esc(p.name) +
+                     (p.dept ? ' · ' + esc(p.dept) : '') + '</option>';
+            }));
+          el('who').innerHTML = opts.join('');
+        })
+        .withFailureHandler(function () {})
+        .getSessionAttendance(PLAN);
+    }
+
+    function loadTest(keepAnswers) {
+      google.script.run
+        .withSuccessHandler(function (r) {
+          if (!r || !r.success) {
+            el('tTopic').textContent = (r && r.error) || 'No test available';
+            el('bStart').disabled = true;
+            return;
+          }
+          TEST = r;
+          if (!keepAnswers) ANS = new Array(r.questions.length);
+          // A module with no Hindi must say so rather than silently
+          // presenting English to somebody who chose Hindi.
+          if (LANG === 'hi' && !r.hasHindi) {
+            el('tTopic').textContent = t('noHindi');
+          } else {
+            el('tTopic').textContent = (r.objectives || [])[0] || '';
+          }
+          if (TEST && !el('stepQ').hidden) renderQ();
+        })
+        .withFailureHandler(function (e) {
+          el('tTopic').textContent = 'Error: ' + (e && e.message);
+        })
+        .getModuleTest(TOPIC, LANG);
+    }
+
+    // ── Spoken questions ──────────────────────────────────────────────────
+    // A worker who reads slowly, or not at all, has only the voice. The
+    // button appears ONLY when a clip exists for this topic and language, so
+    // the modules with no audio look exactly as they did before rather than
+    // offering a button that plays silence.
+    //
+    // Clips are fetched once as a manifest rather than per question: forty
+    // round trips through google.script.run is a spinner on the floor.
+    var CLIPS = {}, AU = null;
+
+    function loadClips() {
+      if (typeof google === 'undefined' || !google.script) return;
+      google.script.run
+        .withSuccessHandler(function (r) {
+          if (r && r.success) { CLIPS = r.clips || {}; renderListen(); }
+        })
+        .withFailureHandler(function () { /* no audio is not an error */ })
+        .getInductionAudio(TOPIC + '/');
+    }
+
+    /**
+     * The clip for the question on screen, or '' when there is none.
+     *
+     * Keyed by QUESTION NUMBER (TRN-IND/Q3/qhi), not by the rule id the clip
+     * was built from. getModuleTest returns n/text/options and deliberately
+     * nothing else — the answer key lives on the server — so the question's
+     * position is the only stable handle the page has. Renumbering the
+     * questions therefore means re-uploading the audio, which is the right
+     * trade: the alternative is shipping a rule id to the phone purely so the
+     * audio can find itself.
+     */
+    function clipFor(idx) {
+      var q = (TEST && TEST.questions[idx]) || null;
+      if (!q) return '';
+      var key = TOPIC + '/Q' + (q.n || (idx + 1)) + '/' + (LANG === 'hi' ? 'qhi' : 'qen');
+      return (CLIPS[key] && CLIPS[key].url) || '';
+    }
+
+    function renderListen() {
+      var btn = el('bListen');
+      if (!btn) return;
+      var url = clipFor(IDX);
+      btn.hidden = !url;
+      btn.textContent = t('listen');
+    }
+
+    function listen() {
+      var url = clipFor(IDX);
+      if (!url) return;
+      if (AU) { AU.pause(); AU = null; }
+      AU = new Audio(url);
+      AU.play().catch(function () { /* autoplay refused: the tap will retry */ });
+    }
+
+    // ── The test ──────────────────────────────────────────────────────────
+    function start() {
+      var v = el('who').value;
+      if (!v) { el('whoErr').textContent = t('pick'); el('whoErr').hidden = false; return; }
+      el('whoErr').hidden = true;
+      ME = v;
+      IDX = 0;
+      el('stepWho').hidden = true;
+      el('stepQ').hidden = false;
+      renderQ();
+    }
+
+    function renderQ() {
+      if (!TEST || !TEST.questions.length) return;
+      var q = TEST.questions[IDX];
+      el('prog').innerHTML = TEST.questions.map(function (_, i) {
+        return '<i class="' + (i < IDX ? 'done' : i === IDX ? 'now' : '') + '"></i>';
+      }).join('');
+      el('qn').textContent = t('qof').replace('#', IDX + 1).replace('#', TEST.questions.length);
+      el('qt').textContent = q.text;
+      renderListen();
+      el('opts').innerHTML = q.options.map(function (o, i) {
+        return '<button type="button" class="opt" onclick="pick(' + i + ')" ' +
+               'aria-pressed="' + (ANS[IDX] === i) + '">' +
+               '<span class="mark" aria-hidden="true">✓</span>' +
+               '<span>' + esc(o) + '</span></button>';
+      }).join('');
+      el('bNext').disabled = (ANS[IDX] === undefined);
+      el('bNext').textContent = (IDX === TEST.questions.length - 1) ? t('submit') : t('next');
+      el('bBack').hidden = IDX === 0;
+    }
+
+    function pick(i) {
+      ANS[IDX] = i;
+      renderQ();
+      // Advancing on its own would deny a change of mind, so the tap only
+      // enables Next. One extra tap per question, and no wrong answer locked
+      // in by a mis-tap.
+    }
+
+    function next() {
+      if (ANS[IDX] === undefined) return;
+      if (IDX < TEST.questions.length - 1) { IDX++; renderQ(); return; }
+      el('stepQ').hidden = true;
+      el('stepConf').hidden = false;
+      renderConf();
+    }
+
+    function back() { if (IDX > 0) { IDX--; renderQ(); } }
+
+    function renderConf() {
+      var box = el('conf');
+      if (!box) return;
+      box.innerHTML = ['c1', 'c2', 'c3'].map(function (k) {
+        return '<button type="button" onclick="setConf(\'' + k + '\')" ' +
+               'aria-pressed="' + (CONF === k) + '">' + esc(t(k)) + '</button>';
+      }).join('');
+      el('bSubmit').disabled = !CONF;
+    }
+
+    function setConf(k) { CONF = k; renderConf(); }
+
+    function submit() {
+      if (!CONF) return;
+      el('bSubmit').disabled = true;
+      el('bSubmit').textContent = t('saving');
+      google.script.run
+        .withSuccessHandler(function (r) {
+          if (!r || !r.success) {
+            el('bSubmit').disabled = false;
+            el('bSubmit').textContent = t('submit');
+            alert((r && r.error) || t('failSave'));
+            return;
+          }
+          showResult(r);
+        })
+        .withFailureHandler(function () {
+          el('bSubmit').disabled = false;
+          el('bSubmit').textContent = t('submit');
+          alert(t('failSave'));
+        })
+        .recordAssessment({
+          planId: PLAN, topicId: TOPIC, empId: ME,
+          answers: ANS, lang: LANG, confidence: CONF,
+          device: (navigator.userAgent || '').slice(0, 60)
+        });
+    }
+
+    function showResult(r) {
+      el('stepConf').hidden = true;
+      el('stepDone').hidden = false;
+      el('rScore').textContent = r.score + '%';
+      el('rScore').className = 'res-score ' + (r.passed ? 'res-pass' : 'res-fail');
+      el('rLine').textContent = r.passed ? t('passed') : t('notyet');
+      el('rSub').textContent = t('gotN').replace('#', r.correct).replace('#', r.total);
+      // Show which ones were wrong. A test that only gives a number teaches
+      // nothing; the point of a check is that the person learns from it.
+      el('rReview').innerHTML = (r.detail || []).map(function (d, i) {
+        var q = TEST.questions[i] || {};
+        return '<div class="r"><span class="' + (d.correct ? 'ok' : 'no') + '">' +
+               (d.correct ? '✓' : '✗') + '</span><span>' + esc(q.text || '') +
+               (d.correct ? '' : '<br><b>' + esc((q.options || [])[d.answer] || '') + '</b>') +
+               '</span></div>';
+      }).join('');
+      el('rNote').textContent = r.levelNote || '';
+    }
+
+    applyLang();
+    loadRoster();
+    loadTest(false);
+    loadClips();
+  </script>
+</body>
+</html>

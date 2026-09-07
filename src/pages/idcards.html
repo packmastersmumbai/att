@@ -354,7 +354,7 @@
       <button type="button" class="idcards-lang-btn" data-lang-btn="hi" onclick="qrattSetLang('hi')">हिं</button>
     </div>
     <a class="btn-back" href="?page=admin" data-i18n="idcards_back_to_admin">← Back to Admin</a>
-    <button class="btn-print" onclick="window.print()">
+    <button class="btn-print" onclick="printCards()">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
         <polyline points="6,9 6,2 18,2 18,9"/>
         <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
@@ -500,6 +500,92 @@
       }
       grid.innerHTML = _filtered.map(renderCard).join('');
       count.textContent = _filtered.length + ' ' + qrattT('idcards_cards_label');
+    }
+
+
+    // GAS serves this page inside a nested cross-origin iframe, so a plain
+    // window.print() targets Google's top document, not our cards, and the
+    // @media print rules never apply.
+    //
+    // A popup window works in theory but prints blank in real Chrome: an
+    // about:blank window written by script has no committed document to print.
+    // Instead render the cards into a hidden same-document iframe and print
+    // that frame. Same-origin, no popup blocker, and it has a real document.
+    //
+    // NOTE: never document.write() raw markup strings on this page — GAS's own
+    // loader re-parses the served source, and a literal doctype or closing
+    // script tag inside a JS string makes its document.write throw and blank
+    // the whole page. Build everything through the DOM.
+    var _printFrame = null;
+
+    function printCards() {
+      if (!_filtered.length) { alert(qrattT('idcards_no_match')); return; }
+
+      if (_printFrame && _printFrame.parentNode) _printFrame.parentNode.removeChild(_printFrame);
+
+      var css = '';
+      var sheets = document.getElementsByTagName('style');
+      for (var i = 0; i < sheets.length; i++) css += sheets[i].innerHTML;
+      css += 'body{background:#fff;padding:0;margin:0}' +
+             '.card-grid{display:flex;flex-wrap:wrap;gap:4mm;padding:6mm;align-content:flex-start}';
+
+      // Assemble the frame source. The doctype matters: a script-built document
+      // without one lands in quirks mode (compatMode BackCompat) and Chrome's
+      // print layout then yields blank pages. Inserting a doctype afterwards is
+      // too late — the mode is fixed when the document is parsed — so the frame
+      // is given a full source document up front via srcdoc.
+      // The tag strings are assembled from fragments on purpose: GAS's loader
+      // re-parses this file's source and throws on a literal doctype or closing
+      // script tag inside a JS string, which blanks the whole page.
+      var LT = String.fromCharCode(60);      // "<"
+      var GT = String.fromCharCode(62);      // ">"
+      var doctype = LT + '!DOCTYPE html' + GT;
+      var src = doctype +
+        LT + 'html' + GT +
+        LT + 'head' + GT + LT + 'meta charset="utf-8"' + GT +
+        LT + 'style' + GT + css + LT + '/style' + GT +
+        LT + '/head' + GT +
+        LT + 'body' + GT +
+        LT + 'div class="card-grid"' + GT + _filtered.map(renderCard).join('') + LT + '/div' + GT +
+        LT + '/body' + GT + LT + '/html' + GT;
+
+      var fr = document.createElement('iframe');
+      fr.setAttribute('aria-hidden', 'true');
+      // Stays opaque and visible — Chrome honours opacity/visibility when printing
+      // a frame, so a transparent frame prints blank. Park it off-screen instead.
+      fr.style.cssText = 'position:fixed;left:-10000px;top:0;width:210mm;height:297mm;border:0';
+
+      fr.onload = function() {
+        var win = fr.contentWindow;
+        var d = fr.contentDocument;
+        var imgs = Array.prototype.slice.call(d.images);
+        var pending = imgs.filter(function(i) { return !i.complete; });
+        var done = 0, fired = false;
+        function go() {
+          if (fired) return;
+          fired = true;
+          try {
+            win.focus();
+            win.print();
+          } catch (e) {
+            alert('Could not open the print dialog: ' + e.message);
+          }
+        }
+        if (!pending.length) {
+          setTimeout(go, 150);
+        } else {
+          pending.forEach(function(i) {
+            function tick() { if (++done >= pending.length) setTimeout(go, 150); }
+            i.addEventListener('load', tick);
+            i.addEventListener('error', tick);
+          });
+          setTimeout(go, 8000);
+        }
+      };
+
+      fr.srcdoc = src;
+      document.body.appendChild(fr);
+      _printFrame = fr;
     }
 
     filterCards();   // applies default ACTIVE-only status filter on load

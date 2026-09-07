@@ -1,0 +1,254 @@
+<style>
+/* ──────────────────────────────────────────────────────────────────────────
+   Shared visitor item (gatepass) card.
+
+   There used to be THREE hand-written copies of this — a <table> with inline
+   styles on visitors.html, .kgp-row flex divs on kiosk.html, .sc-gp-row on
+   scanner.html — with different markup, different actions and different
+   wording for the same thing. The kiosk called an item "IN 1" with a button
+   labelled "Returned"; the Visitors page called the same row "IN / 1 / Mark
+   returned". Same data, three vocabularies.
+
+   This is one renderer for all of them. It adapts to its host page's theme
+   through --gpc-* variables rather than hardcoding colours: the kiosk sets the
+   dark values, the light pages inherit the defaults below. Nothing else about
+   the host page has to change.
+   ────────────────────────────────────────────────────────────────────────── */
+.gpc {
+  /* Light defaults; kiosk (or any dark host) overrides these on a wrapper. */
+  --gpc-text:    var(--color-text, #1b1c1c);
+  --gpc-muted:   var(--color-text-muted, #64748B);
+  --gpc-border:  var(--color-border, #e8e3e0);
+  --gpc-field:   var(--color-surface, #fff);
+  --gpc-accent:  var(--color-primary, #000666);
+  --gpc-owed-bg: #FEF3C7;
+  --gpc-owed-fg: #92400E;
+  --gpc-back-bg: #D1FAE5;
+  --gpc-back-fg: #065F46;
+  --gpc-warn-bg: #FEF3C7;
+  --gpc-warn-fg: #92400E;
+  font-size: 13px;
+  color: var(--gpc-text);
+}
+
+.gpc-warn, .gpc-allback {
+  border-radius: 7px; padding: 8px 10px; margin-bottom: 9px;
+  font-size: 12px; font-weight: 700; text-align: center;
+}
+.gpc-warn    { background: var(--gpc-warn-bg); color: var(--gpc-warn-fg); }
+.gpc-allback { background: var(--gpc-back-bg); color: var(--gpc-back-fg); }
+
+.gpc-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 2px; border-bottom: 1px solid var(--gpc-border);
+}
+.gpc-desc { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gpc-thumb { width: 26px; height: 26px; border-radius: 5px; object-fit: cover; flex-shrink: 0; }
+
+/* State is a label, the button is an action — the old UI blurred the two, so
+   "Returned" read as status text and nobody pressed it. */
+.gpc-state {
+  flex-shrink: 0; font-size: 10px; font-weight: 700; letter-spacing: .3px;
+  text-transform: uppercase; border-radius: 5px; padding: 3px 7px;
+}
+.gpc-owed { background: var(--gpc-owed-bg); color: var(--gpc-owed-fg); }
+.gpc-back { background: var(--gpc-back-bg); color: var(--gpc-back-fg); }
+
+/* Age of a carried-over item, so old debt is distinguishable at a glance. */
+.gpc-age {
+  flex-shrink: 0; font-size: 10px; font-weight: 800;
+  padding: 1px 6px; border-radius: 999px; background: #FEE2E2; color: #B42318;
+}
+.gpc-approved { flex-shrink: 0; color: #0F7A4D; font-weight: 800; }
+
+.gpc-act {
+  flex-shrink: 0; border-radius: 6px; padding: 5px 11px; cursor: pointer;
+  font-size: 11px; font-weight: 700; font-family: inherit;
+  background: var(--gpc-back-bg); color: var(--gpc-back-fg);
+  border: 1px solid transparent;
+}
+.gpc-act-void { background: transparent; color: var(--gpc-muted); border-color: var(--gpc-border); }
+
+.gpc-addlabel {
+  font-size: 10px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase;
+  color: var(--gpc-muted); margin-top: 12px; padding-top: 10px;
+  border-top: 1px solid var(--gpc-border);
+}
+.gpc-form input[type=text], .gpc-form .gpc-descin {
+  width: 100%; box-sizing: border-box; margin-top: 7px;
+  background: var(--gpc-field); border: 1px solid var(--gpc-border);
+  border-radius: 7px; padding: 9px 10px; color: var(--gpc-text);
+  font-size: 13px; font-family: inherit;
+}
+.gpc-ctl { display: flex; align-items: center; gap: 6px; margin-top: 7px; flex-wrap: wrap; }
+.gpc-ctl .gpc-qty {
+  width: 58px; background: var(--gpc-field); border: 1px solid var(--gpc-border);
+  border-radius: 7px; padding: 8px 6px; color: var(--gpc-text);
+  font-size: 13px; font-family: inherit; text-align: center;
+}
+.gpc-dir {
+  background: var(--gpc-field); border: 1px solid var(--gpc-border); border-radius: 7px;
+  padding: 8px 6px; color: var(--gpc-text); font-size: 12px; font-family: inherit;
+}
+.gpc-cam {
+  flex-shrink: 0; background: var(--gpc-field); border: 1px solid var(--gpc-border);
+  border-radius: 7px; padding: 7px 9px; cursor: pointer; font-size: 15px; line-height: 1;
+}
+.gpc-chk { display: flex; align-items: center; gap: 5px; color: var(--gpc-muted); font-size: 11px; cursor: pointer; }
+.gpc-add {
+  flex-shrink: 0; margin-left: auto; background: var(--gpc-accent); border: none;
+  border-radius: 7px; padding: 9px 16px; color: #fff;
+  font-size: 12px; font-weight: 700; font-family: inherit; cursor: pointer;
+}
+.gpc-add:disabled { opacity: .5; cursor: default; }
+.gpc-empty { color: var(--gpc-muted); font-size: 12px; padding: 10px 0; text-align: center; }
+</style>
+
+<script>
+/**
+ * QRATT_GPC — renders the visitor item list + add form.
+ *
+ * One renderer for the kiosk, the scanner and the Visitors page. Callers
+ * supply the data and the action hooks; this owns the markup and wording so
+ * the same item cannot be described three different ways.
+ *
+ * Injected into every page by doGet() (see src/Code.js), exactly like i18n.
+ */
+var QRATT_GPC = (function() {
+
+  function esc(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  function t(key, fallback) {
+    try {
+      var v = (typeof qrattT === 'function') ? qrattT(key) : '';
+      return (v && v !== key) ? v : fallback;
+    } catch (e) { return fallback; }
+  }
+
+  /**
+   * opts = {
+   *   items, outstanding,      // from getGatepass()
+   *   onReturn, onVoid, onAdd, // JS expression strings; {id} = gatepassId
+   *   showDir, showPhoto,      // include the IN/OUT select / camera button
+   *   materials,               // [{code, desc, unit}] for the datalist
+   *   idPrefix                 // element-id prefix, so two cards can coexist
+   * }
+   */
+  function render(opts) {
+    opts = opts || {};
+    var p     = opts.idPrefix || 'gpc';
+    var items = (opts.items || []).filter(function(i) { return i.status !== 'VOID'; });
+    var out   = opts.outstanding || 0;
+    var html  = '';
+
+    if (out) {
+      html += '<div class="gpc-warn">⚠ ' + out + ' ' +
+              esc(t('kiosk_gp_still_out', 'not returned')) + '</div>';
+    } else if (items.length) {
+      html += '<div class="gpc-allback">✓ ' +
+              esc(t('kiosk_gp_all_back', 'All items returned')) + '</div>';
+    }
+
+    items.forEach(function(i) {
+      var owed = i.status === 'OUT_PENDING';
+      html += '<div class="gpc-row">';
+      if (i.photoUrl) {
+        html += '<img class="gpc-thumb" src="' + esc(i.photoUrl) + '" alt="" ' +
+                'onerror="this.style.display=\'none\'">';
+      }
+      html += '<span class="gpc-desc">' + esc(i.itemDesc) + ' ×' + esc(i.qty) +
+              (i.unit ? ' <span style="opacity:.6">' + esc(i.unit) + '</span>' : '') + '</span>';
+
+      // Age only matters while an item is still owed back.
+      if (owed && i.daysOut !== '' && i.daysOut >= 1) {
+        html += '<span class="gpc-age" title="' +
+                esc(t('gp_from_earlier_visit', 'Outstanding from an earlier visit')) +
+                '">' + esc(i.daysOut) + 'd</span>';
+      }
+      if (i.hostApproved) {
+        html += '<span class="gpc-approved" title="' +
+                esc(t('gp_host_approved', 'Host approved')) + '">✓</span>';
+      }
+
+      html += owed
+        ? '<span class="gpc-state gpc-owed">' + esc(t('kiosk_gp_with_visitor', 'with visitor')) + '</span>'
+        : '<span class="gpc-state gpc-back">✓ ' + esc(t('kiosk_gp_back', 'back')) + '</span>';
+
+      if (owed && opts.onReturn) {
+        html += '<button class="gpc-act" onclick="' +
+                esc(opts.onReturn.replace('{id}', i.gatepassId)) + '">' +
+                // One word for one action. The check-out settlement calls this
+                // "Returned"; saying "Got it back" here made two vocabularies
+                // for the same thing, minutes apart on the same screen.
+                esc(t('kiosk_gp_returned', 'Returned')) + '</button>';
+      } else if (!owed && opts.onVoid) {
+        html += '<button class="gpc-act gpc-act-void" onclick="' +
+                esc(opts.onVoid.replace('{id}', i.gatepassId)) + '">' +
+                esc(t('gp_void', 'Void')) + '</button>';
+      }
+      html += '</div>';
+    });
+
+    if (!items.length) {
+      html += '<div class="gpc-empty">' + esc(t('gp_no_items', 'No items declared')) + '</div>';
+    }
+
+    if (opts.onAdd) {
+      html += '<div class="gpc-addlabel">' + esc(t('kiosk_gp_add_label', 'Add an item')) + '</div>';
+      html += '<div class="gpc-form">';
+      html += '<input class="gpc-descin" id="' + p + 'Desc"' +
+              (opts.materials ? ' list="' + p + 'Mats"' : '') +
+              ' placeholder="' + esc(t('kiosk_gp_item_placeholder', 'Item description')) + '">';
+      if (opts.materials) {
+        html += '<datalist id="' + p + 'Mats">' +
+          opts.materials.slice(0, 500).map(function(m) {
+            return '<option value="' + esc(m.desc || m.code) + '">' + esc(m.code) + '</option>';
+          }).join('') + '</datalist>';
+      }
+      html += '<div class="gpc-ctl">';
+      if (opts.showDir) {
+        html += '<select class="gpc-dir" id="' + p + 'Dir">' +
+                '<option value="IN">' + esc(t('gp_bringing_in', 'Bringing IN')) + '</option>' +
+                '<option value="OUT">' + esc(t('gp_taking_out', 'Taking OUT')) + '</option></select>';
+      }
+      html += '<input class="gpc-qty" id="' + p + 'Qty" type="number" value="1" min="1">';
+      if (opts.showPhoto) {
+        html += '<label class="gpc-cam"><input type="file" accept="image/*" ' +
+                'capture="environment" hidden onchange="' + esc(opts.onPhoto || '') + '">' +
+                '<span id="' + p + 'CamLbl">📷</span></label>';
+      }
+      html += '<label class="gpc-chk"><input type="checkbox" id="' + p + 'Ret" checked> ' +
+              esc(t('kiosk_gp_returnable', 'Returnable')) + '</label>';
+      html += '<button class="gpc-add" onclick="' + esc(opts.onAdd) + '">' +
+              esc(t('kiosk_gp_add', 'Add')) + '</button>';
+      html += '</div></div>';
+    }
+
+    // Wrap so the .gpc variable block applies — a host page re-points those
+    // variables to theme the whole card without forking it.
+    return '<div class="gpc">' + html + '</div>';
+  }
+
+  /** Reads the add-form fields back out, so callers don't duplicate the ids. */
+  function readForm(prefix) {
+    var p = prefix || 'gpc';
+    function val(suffix) {
+      var el = document.getElementById(p + suffix);
+      return el ? el.value : '';
+    }
+    var retEl = document.getElementById(p + 'Ret');
+    return {
+      itemDesc:   String(val('Desc') || '').trim(),
+      qty:        Number(val('Qty')) || 1,
+      direction:  val('Dir') || 'IN',
+      returnable: retEl ? !!retEl.checked : true
+    };
+  }
+
+  return { render: render, readForm: readForm };
+})();
+</script>

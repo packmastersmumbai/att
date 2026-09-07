@@ -7,23 +7,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700;800;900&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
-    :root {
-      --color-primary:     #000666;
-      --color-primary-dk:  #000444;
-      --color-success:     #006b5f;
-      --color-danger:      #DC2626;
-      --color-warning:     #D97706;
-      --color-bg:          #fcf9f8;
-      --color-surface:     #ffffff;
-      --color-border:      #e8e3e0;
-      --color-text:        #1b1c1c;
-      --color-text-muted:  #4a5568;
-      --color-blocked:     #7C3AED;
-      --radius-sm: 2px; --radius-md: 4px; --radius-lg: 8px;
-      --shadow-sm: 0 1px 3px rgba(0,0,0,.08);
-      --font-sans: 'Public Sans', system-ui, sans-serif;
-      --font-mono: 'Roboto Mono', monospace;
-    }
+    
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html { height: 100%; }
     body {
@@ -537,7 +521,7 @@
     .dismiss-fill {
       height: 100%;
       border-radius: 1px;
-      animation: shrink 2s linear forwards;
+      animation: shrink 8.1s linear forwards;  /* must match DISMISS_MS */
     }
     @keyframes shrink { from{width:100%} to{width:0} }
     .df-in  { background: #10B981; }
@@ -735,6 +719,45 @@
       .ms-meta-label { font-size: 8px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: #5d7a9e; }
       .ms-meta-value { font-size: 11px; font-weight: 600; color: #475569; font-family: 'Roboto Mono', monospace; margin-top: 1px; }
     }
+
+    /* Gatepass block inside the dark scan-result card. Deliberately compact:
+       it sits between the scan stats and the dismiss button, so it must not
+       push the button off a phone screen. */
+    .sc-gp{margin:12px 0 4px;padding:10px;border:1px solid rgba(148,163,184,.25);
+      border-radius:8px;background:rgba(15,23,42,.45);text-align:left}
+    .sc-gp-hd{font-size:9px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;
+      color:#94a3b8;margin-bottom:7px}
+    .sc-gp-row{display:flex;align-items:center;justify-content:space-between;gap:8px;
+      font-size:12px;color:#cbd5e1;padding:3px 0}
+    .sc-gp-st{font-size:10px;color:#64748b;font-weight:700}
+    .sc-gp-ret{background:none;border:1px solid rgba(148,163,184,.4);color:#7dd3fc;
+      font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;cursor:pointer}
+    .sc-gp-form{margin-top:8px}
+    .sc-gp-form input,.sc-gp-form select{background:rgba(2,6,23,.6);border:1px solid rgba(148,163,184,.3);
+      color:#e2e8f0;border-radius:6px;padding:7px 8px;font-size:12px;font-family:inherit}
+    #scGpDesc{width:100%;box-sizing:border-box;margin-bottom:6px}
+    .sc-gp-ctl{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+    #scGpQty{width:52px}
+    .sc-gp-ctl label{font-size:11px;color:#94a3b8;display:flex;align-items:center;gap:3px}
+    .sc-gp-add{margin-left:auto;background:#38BDF8;border:none;color:#04283a;font-weight:800;
+      font-size:12px;padding:7px 14px;border-radius:6px;cursor:pointer}
+    .sc-gp-add:disabled{opacity:.5;cursor:default}
+    /* Shared item card ships light defaults; this page is dark. */
+    #scGpMount .gpc {
+      --gpc-text:    #F1F5F9;
+      --gpc-muted:   #94A3B8;
+      --gpc-border:  rgba(255,255,255,.12);
+      --gpc-field:   rgba(255,255,255,.05);
+      --gpc-accent:  #2563EB;
+      --gpc-owed-bg: rgba(251,191,36,.16);
+      --gpc-owed-fg: #FCD34D;
+      --gpc-back-bg: rgba(16,185,129,.15);
+      --gpc-back-fg: #34D399;
+      --gpc-warn-bg: rgba(180,83,9,.22);
+      --gpc-warn-fg: #FCD34D;
+    }
+    .sc-gp-warn{margin:10px 0 2px;padding:8px 10px;border-radius:7px;background:rgba(180,83,9,.22);
+      border:1px solid rgba(251,191,36,.45);color:#FCD34D;font-size:12px;font-weight:700;text-align:center}
   </style>
 </head>
 <body>
@@ -761,7 +784,7 @@
       </a>
       <a href="?page=visitors" class="sb-item" data-page="visitors">
         <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-        <span data-i18n="nav_visitors">Visitor Log</span>
+        <span data-i18n="nav_visitors">Visitors</span>
       </a>
       <a href="?page=reports" class="sb-item" data-page="reports">
         <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>
@@ -779,7 +802,7 @@
     <div class="sb-bottom">
       <a href="?page=admin" class="sb-item sb-settings" data-page="admin">
         <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-        <span>Settings</span>
+        <span data-i18n="nav_admin">Admin</span>
       </a>
       <div class="sb-user">
         <div class="sb-user-av">IA</div>
@@ -907,11 +930,23 @@
 
   <script>
     function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
-    function post(data,callback){var action=data.action;var onErr=function(e){callback({success:false,error:e?e.message:'Unknown error'});};if(typeof google==='undefined'||!google.script){callback({success:false,error:'Not in GAS'});return;}var r=google.script.run.withFailureHandler(onErr).withSuccessHandler(callback);if(action==='processQRScan')r.processQRScan(data.qrCode,data.gate);else if(action==='getDashboardData')r.getDashboardData();else if(action==='getPendingResult')r.getPendingResult(data.sid);else callback({success:false,error:'Unknown: '+action});}
+    function post(data,callback){var action=data.action;var onErr=function(e){callback({success:false,error:e?e.message:'Unknown error'});};if(typeof google==='undefined'||!google.script){callback({success:false,error:'Not in GAS'});return;}var r=google.script.run.withFailureHandler(onErr).withSuccessHandler(callback);if(action==='processQRScan')r.processQRScan(data.qrCode,data.gate);else if(action==='getDashboardData')r.getDashboardData();else if(action==='getPendingResult')r.getPendingResult(data.sid);else if(action==='getGatepass')r.getGatepass(data.visitorId);else if(action==='addGatepassItem')r.addGatepassItem(data.visitorId,data.item);else if(action==='markItemReturned')r.markItemReturned(data.gatepassId);else if(action==='getMaterialList')r.getMaterialList();else callback({success:false,error:'Unknown: '+action});}
   </script>
   <script>
     var COLORS = ['#3B82F6','#8B5CF6','#EC4899','#F59E0B','#10B981','#06B6D4','#EF4444','#6366F1','#84CC16','#F97316'];
     var dismissTimer = null;
+    var dismissHeld  = false;   // set by holdResult(); blocks every re-arm
+
+    // Single owner of the auto-dismiss timeout. Three call sites used to arm
+    // their own (8100 here, 1800 on the popup path, 2s in the CSS bar) and the
+    // popup one landed LAST, so a card the guard had to read vanished in 1.8s.
+    // ponytail: one duration, one arm point. Held cards never re-arm.
+    var DISMISS_MS = 8100;
+    function armDismiss() {
+      clearTimeout(dismissTimer);
+      if (dismissHeld) return;
+      dismissTimer = setTimeout(dismissResult, DISMISS_MS);
+    }
 
     function initials(name) {
       var p = String(name || ' ').trim().split(/\s+/);
@@ -984,8 +1019,6 @@
         }
         showResult(res);
         document.getElementById('manualCode').value = '';
-        clearTimeout(dismissTimer);
-        dismissTimer = setTimeout(dismissResult, 1800);
       });
     }
 
@@ -1026,6 +1059,7 @@
 
     function showResult(res) {
       clearTimeout(dismissTimer);
+      dismissHeld = false;   // a new scan is a fresh card
       // A scan arrives from the camera popup, not as a DOM event on this page,
       // so it must resume the activity feed explicitly.
       if (typeof noteActivity === 'function') noteActivity();
@@ -1052,7 +1086,7 @@
         } else {
           overlay.style.display = 'flex';
         }
-        dismissTimer = setTimeout(function() { dismissResult(); }, 8100);
+        armDismiss();
         return;
       }
         var type = res.action === 'CHECK_IN'  ? 'check-in'  :
@@ -1122,6 +1156,12 @@
         (res.empId ? '<div style="font-size:11px;font-weight:700;letter-spacing:1.5px;color:#38BDF8;margin-bottom:2px;font-family:monospace">#' + esc(res.empId) + '</div>' : '') +
         '<div class="rc-dept">' + esc(res.department || '') + '</div>' +
         body +
+        // The gate guard is the person who physically sees material cross the
+        // gate, but the card lived only on the Visitors page — a different
+        // screen they had to leave the scanner to reach, which is why item
+        // logging went unused. Mounted inline on a visitor scan, it is where
+        // the custody actually happens.
+        (res.type === 'VIS' && res.empId ? '<div id="scGpMount" class="sc-gp"></div>' : '') +
         '<button class="btn-dismiss ' + btnCls + '" onclick="dismissResult()">' + btnLbl + '</button>' +
         (type !== 'blocked' && type !== 'unknown'
           ? '<div style="font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#5d7a9e;margin-top:10px;text-align:center">' + esc(qrattT('scanner_auto_dismiss_hint')) + '</div>' +
@@ -1182,10 +1222,116 @@
       // Background refresh to sync with server state
       loadActivity();
 
-      // Auto-dismiss after 8s
-      dismissTimer = setTimeout(function() {
-        dismissResult();
-      }, 8100);
+      // A visitor leaving while still holding a returnable item is the moment
+      // that must be raised. Advisory only — the scan already succeeded.
+      if (res.type === 'VIS' && type === 'check-out' && res.returnableOutstanding > 0) {
+        var warn = document.createElement('div');
+        warn.className = 'sc-gp-warn';
+        warn.textContent = '\u26a0 ' + res.returnableOutstanding + ' returnable item(s) NOT returned';
+        var rcEl = document.querySelector('#resultCard .rc');
+        if (rcEl) rcEl.insertBefore(warn, rcEl.querySelector('.btn-dismiss'));
+        holdResult();   // do not auto-dismiss a warning the guard must read
+      }
+
+      if (res.type === 'VIS' && res.empId) scGpLoad(res.empId);
+
+      armDismiss();   // no-op if the warning above held the card
+    }
+
+    /* ── Gatepass on the scan result ────────────────────────────────────────
+       The result card auto-dismisses after 8.1s. That is right for a bare
+       scan, but it would yank the card away mid-typing while a guard enters an
+       item. Any interaction with the gatepass cancels the timer; the guard
+       then closes the card themselves. ── */
+    function holdResult() {
+      dismissHeld = true;
+      clearTimeout(dismissTimer);
+      var bar = document.querySelector('#resultCard .dismiss-bar');
+      if (bar) bar.style.display = 'none';
+      var hint = document.querySelector('#resultCard .rc > div[style*="auto_dismiss"]');
+      if (hint) hint.style.display = 'none';
+    }
+
+    var SC_GP_MATERIALS = null;
+    var SC_GP_VID = '';
+
+    function scGpLoad(vid) {
+      SC_GP_VID = vid;
+      if (SC_GP_MATERIALS === null) {
+        post({ action: 'getMaterialList' }, function(m) {
+          SC_GP_MATERIALS = (m && m.materials) || [];
+          // Fill the datalist in place. Re-rendering the whole card here would
+          // wipe whatever the guard has already typed the moment the picklist
+          // arrives — the response lands seconds after the card opens.
+          var dl = document.getElementById('scGpMats');
+          if (dl) {
+            dl.innerHTML = SC_GP_MATERIALS.slice(0, 500).map(function(m) {
+              return '<option value="' + esc(m.desc || m.code) + '">' + esc(m.code) + '</option>';
+            }).join('');
+          }
+        });
+      }
+      post({ action: 'getGatepass', visitorId: vid }, function(d) {
+        scGpRender(vid, d || { items: [], returnableOutstanding: 0 });
+      });
+    }
+
+
+    function scGpRender(vid, d) {
+      var mount = document.getElementById('scGpMount');
+      if (!mount) return;
+      var items = (d.items || []).filter(function(i) { return i.status !== 'VOID'; });
+      var outstanding = d.returnableOutstanding || 0;
+
+      // Shared renderer (QRATT_GPC, src/gatepassCard.html). This copy used to
+      // hardcode English — "returned", "ret", raw status codes — and ignored
+      // i18n entirely, so the same item read differently here than on the
+      // kiosk. idPrefix keeps the scGp* ids this page's handlers use.
+      mount.innerHTML =
+        '<div class="sc-gp-hd">' + esc(qrattT('kiosk_gp_items_title')) +
+          (outstanding ? ' · ' + outstanding : '') + '</div>' +
+        QRATT_GPC.render({
+          items: items,
+          outstanding: outstanding,
+          onReturn: "scGpReturn('{id}')",
+          onAdd:    'scGpAdd()',
+          showDir:  true,
+          materials: SC_GP_MATERIALS || [],
+          idPrefix: 'scGp'
+        });
+
+      // Any interaction cancels the result card's auto-dismiss.
+      ['Desc', 'Qty', 'Ret', 'Dir'].forEach(function(f) {
+        var el = document.getElementById('scGp' + f);
+        if (el) { el.onfocus = holdResult; el.oninput = holdResult; el.onchange = holdResult; }
+      });
+    }
+
+    function scGpAdd() {
+      holdResult();
+      var descEl = document.getElementById('scGpDesc');
+      var desc = (descEl && descEl.value || '').trim();
+      if (!desc) return;
+      var mat = (SC_GP_MATERIALS || []).filter(function(m) { return (m.desc || m.code) === desc; })[0] || {};
+      var btn = document.querySelector('.gpc-add');
+      var lbl = btn ? btn.textContent : '';
+      if (btn) { btn.disabled = true; btn.textContent = '…'; }
+      var f = QRATT_GPC.readForm('scGp');
+      post({ action: 'addGatepassItem', visitorId: SC_GP_VID, item: {
+        direction: f.direction,
+        materialCode: mat.code || '', itemDesc: f.itemDesc, unit: mat.unit || '',
+        qty: f.qty, returnable: f.returnable
+      }}, function(res) {
+        if (btn) { btn.disabled = false; btn.textContent = lbl; }
+        if (res && res.success) scGpLoad(SC_GP_VID);
+      });
+    }
+
+    function scGpReturn(gatepassId) {
+      holdResult();
+      post({ action: 'markItemReturned', gatepassId: gatepassId }, function(res) {
+        if (res && res.success) scGpLoad(SC_GP_VID);
+      });
     }
 
     function dismissResult() {
@@ -1331,8 +1477,13 @@
     var PUBLIC_URL = '<?= publicUrl ?>';
     function navigate(page) {
       if (!page) return;
-      var base = /^https?:\/\//.test(PUBLIC_URL) ? PUBLIC_URL + '/' : (APP_URL + '?');
-      var url = base + (base.slice(-1) === '/' ? '?page=' : 'page=') + encodeURIComponent(page);
+      // In-app page→page nav must land ON the working GAS app, not the GitHub
+      // Pages launcher. The launcher (PUBLIC_URL) is a manual landing page — it
+      // cannot frame the app, so routing nav through it dropped the user on the
+      // launcher home every time. APP_URL is the raw GAS /exec that renders the
+      // requested page directly. Shared/external entry links stay pretty via the
+      // launcher; navigation between pages, once inside, stays inside the app.
+      var url = APP_URL + '?page=' + encodeURIComponent(page);
       try {
         (window.top || window).location.href = url;
       } catch(e) {

@@ -6,7 +6,9 @@
   <title>Visitor Self Registration</title>
   <style>
     :root{
-      --primary:#006b5f; --primary-dk:#005549; --danger:#dc2626;
+      /* Navy, matching every other page — the visitor journey used to
+         switch brand colour between registering and being checked in. */
+      --primary:#000666; --primary-dk:#000444; --danger:#dc2626;
       --bg:#f1f5f4; --surface:#ffffff; --text:#0f172a; --muted:#64748b; --border:#d7e0de;
       --radius:12px; --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
     }
@@ -15,7 +17,7 @@
       min-height:100vh;padding:16px;line-height:1.4}
     .wrap{max-width:440px;margin:0 auto}
     .head{display:flex;align-items:center;gap:10px;margin:6px 2px 16px}
-    .head .logo{width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,#0ea5a0,#006b5f);
+    .head .logo{width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,#1a1a8c,#000666);
       color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;flex-shrink:0}
     .head .t1{font-size:16px;font-weight:800}
     .head .t2{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px}
@@ -29,7 +31,13 @@
     label .req{color:var(--danger)}
     .input{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;
       font-size:14px;font-family:inherit;color:var(--text);background:#fff;outline:none;-webkit-appearance:none}
-    .input:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(0,107,95,.10)}
+    .input:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(0,6,102,.12)}
+    /* .input kills -webkit-appearance, which also strips a select's native
+       arrow — the host picker then rendered as an empty box indistinguishable
+       from a broken text field. Draw the caret back on. */
+    select.input{padding-right:34px;cursor:pointer;
+      background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='none' stroke='%236b7280' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round' d='M1 1.5 6 6.5 11 1.5'/%3E%3C/svg%3E");
+      background-repeat:no-repeat;background-position:right 12px center}
     .row{display:flex;gap:10px}
     .row .fg{flex:1}
     .btn{width:100%;margin-top:14px;padding:14px;background:var(--primary);color:#fff;border:none;
@@ -54,6 +62,12 @@
     .more-toggle{margin-top:14px;font-size:12px;font-weight:700;color:var(--primary);cursor:pointer;user-select:none;padding:4px 0}
     .more-toggle #moreArrow{display:inline-block;transition:transform .15s}
     .more-toggle.open #moreArrow{transform:rotate(90deg)}
+    /* Shown above the induction when a returning visitor's acknowledgement
+       has lapsed or the rules were reworded — it must read as a reason,
+       not as decoration, or they will not understand why they are being
+       asked again. */
+    .reinduct-note{margin-top:16px;border:1px solid #fca5a5;background:#fef2f2;color:#991b1b;
+      border-radius:10px;padding:11px 12px;font-size:12.5px;font-weight:700;line-height:1.55}
     .safety{margin-top:16px;border:1px solid #fcd34d;background:#fffbeb;border-radius:10px;padding:12px}
     .safety-hd{font-size:13px;font-weight:800;color:#92400e;margin-bottom:9px}
     .safety-video{position:relative;width:100%;aspect-ratio:16/9;background:#0f172a;border-radius:8px;overflow:hidden;margin-bottom:10px}
@@ -72,9 +86,18 @@
     .rule .rtxt{font-size:12px;line-height:1.55;color:#1f2937;transition:filter .35s ease}
     .rule .rtxt .en{color:#64748b;display:block;margin-top:2px}
     .rule .rnum{font-weight:800;color:#b45309;margin-right:5px}
+    /* SQCDP letter heading. Stays sharp while the rules under it are
+       blurred, so the visitor can see WHAT they are about to uncover and
+       how many blocks are left. */
+    .rule .rsec{font-size:11px;font-weight:800;color:#92400e;text-transform:uppercase;
+      letter-spacing:.8px;margin-bottom:6px;padding-bottom:5px;border-bottom:1px solid #fde68a}
+    .rule .rtxt+.rtxt{margin-top:6px}
     .rule.blurred .rtxt{filter:blur(4.5px);user-select:none}
     .rule .tap{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
       font-size:12px;font-weight:800;color:#92400e;background:rgba(255,251,235,.35)}
+    /* Open, but still inside its minimum reading time. */
+    .rule.reading{border-color:#fbbf24;background:#fffdf5;cursor:default}
+    .rule.reading .tap{display:none}
     .rule.revealed{border-color:#86efac;background:#f0fdf4;cursor:default}
     .rule.revealed .tap{display:none}
     .rule.revealed:after{content:'✓';position:absolute;top:8px;right:10px;color:#16a34a;font-weight:800;font-size:13px}
@@ -117,9 +140,18 @@
 
       <div class="fg">
         <label><span data-i18n="vreg_whom">Whom to meet</span> <span class="req">*</span></label>
-        <select id="vHost" class="input">
+        <!-- Type-to-filter above the picker. The select stays (a datalist
+             cannot render the department optgroups this list relies on), so a
+             visitor can either scroll the grouped list or type a few letters
+             of the name to narrow it. -->
+        <input type="text" id="vHostFilter" class="input" oninput="filterHosts()"
+               data-i18n-ph="vreg_host_filter" placeholder="Type to search…"
+               autocomplete="off" style="margin-bottom:8px">
+        <select id="vHost" class="input" size="1">
           <option value="" data-i18n="vreg_loading">Loading…</option>
         </select>
+        <div id="vHostEmpty" style="display:none;font-size:12px;color:#b45309;margin-top:6px"
+             data-i18n="vreg_host_none">No one matches that name.</div>
       </div>
 
       <div class="fg">
@@ -172,6 +204,18 @@
           <label data-i18n="vreg_vehicle">Vehicle Number</label>
           <input type="text" id="vVehicle" class="input" placeholder="MH-01-AB-1234">
         </div>
+        <!-- Who to call if this visitor is hurt on site. A chemical plant should
+             never be holding an injured visitor with no next of kin on record. -->
+        <div class="row">
+          <div class="fg">
+            <label data-i18n="vreg_emg_name">Emergency contact name</label>
+            <input type="text" id="vEmgName" class="input" data-i18n-ph="vreg_emg_name_ph" placeholder="Family member">
+          </div>
+          <div class="fg">
+            <label data-i18n="vreg_emg_phone">Emergency contact phone</label>
+            <input type="tel" id="vEmgPhone" class="input" placeholder="98765 43210">
+          </div>
+        </div>
       </div>
 
       <!-- Safety induction — video + every rule must be revealed, then acknowledged -->
@@ -211,6 +255,7 @@
   <script>
     var APP_URL = '<?= appUrl ?>';
     var PUBLIC_URL = '<?= publicUrl ?>';   // pretty base for the shareable pass link
+    var HOST_DEPTS = '<?= hostDepartments ?>';   // comma-separated depts for "Whom to meet"; blank = all active
 
     function toast(msg, type){
       var t=document.getElementById('toast');
@@ -307,6 +352,7 @@
        deploy. Register stays disabled until the visitor ticks the acknowledgement. */
     var SAFETY_DEFAULT='https://youtu.be/TJv6eO_L9LQ';
     var vSafetyAckAt='';
+    var vSafetyVersion='';   // which rule set was agreed to (see QRATT_SAFETY_VERSION)
 
     function _ytId_(url){
       var m=String(url||'').match(/(?:youtu\.be\/|v=|\/embed\/|\/shorts\/)([A-Za-z0-9_-]{6,})/);
@@ -326,63 +372,170 @@
         wrap.innerHTML='<div class="novid" data-i18n="vreg_video_unavailable">'+qrattT('vreg_video_unavailable')+'</div>';
       }
     }
-    /* Safety rules. Each starts blurred; the visitor must tap every one to reveal
-       it. Only when all are revealed does the acknowledgement checkbox unlock, and
-       only when that is ticked does the Register button appear. Keys match the
-       shared safety_rule_N dictionary entries (identical text also used on vpass). */
-    var SAFETY_RULE_KEYS=['safety_rule_1','safety_rule_2','safety_rule_3','safety_rule_4',
-                           'safety_rule_5','safety_rule_6','safety_rule_7'];
-    var rulesRevealed=0;
+    /* Safety induction, grouped by SQCDP. The list and its grouping live in
+       i18n.html (QRATT_SAFETY_SECTIONS) so vreg and vpass cannot drift apart.
+
+       Reveal is per SECTION, not per rule. The induction grew from 7 rules to
+       19; nineteen separate taps at a gate is not a reading exercise, it is an
+       obstacle people learn to defeat. Five blocks keep the deliberate act of
+       uncovering each block while showing the visitor the SQCDP structure the
+       site actually runs on.
+
+       Gating is unchanged: every section must be opened before the
+       acknowledgement unlocks, and only a ticked acknowledgement reveals the
+       Register button. */
+    var SAFETY_SECTIONS = (typeof QRATT_SAFETY_SECTIONS !== 'undefined') ? QRATT_SAFETY_SECTIONS : [];
+    var sectionsRevealed = 0;
 
     function renderRules(){
       var list=document.getElementById('rulesList');
-      list.innerHTML=SAFETY_RULE_KEYS.map(function(key,i){
-        return '<div class="rule blurred" data-i="'+i+'" onclick="revealRule(this)">'+
-                 '<div class="rtxt"><span class="rnum">'+(i+1)+'.</span>'+
-                   '<span data-i18n="'+key+'">'+qrattT(key)+'</span></div>'+
+      var n=0;
+      list.innerHTML=SAFETY_SECTIONS.map(function(sec,si){
+        var rows=sec.rules.map(function(key){
+          n++;
+          return '<div class="rtxt"><span class="rnum">'+n+'.</span>'+
+                   '<span data-i18n="'+key+'">'+qrattT(key)+'</span></div>';
+        }).join('');
+        return '<div class="rule blurred" data-i="'+si+'" onclick="revealRule(this)">'+
+                 '<div class="rsec" data-i18n="'+sec.key+'">'+qrattT(sec.key)+'</div>'+
+                 rows+
                  '<div class="tap">👆 <span data-i18n="vreg_tap_to_read">'+qrattT('vreg_tap_to_read')+'</span></div>'+
                '</div>';
       }).join('');
       updateRulesCount();
     }
+    /* A section counts as READ only after it has been open long enough to have
+       been read — roughly a second per rule in it. Tapping five blocks takes
+       about three seconds otherwise, which makes the acknowledgement a formality
+       rather than a briefing. The dwell runs per section, so opening them all at
+       once still costs the full time. */
+    var DWELL_MS_PER_RULE = 900;
+
+    /* Spoken rules.
+       A visitor who cannot read the section still has to be briefed, so where
+       a clip exists the section is READ ALOUD and the audio itself is the
+       dwell: the section counts as read when the voice finishes, which is
+       honest time rather than an arbitrary delay. With no clip the timer above
+       is unchanged, so nothing regresses for a language or a section that has
+       no audio yet. */
+    var SAFETY_CLIPS = {}, SAFETY_AU = null;
+
+    function loadSafetyClips(){
+      if(typeof google==='undefined' || !google.script) return;
+      google.script.run
+        .withSuccessHandler(function(r){
+          if(r && r.success && r.count){ SAFETY_CLIPS=r.clips||{}; renderRules(); }
+        })
+        .withFailureHandler(function(){ /* no audio is not an error */ })
+        .getInductionAudio('VISITOR/');
+    }
+
+    function safetyClipFor(si){
+      var sec=SAFETY_SECTIONS[si];
+      if(!sec) return '';
+      var lang=(typeof qrattLang==='function' && qrattLang()==='hi') ? 'hi' : 'en';
+      var k='VISITOR/'+sec.key+'/'+lang;
+      return (SAFETY_CLIPS[k] && SAFETY_CLIPS[k].url) || '';
+    }
+
     function revealRule(el){
       if(!el.classList.contains('blurred')) return;
       el.classList.remove('blurred');
-      el.classList.add('revealed');
-      rulesRevealed++;
+      el.classList.add('reading');
+      var si = Number(el.dataset.i);
+      var n = (SAFETY_SECTIONS[si] || {rules:[]}).rules.length || 1;
+
+      function done(){
+        if(el.classList.contains('revealed')) return;   // never count twice
+        el.classList.remove('reading');
+        el.classList.add('revealed');
+        sectionsRevealed++;
+        updateRulesCount();
+      }
+
+      var url = safetyClipFor(si);
+      if(url){
+        if(SAFETY_AU){ SAFETY_AU.pause(); }
+        SAFETY_AU = new Audio(url);
+        SAFETY_AU.addEventListener('ended', done);
+        // A refused autoplay, a dead link or a codec the phone will not take
+        // must not strand the visitor on an un-revealed section: fall back to
+        // the timer in every failure path.
+        SAFETY_AU.addEventListener('error', function(){ setTimeout(done, n*DWELL_MS_PER_RULE); });
+        SAFETY_AU.play().catch(function(){ setTimeout(done, n*DWELL_MS_PER_RULE); });
+      } else {
+        setTimeout(done, n * DWELL_MS_PER_RULE);
+      }
       updateRulesCount();
     }
     function updateRulesCount(){
-      var n=SAFETY_RULE_KEYS.length;
+      var n=SAFETY_SECTIONS.length;
       var c=document.getElementById('rulesCount');
-      c.textContent=rulesRevealed+' / '+n;
-      var all=rulesRevealed>=n;
+      c.textContent=sectionsRevealed+' / '+n;
+      var all=n>0 && sectionsRevealed>=n;
       c.classList.toggle('done',all);
       var cb=document.getElementById('vSafetyAck');
-      cb.disabled=!all;                       // can't acknowledge until every rule is read
+      cb.disabled=!all;                       // can't acknowledge until every section is read
       if(!all){ cb.checked=false; onSafetyAck(); }
     }
     function onSafetyAck(){
-      var ok=document.getElementById('vSafetyAck').checked && rulesRevealed>=SAFETY_RULE_KEYS.length;
+      var ok=document.getElementById('vSafetyAck').checked &&
+             SAFETY_SECTIONS.length>0 && sectionsRevealed>=SAFETY_SECTIONS.length;
       vSafetyAckAt = ok ? new Date().toISOString() : '';
+      // Record WHICH version of the rules was agreed to. A timestamp alone is
+      // unattributable the moment the wording is edited.
+      vSafetyVersion = ok ? (typeof QRATT_SAFETY_VERSION !== 'undefined' ? QRATT_SAFETY_VERSION : '') : '';
       document.getElementById('regBtn').style.display = ok ? 'block' : 'none';
     }
 
-    /* Pull the configured video URL + rules (fall back to the built-in defaults) */
+    /* Pull the configured video URL + any rule overrides from Config.
+
+       Config key SafetyRule_<key> replaces one rule's text, e.g.
+       SafetyRule_safety_rule_6 = "…go to Assembly Point B." — so an EHS team
+       can reword the induction for their site without a redeploy. Anything not
+       overridden falls back to the built-in bilingual text. A site that
+       overrides rules should also set SafetyRulesVersion, which invalidates
+       existing acknowledgements so returning visitors re-read the new wording.
+
+       Overrides are single-language by nature: whatever is typed into Config is
+       shown to everyone, so a bilingual site should either leave the rule alone
+       or write the override to carry both languages. */
+    function applyRuleOverrides(cfg){
+      var any=false;
+      cfg.forEach(function(c){
+        var k=String(c.Key||'');
+        if(k.indexOf('SafetyRule_')!==0 || !c.Value) return;
+        var ruleKey=k.slice('SafetyRule_'.length);
+        if(!QRATT_I18N[ruleKey]) return;          // ignore keys that name no rule
+        QRATT_I18N[ruleKey]={ en:String(c.Value), hi:String(c.Value) };
+        any=true;
+      });
+      return any;
+    }
+
     (function loadSafetyConfig(){
       renderRules();
+      loadSafetyClips();
       if(typeof google==='undefined' || !google.script){ renderSafetyVideo(SAFETY_DEFAULT); return; }
       google.script.run
         .withSuccessHandler(function(res){
+          var cfg=(res&&res.data)||[];
           var url=SAFETY_DEFAULT;
-          ((res&&res.data)||[]).forEach(function(c){ if(String(c.Key)==='SafetyVideoURL' && c.Value) url=String(c.Value); });
+          cfg.forEach(function(c){ if(String(c.Key)==='SafetyVideoURL' && c.Value) url=String(c.Value); });
+          // Re-render if any rule text changed, so the override is what the
+          // visitor actually reads and acknowledges.
+          if(applyRuleOverrides(cfg)) renderRules();
           renderSafetyVideo(url);
         })
         .withFailureHandler(function(){ renderSafetyVideo(SAFETY_DEFAULT); })
         .getConfig();
     })();
 
-    // Populate the "Whom to meet" dropdown, grouped: 🏢 Office / 👤 Owner (Management).
+    // Populate the "Whom to meet" dropdown. Which departments are selectable as
+    // hosts is Config-driven (HostDepartments, comma-separated). Each configured
+    // department becomes its own optgroup, in the configured order. If the config
+    // is blank, every active employee is shown in one group — so a new site works
+    // without any department setup.
     function loadHosts(){
       var sel=document.getElementById('vHost');
       if(typeof google==='undefined' || !google.script){ sel.innerHTML='<option value="">—</option>'; return; }
@@ -390,22 +543,55 @@
         .withSuccessHandler(function(res){
           var emps=(res&&res.data)||res||[];
           var active=emps.filter(function(e){ return String(e.Status||'ACTIVE').toUpperCase()==='ACTIVE'; });
-          function optsFor(deptMatch){
+          function opt(e){ return '<option value="'+e.EmpID+'">'+(e.Name||e.EmpID)+'</option>'; }
+          function byName(a,b){ return String(a.Name||'').localeCompare(String(b.Name||'')); }
+          function optsForDept(deptMatch){
             return active.filter(function(e){ return String(e.Department||'').toLowerCase()===deptMatch; })
-              .sort(function(a,b){return String(a.Name||'').localeCompare(String(b.Name||''));})
-              .map(function(e){ return '<option value="'+e.EmpID+'">'+(e.Name||e.EmpID)+'</option>'; }).join('');
+              .sort(byName).map(opt).join('');
           }
-          var office=optsFor('office'), owner=optsFor('management');
-          if(!office && !owner){ sel.innerHTML='<option value="">—</option>'; return; }
+          var depts=String(HOST_DEPTS||'').split(',').map(function(d){return d.trim();}).filter(Boolean);
           var html='<option value="">'+qrattT('vreg_select_person')+'</option>';
-          if(owner)  html+='<optgroup label="👤 '+qrattT('vreg_owner_group')+'">'+owner+'</optgroup>';
-          if(office) html+='<optgroup label="🏢 '+qrattT('vreg_office_group')+'">'+office+'</optgroup>';
-          sel.innerHTML=html;
+          if(!depts.length){
+            // No config → every active employee, flat.
+            var all=active.slice().sort(byName).map(opt).join('');
+            sel.innerHTML = all ? html+all : '<option value="">—</option>';
+            return;
+          }
+          var body='';
+          depts.forEach(function(d){
+            var opts=optsForDept(d.toLowerCase());
+            if(opts) body+='<optgroup label="'+d+'">'+opts+'</optgroup>';
+          });
+          sel.innerHTML = body ? html+body : '<option value="">—</option>';
         })
         .withFailureHandler(function(){ sel.innerHTML='<option value="">—</option>'; })
         .getEmployees();
     }
     loadHosts();
+
+    /* Type-to-filter over the host <select>. Hides non-matching options and
+       any optgroup left with nothing visible, so the department headings do
+       not linger over an empty section. Keeps the current pick if it still
+       matches, clears it otherwise so a hidden option cannot stay selected. */
+    function filterHosts(){
+      var q=(document.getElementById('vHostFilter').value||'').trim().toLowerCase();
+      var sel=document.getElementById('vHost');
+      var shown=0;
+      Array.prototype.forEach.call(sel.querySelectorAll('option'),function(o){
+        if(!o.value){ o.hidden=false; return; }              // keep the placeholder
+        var hit=!q || o.textContent.toLowerCase().indexOf(q)!==-1;
+        o.hidden=!hit;
+        if(hit) shown++;
+      });
+      Array.prototype.forEach.call(sel.querySelectorAll('optgroup'),function(g){
+        var any=Array.prototype.some.call(g.querySelectorAll('option'),function(o){ return !o.hidden; });
+        g.hidden=!any;
+      });
+      var cur=sel.selectedOptions&&sel.selectedOptions[0];
+      if(cur&&cur.hidden) sel.value='';
+      var empty=document.getElementById('vHostEmpty');
+      if(empty) empty.style.display=(q&&!shown)?'block':'none';
+    }
 
     function submitReg(){
       var v={
@@ -419,10 +605,16 @@
         IDNumber:    document.getElementById('vIDNumber').value.trim(),
         Vehicle:     document.getElementById('vVehicle').value.trim(),
         PhotoData:   vPhotoData,
-        SafetyAckAt: vSafetyAckAt
+        SafetyAckAt: vSafetyAckAt,
+        SafetyVersion: vSafetyVersion,
+        EmergencyName:  document.getElementById('vEmgName').value.trim(),
+        EmergencyPhone: document.getElementById('vEmgPhone').value.trim()
       };
       if(!v.Name || !v.Phone){ toast(qrattT('vreg_toast_required'),'error'); return; }
-      if(rulesRevealed < SAFETY_RULE_KEYS.length || !document.getElementById('vSafetyAck').checked){
+      if(!v.PhotoData){ toast(qrattT('vreg_toast_photo_required'),'error');
+        var pb=document.getElementById('photoBox'); if(pb){ pb.scrollIntoView({block:'center'}); }
+        return; }
+      if(sectionsRevealed < SAFETY_SECTIONS.length || !document.getElementById('vSafetyAck').checked){
         toast(qrattT('vreg_toast_rules_pending'),'error'); return;
       }
       var btn=document.getElementById('regBtn');
@@ -458,6 +650,10 @@
         .withSuccessHandler(function(res){
           b.textContent='Find my pass'; b.disabled=false;
           if(!res || !res.success){ toast((res&&res.error)||'Not found','error'); return; }
+          // A returning visitor used to go straight to their pass, skipping the
+          // induction forever. If their acknowledgement has aged out or the
+          // rules have been reworded since, they read it again before entering.
+          if(res.safetyValid === false){ startReinduction(res); return; }
           document.getElementById('returnCard').style.display='none';
           showDone(res.visitorId, true);
         })
@@ -465,7 +661,60 @@
         .lookupVisitorByPhone(phone);
     }
 
+    /* Re-induction: we already know who they are, so only the safety block is
+       shown. Acknowledging it updates the existing record rather than creating
+       a second visitor for the same person. */
+    var reinductVisitorId = '';
+    function startReinduction(res){
+      reinductVisitorId = res.visitorId || '';
+      document.getElementById('returnCard').style.display='none';
+      document.getElementById('formCard').style.display='block';
+      // Hide everything except the safety block — their details are on file.
+      // The identity fields are direct children of #formCard with no wrapper,
+      // so hide every child up to the safety box rather than inventing one.
+      var form=document.getElementById('formCard');
+      var box0=document.getElementById('safetyBox');
+      if(form && box0){
+        Array.prototype.slice.call(form.children).forEach(function(el){
+          if(el!==box0 && !el.contains(box0) && el.id!=='regBtn') el.style.display='none';
+        });
+      }
+      var box=document.getElementById('safetyBox');
+      if(box){
+        var note=document.createElement('div');
+        note.className='reinduct-note';
+        note.setAttribute('data-i18n','vreg_reinduction_note');
+        note.textContent=qrattT('vreg_reinduction_note');
+        box.parentNode.insertBefore(note, box);
+        box.scrollIntoView({block:'start'});
+      }
+      var btn=document.getElementById('regBtn');
+      btn.setAttribute('data-i18n','vreg_reinduct_btn');
+      btn.textContent=qrattT('vreg_reinduct_btn');
+      btn.setAttribute('onclick','submitReinduction()');
+    }
+
+    function submitReinduction(){
+      if(sectionsRevealed < SAFETY_SECTIONS.length || !document.getElementById('vSafetyAck').checked){
+        toast(qrattT('vreg_toast_rules_pending'),'error'); return;
+      }
+      var btn=document.getElementById('regBtn');
+      btn.removeAttribute('data-i18n');
+      btn.textContent=qrattT('vreg_registering'); btn.disabled=true;
+      google.script.run
+        .withSuccessHandler(function(r){
+          if(!r || !r.success){ btn.disabled=false; toast((r&&r.error)||'error','error'); return; }
+          showDone(reinductVisitorId, true);
+        })
+        .withFailureHandler(function(e){ btn.disabled=false; toast((e&&e.message)||'error','error'); })
+        .recordSafetyAck(reinductVisitorId, vSafetyAckAt, vSafetyVersion);
+    }
+
     // Confirmation: QR encodes the visitor ID (kiosk reads it as a badge).
+    // After a brief "registered" beat we take the visitor straight to their real
+    // pass page (live QR + check-in/out + rules) — no "open my pass" hop, and it
+    // is the actual pass, not a copy. If the top-frame navigation is blocked, the
+    // done card stays visible with its QR + link as a fallback.
     function showDone(visitorId, returning){
       document.getElementById('returnCard').style.display='none';
       document.getElementById('formCard').style.display='none';
@@ -479,11 +728,18 @@
       document.getElementById('doneVid').textContent=visitorId;
       document.getElementById('doneQR').src=
         'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data='+encodeURIComponent(visitorId);
-      document.getElementById('doneLink').href=
-        (/^https?:\/\//.test(PUBLIC_URL) ? PUBLIC_URL+'/?page=vpass&id=' : APP_URL+'?page=vpass&id=')
-        +encodeURIComponent(visitorId);
+      var passBase = /^https?:\/\//.test(PUBLIC_URL) ? PUBLIC_URL : APP_URL;
+      var passUrl = passBase+'?page=vpass&id='+encodeURIComponent(visitorId);
+      document.getElementById('doneLink').href=passUrl;
+      // The card auto-redirects to the real pass (below), which carries its own
+      // WhatsApp share — so no separate share button is wired on the card here.
       document.getElementById('doneCard').style.display='block';
       window.scrollTo(0,0);
+      // Open the real pass. Top frame because GAS runs the app in an iframe.
+      setTimeout(function(){
+        try { (window.top || window).location.href = passUrl; }
+        catch(e){ window.open(passUrl, '_top'); }
+      }, 1200);
     }
 
     function closeReg(){

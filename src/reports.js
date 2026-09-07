@@ -101,10 +101,13 @@ function getDashboardData() {
   // runtime quota (→ "refused to connect" for everyone until reset). CacheService
   // costs no quota; rapid polls now reuse one computation.
   var cache = CacheService.getScriptCache();
-  var hit = cache.get('dashData');
+  // Stamped so a deploy that changes the payload shape cannot keep serving
+  // the old one; _v1 tracks deliberate shape changes.
+  var key = buildScopedKey_('dashData_v1');
+  var hit = cache.get(key);
   if (hit) { try { return JSON.parse(hit); } catch(e) {} }
   var result = _computeDashboardData_();
-  try { cache.put('dashData', JSON.stringify(result), 15); } catch(e) {}
+  try { cache.put(key, JSON.stringify(result), 15); } catch(e) {}
   return result;
 }
 
@@ -114,7 +117,7 @@ function getDashboardData() {
  * up to 15s — which prompts staff to scan again and race the first write.
  */
 function invalidateDashboardCache() {
-  try { CacheService.getScriptCache().remove('dashData'); } catch(e) {}
+  try { CacheService.getScriptCache().remove(buildScopedKey_('dashData_v1')); } catch(e) {}
 }
 
 function _computeDashboardData_() {
@@ -174,13 +177,15 @@ function _computeDashboardData_() {
   // Build photo + gender lookups from Employees sheet
   var photoMap = {}, genderMap = {};
   allEmps.forEach(function(e) {
-    if (e.PhotoURL) photoMap[String(e.EmpID)] = e.PhotoURL;
+    if (e.PhotoURL) photoMap[String(e.EmpID)] = _normalizePhotoUrl_(e.PhotoURL);
     genderMap[String(e.EmpID)] = e.Gender || '';
   });
   // Visitor photos live in the Visitors sheet, keyed by VisitorID — join them
   // so visitor arrival cards show the captured photo, not just initials.
+  // Normalise to the embeddable thumbnail form so the kiosk's CSS-background
+  // cards render them (the raw uc?id= form is flaky as a background image).
   getSheetAsObjects(SHEETS.VISITORS).forEach(function(vv) {
-    if (vv.PhotoURL) photoMap[String(vv.VisitorID)] = vv.PhotoURL;
+    if (vv.PhotoURL) photoMap[String(vv.VisitorID)] = _normalizePhotoUrl_(vv.PhotoURL);
   });
 
   // Monthly stats — count present/absent/late days this month per employee
@@ -520,5 +525,22 @@ function saveConfig(configArray, token) {
   // Invalidate the per-execution Config memo so a value changed here is
   // seen by any getConfigValue() call later in this same execution.
   _CONFIG_MEMO = null;
-  return { success: true };
+
+  // Schedule times live in Config but are only READ when installTriggers()
+  // runs — so changing "digest at 09:00" to 08:00 used to do nothing at all
+  // until someone remembered to press "Install Daily Triggers". Silent
+  // no-op settings are worse than no settings, so reinstall automatically
+  // whenever a timing key actually changed.
+  var TIMING_KEYS = ['SummaryHr', 'SummaryMin', 'AutoCheckoutHr', 'HoursRebuildHr', 'BackupHr'];
+  var timingChanged = configArray.some(function(item) {
+    return TIMING_KEYS.indexOf(item.Key) !== -1;
+  });
+  var rescheduled = false;
+  if (timingChanged) {
+    // Best-effort: the settings ARE saved either way, so a trigger-quota or
+    // permission failure must not report the save itself as failed.
+    try { installTriggers(token); rescheduled = true; }
+    catch (e) { Logger.log('saveConfig: trigger reinstall failed: ' + e.message); }
+  }
+  return { success: true, rescheduled: rescheduled };
 }

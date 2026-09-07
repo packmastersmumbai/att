@@ -20,11 +20,35 @@ function _storeVisitorPhoto_(visitorId, dataUrl) {
     while (existing.hasNext()) existing.next().setTrashed(true);
     var file = folder.createFile(blob);
     file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-    return 'https://drive.google.com/uc?id=' + file.getId();
+    return _drivePhotoUrl_(file.getId());
   } catch (e) {
     Logger.log('visitor photo store failed: ' + e.message);
     return '';
   }
+}
+
+/**
+ * Canonical embeddable URL for a Drive image, given a file id. Uses the
+ * `thumbnail` endpoint, which serves the image bytes directly — reliable both
+ * in an <img> tag AND as a CSS background-image (the kiosk arrival cards use a
+ * background). The older `uc?id=` form 302-redirects to an interstitial that
+ * loads in <img> but is flaky as a background, which is why kiosk photos showed
+ * only initials. `sz=w400` is ample for the ~96–200px cards.
+ */
+function _drivePhotoUrl_(fileId) {
+  return 'https://drive.google.com/thumbnail?id=' + fileId + '&sz=w400';
+}
+
+/**
+ * Normalises any previously-stored Drive photo URL to the canonical embeddable
+ * form, so existing `uc?id=` rows render without a data migration. Non-Drive or
+ * empty URLs pass through unchanged.
+ */
+function _normalizePhotoUrl_(url) {
+  if (!url) return '';
+  var m = String(url).match(/[?&]id=([^&]+)/);
+  if (m && String(url).indexOf('drive.google.com') !== -1) return _drivePhotoUrl_(m[1]);
+  return url;
 }
 
 /** Writes a visitor's PhotoURL cell by VisitorID. Best-effort. */
@@ -115,9 +139,16 @@ function _registerVisitorLocked_(v) {
     IDNumber:      v.IDNumber   || '',
     Vehicle:       v.Vehicle    || '',
     PhotoURL:      v.PhotoURL   || '',
-    SafetyAckAt:   v.SafetyAckAt || ''   // ISO timestamp of the safety-video acknowledgement
+    SafetyAckAt:   v.SafetyAckAt || '',  // ISO timestamp of the safety acknowledgement
+    // WHICH rule set was agreed to. A timestamp alone cannot say what the
+    // visitor signed once the wording is edited.
+    SafetyVersion: v.SafetyVersion || '',
+    EmergencyName:  v.EmergencyName  || '',
+    EmergencyPhone: v.EmergencyPhone || ''
   };
-  _ensureVisitorColumn_(sheet, 'SafetyAckAt');   // older sheets predate this column
+  // Older sheets predate these columns; adding them is idempotent.
+  ['SafetyAckAt','SafetyVersion','EmergencyName','EmergencyPhone']
+    .forEach(function(c) { _ensureVisitorColumn_(sheet, c); });
   var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
   var row = headers.map(function(h) { return values[h] !== undefined ? values[h] : ''; });
   sheet.appendRow(row);
@@ -147,6 +178,61 @@ function lookupVisitorByPhone(phone) {
   if (!matches.length) return { success: false, error: 'No visitor found for this number. Please register.' };
   if (matches.length > 1) return { success: false, error: matches.length + ' visitors match — enter more digits.' };
   return getVisitorPass(matches[0]);
+}
+
+/**
+ * Re-record the safety acknowledgement for an EXISTING visitor.
+ *
+ * The re-induction path needs to update one row, not create a second visitor
+ * for the same person — a duplicate would fork their visit history and leave
+ * two passes in circulation.
+ *
+ * Deliberately writes only the three safety fields: this endpoint is reachable
+ * anonymously (vreg has no auth gate), so it must not be able to change a
+ * visitor's name, host, phone or blacklist flag.
+ */
+function recordSafetyAck(visitorId, ackAt, ackVersion) {
+  var id = String(visitorId || '').trim();
+  if (!id) return { success: false, error: 'Missing visitor id' };
+  if (!ackAt) return { success: false, error: 'Missing acknowledgement' };
+
+  var sheet = getSheet(SHEETS.VISITORS);
+  var row = findRowByValue(sheet, 'VisitorID', id);
+  if (row === -1) return { success: false, error: 'Visitor not found' };
+
+  ['SafetyAckAt','SafetyVersion'].forEach(function(c) { _ensureVisitorColumn_(sheet, c); });
+  setCell(sheet, row, 'SafetyAckAt', String(ackAt));
+  setCell(sheet, row, 'SafetyVersion', String(ackVersion || ''));
+  return { success: true, visitorId: id };
+}
+
+/**
+ * Is a stored safety acknowledgement still good?
+ *
+ * Two ways it expires:
+ *  - age. An induction is a point-in-time briefing, not a permanent licence.
+ *    SafetyInductionMonths in Config sets the window (default 12; 0 disables).
+ *  - version. If the rules have been reworded since, what the visitor agreed
+ *    to is not what the site now requires, so they re-read regardless of age.
+ */
+function _safetyAckValid_(ackAt, ackVersion) {
+  if (!ackAt) return false;
+
+  var current = '';
+  try { current = String(getConfigValue('SafetyRulesVersion') || '').trim(); } catch (e) {}
+  if (current && String(ackVersion || '').trim() !== current) return false;
+
+  var months = 12;
+  try {
+    var raw = getConfigValue('SafetyInductionMonths');
+    if (raw !== '' && raw != null && !isNaN(Number(raw))) months = Number(raw);
+  } catch (e) {}
+  if (months <= 0) return true;   // 0 = never expires, an explicit site choice
+
+  var then = new Date(ackAt);
+  if (isNaN(then.getTime())) return false;   // unparseable = treat as unsigned
+  var ageDays = (new Date().getTime() - then.getTime()) / 86400000;
+  return ageDays <= months * 30.44;
 }
 
 /** Strips a phone to bare digits (no length coercion). */
@@ -224,11 +310,19 @@ function checkoutVisitor(visitorId) {
   } catch (e) {
     return { success: false, error: 'Busy — please try again' };
   }
+  var result;
   try {
-    return _checkoutVisitorLocked_(visitorId);
+    result = _checkoutVisitorLocked_(visitorId);
   } finally {
     lock.releaseLock();
   }
+  // Surface any still-out returnable gatepass items so the client can warn the
+  // guard before finalising the check-out (warn-and-override, never a block).
+  if (result && result.success) {
+    try { result.returnableOutstanding = getVisitorReturnablesOutstanding(visitorId); }
+    catch (e) { result.returnableOutstanding = 0; }
+  }
+  return result;
 }
 
 function _checkoutVisitorLocked_(visitorId) {
@@ -324,15 +418,19 @@ function getVisitorDetail(visitorId) {
     hostName:    hostName || rec.HostEmpID || '',
     purpose:     rec.Purpose || '',
     vehicle:     rec.Vehicle || '',
-    photoUrl:    rec.PhotoURL || '',
-    // The ID TYPE (e.g. "Aadhaar") is shown, but the ID NUMBER is deliberately
-    // withheld from this endpoint. getVisitorDetail is reachable anonymously
-    // (the visitors page has no auth gate yet), so a leaked/replayed pass id
-    // must not expose a government ID number. Restore idNumber once the page is
-    // behind an admin token. See the deferred auth-gate task.
+    photoUrl:    _normalizePhotoUrl_(rec.PhotoURL || ''),
+    // The ID TYPE (e.g. "Aadhaar") is returned, but the ID NUMBER is deliberately
+    // withheld: getVisitorDetail is reachable anonymously (the visitors page has
+    // no auth gate), so a leaked/replayed pass id must not expose a government ID
+    // number.
     idType:      rec.IDType || '',
     visitorType: rec.VisitorType || '',
     safetyAckAt: rec.SafetyAckAt || '',
+    // Whether that acknowledgement still counts. Computed HERE, not in the
+    // page: the returning-visitor path skips the induction entirely, so if the
+    // client decided this a visitor could re-enter years later, against rules
+    // that have since changed, having read nothing.
+    safetyValid: _safetyAckValid_(rec.SafetyAckAt, rec.SafetyVersion),
     blacklisted: String(rec.BlacklistFlag || '').toUpperCase() === 'YES',
     status:      openRow === -1 ? 'OUT' : 'IN',
     visits:      visits,
