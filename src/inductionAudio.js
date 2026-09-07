@@ -146,7 +146,14 @@ function getInductionAudio(prefix) {
     if (!name) return;
     if (prefix && name.indexOf(prefix) !== 0) return;
     out[name] = {
-      url:  'https://drive.google.com/uc?id=' + r.FileID,
+      // No Drive URL. drive.google.com/uc redirects to
+      // drive.usercontent.google.com, and inside the sandboxed iframe a GAS
+      // page runs in, that hop can return an interstitial or be blocked
+      // outright — the browser then reports a media error and the visitor is
+      // told the audio is unavailable while the file is perfectly fine. The
+      // page asks this app for the bytes instead, so nothing leaves the origin
+      // the visitor already trusts.
+      id:   String(r.FileID),
       cues: _parseCues_(r.Cues)
     };
   });
@@ -175,4 +182,40 @@ function getInductionAudioStatus() {
     bytes += Number(r.Bytes) || 0;
   });
   return { success: true, byPrefix: byPrefix, totalKB: Math.round(bytes / 1024) };
+}
+
+/**
+ * One clip's bytes, base64, for the page to turn into a blob: URL.
+ *
+ * Served from the app rather than linked from Drive for the reason above. One
+ * clip per call, on the tap that plays it: shipping all ten up front is ~1.1MB
+ * of base64 on a phone at a gate, most of it in a language the visitor did not
+ * pick.
+ *
+ * Read-only and keyed by a Drive file id that is already public — no token,
+ * because the visitor page has no auth and the induction must not need one.
+ * The id is checked against the manifest first so this cannot be used to read
+ * arbitrary files from the account's Drive.
+ */
+function getInductionClipData(fileId) {
+  var wanted = String(fileId || '');
+  if (!wanted) return { success: false, error: 'Missing clip id' };
+
+  _ensureAudioSheets_();
+  var known = null;
+  getSheetAsObjects('InductionAudio').forEach(function (r) {
+    if (String(r.FileID) === wanted) known = r;
+  });
+  if (!known) return { success: false, error: 'Unknown clip' };
+
+  try {
+    var blob = DriveApp.getFileById(wanted).getBlob();
+    return {
+      success: true,
+      mime:    blob.getContentType() || 'audio/mp4',
+      base64:  Utilities.base64Encode(blob.getBytes())
+    };
+  } catch (e) {
+    return { success: false, error: 'Clip unreadable: ' + e.message };
+  }
 }

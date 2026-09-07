@@ -296,6 +296,7 @@ function _dispatchPost_(params) {
                                             params.docCode, params.sourceId,
                                             params.approvedBy, params.notes, params.token));
   if (action === 'getInductionAudio')     return jsonResponse(getInductionAudio(params.prefix));
+  if (action === 'getInductionClipData') return jsonResponse(getInductionClipData(params.fileId));
   if (action === 'getInductionAudioStatus') return jsonResponse(getInductionAudioStatus());
   if (action === 'putInductionClip')      return jsonResponse(putInductionClip(
                                             params.name, params.audio, params.lang,

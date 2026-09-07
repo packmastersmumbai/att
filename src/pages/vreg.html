@@ -453,13 +453,50 @@
       if(!sec) return '';
       var lang=(typeof qrattLang==='function' && qrattLang()==='hi') ? 'hi' : 'en';
       var k='VISITOR/'+sec.key+'/'+lang;
-      return (SAFETY_CLIPS[k] && SAFETY_CLIPS[k].url) || '';
+      return (SAFETY_CLIPS[k] && SAFETY_CLIPS[k].id) || '';
+    }
+
+    /* Turn a clip id into something <audio> will actually play.
+
+       The manifest carries Drive file ids, not URLs: drive.google.com/uc
+       redirects to drive.usercontent.google.com, and from inside the
+       sandboxed iframe this page runs in that hop is unreliable — the browser
+       reports a media error and the visitor is told the audio is unavailable
+       while the file itself is fine. So the bytes come from this app and
+       become a blob: URL, same-origin and immune to that.
+
+       Cached per clip: a replay, or the same section in both languages,
+       must not pay for the download twice. */
+    var CLIP_BLOBS = {};
+
+    function withClipUrl(id, ok, fail){
+      if(CLIP_BLOBS[id]) return ok(CLIP_BLOBS[id]);
+      if(typeof google==='undefined' || !google.script) return fail();
+      google.script.run
+        .withSuccessHandler(function(r){
+          if(!r || !r.success || !r.base64) return fail();
+          try{
+            var bin = atob(r.base64);
+            var buf = new Uint8Array(bin.length);
+            for(var i=0;i<bin.length;i++) buf[i]=bin.charCodeAt(i);
+            var url = URL.createObjectURL(new Blob([buf], {type: r.mime || 'audio/mp4'}));
+            CLIP_BLOBS[id]=url;
+            ok(url);
+          }catch(e){ fail(); }
+        })
+        .withFailureHandler(function(){ fail(); })
+        .getInductionClipData(id);
     }
 
     /* The audio bar's three states. It appears only once a section is open,
        because before that the whole block is blurred and unreadable anyway. */
     var SAFETY_BAR = null;
 
+    function audLoading(bar){
+      if(!bar) return;
+      bar.style.display='flex';
+      bar.innerHTML = '<span>🔊</span><span>'+qrattT('vreg_audio_loading')+'</span>';
+    }
     function audPlaying(bar){
       if(!bar) return;
       bar.style.display='flex';
@@ -501,17 +538,20 @@
     function audReplay(btn){
       var rule = btn.closest('.rule');
       var si = Number(rule.getAttribute('data-i'));
-      var url = safetyClipFor(si);
-      if(!url) return;
+      var id = safetyClipFor(si);
+      if(!id) return;
       if(SAFETY_AU){ try{ SAFETY_AU.pause(); }catch(e){} }
       var bar = rule.querySelector('.aud');
       if(SAFETY_BAR && SAFETY_BAR !== bar) audIdle(SAFETY_BAR);
       SAFETY_BAR = bar;
-      SAFETY_AU = new Audio(url);
-      SAFETY_AU.addEventListener('ended', function(){ audDone(bar); });
-      SAFETY_AU.addEventListener('error', function(){ audFail(bar); });
-      audPlaying(bar);
-      SAFETY_AU.play().catch(function(){ audFail(bar); });
+      audLoading(bar);
+      withClipUrl(id, function(url){
+        SAFETY_AU = new Audio(url);
+        SAFETY_AU.addEventListener('ended', function(){ audDone(bar); });
+        SAFETY_AU.addEventListener('error', function(){ audFail(bar); });
+        audPlaying(bar);
+        SAFETY_AU.play().catch(function(){ audFail(bar); });
+      }, function(){ audFail(bar); });
     }
 
     function revealRule(el){
@@ -529,24 +569,28 @@
         updateRulesCount();
       }
 
-      var url = safetyClipFor(si);
+      var id  = safetyClipFor(si);
       var bar = el.querySelector('.aud');
-      if(url){
+      // Whatever happens to the audio, the dwell still runs: the section must
+      // reveal even if the voice never arrives.
+      var fallback = function(){ audFail(bar); setTimeout(done, n*DWELL_MS_PER_RULE); };
+
+      if(id){
         if(SAFETY_AU){ SAFETY_AU.pause(); }
         // Only one voice at a time: opening a second section while the first
         // is still speaking would leave two clips talking over each other.
         if(SAFETY_BAR && SAFETY_BAR !== bar) audIdle(SAFETY_BAR);
         SAFETY_BAR = bar;
+        audLoading(bar);
 
-        SAFETY_AU = new Audio(url);
-        SAFETY_AU.addEventListener('ended', function(){ audDone(bar); done(); });
-        // A refused autoplay, a dead link or a codec the phone will not take
-        // must not strand the visitor on an un-revealed section: fall back to
-        // the timer in every failure path. The bar says the text is being
-        // timed instead, so silence is never mistaken for a broken page.
-        SAFETY_AU.addEventListener('error', function(){ audFail(bar); setTimeout(done, n*DWELL_MS_PER_RULE); });
-        audPlaying(bar);
-        SAFETY_AU.play().catch(function(){ audFail(bar); setTimeout(done, n*DWELL_MS_PER_RULE); });
+        withClipUrl(id, function(url){
+          if(el.classList.contains('revealed')) return;   // stopped meanwhile
+          SAFETY_AU = new Audio(url);
+          SAFETY_AU.addEventListener('ended', function(){ audDone(bar); done(); });
+          SAFETY_AU.addEventListener('error', fallback);
+          audPlaying(bar);
+          SAFETY_AU.play().catch(fallback);
+        }, fallback);
       } else {
         if(bar) bar.style.display='none';   // no clip for this language/section
         setTimeout(done, n * DWELL_MS_PER_RULE);
