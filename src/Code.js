@@ -333,6 +333,7 @@ function _dispatchPost_(params) {
   if (action === 'submitFeedback')   return jsonResponse(submitFeedback(params.text, params.meta));
   if (action === 'processQRScan')    return jsonResponse(processQRScan(params.qrCode, params.gate));
   if (action === 'registerVisitor')  return jsonResponse(registerVisitor(params.visitor));
+  if (action === 'checkInVisitor')   return jsonResponse(checkInVisitor(params.visitorId));
   if (action === 'checkoutVisitor')  return jsonResponse(checkoutVisitor(params.visitorId));
   if (action === 'getVisitorDetail') return jsonResponse(getVisitorDetail(params.visitorId));
   if (action === 'getGatepass')      return jsonResponse(getGatepass(params.visitorId));

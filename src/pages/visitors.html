@@ -291,6 +291,23 @@
       transition: background .15s;
     }
     .btn-checkout-teal:hover { background: #0F766E; }
+    /* Admitting and releasing a visitor are opposite acts, so they must not
+       look alike: the same teal on both is a misclick waiting to happen. */
+    .btn-checkin-teal {
+      background: #15803D;
+      color: #fff;
+      border: none;
+      border-radius: 3px;
+      padding: 5px 12px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      letter-spacing: .5px;
+      font-family: inherit;
+      transition: background .15s;
+    }
+    .btn-checkin-teal:hover { background: #166534; }
+    .btn-checkin-teal:disabled { background: #86EFAC; cursor: default; }
     .btn-items {
       background: #fff; color: var(--color-primary); border: 1px solid var(--color-primary);
       border-radius: 3px; padding: 5px 12px; font-size: 11px; font-weight: 700;
@@ -1448,11 +1465,18 @@
         // part of this modal; the visit log is reference.
         // Checking the items and checking the visitor out are one job, so the
         // action lives with the items rather than only on the Active-tab row.
+        // The mirror action. A visitor who self-registers holds a valid pass
+        // and a completed induction, but presence is recorded by the gate
+        // alone — so on a day nobody scans at the gate they never reach the
+        // Active list. Staff already inside this page can admit them; the
+        // pass itself still cannot, because it is a bearer link.
         var checkoutBar = d.status === 'IN'
           ? '<div style="margin-top:14px;display:flex;justify-content:flex-end">' +
               '<button class="btn-checkout-teal" onclick="checkoutFromDetail(\'' + esc(vid) + '\')">' +
                 qrattT('vd_checkout_btn') + '</button></div>'
-          : '';
+          : '<div style="margin-top:14px;display:flex;justify-content:flex-end">' +
+              '<button class="btn-checkin-teal" onclick="checkinFromDetail(\'' + esc(vid) + '\')">' +
+                qrattT('vd_checkin_btn') + '</button></div>';
 
         body.innerHTML = info +
           '<div id="gpCard" style="margin-top:16px"></div>' +
@@ -1465,6 +1489,24 @@
     /* Check out from inside the detail modal. Reuses checkout(), so the
        unreturned-items warning fires here exactly as it does on the Active
        tab, then closes the modal and refreshes the list behind it. */
+    /* Admit a registered visitor from the detail modal. Check-IN only: if a
+       gate scan already admitted them the server reports that rather than
+       opening a second row, so a double press tells the truth instead of
+       erroring. Checking OUT keeps its own path, which settles items too. */
+    function checkinFromDetail(vid) {
+      var btn = document.querySelector('.btn-checkin-teal');
+      if (btn) { btn.disabled = true; btn.textContent = '…'; }
+      post({ action: 'checkInVisitor', visitorId: vid }, function(r) {
+        if (!r || !r.success) {
+          alert((r && r.error) || 'Check-in failed');
+          if (btn) { btn.disabled = false; btn.textContent = qrattT('vd_checkin_btn'); }
+          return;
+        }
+        closeVisitorDetail();
+        loadActive();
+      });
+    }
+
     function checkoutFromDetail(vid) {
       // Close only after checkout() resolves — closing synchronously used to
       // pull the modal out from under the confirm prompt.

@@ -449,6 +449,51 @@ function getVisitorDetail(visitorId) {
  */
 var SELF_CHECK_INFLIGHT_SEC = 5; // collapse only a rapid accidental re-tap
 
+/**
+ * Record a visitor's arrival from the Visitors page.
+ *
+ * Presence is recorded by the gate alone (d436309 removed the pass's own
+ * check-in button, because a pass URL is a bearer link and anyone it was
+ * forwarded to could toggle presence from anywhere). That left a gap: a
+ * visitor who self-registers at reception has a valid pass, a completed
+ * safety induction and no way onto the Active list unless someone scans
+ * their QR — so on a day nobody is scanning, they are simply invisible.
+ *
+ * This closes the gap without reopening the hole. The caller is a staff
+ * member already inside the Visitors page, not the holder of a forwarded
+ * link, so the person letting the visitor in still owns the decision.
+ * It check-INs only: checking out stays with checkoutVisitor(), which also
+ * settles gatepass items. Gate is recorded as 'Reception' rather than
+ * 'Self Service' so the log says who actually admitted them.
+ */
+function checkInVisitor(visitorId) {
+  if (!visitorId) return { success: false, error: 'Missing visitor id' };
+
+  var lock = LockService.getScriptLock();
+  try { lock.waitLock(20000); }
+  catch (e) { return { success: false, error: 'Busy — please try again' }; }
+
+  try {
+    var person = _lookupPerson(visitorId);
+    if (!person) return { success: false, error: 'Visitor not found' };
+
+    // Already inside is not an error — two people can press this at once, and
+    // the honest answer is that the visitor is on site either way. Opening a
+    // second IN row would show them checked in twice.
+    var logsSheet = getSheet(SHEETS.LOGS);
+    if (_findOpenVisitorLogRow(logsSheet, visitorId) !== -1) {
+      return { success: true, action: 'NOOP', status: 'IN',
+               name: person.name || '', note: 'already checked in' };
+    }
+
+    var result = _checkIn(logsSheet, person, 'Reception');
+    result.status = 'IN';
+    return result;
+  } finally {
+    lock.releaseLock();
+  }
+}
+
 function selfCheckVisitor(visitorId) {
   if (!visitorId) return { success: false, error: 'Missing visitor id' };
 
