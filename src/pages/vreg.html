@@ -678,7 +678,11 @@
             return active.filter(function(e){ return String(e.Department||'').toLowerCase()===deptMatch; })
               .sort(byName).map(opt).join('');
           }
-          var depts=String(HOST_DEPTS||'').split(',').map(function(d){return d.trim();}).filter(Boolean);
+          // Split on ';' when present: a real department name contains a comma
+          // ("Office, HR & Purchase"), so comma-splitting cuts it in half and the
+          // optgroup then matches nothing. Comma still works for names without one.
+          var raw=String(HOST_DEPTS||'');
+          var depts=raw.split(raw.indexOf(';')!==-1?';':',').map(function(d){return d.trim();}).filter(Boolean);
           var html='<option value="">'+qrattT('vreg_select_person')+'</option>';
           if(!depts.length){
             // No config → every active employee, flat.

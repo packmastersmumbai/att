@@ -233,7 +233,7 @@ function _bootstrapIfNeeded() {
       ['PublicUrl',          ''],  // blank → publicBaseUrl() falls back to the raw GAS app URL (links open the app directly)
       ['AutoWhatsAppPass',   'off'],  // 'on' → vreg auto-opens the wa.me pass draft after registration
       ['QMSMaterialSheetID', ''],   // QMS spreadsheet ID for the gatepass material picklist; blank → free-text only
-      ['HostDepartments',    'Office,Management'],  // depts shown in vreg "Whom to meet"; blank = all active employees
+      ['HostDepartments',    'Office, HR & Purchase;Management;Quality Assurance & Admin'],  // depts shown in vreg "Whom to meet"; ';'-separated (names contain commas); blank = all active
       // Training & competency. PassMark is the score at or above which an
       // attendee counts as assessed. MinRequired sets the minimum level per
       // job role, one role per line ("Packaging Operator: SKL-01=L3, SKL-16=NA");
