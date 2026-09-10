@@ -302,6 +302,15 @@ function _dispatchPost_(params) {
                                             params.name, params.audio, params.lang,
                                             params.cues, params.voice, params.token,
                                             params.format));
+  // New-joiner induction (PM/FRM/HR-08). The rules TEST lives in modules.js;
+  // this is the nine-session programme and the clearance that follows it.
+  if (action === 'getInductionRegister') return jsonResponse(getInductionRegister());
+  if (action === 'getInduction')        return jsonResponse(getInduction(params.empId));
+  if (action === 'startInduction')      return jsonResponse(startInduction(params.empId, params.token));
+  if (action === 'signInductionSession') return jsonResponse(signInductionSession(params.entry, params.token));
+  if (action === 'saveInductionDetails') return jsonResponse(saveInductionDetails(params.entry, params.token));
+  if (action === 'deleteInduction')     return jsonResponse(deleteInduction(params.empId, params.token));
+  if (action === 'clearInductionJoiner') return jsonResponse(clearInductionJoiner(params.entry, params.token));
   if (action === 'getModuleTest')         return jsonResponse(getModuleTest(params.topicId, params.lang));
   if (action === 'recordAssessment')      return jsonResponse(recordAssessment(params.entry));
   if (action === 'getSessionAssessments') return jsonResponse(getSessionAssessments(params.planId));
