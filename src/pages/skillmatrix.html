@@ -151,6 +151,32 @@
       color:var(--color-text-muted);border-top:1px solid var(--color-border)}
     .legend span{display:inline-flex;align-items:center;gap:5px}
 
+    /* ── Press feedback ───────────────────────────────────────────────────
+       Every clickable thing here opens a panel or changes the view, and none
+       of them acknowledged the press. 100ms because this is a desktop page
+       used dozens of times a day: long enough to register, short enough that
+       a supervisor clicking through twelve months never waits for it.
+
+       Named properties, never `all` — `all` would transition the focus
+       outline, which must appear instantly for keyboard users. */
+    .lv,.btn,.seg button{transition:transform 100ms cubic-bezier(0.23, 1, 0.32, 1)}
+    .lv:active,.btn:active:not(:disabled),.seg button:active{transform:scale(0.97)}
+
+    /* Reduced motion: the panel still needs to arrive from somewhere or it
+       appears from nothing, so it fades instead of sliding. Press feedback
+       goes entirely — it is pure motion carrying no meaning. */
+    @media (prefers-reduced-motion: reduce){
+      .lv:active,.btn:active:not(:disabled),.seg button:active{transform:none}
+      .panel{transition:opacity 140ms ease;transform:none;opacity:0}
+      .panel.on{opacity:1}
+    }
+
+    /* 31 of these, and the smallest targets on the page. A deeper scale
+       because a 0.97 on a 12px glyph is invisible. */
+    .ind{transition:transform 100ms cubic-bezier(0.23, 1, 0.32, 1)}
+    .ind:active{transform:scale(0.9)}
+
+
     /* The IMS-01 obligations strip. Four cards rather than one list because
        they are four different procedure steps with four different owners, and
        a merged list hides which one is unsatisfied. */
@@ -174,12 +200,24 @@
       font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--color-text-muted)}
 
     /* ── Cell panel ── */
-    .backdrop{display:none;position:fixed;inset:0;background:rgba(2,6,16,.45);z-index:40}
-    .backdrop.on{display:block}
+    /* The panel slides over 180ms; this used to snap from display:none to
+       block in the same instant. The dim is what says the page behind is
+       inert — cutting it makes the panel look pasted on rather than drawn
+       out. visibility carries the hit-testing so a hidden backdrop cannot
+       swallow clicks. */
+    .backdrop{position:fixed;inset:0;background:rgba(2,6,16,.45);z-index:40;
+      opacity:0;visibility:hidden;
+      transition:opacity 180ms ease, visibility 0s linear 180ms}
+    .backdrop.on{opacity:1;visibility:visible;
+      transition:opacity 180ms ease, visibility 0s}
     .panel{position:fixed;top:0;right:0;bottom:0;width:420px;max-width:92vw;z-index:41;
       background:var(--color-surface);border-left:1px solid var(--color-border);
-      transform:translateX(100%);transition:transform .18s ease;display:flex;flex-direction:column}
-    .panel.on{transform:none}
+      transform:translateX(100%);display:flex;flex-direction:column;
+      /* Exit is faster than entry: opening is the system responding to a
+         request, closing is a decision already made. The curve is Ionic's
+         drawer easing — plain `ease` is too weak to read as deliberate. */
+      transition:transform 160ms cubic-bezier(0.32, 0.72, 0, 1)}
+    .panel.on{transform:none;transition:transform 240ms cubic-bezier(0.32, 0.72, 0, 1)}
     .panel-hd{padding:14px 16px;border-bottom:1px solid var(--color-border);
       display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
     .panel-b{padding:14px 16px;overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:14px}
@@ -818,7 +856,13 @@
     // ── The cell panel ────────────────────────────────────────────────────
 
     function openCell(empId, skillId) {
-      var person = DATA.people.filter(function (p) { return p.empId === empId; })[0];
+      /* String compare, not strict: the id arrives from the HTML attribute as
+         a string, while DATA carries whatever Sheets stored — "004" comes back
+         as the number 4. A strict compare silently fails and the cell does
+         nothing at all, which reads as a dead button rather than an error. */
+      var person = DATA.people.filter(function (p) {
+        return String(p.empId) === String(empId);
+      })[0];
       if (!person) return;
       var cell = person.cells.filter(function (c) { return c.skillId === skillId; })[0] || {};
       OPEN = { empId: empId, skillId: skillId, name: person.name, skillName: skillName(skillId) };
