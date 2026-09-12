@@ -343,9 +343,9 @@ function _dispatchPost_(params) {
   if (action === 'setupTraining')          return jsonResponse(setupTraining(params.token, params.years));
   if (action === 'getTrainingCalendar') return jsonResponse(getTrainingCalendar(params.year));
   if (action === 'getSessionAttendance')  return jsonResponse(getSessionAttendance(params.planId));
-  if (action === 'saveSessionAttendance') return jsonResponse(saveSessionAttendance(params.planId, params.rows));
+  if (action === 'saveSessionAttendance') return jsonResponse(saveSessionAttendance(params.planId, params.rows, params.token));
   if (action === 'addSessionPhoto')       return jsonResponse(addSessionPhoto(params.planId, params.dataUrl));
-  if (action === 'saveTrainingSession') return jsonResponse(saveTrainingSession(params.session));
+  if (action === 'saveTrainingSession') return jsonResponse(saveTrainingSession(params.session, params.token));
   if (action === 'addTrainingSession')  return jsonResponse(addTrainingSession(params.session));
   if (action === 'seedTrainingYear')    return jsonResponse(seedTrainingYear(params.year, params.token));
   if (action === 'submitFeedback')   return jsonResponse(submitFeedback(params.text, params.meta));

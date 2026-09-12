@@ -380,11 +380,29 @@
 
     function msg(t){ document.getElementById('pMsg').textContent = t || ''; }
 
+    /* The matrix takes several seconds to build — 31 people against 14 skills,
+       plus each person's induction status. An empty table renders perfectly, so
+       without this the page sits there looking broken for the whole wait. Say
+       that it is working. */
+    function loading() {
+      document.getElementById('grid').innerHTML =
+        '<tbody><tr><td class="empty">Building the skill matrix…</td></tr></tbody>';
+    }
+
     function load(group) {
       GROUP = group === undefined ? GROUP : group;
+      loading();
       google.script.run
         .withSuccessHandler(function (res) {
-          if (!res || !res.success) return;
+          /* A refusal is not a blank page. Without this the skeleton above
+             would stay up for ever and the reason would never be shown. */
+          if (!res || !res.success) {
+            document.getElementById('grid').innerHTML =
+              '<tbody><tr><td class="empty">Could not load the matrix: ' +
+              esc((res && (res.error || res.message)) || 'the server returned no data') +
+              '</td></tr></tbody>';
+            return;
+          }
           DATA = res;
           GROUP = res.group || '';
           document.getElementById('hdGroup').textContent = GROUP ? '· ' + GROUP : '';
@@ -394,7 +412,8 @@
         })
         .withFailureHandler(function (e) {
           document.getElementById('grid').innerHTML =
-            '<tr><td class="empty">Could not load the matrix: ' + esc(e && e.message) + '</td></tr>';
+            '<tbody><tr><td class="empty">Could not load the matrix: ' +
+            esc(e && e.message) + '</td></tr></tbody>';
         })
         .getSkillMatrix(GROUP);
     }

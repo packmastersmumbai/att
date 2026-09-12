@@ -309,6 +309,13 @@
             <button type="button" data-type="TRAIN" aria-pressed="false">Training</button>
             <button type="button" data-type="DRILL" aria-pressed="false">Mock drill</button>
           </div>
+          <!-- Orthogonal to the type filter above: a session with no roster
+               credits nobody on the skill matrix, and finding those 55 by
+               eye across two years of calendar is the reason the backlog
+               has stayed a backlog. -->
+          <button type="button" class="btn" id="gapBtn" aria-pressed="false"
+                  onclick="toggleGaps()" title="Show only sessions that were held with nobody recorded present">
+            Needs roster</button>
           <button class="btn" onclick="window.print()">Print</button>
         </div>
       </div>
@@ -389,7 +396,14 @@
       <div class="fld"><label>Session rating</label>
         <div class="rating" id="pRating" role="group" aria-label="Session rating out of 5"></div></div>
 
-      <button class="btn btn-pri" id="pSave" onclick="saveSession()" style="min-height:42px">Save session</button>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-pri" id="pSave" onclick="saveSession()" style="min-height:42px;flex:1 1 auto">Save session</button>
+        <!-- Working 55 sessions one panel-open at a time means re-finding your
+             place in the grid after every save. Hidden unless there is a next
+             one, so it never promises something it cannot do. -->
+        <button class="btn" id="pSaveNext" onclick="saveSession(true)"
+                style="min-height:42px;display:none">Save &amp; next</button>
+      </div>
       <div id="pMsg" style="font-size:12px;color:var(--color-text-muted)"></div>
     </div>
   </aside>
@@ -398,6 +412,9 @@
     var MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
     var DATA = { topics: [], plan: [], years: [], year: '' };
     var VIEW = 'ALL';
+    /* Held once the supervisor proves the PIN, for as long as the page is
+       open. Never persisted — a reload asks again. */
+    var ADMIN_TOKEN = '';
 
     /* What each kind of session is, in one place. The icon rides in the cell
        AND on the topic name, so a drill is identifiable without reading the
@@ -424,6 +441,34 @@
        compare, selecting ALL matched nothing and every figure read zero over
        a grid that was full. */
     function inView(type) { return VIEW === 'ALL' ? true : (type || 'TRAIN') === VIEW; }
+
+    /* A session that was held but recorded nobody. This is the one state that
+       makes the calendar read complete while the skill matrix reads zero
+       coverage, so it gets its own filter rather than living only in a
+       tooltip. Kept as one predicate because the grid, the KPI strip and the
+       panel's "next" button must all agree on what counts as outstanding. */
+    var GAPS_ONLY = false;
+    function needsRoster(p) { return !!p.actualDate && !p.attendees; }
+
+    function toggleGaps() {
+      GAPS_ONLY = !GAPS_ONLY;
+      document.getElementById('gapBtn').setAttribute('aria-pressed', String(GAPS_ONLY));
+      render();
+    }
+
+    /* The sessions still outstanding, oldest first — the order someone works
+       a backlog of paper attendance sheets. Ignores the type filter on
+       purpose: "what is left to enter" is a question about the whole
+       programme, not about whichever tab happens to be selected.
+
+       Scoped to the loaded year, because DATA.plan is. The counts therefore
+       say "in 2025", not "in total" — claiming otherwise would be wrong the
+       moment someone switches year. */
+    function rosterQueue() {
+      return DATA.plan.filter(needsRoster).sort(function (a, b) {
+        return String(a.actualDate).localeCompare(String(b.actualDate));
+      });
+    }
 
     function ddmmyy(iso) {
       if (!iso || iso.length < 10) return '';
@@ -471,11 +516,15 @@
       var byTopic = {};
       DATA.plan.forEach(function (p) {
         if (!inView(p.type)) return;
+        if (GAPS_ONLY && !needsRoster(p)) return;
         (byTopic[p.topicId] = byTopic[p.topicId] || []).push(p);
       });
 
       var topics = DATA.topics.filter(function (t) {
         if (!inView(t.Type)) return false;
+        // With the gap filter on, a topic with nothing outstanding is noise —
+        // drop it whichever type view is selected.
+        if (GAPS_ONLY) return !!byTopic[t.TopicID];
         return VIEW !== 'ALL' || !!byTopic[t.TopicID];
       });
 
@@ -484,6 +533,19 @@
          : VIEW === 'ALL' ? 'Topic and drill' : 'Training topic') + '</th>' +
         MONTHS.map(function (m) { return '<th class="mth">' + m + '</th>'; }).join('') +
         '</tr></thead>';
+
+      // Nothing outstanding is an achievement, not an empty page — and it
+      // must not offer "Set up training", which would re-seed the year.
+      if (!topics.length && GAPS_ONLY) {
+        document.getElementById('grid').innerHTML = head +
+          '<tbody><tr><td class="empty" colspan="13">' +
+            '<div style="font-weight:700;color:var(--color-text);margin-bottom:4px">' +
+              'Every held session has a roster</div>' +
+            '<div>Nothing is waiting to be entered for ' + esc(DATA.year) + '.</div>' +
+          '</td></tr></tbody>';
+        renderKpis(DATA.plan.filter(function (p) { return inView(p.type); }));
+        return;
+      }
 
       if (!topics.length) {
         // An empty state that sends the user somewhere else is a dead end.
@@ -628,8 +690,19 @@
       OPEN = p;
 
       document.getElementById('pTitle').textContent = t.Title || p.topicId;
+
+      /* Where this session sits in the outstanding queue. Without the count a
+         backlog of 55 gives no sense of progress, which is most of why it does
+         not get worked. */
+      var q = rosterQueue();
+      var qAt = -1;
+      for (var qi = 0; qi < q.length; qi++) { if (q[qi].planId === p.planId) { qAt = qi; break; } }
       document.getElementById('pMeta').textContent =
-        'Planned ' + (p.plannedDate || '—') + ' · ' + (t.DurationHrs || '?') + ' hrs';
+        'Planned ' + (p.plannedDate || '—') + ' · ' + (t.DurationHrs || '?') + ' hrs' +
+        (qAt !== -1 ? ' · no roster yet — ' + (qAt + 1) + ' of ' + q.length +
+                      ' outstanding in ' + DATA.year : '');
+      document.getElementById('pSaveNext').style.display =
+        (qAt !== -1 && q[qAt + 1]) ? '' : 'none';
       document.getElementById('pAgenda').innerHTML =
         '<b>Agenda — from the topic library</b><ul>' +
         String(t.Agenda || '').split('|').filter(Boolean)
@@ -872,38 +945,81 @@
       reader.readAsDataURL(f);
     }
 
-    function saveSession() {
+    function saveSession(goNext) {
       if (!OPEN) return;
       var btn = document.getElementById('pSave');
-      btn.disabled = true; msg('Saving…');
+      var nxt = document.getElementById('pSaveNext');
+      // The queue is read BEFORE the save, while this session is still in it:
+      // afterwards it has a roster and drops out, so "the one after this" can
+      // no longer be worked out from the refreshed list.
+      var after = null;
+      if (goNext) {
+        var q = rosterQueue();
+        var at = -1;
+        for (var i = 0; i < q.length; i++) { if (q[i].planId === OPEN.planId) { at = i; break; } }
+        after = at !== -1 ? (q[at + 1] || null) : (q[0] || null);
+      }
+      btn.disabled = true; nxt.disabled = true;
+
+      /* Attendance is competence evidence, so the server now requires an admin
+         token. Held for the session rather than asked per save: entering 27
+         back-dated rosters would otherwise mean 27 PIN prompts, and a prompt
+         that fires that often stops being read. */
+      if (!ADMIN_TOKEN) {
+        var pin = window.prompt('Admin PIN to record attendance');
+        if (!pin) { btn.disabled = false; nxt.disabled = false; msg(''); return; }
+        msg('Checking…');
+        google.script.run
+          .withSuccessHandler(function (v) {
+            if (!v || !v.success || !v.token) {
+              btn.disabled = false; nxt.disabled = false;
+              msg('That PIN was not accepted.'); return;
+            }
+            ADMIN_TOKEN = v.token;
+            btn.disabled = false; nxt.disabled = false;
+            saveSession(goNext);           // now that we hold a token
+          })
+          .withFailureHandler(function (e) {
+            btn.disabled = false; nxt.disabled = false;
+            msg('Error: ' + (e && e.message));
+          })
+          .verifyPIN(pin);
+        return;
+      }
+
+      msg('Saving…');
 
       // Two writes: the session row, then its attendance. Attendance goes
       // second so a failure there cannot leave a session marked as held with
       // nobody in it, which is the more misleading of the two half-states.
       google.script.run
         .withSuccessHandler(function (r) {
-          if (!r || !r.success) { btn.disabled = false; msg((r && r.error) || 'Could not save'); return; }
+          if (!r || !r.success) { btn.disabled = false; nxt.disabled = false; msg((r && r.error) || 'Could not save'); return; }
           google.script.run
             .withSuccessHandler(function (a) {
-              btn.disabled = false;
+              btn.disabled = false; nxt.disabled = false;
               if (!a || !a.success) { msg((a && a.error) || 'Session saved, attendance did not'); return; }
               msg(a.present + ' marked present.');
-              closePanel();
+              /* Refresh the calendar underneath either way — the cell must stop
+                 reading "nobody recorded present" — then hop straight into the
+                 next outstanding session if that is what was asked for. */
               load(DATA.year);
+              if (after) { openPanel(after.planId); return; }
+              closePanel();
             })
-            .withFailureHandler(function (e) { btn.disabled = false; msg('Attendance error: ' + (e && e.message)); })
+            .withFailureHandler(function (e) { btn.disabled = false; nxt.disabled = false; msg('Attendance error: ' + (e && e.message)); })
             .saveSessionAttendance(OPEN.planId, ROSTER.map(function (x) {
               return { empId: x.empId, name: x.name, present: x.present, score: x.score };
-            }));
+            }), ADMIN_TOKEN);
         })
-        .withFailureHandler(function (e) { btn.disabled = false; msg('Error: ' + (e && e.message)); })
+        .withFailureHandler(function (e) { btn.disabled = false; nxt.disabled = false; msg('Error: ' + (e && e.message)); })
         .saveTrainingSession({
           planId: OPEN.planId,
           actualDate: document.getElementById('pActual').value,
           trainer: document.getElementById('pTrainer').value.trim(),
           observations: document.getElementById('pObs').value.trim(),
           rating: RATING
-        });
+        }, ADMIN_TOKEN);
     }
 
     /* Seeding writes the whole year's plan, so it is admin-gated on the server.

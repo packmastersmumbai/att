@@ -145,7 +145,11 @@ function _isoDate_(v) {
  * Stage 1 records the date, trainer and notes; attendance and scores arrive
  * in Stage 2.
  */
-function saveTrainingSession(session) {
+function saveTrainingSession(session, token) {
+  /* ActualDate is what turns a plan into a record — _skillCell_ credits a
+     skill only from a session that actually ran. Same gate as the attendance
+     it travels with. */
+  _requireAdmin_(token);
   _ensureTrainingSheets_();
   var id = String((session && session.planId) || '').trim();
   if (!id) return { success: false, error: 'Missing plan id' };
@@ -814,7 +818,12 @@ function _trainingPassMark_() {
  * down the list, and an append-only table would silently inflate every
  * downstream count.
  */
-function saveSessionAttendance(planId, rows) {
+function saveSessionAttendance(planId, rows, token) {
+  /* Who attended a training is competence evidence: it is what moves a person
+     from NEVER_TRAINED to a level on F-HR-01, and an auditor reads it as a
+     claim the company stands behind. Every other write that asserts competence
+     — setSkillLevel, seedSkills — is admin-gated, and this one was not. */
+  _requireAdmin_(token);
   _ensureTrainingSheets_();
   var id = String(planId || '').trim();
   if (!id) return { success: false, error: 'Missing plan id' };
