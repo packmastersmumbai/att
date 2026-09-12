@@ -47,11 +47,34 @@
     .sk-m{font-size:12px;color:var(--color-text-muted);margin:2px 0 10px}
     .sk-m b{color:var(--color-text)}
 
+    /* Custom curves. The built-in CSS easings are too weak to read as
+       intentional at these durations. */
+    :root{
+      --ease-out:cubic-bezier(0.23, 1, 0.32, 1);
+    }
+
     .lv{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+    /* Named properties, never `all`: these buttons are tapped ~434 times in a
+       full assessment round and `all` would transition the outline too, which
+       must appear instantly for keyboard users.
+
+       The press scale is the single most important detail on this page. On a
+       phone there is no hover, so the scale is the ONLY confirmation that the
+       tap landed. A supervisor in gloves who is unsure taps again — and a
+       second tap clears the level they just set. */
     .lv button{font:inherit;font-size:13px;font-weight:700;min-height:48px;cursor:pointer;
       border:1px solid var(--color-border);border-radius:var(--radius-md);
-      background:var(--color-surface);color:var(--color-text);padding:4px 2px;line-height:1.15}
+      background:var(--color-surface);color:var(--color-text);padding:4px 2px;line-height:1.15;
+      -webkit-tap-highlight-color:transparent;
+      transition:transform 100ms var(--ease-out),
+                 background-color 140ms ease,
+                 border-color 140ms ease,
+                 color 140ms ease}
+    .lv button:active{transform:scale(0.96)}
     .lv button small{display:block;font-size:9px;font-weight:500;opacity:.7}
+    /* 140ms, not instant: choosing a level is the moment of judgement on this
+       screen, and an instant colour swap reads as a rendering glitch rather
+       than as the interface agreeing with you. */
     .lv button[aria-pressed="true"]{background:var(--color-primary);
       border-color:var(--color-primary);color:#fff}
     .lv button[aria-pressed="true"] small{opacity:.9}
@@ -71,13 +94,45 @@
     .bar-in{max-width:560px;margin:0 auto;display:flex;gap:10px;align-items:center}
     .bar button{flex:1;font:inherit;font-size:15px;font-weight:700;min-height:52px;cursor:pointer;
       border:1px solid var(--color-primary);border-radius:var(--radius-md);
-      background:var(--color-primary);color:#fff}
+      background:var(--color-primary);color:#fff;-webkit-tap-highlight-color:transparent;
+      transition:transform 120ms var(--ease-out), opacity 140ms ease}
+    /* Slightly less than the level buttons: this one is larger, and the same
+       0.96 on a full-width bar reads as the whole page flinching. */
+    .bar button:active:not(:disabled){transform:scale(0.98)}
     .bar button:disabled{opacity:.5;cursor:default}
-    .bar-c{font-size:12px;color:var(--color-text-muted);white-space:nowrap}
+    .bar-c{font-size:12px;color:var(--color-text-muted);white-space:nowrap;
+      font-variant-numeric:tabular-nums}
+
+    /* The count changes on every tap. Tabular numerals stop "9 of 14" and
+       "10 of 14" shifting the text sideways as the digits change width. */
 
     .msg{padding:12px 16px;font-size:13px}
     .msg.ok{color:var(--done,#0f766e)} .msg.bad{color:var(--color-danger)}
+    /* Errors and confirmations appear where the eye is not looking. A 4px rise
+       is enough to catch attention without being a performance. */
+    .msg:not(:empty){animation:msgIn 200ms var(--ease-out) both}
+    @keyframes msgIn{from{opacity:0;transform:translateY(4px)}}
     .empty{padding:40px 16px;text-align:center;color:var(--color-text-muted)}
+
+    /* Each skill block rises in behind the one above it. Stagger is decorative
+       and only earns its place because this view is built once per person, not
+       repeatedly — and it never blocks interaction: the buttons are live from
+       frame one. Capped at 8 so a longer skill register cannot turn the list
+       into a slow reveal. */
+    .sk{animation:skIn 260ms var(--ease-out) both}
+    .sk:nth-child(1){animation-delay:0ms}    .sk:nth-child(2){animation-delay:30ms}
+    .sk:nth-child(3){animation-delay:60ms}   .sk:nth-child(4){animation-delay:90ms}
+    .sk:nth-child(5){animation-delay:120ms}  .sk:nth-child(6){animation-delay:150ms}
+    .sk:nth-child(7){animation-delay:180ms}  .sk:nth-child(n+8){animation-delay:210ms}
+    @keyframes skIn{from{opacity:0;transform:translateY(8px)}}
+
+    /* Reduced motion means fewer and gentler, not none: the colour change on
+       selection carries meaning and stays. Movement goes. */
+    @media (prefers-reduced-motion: reduce){
+      .lv button{transition:background-color 140ms ease, border-color 140ms ease, color 140ms ease}
+      .lv button:active,.bar button:active:not(:disabled){transform:none}
+      .sk,.msg:not(:empty){animation:none}
+    }
   </style>
 </head>
 <body>
