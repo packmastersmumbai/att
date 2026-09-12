@@ -21,6 +21,10 @@ var ISO_DOCS = {
   test:           'PM/FRM/HR-07',    // cl 7.2     Training Effectiveness Test Paper
   induction:      'PM/FRM/HR-08',    // cl 7.2     Induction Programme - New Joiner
   matrix:         'PM/REG/HR-01',    // cl 7.2     Competence & Skill Matrix
+  // IMS-01 step 7 (authorisations) and step 5 (toolbox talks). Both are
+  // 45001 records the app had no home for.
+  safetyCompetence: 'PM/OH-REC-006', // cl 7.2     Safety Competency & Training Register
+  toolbox:        'PM/REG/OHS-01',   // cl 7.2     Toolbox Talk & Induction Register
   personnel:      'PM/REG/HR-03',    // cl 5.3     Personnel Master & Signature Register
   gatepass:       'PM/FRM/STR-02',   // cl 8.5.4   Gate Pass - Material Outward
   mockdrill:      'PM/FRM/ENV-08'    // cl 8.2     Mock Emergency Drill Record

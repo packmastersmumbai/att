@@ -362,6 +362,14 @@ function _dispatchPost_(params) {
   // could be recorded but the verdict that makes it mean something could not.
   if (action === 'recordEffectiveness')   return jsonResponse(recordEffectiveness(params.entry, params.token));
   if (action === 'getEffectivenessGaps')  return jsonResponse(getEffectivenessGaps(params.year));
+
+  // PM/QSP/IMS-01 step 7 (CRITICAL) and step 5. Authorisations lapse on a
+  // date; toolbox talks are a register of their own, never classroom training.
+  if (action === 'getAuthorisations')     return jsonResponse(getAuthorisations(params.empId));
+  if (action === 'grantAuthorisation')    return jsonResponse(grantAuthorisation(params.entry, params.token));
+  if (action === 'withdrawAuthorisation') return jsonResponse(withdrawAuthorisation(params.entry, params.token));
+  if (action === 'getToolboxTalks')       return jsonResponse(getToolboxTalks(params.year));
+  if (action === 'saveToolboxTalk')       return jsonResponse(saveToolboxTalk(params.entry, params.token));
   if (action === 'addSessionPhoto')       return jsonResponse(addSessionPhoto(params.planId, params.dataUrl));
   if (action === 'saveTrainingSession') return jsonResponse(saveTrainingSession(params.session, params.token));
   if (action === 'addTrainingSession')  return jsonResponse(addTrainingSession(params.session));

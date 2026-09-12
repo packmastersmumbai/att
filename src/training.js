@@ -26,8 +26,13 @@ var TRAINING_SHEETS = {
 var TRAINING_HEADERS = {
   TrainingTopics: ['TopicID', 'Title', 'TitleHi', 'Type', 'Agenda', 'Method',
                    'DurationHrs', 'ValidityMonths', 'Active'],
+  // Venue, TimeFrom, TimeTo and Invited are PM/FRM/HR-05 fields the plan row
+  // had no home for, so the app could hold perfect data and still not print a
+  // compliant attendance sheet. Internal tells HR-05's "Internal / external"
+  // apart; Invited is what makes its "Attendance %" computable at all.
   TrainingPlan:   ['PlanID', 'Year', 'TopicID', 'Type', 'PlannedDate', 'ActualDate',
-                   'Status', 'Trainer', 'Content', 'Observations', 'PhotoURLs', 'Rating'],
+                   'Status', 'Trainer', 'Content', 'Observations', 'PhotoURLs', 'Rating',
+                   'Venue', 'TimeFrom', 'TimeTo', 'Invited', 'Internal'],
   // One row per person per session. This is the table the skill matrix is
   // derived from, and the thing the 2025 paper records never captured.
   //
@@ -43,8 +48,14 @@ var TRAINING_HEADERS = {
   //   Verdict    EFFECTIVE | NOT_EFFECTIVE — the words the procedure uses.
   //   EvalBy     the assessor, named. IMS-01: "No person may assess their own
   //              competence."
+  //   MaxMarks / PassMarks  PM/FRM/HR-06 header fields. Stored per row because
+  //              the pass mark can differ per topic and an auditor reads the
+  //              score against the mark that applied on the day, not today's.
+  //   RetestOn   HR-06's "Re-test date" — required by step 6 when the verdict
+  //              is Not Effective, and meaningless without it.
   TrainingAttendance: ['PlanID', 'EmpID', 'Name', 'Present', 'Score', 'RecordedAt',
-                       'EvalDate', 'EvalMethod', 'Verdict', 'EvalBy']
+                       'EvalDate', 'EvalMethod', 'Verdict', 'EvalBy',
+                       'MaxMarks', 'PassMarks', 'RetestOn']
 };
 
 /**
@@ -177,6 +188,12 @@ function saveTrainingSession(session, token) {
   if (session.content !== undefined)     setCell(sheet, row, 'Content', session.content || '');
   if (session.observations !== undefined) setCell(sheet, row, 'Observations', session.observations || '');
   if (session.rating !== undefined)      setCell(sheet, row, 'Rating', session.rating || '');
+  // PM/FRM/HR-05 session header.
+  if (session.venue !== undefined)       setCell(sheet, row, 'Venue', session.venue || '');
+  if (session.timeFrom !== undefined)    setCell(sheet, row, 'TimeFrom', session.timeFrom || '');
+  if (session.timeTo !== undefined)      setCell(sheet, row, 'TimeTo', session.timeTo || '');
+  if (session.invited !== undefined)     setCell(sheet, row, 'Invited', session.invited || '');
+  if (session.internal !== undefined)    setCell(sheet, row, 'Internal', session.internal || '');
 
   return { success: true, planId: id };
 }
@@ -791,6 +808,10 @@ function getSessionAttendance(planId) {
     }
   });
 
+  // How many were actually marked present, for HR-05's summary block.
+  var marked_ = 0;
+  Object.keys(marked).forEach(function (k) { if (marked[k].present) marked_++; });
+
   var roster = getSheetAsObjects(SHEETS.EMPLOYEES)
     .filter(function (e) { return String(e.Status || 'ACTIVE').toUpperCase() === 'ACTIVE'; })
     .map(function (e) {
@@ -810,7 +831,16 @@ function getSessionAttendance(planId) {
     passMark: _trainingPassMark_(),
     session: {
       observations: plan.Observations || '',
-      photoURLs:    String(plan.PhotoURLs || '').split(',').filter(Boolean)
+      photoURLs:    String(plan.PhotoURLs || '').split(',').filter(Boolean),
+      // PM/FRM/HR-05 header and summary. Invited is what the form divides by;
+      // without it "Attendance %" is a column nobody can fill.
+      venue:    plan.Venue || '',
+      timeFrom: plan.TimeFrom || '',
+      timeTo:   plan.TimeTo || '',
+      internal: plan.Internal || '',
+      invited:  Number(plan.Invited) || 0,
+      attended: marked_,
+      attendancePct: Number(plan.Invited) ? Math.round(marked_ / Number(plan.Invited) * 100) : null
     }
   };
 }
