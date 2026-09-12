@@ -1081,6 +1081,11 @@
             <div class="form-hint">Sets which minimum competency levels apply on the skill matrix. Blank = the default for every skill.</div>
           </div>
           <div class="form-group">
+            <label>Date of Joining</label>
+            <input type="date" id="eDoj" class="input">
+            <div class="form-hint">Printed on the induction record (PM/FRM/HR-08). Left blank it reads “[TO BE ENTERED]”.</div>
+          </div>
+          <div class="form-group">
             <label>Gender</label>
             <select id="eGender" class="input">
               <option value="">Select…</option>
@@ -1308,6 +1313,7 @@
       document.getElementById('eCode').value  = '';
       document.getElementById('eName').value  = '';
       document.getElementById('eDept').value  = '';
+      document.getElementById('eDoj').value = '';
       document.getElementById('eGender').value = '';
       document.getElementById('eBlood').value = '';
       document.getElementById('ePhone').value = '';
@@ -1448,6 +1454,7 @@
         Name:       document.getElementById('eName').value.trim(),
         Department: document.getElementById('eDept').value.trim(),
         JobRole:    document.getElementById('eJobRole').value.trim(),
+        DateOfJoining: document.getElementById('eDoj').value,
         Gender:     document.getElementById('eGender').value,
         BloodGroup: document.getElementById('eBlood').value,
         Phone:      document.getElementById('ePhone').value.trim(),
@@ -1478,6 +1485,7 @@
       document.getElementById('eName').value  = e.Name || '';
       document.getElementById('eDept').value  = e.Department || '';
       document.getElementById('eJobRole').value = e.JobRole || '';
+      document.getElementById('eDoj').value = e.DateOfJoining || '';
       document.getElementById('eGender').value = e.Gender || '';
       document.getElementById('eBlood').value = e.BloodGroup || '';
       document.getElementById('ePhone').value = e.Phone || '';

@@ -166,7 +166,11 @@ function _createEmployee_(sheet, empId, emp) {
 /** Appends any missing employee columns (idempotent) so older sheets pick up new fields. */
 function _ensureEmployeeColumns_(sheet) {
   // JobRole drives the per-role minimum levels on the skill matrix.
-  var needed = ['EmpID','Name','Department','JobRole','Gender','BloodGroup','Phone','Email','QRCode','Status','PhotoURL','QRImageURL'];
+  // DateOfJoining is asked for by PM/FRM/HR-08 and has no other home: without
+  // it every induction record writes "[TO BE ENTERED]" for a fact HR already
+  // holds. Added blank — a joining date is a personnel fact, not something
+  // this app may infer from a first attendance scan.
+  var needed = ['EmpID','Name','Department','JobRole','DateOfJoining','Gender','BloodGroup','Phone','Email','QRCode','Status','PhotoURL','QRImageURL'];
   var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
   needed.forEach(function(h) {
     if (headers.indexOf(h) === -1) {

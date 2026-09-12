@@ -128,7 +128,10 @@ function startInduction(empId, token) {
     Designation: emp.JobRole || '',
     Department: emp.Department || '',
     Engagement: emp.Engagement || '',
-    DateOfJoining: '[TO BE ENTERED]',
+    // Read from the master like the three fields above. Still falls back to
+    // the placeholder when HR has not filled it, because a blank date on an
+    // HR-08 record reads as "not asked" rather than "not yet known".
+    DateOfJoining: String(emp.DateOfJoining || '').trim() || '[TO BE ENTERED]',
     ReportingTo: '',
     StartedAt: new Date().toISOString(),
     IssuedItems: '',
