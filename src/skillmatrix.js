@@ -113,7 +113,10 @@ function getSkillMatrix(group) {
 
   var overrides = {};
   getSheetAsObjects(SKILL_SHEETS.OVERRIDES).forEach(function (o) {
-    overrides[String(o.EmpID) + '|' + String(o.SkillID)] = o;
+    // Normalised for the same reason attendance is: a level confirmed for
+    // "004" is written as 4 and would never be read back, so the supervisor's
+    // judgement would silently vanish from the matrix that displays it.
+    overrides[_normEmpId_(o.EmpID) + '|' + String(o.SkillID)] = o;
   });
 
   var pass  = _trainingPassMark_();
@@ -137,7 +140,7 @@ function getSkillMatrix(group) {
         minRequired: _minFor_(byRole, role, String(s.SkillID), s.MinRequired),
         attendance: byPerson[_normEmpId_(e.EmpID)] || {},
         validity:   validity,
-        override:   overrides[String(e.EmpID) + '|' + String(s.SkillID)],
+        override:   overrides[_normEmpId_(e.EmpID) + '|' + String(s.SkillID)],
         passMark:   pass,
         today:      today
       });
@@ -553,7 +556,7 @@ function getSkillHistory(empId, skillId) {
     .sort(function (a, b) { return a.date < b.date ? 1 : -1; });
 
   var override = getSheetAsObjects(SKILL_SHEETS.OVERRIDES)
-    .filter(function (o) { return String(o.EmpID) === emp && String(o.SkillID) === sk; })[0] || null;
+    .filter(function (o) { return _sameEmpId_(o.EmpID, emp) && String(o.SkillID) === sk; })[0] || null;
 
   // The minimum belongs to this person's ROLE, not to the skill. Reporting
   // the skill's default here would have the panel tell a supervisor the
@@ -680,7 +683,7 @@ function setSkillLevel(entry, token) {
   if (last > 1) {
     var data = sheet.getRange(2, 1, last - 1, headers.length).getValues();
     for (var i = 0; i < data.length; i++) {
-      if (String(data[i][empCol]) === emp && String(data[i][skCol]) === sk) { found = i + 2; break; }
+      if (_sameEmpId_(data[i][empCol], emp) && String(data[i][skCol]) === sk) { found = i + 2; break; }
     }
   }
 
@@ -703,6 +706,102 @@ function setSkillLevel(entry, token) {
   else sheet.appendRow(row);
 
   return { success: true, empId: emp, skillId: sk, level: level };
+}
+
+/**
+ * One person, every skill, one save — PM/QSP/IMS-01 step 2.
+ *
+ * setSkillLevel writes a single cell, which is right for a correction and
+ * wrong for an assessment: a half-yearly review is a supervisor standing on
+ * the floor ruling on all fourteen skills for one worker, and fourteen round
+ * trips on a phone over plant wifi is how a review gets abandoned half done.
+ *
+ * All or nothing. A partial assessment is worse than none: it leaves some
+ * skills signed and others not, with nothing on the record saying which the
+ * assessor actually looked at. So the whole set is validated before anything
+ * is written.
+ *
+ * The assessor is checked ONCE for the person, not once per skill — the rule
+ * is about who is doing the assessing, and it cannot change between two
+ * columns of the same review.
+ */
+function saveAssessment(entry, token) {
+  _requireAdmin_(token);
+  _ensureSkillSheets_();
+
+  var emp = String((entry && entry.empId) || '').trim();
+  if (!emp) return { success: false, error: 'Missing employee' };
+
+  var levels = (entry && entry.levels) || {};
+  var skillIds = Object.keys(levels);
+  if (!skillIds.length) return { success: false, error: 'No levels to record' };
+
+  var reason = String((entry && entry.reason) || '').trim();
+  if (!reason) return { success: false, error: 'Say what this assessment was based on' };
+
+  // Checked once, against the person — not per skill.
+  var by = _assessorFor_({ by: entry.by, byEmpId: entry.byEmpId }, emp, 'L1');
+  if (by.error) return { success: false, error: by.error };
+
+  // Validate everything before touching the sheet.
+  var known = {};
+  getSheetAsObjects(SKILL_SHEETS.SKILLS).forEach(function (k) { known[String(k.SkillID)] = true; });
+
+  var clean = [];
+  for (var i = 0; i < skillIds.length; i++) {
+    var sk = String(skillIds[i]);
+    if (!known[sk]) return { success: false, error: 'No skill ' + sk + ' on the register' };
+    var lv = _normLevel_(levels[sk]);
+    if (levels[sk] && !lv) return { success: false, error: 'Level for ' + sk + ' must be L1-L4 or NA' };
+    clean.push({ skillId: sk, level: lv });
+  }
+
+  var sheet   = getSheet(SKILL_SHEETS.OVERRIDES);
+  var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  var empCol  = headers.indexOf('EmpID'), skCol = headers.indexOf('SkillID');
+  var last    = sheet.getLastRow();
+  var data    = last > 1 ? sheet.getRange(2, 1, last - 1, headers.length).getValues() : [];
+
+  // Existing rows for this person, by skill, so a re-assessment replaces
+  // rather than appends — two rows for one cell is two answers to one question.
+  var at = {};
+  for (var r = 0; r < data.length; r++) {
+    if (_sameEmpId_(data[r][empCol], emp)) at[String(data[r][skCol])] = r + 2;
+  }
+
+  var now = new Date().toISOString();
+  var set = 0, cleared = 0, appended = [];
+
+  clean.forEach(function (c) {
+    var row = at[c.skillId];
+    if (!c.level) {
+      // A blank clears the override and returns the cell to what the training
+      // record computes. Deleting is deferred so row indices stay valid.
+      if (row) { at[c.skillId] = -row; cleared++; }
+      return;
+    }
+    var values = {
+      EmpID: emp, SkillID: c.skillId, Level: c.level, Reason: reason,
+      By: by.name, ByEmpID: by.empId, At: now
+    };
+    var out = headers.map(function (h) { return values[h] !== undefined ? values[h] : ''; });
+    if (row) sheet.getRange(row, 1, 1, headers.length).setValues([out]);
+    else appended.push(out);
+    set++;
+  });
+
+  if (appended.length) {
+    sheet.getRange(sheet.getLastRow() + 1, 1, appended.length, headers.length).setValues(appended);
+  }
+  // Deletions last, bottom-up, so earlier indices are still correct.
+  var drop = [];
+  Object.keys(at).forEach(function (k) { if (at[k] < 0) drop.push(-at[k]); });
+  drop.sort(function (a, b) { return b - a; }).forEach(function (n) { sheet.deleteRow(n); });
+
+  return {
+    success: true, empId: emp, set: set, cleared: cleared,
+    by: by.name, byEmpId: by.empId, at: now, stamp: isoStamp('matrix')
+  };
 }
 
 // ── Seeding ────────────────────────────────────────────────────────────────

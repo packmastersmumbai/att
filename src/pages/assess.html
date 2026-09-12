@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Assess — QR Att.</title>
+  <style>
+    /* Built for a phone held in one hand on the shop floor, not a desk. No
+       sidebar, no grid: one person, one skill at a time, thumb-sized targets.
+       The matrix page is the record; this is the act of making it. */
+    *{box-sizing:border-box;margin:0;padding:0}
+    html,body{height:100%}
+    body{font-family:var(--font-sans);background:var(--color-bg);color:var(--color-text);
+      font-size:16px;line-height:1.45;-webkit-text-size-adjust:100%}
+
+    .wrap{max-width:560px;margin:0 auto;padding:0 0 96px}
+
+    .top{position:sticky;top:0;z-index:20;background:var(--color-primary);color:#fff;
+      padding:12px 16px}
+    .top-t{font-size:15px;font-weight:800;line-height:1.2}
+    .top-s{font-size:11px;opacity:.85;font-family:var(--font-mono);margin-top:2px}
+    .top a{color:#fff;text-decoration:none;font-size:12px;opacity:.9}
+
+    .card{background:var(--color-surface);border-bottom:1px solid var(--color-border);padding:14px 16px}
+    .lbl{font-size:11px;font-weight:700;color:var(--color-text-muted);
+      text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px}
+
+    /* 48px minimum on every control: a 34px target is a mis-tap on a phone
+       held by someone wearing gloves. */
+    .inp,select.inp{width:100%;font:inherit;font-size:16px;padding:12px;min-height:48px;
+      border:1px solid var(--color-border);border-radius:var(--radius-md);
+      background:var(--color-surface);color:var(--color-text)}
+    .inp:focus-visible{outline:2px solid var(--color-primary);outline-offset:2px}
+
+    .who{display:flex;align-items:center;gap:12px}
+    .ph{width:46px;height:46px;border-radius:50%;object-fit:cover;flex-shrink:0;
+      border:1px solid var(--color-border);background:var(--color-bg)}
+    .ph-x{width:46px;height:46px;border-radius:50%;flex-shrink:0;background:var(--color-bg);
+      border:1px solid var(--color-border);display:grid;place-items:center;
+      font:700 14px var(--font-mono);color:var(--color-muted)}
+    .who-n{font-weight:700;font-size:17px;line-height:1.2}
+    .who-r{font-size:12px;color:var(--color-text-muted)}
+
+    /* One skill per block. The name, what it needs, and five buttons. */
+    .sk{background:var(--color-surface);border-bottom:1px solid var(--color-border);padding:14px 16px}
+    .sk-n{font-weight:700;font-size:15px}
+    .sk-m{font-size:12px;color:var(--color-text-muted);margin:2px 0 10px}
+    .sk-m b{color:var(--color-text)}
+
+    .lv{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+    .lv button{font:inherit;font-size:13px;font-weight:700;min-height:48px;cursor:pointer;
+      border:1px solid var(--color-border);border-radius:var(--radius-md);
+      background:var(--color-surface);color:var(--color-text);padding:4px 2px;line-height:1.15}
+    .lv button small{display:block;font-size:9px;font-weight:500;opacity:.7}
+    .lv button[aria-pressed="true"]{background:var(--color-primary);
+      border-color:var(--color-primary);color:#fff}
+    .lv button[aria-pressed="true"] small{opacity:.9}
+    .lv button:focus-visible{outline:2px solid var(--color-primary);outline-offset:2px}
+
+    /* What the training record already proposes, so the assessor confirms or
+       departs from something rather than starting at nothing. */
+    .sug{font-size:11px;color:var(--color-text-muted);margin-top:8px}
+    .sug b{color:var(--color-text)}
+    .warn{color:var(--color-danger);font-weight:700}
+
+    /* The save bar never scrolls away: on a fourteen-skill list the button
+       would otherwise sit below the fold for the whole assessment. */
+    .bar{position:fixed;left:0;right:0;bottom:0;z-index:30;background:var(--color-surface);
+      border-top:1px solid var(--color-border);padding:10px 16px;
+      box-shadow:0 -4px 16px rgba(0,0,0,.08)}
+    .bar-in{max-width:560px;margin:0 auto;display:flex;gap:10px;align-items:center}
+    .bar button{flex:1;font:inherit;font-size:15px;font-weight:700;min-height:52px;cursor:pointer;
+      border:1px solid var(--color-primary);border-radius:var(--radius-md);
+      background:var(--color-primary);color:#fff}
+    .bar button:disabled{opacity:.5;cursor:default}
+    .bar-c{font-size:12px;color:var(--color-text-muted);white-space:nowrap}
+
+    .msg{padding:12px 16px;font-size:13px}
+    .msg.ok{color:var(--done,#0f766e)} .msg.bad{color:var(--color-danger)}
+    .empty{padding:40px 16px;text-align:center;color:var(--color-text-muted)}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top">
+      <div class="top-t">Competence assessment</div>
+      <div class="top-s"><?= isoMatrix ?></div>
+      <div style="margin-top:6px"><a href="?page=skillmatrix">&larr; Skill matrix</a></div>
+    </div>
+
+    <div class="card">
+      <div class="lbl">Who is being assessed</div>
+      <select class="inp" id="who" onchange="pick()"><option value="">Loading…</option></select>
+      <div id="whoBox" style="margin-top:12px"></div>
+    </div>
+
+    <div id="skills"></div>
+
+    <div class="card" id="signBox" style="display:none">
+      <div class="lbl">Assessor — IMS-01: no person may assess their own competence</div>
+      <input class="inp" id="by" placeholder="Your full name" autocomplete="name">
+      <input class="inp" id="byEmp" style="margin-top:8px" placeholder="Your employee number (blank if external)">
+      <div class="lbl" style="margin-top:14px">What this was based on</div>
+      <input class="inp" id="reason" placeholder="e.g. observed on the filling line, 12/09">
+    </div>
+
+    <div class="msg" id="msg"></div>
+  </div>
+
+  <div class="bar" id="bar" style="display:none">
+    <div class="bar-in">
+      <span class="bar-c" id="count">0 set</span>
+      <button id="save" onclick="save()">Save assessment</button>
+    </div>
+  </div>
+
+  <script>
+    var DATA = null, PERSON = null, PICK = {}, TOKEN = '';
+    var LEVELS = ['L1','L2','L3','L4','NA'];
+
+    function esc(s){ return String(s == null ? '' : s)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+    function msg(t, cls){ var m = document.getElementById('msg'); m.textContent = t || ''; m.className = 'msg ' + (cls||''); }
+
+    function load() {
+      google.script.run
+        .withSuccessHandler(function (r) {
+          if (!r || !r.success) { msg('Could not load the matrix.', 'bad'); return; }
+          DATA = r;
+          var sel = document.getElementById('who');
+          sel.innerHTML = '<option value="">Choose a person…</option>' +
+            (r.people || []).map(function (p) {
+              return '<option value="' + esc(p.empId) + '">' + esc(p.name) +
+                     ' — ' + esc(p.jobRole || '') + '</option>';
+            }).join('');
+        })
+        .withFailureHandler(function (e) { msg('Error: ' + (e && e.message), 'bad'); })
+        .getSkillMatrix('');
+    }
+
+    function pick() {
+      var id = document.getElementById('who').value;
+      PICK = {}; msg('');
+      PERSON = (DATA.people || []).filter(function (p) { return String(p.empId) === String(id); })[0] || null;
+
+      if (!PERSON) {
+        document.getElementById('whoBox').innerHTML = '';
+        document.getElementById('skills').innerHTML = '';
+        document.getElementById('signBox').style.display = 'none';
+        document.getElementById('bar').style.display = 'none';
+        return;
+      }
+
+      document.getElementById('whoBox').innerHTML =
+        '<div class="who">' +
+          (PERSON.photoUrl
+            ? '<img class="ph" src="' + esc(PERSON.photoUrl) + '" alt="">'
+            : '<div class="ph-x">' + esc(String(PERSON.name || '?').charAt(0)) + '</div>') +
+          '<div><div class="who-n">' + esc(PERSON.name) + '</div>' +
+          '<div class="who-r">' + esc(PERSON.jobRole || '') + ' · ' + esc(PERSON.dept || '') +
+          ' · ' + esc(PERSON.overall) + '</div></div>' +
+        '</div>';
+
+      renderSkills();
+      document.getElementById('signBox').style.display = '';
+      document.getElementById('bar').style.display = '';
+      tally();
+    }
+
+    var LEVEL_NAMES = {};
+
+    function renderSkills() {
+      LEVEL_NAMES = DATA.levelNames || {};
+      var skills = DATA.skills || [];
+
+      document.getElementById('skills').innerHTML = skills.map(function (s, i) {
+        var cell = (PERSON.cells || [])[i] || {};
+        var min  = cell.min || '—';
+
+        // What the training record proposes, stated plainly. An assessor who
+        // sees "trained, not yet confirmed" is being asked to confirm or
+        // depart from it; one who sees nothing is being asked to invent.
+        var sug;
+        if (cell.source === 'OVERRIDE') {
+          sug = 'Currently <b>' + esc(cell.level) + '</b>, confirmed earlier' +
+                (cell.by ? ' by ' + esc(cell.by) : '');
+        } else if (cell.flag === 'NEVER_TRAINED') {
+          sug = '<span class="warn">No training recorded</span>';
+        } else if (cell.flag === 'EXPIRED') {
+          sug = '<span class="warn">Training lapsed</span> — last ' + esc(cell.lastTrained || '');
+        } else if (cell.source === 'COMPUTED') {
+          sug = 'Training suggests <b>' + esc(cell.level) + '</b> — attended ' + esc(cell.lastTrained || '');
+        } else {
+          sug = 'Not applicable to this role';
+        }
+
+        return '<div class="sk">' +
+          '<div class="sk-n">' + esc(s.name) + '</div>' +
+          '<div class="sk-m">Needs <b>' + esc(min) + '</b></div>' +
+          '<div class="lv" role="group" aria-label="Level for ' + esc(s.name) + '">' +
+            LEVELS.map(function (l) {
+              return '<button type="button" aria-pressed="false" ' +
+                'data-sk="' + esc(s.skillId) + '" data-lv="' + l + '" onclick="setLv(this)">' +
+                l + '<small>' + esc(l === 'NA' ? 'n/a' : (LEVEL_NAMES[l] || '')) + '</small></button>';
+            }).join('') +
+          '</div>' +
+          '<div class="sug">' + sug + '</div>' +
+        '</div>';
+      }).join('');
+    }
+
+    function setLv(btn) {
+      var sk = btn.dataset.sk, lv = btn.dataset.lv;
+      var group = btn.parentNode;
+
+      // Tapping the chosen level again clears it — the only way back from a
+      // mis-tap without reloading and losing the rest of the assessment.
+      var already = PICK[sk] === lv;
+      [].forEach.call(group.querySelectorAll('button'), function (b) {
+        b.setAttribute('aria-pressed', 'false');
+      });
+      if (already) { delete PICK[sk]; }
+      else { PICK[sk] = lv; btn.setAttribute('aria-pressed', 'true'); }
+      tally();
+    }
+
+    function tally() {
+      var n = Object.keys(PICK).length;
+      var total = (DATA.skills || []).length;
+      document.getElementById('count').textContent = n + ' of ' + total + ' set';
+      document.getElementById('save').disabled = !n;
+    }
+
+    function save() {
+      if (!PERSON) return;
+      var n = Object.keys(PICK).length;
+      if (!n) return;
+
+      var by     = document.getElementById('by').value.trim();
+      var byEmp  = document.getElementById('byEmp').value.trim();
+      var reason = document.getElementById('reason').value.trim();
+
+      // Checked here as well as on the server: a phone on plant wifi should
+      // not spend six seconds finding out the name box is empty.
+      if (!by)     { msg('Enter your name — a level signed by nobody cannot be checked.', 'bad'); return; }
+      if (!reason) { msg('Say what the assessment was based on.', 'bad'); return; }
+      if (byEmp && String(byEmp) === String(PERSON.empId)) {
+        msg('No person may assess their own competence (PM/QSP/IMS-01).', 'bad'); return;
+      }
+
+      var btn = document.getElementById('save');
+      btn.disabled = true;
+
+      if (!TOKEN) {
+        var pin = window.prompt('Admin PIN to record the assessment');
+        if (!pin) { btn.disabled = false; return; }
+        msg('Checking…');
+        google.script.run
+          .withSuccessHandler(function (v) {
+            btn.disabled = false;
+            if (!v || !v.success || !v.token) { msg('That PIN was not accepted.', 'bad'); return; }
+            TOKEN = v.token;
+            save();
+          })
+          .withFailureHandler(function (e) { btn.disabled = false; msg('Error: ' + (e && e.message), 'bad'); })
+          .verifyPIN(pin);
+        return;
+      }
+
+      msg('Saving ' + n + ' level' + (n === 1 ? '' : 's') + '…');
+      google.script.run
+        .withSuccessHandler(function (r) {
+          btn.disabled = false;
+          if (!r || !r.success) { msg((r && r.error) || 'Could not save.', 'bad'); return; }
+          msg(r.set + ' level' + (r.set === 1 ? '' : 's') + ' recorded for ' +
+              PERSON.name + ', signed ' + r.by + '. ' + (r.stamp || ''), 'ok');
+          PICK = {};
+          // Reload so the next person is assessed against a current matrix,
+          // and so this person's new levels show as confirmed.
+          load();
+          document.getElementById('who').value = '';
+          document.getElementById('whoBox').innerHTML = '';
+          document.getElementById('skills').innerHTML = '';
+          document.getElementById('signBox').style.display = 'none';
+          document.getElementById('bar').style.display = 'none';
+          window.scrollTo(0, 0);
+        })
+        .withFailureHandler(function (e) { btn.disabled = false; msg('Error: ' + (e && e.message), 'bad'); })
+        .saveAssessment({
+          empId: PERSON.empId, levels: PICK,
+          by: by, byEmpId: byEmp, reason: reason
+        }, TOKEN);
+    }
+
+    load();
+  </script>
+</body>
+</html>

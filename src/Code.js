@@ -47,7 +47,7 @@ function doGet(e) {
   }
 
   var page = (e && e.parameter && e.parameter.page) ? e.parameter.page : 'scanner';
-  var validPages = ['scanner', 'scanner_popup', 'dashboard', 'reports', 'visitors', 'kiosk', 'admin', 'idcards', 'e2e', 'vreg', 'vpass', 'gatepass_approve', 'training', 'skillmatrix', 'mockdrill', 'selftest', 'kpi'];
+  var validPages = ['scanner', 'scanner_popup', 'dashboard', 'reports', 'visitors', 'kiosk', 'admin', 'idcards', 'e2e', 'vreg', 'vpass', 'gatepass_approve', 'training', 'skillmatrix', 'mockdrill', 'selftest', 'kpi', 'assess'];
   if (validPages.indexOf(page) === -1) page = 'scanner';
 
   var template = HtmlService.createTemplateFromFile('pages/' + page);
@@ -369,6 +369,9 @@ function _dispatchPost_(params) {
   if (action === 'grantAuthorisation')    return jsonResponse(grantAuthorisation(params.entry, params.token));
   if (action === 'withdrawAuthorisation') return jsonResponse(withdrawAuthorisation(params.entry, params.token));
   if (action === 'getToolboxTalks')       return jsonResponse(getToolboxTalks(params.year));
+  // One person, every skill, one save — the half-yearly review done on a
+  // phone standing next to the line, not in a spreadsheet afterwards.
+  if (action === 'saveAssessment')        return jsonResponse(saveAssessment(params.entry, params.token));
   if (action === 'saveToolboxTalk')       return jsonResponse(saveToolboxTalk(params.entry, params.token));
   if (action === 'addSessionPhoto')       return jsonResponse(addSessionPhoto(params.planId, params.dataUrl));
   if (action === 'saveTrainingSession') return jsonResponse(saveTrainingSession(params.session, params.token));
