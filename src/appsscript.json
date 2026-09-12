@@ -1,6 +1,14 @@
 {
   "timeZone": "Asia/Kolkata",
-  "dependencies": {},
+  "dependencies": {
+    "libraries": [
+      {
+        "userSymbol": "PMCore",
+        "libraryId": "1XrbNFnQWob8l5GuSCUyMT5u0tUX7netkqidSYEgqXpBV3nxE7KQunp9v",
+        "version": "1"
+      }
+    ]
+  },
   "exceptionLogging": "STACKDRIVER",
   "runtimeVersion": "V8",
   "webapp": {

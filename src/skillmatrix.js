@@ -141,6 +141,10 @@ function getSkillMatrix(group) {
       dept:     e.Department || '',
       jobRole:  e.JobRole || '',
       photoUrl: e.PhotoURL || '',
+      // The induction badge rides along with the matrix row: both answer
+      // "is this person competent to be on the floor", and a supervisor
+      // should not have to open a second screen to get half the answer.
+      induction: _inductionBadge_(String(e.EmpID)),
       cells:    cells,
       gaps:     gaps.length,
       // The OVERALL column on F-HR-01. "MEETS" is a claim about every

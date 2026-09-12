@@ -26,6 +26,29 @@
       color:#fff;display:grid;place-items:center;font-weight:800;font-size:12px}
     .sb-logo-name{font-weight:800;font-size:16px;color:var(--color-primary);line-height:1}
     .sb-logo-sub{font-size:9px;color:var(--color-text-muted);letter-spacing:1.4px;text-transform:uppercase}
+    /* ── Induction badge + panel (PM/FRM/HR-08) ── */
+    .ind{border:0;background:none;cursor:pointer;font-size:12px;line-height:1;padding:0 0 0 4px;vertical-align:baseline}
+    .ind-ok{color:var(--lv-met)} .ind-part{color:var(--lv-pend)} .ind-no{color:var(--lv-na)}
+    #indPanel{display:none;position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:60;
+      overflow:auto;padding:24px}
+    .ind-box{max-width:660px;margin:0 auto;background:var(--color-surface);border-radius:var(--radius-lg);
+      padding:20px;box-shadow:0 12px 40px rgba(0,0,0,.25)}
+    .ind-box h3{font-size:16px;margin-bottom:2px}
+    .ind-sub{font-size:12px;color:var(--color-text-muted);margin-bottom:10px}
+    .ind-t{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:12px}
+    .ind-t td{border-top:1px solid var(--color-border);padding:7px 6px;vertical-align:top}
+    .ind-s{width:100%}
+    .ind-o{display:block;font-size:10px;color:var(--color-text-muted)}
+    .ind-sg{color:var(--lv-met);font-weight:700;font-size:11px}
+    .ind-btn{font:inherit;font-size:12px;font-weight:700;cursor:pointer;padding:7px 13px;min-height:32px;
+      border:1px solid var(--color-primary);border-radius:var(--radius-md);background:var(--color-primary);color:#fff}
+    .ind-btn[disabled]{opacity:.45;cursor:default}
+    .ind-btn.ind-alt{background:none;color:var(--color-text)}
+    .ind-btn.ind-sm{padding:4px 10px;min-height:26px}
+    .ind-clear{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+    .ind-in{font:inherit;font-size:12px;padding:7px;border:1px solid var(--color-border);
+      border-radius:var(--radius-md);min-height:32px}
+    .ind-ok-line{font-size:12px;color:var(--lv-met);font-weight:700;margin-bottom:12px}
     .sb-nav{padding:12px 10px;flex:1}
     .sb-section{font-size:9px;font-weight:700;color:var(--color-text-muted);letter-spacing:1.2px;
       text-transform:uppercase;padding:8px 8px 4px}
@@ -445,11 +468,130 @@
       renderKpis(); renderLegend();
     }
 
+    /* ── Induction (PM/FRM/HR-08) ──────────────────────────────────────────
+       One icon beside the name, because "is this person inducted" is asked
+       about the person, not about a list. Click it to run the programme. */
+    function indBadge(p) {
+      var i = p.induction || {};
+      if (i.status === 'CLEARED')
+        return ' <button class="ind ind-ok" data-emp="' + esc(p.empId) + '" ' +
+               'title="Inducted ' + esc(i.on || '') + (i.by ? ' by ' + esc(i.by) : '') +
+               '">✓</button>';
+      if (i.status === 'PARTIAL')
+        return ' <button class="ind ind-part" data-emp="' + esc(p.empId) + '" ' +
+               'title="Induction ' + esc(i.label) + '">◐</button>';
+      return ' <button class="ind ind-no" data-emp="' + esc(p.empId) + '" ' +
+             'title="Not inducted">○</button>';
+    }
+
+    document.addEventListener('click', function (e) {
+      var b = e.target.closest('.ind');
+      if (b) openInduction(b.getAttribute('data-emp'));
+    });
+
+    var IND = null;
+
+    function openInduction(empId) {
+      var el = document.getElementById('indPanel');
+      el.style.display = 'block';
+      el.innerHTML = '<div class="ind-box">Loading…</div>';
+      google.script.run
+        .withSuccessHandler(function (r) { IND = r; renderInduction(); })
+        .withFailureHandler(function (e) {
+          el.innerHTML = '<div class="ind-box">' + esc(e && e.message) + '</div>';
+        })
+        .getInduction(empId);
+    }
+
+    function closeInduction() {
+      document.getElementById('indPanel').style.display = 'none';
+      IND = null;
+      load();   // the badge may have changed
+    }
+
+    function renderInduction() {
+      var d = IND || {};
+      var el = document.getElementById('indPanel');
+      if (!d.started) {
+        el.innerHTML = '<div class="ind-box">' +
+          '<h3>Induction — not started</h3>' +
+          '<p class="ind-sub">PM/FRM/HR-08 · nine sessions, each signed by whoever delivered it.</p>' +
+          '<button class="ind-btn" onclick="startInd(\'' + esc(d.empId) + '\')">Start induction</button> ' +
+          '<button class="ind-btn ind-alt" onclick="closeInduction()">Close</button></div>';
+        return;
+      }
+      var rows = (d.sessions || []).map(function (s) {
+        return '<tr><td>' + s.sessionNo + '</td>' +
+          '<td class="ind-s">' + esc(s.session) + '<span class="ind-o">' + esc(s.ownerRole) + '</span></td>' +
+          '<td>' + (s.signed
+            ? '<span class="ind-sg">✓ ' + esc(s.deliveredBy) + '<br><small>' + esc(s.deliveredOn) + '</small></span>'
+            : '<button class="ind-btn ind-sm" onclick="signInd(' + s.sessionNo + ')">Sign</button>') +
+          '</td></tr>';
+      }).join('');
+
+      var t = d.rulesTest || {};
+      el.innerHTML = '<div class="ind-box">' +
+        '<h3>' + esc(d.name) + ' — induction</h3>' +
+        '<p class="ind-sub">' + esc(d.designation || '') + ' · ' + esc(d.department || '') +
+        ' · ' + d.signedCount + ' of ' + d.totalSessions + ' signed</p>' +
+        '<p class="ind-sub">Rules test: ' + (t.passed
+            ? '<b style="color:var(--lv-met)">passed ' + esc(String(t.score)) + '</b> on ' + esc(t.takenAt)
+            : (t.taken ? '<b style="color:var(--lv-gap)">not passed</b>' : 'not taken')) + '</p>' +
+        '<table class="ind-t"><tbody>' + rows + '</tbody></table>' +
+        (d.clearedAt
+          ? '<p class="ind-ok-line">✓ Cleared ' + esc(String(d.clearedAt).slice(0, 10)) +
+            ' by ' + esc(d.clearedBy) + ' at ' + esc(d.competenceLevel) +
+            '<br><small>' + esc(d.docStamp || '') + '</small></p>'
+          : '<div class="ind-clear">' +
+            '<input id="indBy" placeholder="Cleared by" class="ind-in">' +
+            '<select id="indLv" class="ind-in"><option value="">Level…</option>' +
+            '<option>L1</option><option>L2</option><option>L3</option><option>L4</option></select>' +
+            '<button class="ind-btn" onclick="clearInd()"' + (d.readyToClear ? '' : ' disabled') +
+            '>Clear to work</button></div>') +
+        '<button class="ind-btn ind-alt" onclick="closeInduction()">Close</button></div>';
+    }
+
+    /* ponytail: reuses withAdmin(); the induction actions are admin writes
+       exactly like setting a level, so they take the same PIN path. */
+    function indAdmin(what, fn) {
+      withAdmin('Admin PIN to ' + what, function (m) { /* messages go to alert */ }, fn);
+    }
+
+    function startInd(empId) {
+      indAdmin('start this induction', function (tok) {
+        google.script.run.withSuccessHandler(function (r) { IND = r; renderInduction(); })
+          .startInduction(empId, tok);
+      });
+    }
+
+    function signInd(no) {
+      var by = prompt('Who delivered this session?');
+      if (!by) return;
+      indAdmin('sign this session', function (tok) {
+        google.script.run.withSuccessHandler(function (r) {
+          if (!r || r.success === false) { alert(r && r.error); return; }
+          IND = r; renderInduction();
+        }).signInductionSession({ empId: IND.empId, sessionNo: no, deliveredBy: by }, tok);
+      });
+    }
+
+    function clearInd() {
+      var by = document.getElementById('indBy').value.trim();
+      var lv = document.getElementById('indLv').value;
+      indAdmin('clear this person to work', function (tok) {
+        google.script.run.withSuccessHandler(function (r) {
+          if (!r || r.success === false) { alert(r && r.error); return; }
+          IND = r; renderInduction();
+        }).clearInductionJoiner({ empId: IND.empId, competenceLevel: lv, clearedBy: by }, tok);
+      });
+    }
+
     function whoHtml(p) {
       var pic = p.photoUrl
         ? '<img class="ph" src="' + esc(p.photoUrl) + '" alt="">'
         : '<span class="ph-x" aria-hidden="true">' + esc(initials(p.name)) + '</span>';
       return '<span class="who">' + pic + '<span class="who-n">' + esc(p.name) +
+             indBadge(p) +
              (p.jobRole || p.dept
                ? '<span class="who-r" style="display:block">' + esc(p.jobRole || p.dept) + '</span>'
                : '') +
@@ -712,5 +854,6 @@
 
     load('');
   </script>
+  <div id="indPanel" role="dialog" aria-label="Induction"></div>
 </body>
 </html>

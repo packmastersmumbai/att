@@ -77,8 +77,45 @@ function getEmployeeMonth(empId) {
     presentDays: rows.length,
     lateDays:    lateDays,
     inToday:     inToday,
-    outToday:    outToday
+    outToday:    outToday,
+    // Whether this person has been cleared to work unsupervised, and on whose
+    // signature. Carried on the profile rather than a separate lookup because
+    // "is this person inducted" is asked at the gate, by someone holding a
+    // phone, about the person standing in front of them.
+    induction:   _inductionBadge_(empId)
   };
+}
+
+/**
+ * The induction badge for one person: cleared or not, when, and by whom.
+ *
+ * Degrades to notStarted rather than throwing — a missing induction sheet must
+ * not take down the attendance modal, which is the screen the gate depends on.
+ */
+function _inductionBadge_(empId) {
+  try {
+    var st = getInduction(empId);
+    if (!st || !st.started) return { status: 'NONE', label: 'Not inducted' };
+    if (st.clearedAt) {
+      return {
+        status: 'CLEARED',
+        label:  'Inducted',
+        on:     String(st.clearedAt).slice(0, 10),
+        by:     st.clearedBy || '',
+        level:  st.competenceLevel || '',
+        nextDue: st.nextAssessmentDue || '',
+        docStamp: st.docStamp || ''
+      };
+    }
+    return {
+      status: 'PARTIAL',
+      label:  st.signedCount + ' of ' + st.totalSessions + ' sessions',
+      signed: st.signedCount,
+      total:  st.totalSessions
+    };
+  } catch (e) {
+    return { status: 'NONE', label: 'Not inducted' };
+  }
 }
 
 /**

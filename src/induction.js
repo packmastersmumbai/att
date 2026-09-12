@@ -21,6 +21,10 @@
  * competence level assigned — which is HR-08's own last block.
  */
 
+// PM/FRM/HR-08 governs this record. The CODE is stable; its revision and
+// effective date are resolved at run time and never written as literals.
+var INDUCTION_DOC_ = 'PM/FRM/HR-08';
+
 var INDUCTION_SHEETS = {
   RECORD:   'InductionRecord',
   SESSIONS: 'InductionSessions'
@@ -33,7 +37,7 @@ var INDUCTION_HEADERS = {
   InductionRecord: ['EmpID', 'Name', 'Designation', 'Department', 'DateOfJoining',
                     'ReportingTo', 'Engagement', 'StartedAt', 'IssuedItems',
                     'OnJobBuddy', 'CompetenceLevel', 'RecordedInMatrixOn',
-                    'NextAssessmentDue', 'ClearedAt', 'ClearedBy'],
+                    'NextAssessmentDue', 'ClearedAt', 'ClearedBy', 'DocStamp'],
   // One row per session per joiner. DeliveredBy is the person who signed, not
   // the department that owns the session — the form asks for a signature, and
   // a department cannot sign anything.
@@ -66,6 +70,26 @@ function _inductionSessionSeed_() {
 function _inductionIssuedItems_() {
   return ['Job description', 'PPE set', 'Employee ID / QR badge',
           'Locker', 'Uniform', 'Emergency contact card'];
+}
+
+/**
+ * The controlled document this record is written against, resolved at run time.
+ *
+ * Never a literal: revisions change, and a hardcoded one silently becomes a
+ * lie — the record then carries a version that was never current when it was
+ * written. PMCore reads the published registry.
+ *
+ * A degraded stamp keeps its "(registry unverified)" text: that is what tells
+ * an auditor the record was written during a fallback window. If PMCore is not
+ * attached at all we say so rather than printing a bare code, because a record
+ * citing an unverifiable document is the finding this exists to prevent.
+ */
+function _inductionStamp_() {
+  try {
+    return PMCore.stamp(INDUCTION_DOC_);
+  } catch (e) {
+    return INDUCTION_DOC_ + ' (revision unresolved — PMCore unavailable)';
+  }
 }
 
 function _ensureInductionSheets_() {
@@ -113,7 +137,8 @@ function startInduction(empId, token) {
     RecordedInMatrixOn: '',
     NextAssessmentDue: '',
     ClearedAt: '',
-    ClearedBy: ''
+    ClearedBy: '',
+    DocStamp: ''
   };
   rec.appendRow(headers.map(function (h) {
     return values[h] !== undefined ? values[h] : '';
@@ -185,6 +210,7 @@ function getInduction(empId) {
     nextAssessmentDue: _isoDate_(rec.NextAssessmentDue),
     clearedAt: rec.ClearedAt || '',
     clearedBy: rec.ClearedBy || '',
+    docStamp: rec.DocStamp || '',
     sessions: sessions,
     signedCount: signed,
     totalSessions: sessions.length,
@@ -333,6 +359,9 @@ function clearInductionJoiner(entry, token) {
   setCell(sheet, row, 'NextAssessmentDue', _inductionNextDue_(today));
   setCell(sheet, row, 'ClearedAt', new Date().toISOString());
   setCell(sheet, row, 'ClearedBy', by);
+  // Stamped at clearance, not at start: this is the moment the record makes
+  // a claim, so it must say which issue of HR-08 that claim was made under.
+  setCell(sheet, row, 'DocStamp', _inductionStamp_());
 
   return getInduction(id);
 }
