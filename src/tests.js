@@ -250,3 +250,42 @@ function _test_isHoliday_() {
   Logger.log('isHoliday 26Jan=' + a + ' 03Mar=' + b);
   return a === true && b === false;
 }
+
+/**
+ * Remove the rows written while verifying the authorisation and toolbox
+ * registers on 2026-09-12.
+ *
+ * Editor-run ONLY, and deliberately not routed: a safety record must not be
+ * deletable over the API, so the one thing that can delete one is a function
+ * a person has to open the project and press Run on.
+ *
+ * Matches on the marker text rather than on row numbers, so it cannot delete
+ * a real record that happens to sit where a test row used to.
+ */
+function purgeVerificationRows() {
+  var MARK = 'TEST ROW';
+  var out = { authorisations: 0, toolboxTalks: 0, kept: [] };
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+
+  [['Authorisations', 'Remarks', 'authorisations'],
+   ['ToolboxTalks',   'FeedbackAction', 'toolboxTalks']].forEach(function (spec) {
+    var sheet = ss.getSheetByName(spec[0]);
+    if (!sheet || sheet.getLastRow() < 2) return;
+
+    var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+    var col = headers.indexOf(spec[1]);
+    if (col === -1) return;
+
+    var data = sheet.getRange(2, 1, sheet.getLastRow() - 1, headers.length).getValues();
+    // Bottom-up so the indices stay valid as rows go.
+    for (var i = data.length - 1; i >= 0; i--) {
+      var cell = String(data[i][col] || '');
+      if (cell.indexOf(MARK) !== -1 || cell.indexOf('DELETE THIS ROW') !== -1) {
+        sheet.deleteRow(i + 2);
+        out[spec[2]]++;
+      }
+    }
+  });
+
+  return out;
+}
