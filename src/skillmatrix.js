@@ -31,7 +31,10 @@ var SKILL_HEADERS = {
   // One row per (EmpID, SkillID) a supervisor has ruled on. Reason/By/At
   // exist because an auditor's first question about a hand-set level is who
   // set it and on what basis.
-  SkillOverrides: ['EmpID', 'SkillID', 'Level', 'Reason', 'By', 'At']
+  // ByEmpID is the assessor's own EmpID where they are on the master. It is
+  // what makes "the assessor is not the person assessed" checkable after the
+  // fact; a name alone repeats across people and cannot be compared.
+  SkillOverrides: ['EmpID', 'SkillID', 'Level', 'Reason', 'By', 'ByEmpID', 'At']
 };
 
 /** Levels, in order. Index is the rank; NA and '' sit outside the ladder. */
@@ -260,7 +263,8 @@ function _skillCell_(o) {
   if (o.override && _normLevel_(o.override.Level)) {
     base.level  = _normLevel_(o.override.Level);
     base.source = 'OVERRIDE';
-    base.by     = o.override.By || '';
+    base.by      = o.override.By || '';
+    base.byEmpId = o.override.ByEmpID || '';
     base.reason = o.override.Reason || '';
     base.at     = _isoDate_(o.override.At);
     base.gap    = _below_(base.level, min);
@@ -377,6 +381,109 @@ function _matrixKpis_(rows) {
   };
 }
 
+// ── Awaiting a human assessment ─────────────────────────────────────────────
+
+/**
+ * Every cell the system has PROPOSED a level for and no person has confirmed.
+ *
+ * The matrix already computes a level from attendance and a test score, marks
+ * it COMPUTED/PENDING and caps it at L2 — it never claims the person was
+ * assessed. That is correct, and it is also the whole problem: PM/QSP/IMS-01
+ * step 6 requires the level to be re-assessed on the job by a named person
+ * between two weeks and three months after the training, and recorded as
+ * Effective or Not Effective on PM/FRM/HR-06. A count of pending cells does
+ * not tell a supervisor whose, on what, or which are past their window.
+ *
+ * This is the worklist for that. It asserts nothing about competence; it says
+ * what an auditor would ask about, in the order the deadline falls due.
+ */
+function getPendingAssessments(group) {
+  var got = getSkillMatrix(group);
+  if (!got.success) return got;
+
+  var today = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd');
+  var names = {};
+  (got.skills || []).forEach(function (s) { names[String(s.skillId)] = s.name; });
+
+  var out = [];
+  (got.people || []).forEach(function (r) {
+    (r.cells || []).forEach(function (c) {
+      if (c.flag !== 'PENDING' || !c.lastTrained) return;
+
+      // IMS-01 step 6: "Not less than two weeks and not more than three months
+      // after training". Before two weeks it is not yet due — re-assessing the
+      // day after a course measures recall, not competence on the job.
+      var days = _daysBetween_(c.lastTrained, today);
+      out.push({
+        empId: r.empId, name: r.name, jobRole: r.jobRole,
+        skillId: c.skillId, skill: names[String(c.skillId)] || c.skillId,
+        proposed: c.level, min: c.min,
+        lastTrained: c.lastTrained, lastScore: c.lastScore,
+        daysSince: days,
+        // Three states, deliberately not two: something not yet due is not a
+        // finding, and lumping it with an overdue one hides the real backlog.
+        window: days < 14 ? 'TOO_EARLY' : (days > 92 ? 'OVERDUE' : 'DUE')
+      });
+    });
+  });
+
+  out.sort(function (a, b) { return b.daysSince - a.daysSince; });
+
+  return {
+    success: true,
+    stamp: isoStamp('effectiveness'),
+    today: today,
+    counts: {
+      total:    out.length,
+      due:      out.filter(function (x) { return x.window === 'DUE'; }).length,
+      overdue:  out.filter(function (x) { return x.window === 'OVERDUE'; }).length,
+      tooEarly: out.filter(function (x) { return x.window === 'TOO_EARLY'; }).length
+    },
+    rows: out
+  };
+}
+
+/** Whole days between two YYYY-MM-DD dates. */
+function _daysBetween_(fromIso, toIso) {
+  var a = new Date(fromIso + 'T00:00:00');
+  var b = new Date(toIso + 'T00:00:00');
+  if (isNaN(a) || isNaN(b)) return 0;
+  return Math.round((b - a) / 86400000);
+}
+
+/**
+ * What this app CANNOT evidence about competence, said out loud.
+ *
+ * Every other function here reports what the data shows. This one reports the
+ * limits of the mechanism itself, because a control that quietly checks less
+ * than it claims is the failure this whole register exists to prevent. Read it
+ * before telling anyone the self-assessment rule is enforced.
+ */
+function isoCompetenceGaps() {
+  return {
+    success: true,
+    document: 'PM/QSP/IMS-01',
+    stamp: isoStamp('matrix'),
+    enforced: [
+      'A computed level is capped at L2 and flagged PENDING — the system never claims a person was assessed.',
+      'Confirming a level requires admin sign-in, a stated reason and a named assessor.',
+      'An assessor matched to the employee master cannot sign their own level.'
+    ],
+    notEnforced: [
+      {
+        rule: 'The assessor must be at least at the level being assessed.',
+        why:  'This app has one shared admin PIN and no per-person login, so there is no assessor identity to hold a level. The assessor names themselves; nothing verifies the claim.',
+        fix:  'Per-person sign-in, or a signed paper HR-06 retained alongside.'
+      },
+      {
+        rule: 'An assessor who is not on the employee master is recorded by name only.',
+        why:  'External and agency trainers are named in IMS-01 and are not on the master, so their EmpID is blank and the self-assessment check cannot run on them.',
+        fix:  'Accepted risk — or add external trainers to PM/REG/HR-03.'
+      }
+    ]
+  };
+}
+
 /** End of the quarter — SOP §6.3 puts the review on a quarterly cadence. */
 function _nextReviewDate_(todayIso) {
   var parts = String(todayIso).split('-').map(Number);
@@ -462,6 +569,68 @@ function getSkillHistory(empId, skillId) {
 // ── Writing: the supervisor's judgement ────────────────────────────────────
 
 /**
+ * Who is signing this level off, and are they allowed to?
+ *
+ * PM/QSP/IMS-01 states the rule in two halves:
+ *   "The assessor must be someone other than the person assessed,
+ *    and at least at the level being assessed."
+ *
+ * Only the FIRST half is enforced, and the reason matters. This app has one
+ * shared admin PIN, so the token proves somebody signed in — not who. There is
+ * no per-person login to derive an assessor from, and therefore no assessor
+ * level to compare against the level being set. Inventing one would be worse
+ * than the gap: a rule that reports itself enforced while checking nothing.
+ *
+ * So the assessor is asked to name themselves, and that name is matched to the
+ * employee master. Matching is what gives the self-assessment check teeth — a
+ * typed name can be anyone's, an EmpID is the same key the record is keyed on.
+ *
+ * An assessor who is not on the master (an external trainer, an agency
+ * supervisor) is ACCEPTED with a blank ByEmpID: IMS-01 §Deliver names external
+ * trainers explicitly. What is refused is anonymity, and self-signing.
+ *
+ * The second half of the rule is a known, stated gap — see isoCompetenceGaps().
+ */
+function _assessorFor_(entry, subjectEmpId, level) {
+  // Clearing an override asserts nothing, so it needs no assessor.
+  if (!level) return { name: '', empId: '' };
+
+  var name = String((entry && entry.by) || '').trim();
+  if (!name) {
+    return { error: 'Name the person confirming this level — a level signed "Supervisor" names nobody' };
+  }
+
+  var byEmpId = String((entry && entry.byEmpId) || '').trim();
+
+  var roster = getSheetAsObjects(SHEETS.EMPLOYEES);
+  var match  = null;
+
+  if (byEmpId) {
+    match = roster.filter(function (e) { return String(e.EmpID) === byEmpId; })[0];
+    if (!match) return { error: 'No employee ' + byEmpId + ' on the master' };
+  } else {
+    // Fall back to an unambiguous name match. Two people sharing a name is not
+    // an error to guess through — it is a reason to ask for the EmpID.
+    var hits = roster.filter(function (e) {
+      return String(e.Name || '').trim().toLowerCase() === name.toLowerCase();
+    });
+    if (hits.length > 1) return { error: 'More than one employee is called ' + name + ' — give their EmpID' };
+    match = hits[0] || null;
+  }
+
+  if (match) {
+    if (String(match.EmpID) === String(subjectEmpId)) {
+      return { error: 'No person may assess their own competence (PM/QSP/IMS-01)' };
+    }
+    return { name: String(match.Name || name), empId: String(match.EmpID) };
+  }
+
+  // Not on the master. Permitted, but it must not look like a verified
+  // identity, so the EmpID stays blank rather than being faked.
+  return { name: name, empId: '' };
+}
+
+/**
  * Confirm or override one person's level on one skill.
  *
  * Admin-gated, because this is the assertion an auditor holds the company
@@ -484,6 +653,14 @@ function setSkillLevel(entry, token) {
   var reason = String(entry.reason || '').trim();
   if (level && !reason) return { success: false, error: 'Give a reason for the level' };
 
+  // PM/QSP/IMS-01 §Assess: "The assessor must be someone other than the person
+  // assessed, and at least at the level being assessed." Only the first half is
+  // enforceable here — see _assessorFor_ — so the assessor must NAME themselves
+  // rather than defaulting to 'Supervisor'. A level signed by nobody in
+  // particular cannot be checked against the person it was signed for.
+  var by = _assessorFor_(entry, emp, level);
+  if (by.error) return { success: false, error: by.error };
+
   var sheet   = getSheet(SKILL_SHEETS.OVERRIDES);
   var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
   var last    = sheet.getLastRow();
@@ -504,10 +681,10 @@ function setSkillLevel(entry, token) {
 
   var values = {
     EmpID: emp, SkillID: sk, Level: level, Reason: reason,
-    // Who signed off. The client passes the signed-in admin's name; there is
-    // no server-side identity to fall back on, so record the role rather than
-    // inventing a person.
-    By: String(entry.by || '').trim() || 'Supervisor',
+    // Who signed off — a named person, validated against the employee master
+    // where possible, never the bare role. See _assessorFor_.
+    By: by.name,
+    ByEmpID: by.empId,
     At: new Date().toISOString()
   };
   var row = headers.map(function (h) { return values[h] !== undefined ? values[h] : ''; });

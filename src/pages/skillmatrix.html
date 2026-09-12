@@ -355,8 +355,13 @@
       <div class="fld"><label for="pReason">Basis for this level</label>
         <input type="text" class="inp" id="pReason"
                placeholder="What was assessed, and how"></div>
+      <!-- Required, not optional: PM/QSP/IMS-01 says no person may assess
+           their own competence, and a level signed "Supervisor" names nobody
+           to check that against. The EmpID is what makes the check run. -->
       <div class="fld"><label for="pBy">Assessed by</label>
-        <input type="text" class="inp" id="pBy" placeholder="Supervisor name"></div>
+        <input type="text" class="inp" id="pBy" placeholder="Full name of the assessor"></div>
+      <div class="fld"><label for="pByEmp">Their employee number</label>
+        <input type="text" class="inp" id="pByEmp" placeholder="Blank if an outside trainer"></div>
       <button class="btn btn-pri" id="pSave" onclick="saveLevel()" style="min-height:42px">Save level</button>
       <button class="btn" id="pClear" onclick="clearLevel()">Clear override — go back to computed</button>
       <div id="pMsg" style="font-size:12px;color:var(--color-text-muted)"></div>
@@ -692,6 +697,7 @@
         OPEN.skillName + ' · minimum ' + (cell.min || '—');
       document.getElementById('pReason').value = cell.reason || '';
       document.getElementById('pBy').value = cell.by || '';
+      document.getElementById('pByEmp').value = cell.byEmpId || '';
       document.getElementById('pClear').style.display = cell.source === 'OVERRIDE' ? '' : 'none';
       msg('');
       renderNow(cell);
@@ -807,6 +813,13 @@
       // is not made to re-enter the PIN to learn the reason was missing.
       if (!reason) { msg('Say what this level is based on.'); return; }
 
+      // Same reason as above: caught before the PIN prompt, not after it.
+      var by = document.getElementById('pBy').value.trim();
+      if (!by) { msg('Name the person confirming this level.'); return; }
+      if (by.toLowerCase() === OPEN.name.toLowerCase()) {
+        msg('No person may assess their own competence.'); return;
+      }
+
       withAdmin('Admin PIN to set ' + OPEN.name + '’s level', msg, function (token) {
         google.script.run
           .withSuccessHandler(function (r) {
@@ -818,7 +831,8 @@
           .withFailureHandler(function (e) { msg('Error: ' + (e && e.message)); })
           .setSkillLevel({
             empId: OPEN.empId, skillId: OPEN.skillId, level: PICKED,
-            reason: reason, by: document.getElementById('pBy').value.trim()
+            reason: reason, by: by,
+            byEmpId: document.getElementById('pByEmp').value.trim()
           }, token);
       });
     }

@@ -337,6 +337,8 @@ function _dispatchPost_(params) {
   if (action === 'getSkillMatrix')        return jsonResponse(getSkillMatrix(params.group));
   if (action === 'getSkillHistory')       return jsonResponse(getSkillHistory(params.empId, params.skillId));
   if (action === 'setSkillLevel')         return jsonResponse(setSkillLevel(params.entry, params.token));
+  if (action === 'getPendingAssessments') return jsonResponse(getPendingAssessments(params.group));
+  if (action === 'isoCompetenceGaps')     return jsonResponse(isoCompetenceGaps());
   if (action === 'seedSkills')            return jsonResponse(seedSkills(params.token));
   if (action === 'setupTraining')          return jsonResponse(setupTraining(params.token, params.years));
   if (action === 'getTrainingCalendar') return jsonResponse(getTrainingCalendar(params.year));
