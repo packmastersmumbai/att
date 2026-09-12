@@ -30,7 +30,21 @@ var TRAINING_HEADERS = {
                    'Status', 'Trainer', 'Content', 'Observations', 'PhotoURLs', 'Rating'],
   // One row per person per session. This is the table the skill matrix is
   // derived from, and the thing the 2025 paper records never captured.
-  TrainingAttendance: ['PlanID', 'EmpID', 'Name', 'Present', 'Score', 'RecordedAt']
+  //
+  // The last four columns are PM/FRM/HR-06, the effectiveness record, and they
+  // are per PERSON rather than per session because IMS-01 step 6 evaluates a
+  // person on the job — "re-assess the person against the target level" — not
+  // the room. A session-level satisfaction score is not this.
+  //
+  //   EvalDate   when the re-assessment happened. IMS-01 step 6 requires not
+  //              less than two weeks and not more than three months after the
+  //              training; _evalWindow_ reports anything outside that.
+  //   EvalMethod observation | practical | written | oral | supervisor
+  //   Verdict    EFFECTIVE | NOT_EFFECTIVE — the words the procedure uses.
+  //   EvalBy     the assessor, named. IMS-01: "No person may assess their own
+  //              competence."
+  TrainingAttendance: ['PlanID', 'EmpID', 'Name', 'Present', 'Score', 'RecordedAt',
+                       'EvalDate', 'EvalMethod', 'Verdict', 'EvalBy']
 };
 
 /**
@@ -902,4 +916,163 @@ function addSessionPhoto(planId, dataUrl) {
   } catch (e) {
     return { success: false, error: e.message };
   }
+}
+
+// ── Effectiveness — PM/FRM/HR-06 ───────────────────────────────────────────
+
+/**
+ * Where a person's evaluation sits against the IMS-01 step 6 window.
+ *
+ * "Not less than two weeks and not more than three months after training."
+ * Three states, not two: something evaluated too early is as much a finding
+ * as one never evaluated, and lumping them together hides which is which.
+ */
+function _evalWindow_(trainedIso, evalIso) {
+  if (!trainedIso) return 'NO_SESSION_DATE';
+  if (!evalIso)    return 'NOT_EVALUATED';
+  var days = _daysBetween_(trainedIso, evalIso);
+  if (days < 14) return 'TOO_EARLY';
+  if (days > 92) return 'LATE';
+  return 'IN_WINDOW';
+}
+
+/**
+ * Record the effectiveness verdict for one person on one session.
+ *
+ * Per PM/QSP/IMS-01 step 6, which is CRITICAL: two weeks to three months after
+ * the training, re-assess the person ON THE JOB and record Effective or Not
+ * Effective. The procedure's own callout is the reason this function exists —
+ * "Attendance is not evidence of competence. If the level has not moved, the
+ * training did not work."
+ *
+ * Admin-gated and assessor-checked for the same reason setSkillLevel is: this
+ * is an assertion the company is held to. _assessorFor_ is reused rather than
+ * re-implemented so "no person may assess their own competence" means the same
+ * thing here as it does on the matrix.
+ */
+function recordEffectiveness(entry, token) {
+  _requireAdmin_(token);
+  _ensureTrainingSheets_();
+
+  var planId = String((entry && entry.planId) || '').trim();
+  var empId  = String((entry && entry.empId) || '').trim();
+  if (!planId || !empId) return { success: false, error: 'Missing session or employee' };
+
+  var verdict = String((entry && entry.verdict) || '').trim().toUpperCase();
+  if (verdict && verdict !== 'EFFECTIVE' && verdict !== 'NOT_EFFECTIVE') {
+    return { success: false, error: 'Verdict must be EFFECTIVE or NOT_EFFECTIVE' };
+  }
+
+  // The method matters to an auditor: "direct observation, a practical check,
+  // a written or oral test, or documented supervisor confirmation".
+  var METHODS = ['OBSERVATION', 'PRACTICAL', 'WRITTEN', 'ORAL', 'SUPERVISOR'];
+  var method = String((entry && entry.method) || '').trim().toUpperCase();
+  if (verdict && METHODS.indexOf(method) === -1) {
+    return { success: false, error: 'Method must be one of: ' + METHODS.join(', ') };
+  }
+
+  var by = _assessorFor_({ by: entry.by, byEmpId: entry.byEmpId }, empId, verdict || '');
+  if (by.error) return { success: false, error: by.error };
+
+  var sheet   = getSheet(TRAINING_SHEETS.ATTENDANCE);
+  var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  var last    = sheet.getLastRow();
+  if (last < 2) return { success: false, error: 'No attendance recorded yet' };
+
+  var pc = headers.indexOf('PlanID'), ec = headers.indexOf('EmpID');
+  var data = sheet.getRange(2, 1, last - 1, headers.length).getValues();
+  var row = -1;
+  for (var i = 0; i < data.length; i++) {
+    // EmpID "004" is stored by Sheets as the NUMBER 4, so a string compare
+    // misses every employee whose id has a leading zero — which is the
+    // Proprietor and the Plant In-charge. Compare on the normalised form.
+    if (String(data[i][pc]) === planId && _sameEmpId_(data[i][ec], empId)) { row = i + 2; break; }
+  }
+  // Effectiveness is evaluated on a person who ATTENDED. No attendance row is
+  // not a missing field, it is a claim about a session they were not at.
+  if (row === -1) return { success: false, error: empId + ' has no attendance on ' + planId };
+
+  var evalDate = _isoDate_(entry.evalDate) || _isoDate_(new Date());
+  setCell(sheet, row, 'EvalDate',   verdict ? evalDate : '');
+  setCell(sheet, row, 'EvalMethod', verdict ? method : '');
+  setCell(sheet, row, 'Verdict',    verdict);
+  setCell(sheet, row, 'EvalBy',     verdict ? by.name : '');
+
+  var plan = getSheetAsObjects(TRAINING_SHEETS.PLAN)
+               .filter(function (p) { return String(p.PlanID) === planId; })[0] || {};
+
+  return {
+    success: true, planId: planId, empId: empId, verdict: verdict,
+    window: _evalWindow_(_isoDate_(plan.ActualDate), evalDate),
+    by: by.name, stamp: isoStamp('effectiveness')
+  };
+}
+
+/**
+ * Which held sessions still have no effectiveness verdict, per person.
+ *
+ * IMS-01 step 8 reports "effectiveness rate" to management review, and step 6
+ * is CRITICAL. This is the worklist behind both: attendance recorded, verdict
+ * missing. Reported per person rather than per session because the procedure
+ * evaluates a person, and one unevaluated participant is one unevidenced
+ * competence claim.
+ */
+function getEffectivenessGaps(year) {
+  _ensureTrainingSheets_();
+
+  var plans = {};
+  getSheetAsObjects(TRAINING_SHEETS.PLAN).forEach(function (p) {
+    var actual = _isoDate_(p.ActualDate);
+    if (!actual) return;                       // a session that never ran evaluates nobody
+    if (year && String(p.Year) !== String(year)) return;
+    plans[String(p.PlanID)] = { topicId: String(p.TopicID), date: actual };
+  });
+
+  var topics = {};
+  getSheetAsObjects(TRAINING_SHEETS.TOPICS).forEach(function (t) {
+    topics[String(t.TopicID)] = t.Title || t.TopicID;
+  });
+
+  var today = _isoDate_(new Date());
+  var rows = [], counts = { attended: 0, evaluated: 0, effective: 0, notEffective: 0, due: 0, tooEarly: 0 };
+
+  getSheetAsObjects(TRAINING_SHEETS.ATTENDANCE).forEach(function (a) {
+    if (String(a.Present).toUpperCase() !== 'YES') return;
+    var plan = plans[String(a.PlanID)];
+    if (!plan) return;
+
+    counts.attended++;
+    var verdict = String(a.Verdict || '').toUpperCase();
+    if (verdict) {
+      counts.evaluated++;
+      if (verdict === 'EFFECTIVE') counts.effective++; else counts.notEffective++;
+      return;
+    }
+
+    // Unevaluated. Whether that is a finding yet depends on the window.
+    var since = _daysBetween_(plan.date, today);
+    var state = since < 14 ? 'TOO_EARLY' : 'DUE';
+    if (state === 'TOO_EARLY') counts.tooEarly++; else counts.due++;
+
+    rows.push({
+      planId: String(a.PlanID), topic: topics[plan.topicId] || plan.topicId,
+      trainedOn: plan.date, empId: String(a.EmpID), name: a.Name || a.EmpID,
+      daysSince: since, state: state,
+      // Past three months and still unevaluated is the state IMS-01 step 6
+      // does not allow; naming it is the point of the list.
+      overdue: since > 92
+    });
+  });
+
+  rows.sort(function (x, y) { return y.daysSince - x.daysSince; });
+
+  return {
+    success: true,
+    stamp: isoStamp('effectiveness'),
+    counts: counts,
+    // The number step 8 reports to management review.
+    effectivenessRate: counts.evaluated
+      ? Math.round(counts.effective / counts.evaluated * 100) : 0,
+    rows: rows
+  };
 }

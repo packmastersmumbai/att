@@ -57,3 +57,71 @@ function isoCheck() {
   return {registry: h.documents + ' documents from ' + h.source,
           degraded: h.degraded === true, unresolved: bad, documents: out};
 }
+
+/**
+ * Tell the ISO this app is bound, and to which documents.
+ *
+ * Call once a day from a trigger this app already has. It is bookkeeping: it
+ * never throws, and nothing here should ever wait on it. Without it, whether
+ * this app is wired is a claim in a file rather than something the ISO can see.
+ */
+function isoAnnounce(force) {
+  // Once a day is the point; more often is waste. The host function may run
+  // hourly or every few minutes — that is the host's business, not this one's,
+  // so the limit lives here rather than in the choice of host.
+  try {
+    var props = PropertiesService.getScriptProperties();
+    var today = Utilities.formatDate(new Date(), Session.getScriptTimeZone(),
+                                     'yyyy-MM-dd');
+    if (!force && props.getProperty('ISO_ANNOUNCED') === today) {
+      return {ok: true, skipped: 'already announced today'};
+    }
+    var r = PMCore.announce('aqrs', ISO_DOCS);
+    if (r && r.ok) props.setProperty('ISO_ANNOUNCED', today);
+    return r;
+  } catch (e) {
+    // Never let bookkeeping break the job it rides on. If PMCore is not bound,
+    // `PMCore` is undefined and a bare call would be a ReferenceError that
+    // takes the host function down with it.
+    console.error('isoAnnounce: ' + e);
+    return {ok: false, error: String(e)};
+  }
+}
+
+/**
+ * Is the announce actually scheduled?
+ *
+ * isoAnnounce() rides on sendDailySummary, which is only useful if that function is on
+ * a time-based trigger. If it is not, this app will never report itself and the
+ * ISO's consumer list will quietly omit it — the exact failure the list exists
+ * to prevent, one level up.
+ */
+function isoTriggerCheck() {
+  var host = 'sendDailySummary', found = null;
+  ScriptApp.getProjectTriggers().forEach(function (t) {
+    if (t.getHandlerFunction() === host) found = String(t.getEventType());
+  });
+  var all = [];
+  ScriptApp.getProjectTriggers().forEach(function (t) {
+    all.push(t.getHandlerFunction() + ' (' + t.getEventType() + ')');
+  });
+  return {host: host, scheduled: !!found, eventType: found,
+          note: found ? 'announces whenever ' + host + ' runs'
+                      : 'NOT SCHEDULED — this app will never announce itself',
+          // listed so a wrong host is visible, not merely reported as absent
+          triggers: all.sort()};
+}
+
+/**
+ * The stamp for a page header, with the failure made visible.
+ *
+ * isoStamp returns '' when PMCore cannot resolve the code, which on a page
+ * header would print a bare separator and look like a styling bug. On a
+ * controlled record the honest reading of an unresolved document is that the
+ * record cannot cite one — so say that, rather than leaving a gap the reader
+ * fills in with the wrong assumption.
+ */
+function _pageStamp_(kind) {
+  var s = isoStamp(kind);
+  return s || ((ISO_DOCS[kind] || kind) + ' — revision unresolved');
+}

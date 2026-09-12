@@ -300,7 +300,10 @@
       <div class="doc-hd">
         <div>
           <div class="doc-t">Annual Training Calendar <span id="hdYear">—</span></div>
-          <div class="doc-meta">Format F-TR-01 · Rev 00 · <?= orgName ?></div>
+          <!-- The calendar IS the annual training plan, PM/FRM/HR-04, and the
+               panel below records attendance on PM/FRM/HR-05. Both resolved at
+               run time; "F-TR-01 Rev 00" was a literal naming no real form. -->
+          <div class="doc-meta"><?= isoPlan ?> · <?= orgName ?></div>
         </div>
         <div class="ctrls">
           <div class="seg" id="yearSeg"></div>

@@ -311,7 +311,9 @@
       <div class="doc-hd">
         <div>
           <div class="doc-t">Skill Matrix <span id="hdGroup"></span></div>
-          <div class="doc-meta">Format F-HR-01 · Rev 00 · <?= orgName ?> ·
+          <!-- Resolved at run time from the register, never a literal: the
+               revision printed on a record is the claim an auditor checks. -->
+          <div class="doc-meta"><?= isoMatrix ?> · <?= orgName ?> ·
             Next review <span id="hdReview">—</span></div>
         </div>
         <div class="ctrls">

@@ -97,7 +97,10 @@ function getSkillMatrix(group) {
     if (String(a.Present).toUpperCase() !== 'YES') return;
     var plan = plans[String(a.PlanID)];
     if (!plan) return;
-    var emp = String(a.EmpID);
+    // Normalised: the sheet stores "004" as 4, so keying on the raw value
+    // never matches the roster's "004" and that person's training silently
+    // credits nothing. See _normEmpId_.
+    var emp = _normEmpId_(a.EmpID);
     byPerson[emp] = byPerson[emp] || {};
     var prev = byPerson[emp][plan.topicId];
     if (prev && prev.date >= plan.actualDate) return;
@@ -132,7 +135,7 @@ function getSkillMatrix(group) {
         // for roles nobody has set a line for.
         skill:      s,
         minRequired: _minFor_(byRole, role, String(s.SkillID), s.MinRequired),
-        attendance: byPerson[String(e.EmpID)] || {},
+        attendance: byPerson[_normEmpId_(e.EmpID)] || {},
         validity:   validity,
         override:   overrides[String(e.EmpID) + '|' + String(s.SkillID)],
         passMark:   pass,
@@ -486,11 +489,18 @@ function isoCompetenceGaps() {
 
 /** End of the quarter — SOP §6.3 puts the review on a quarterly cadence. */
 function _nextReviewDate_(todayIso) {
+  /* PM/QSP/IMS-01 step 2: "Competence is re-assessed for every person
+     half-yearly — April and October". This returned the end of the calendar
+     QUARTER, which is neither of those months and put a date on the printed
+     matrix that the procedure does not recognise.
+
+     The cycle starts on the 1st: April is when the assessment is due, not a
+     deadline at the end of it. */
   var parts = String(todayIso).split('-').map(Number);
-  var q     = Math.floor((parts[1] - 1) / 3);
-  var endMonth = (q + 1) * 3;              // 3, 6, 9 or 12
-  var last = new Date(parts[0], endMonth, 0);
-  return Utilities.formatDate(last, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+  var y = parts[0], m = parts[1];
+  if (m < 4)  return y + '-04-01';
+  if (m < 10) return y + '-10-01';
+  return (y + 1) + '-04-01';
 }
 
 // ── One person, one skill: the history behind a cell ────────────────────────
@@ -521,7 +531,7 @@ function getSkillHistory(empId, skillId) {
 
   var attended = {};
   getSheetAsObjects(TRAINING_SHEETS.ATTENDANCE).forEach(function (a) {
-    if (String(a.EmpID) === emp && String(a.Present).toUpperCase() === 'YES') {
+    if (_sameEmpId_(a.EmpID, emp) && String(a.Present).toUpperCase() === 'YES') {
       attended[String(a.PlanID)] = (a.Score === '' || a.Score == null) ? '' : String(a.Score);
     }
   });

@@ -66,6 +66,20 @@ function doGet(e) {
   } catch(ex) {}
   template.orgName = orgName;
 
+  /* The controlled-document line each page prints on its record. Resolved here
+     rather than written into the HTML: CLAUDE.md's one rule is never to write a
+     document code, revision or effective date as a literal, and both the matrix
+     and the calendar were doing exactly that — "Format F-HR-01 · Rev 00" while
+     the register says PM/REG/HR-01 Rev 3.1. A record that cites the wrong
+     revision is worse than one citing none.
+
+     A blank stamp is a STOP, not an empty string: PMCore returning nothing
+     means the document could not be resolved, and the page says so rather than
+     printing a bare separator. */
+  template.isoMatrix   = _pageStamp_('matrix');
+  template.isoPlan     = _pageStamp_('plan');
+  template.isoAttend   = _pageStamp_('attendance');
+
   // For ID cards page inject employee data server-side (no extra round-trip)
   if (page === 'idcards') {
     var emps = [], idcardsError = '';
@@ -344,6 +358,10 @@ function _dispatchPost_(params) {
   if (action === 'getTrainingCalendar') return jsonResponse(getTrainingCalendar(params.year));
   if (action === 'getSessionAttendance')  return jsonResponse(getSessionAttendance(params.planId));
   if (action === 'saveSessionAttendance') return jsonResponse(saveSessionAttendance(params.planId, params.rows, params.token));
+  // PM/FRM/HR-06. IMS-01 step 6 is CRITICAL and was unrouted: attendance
+  // could be recorded but the verdict that makes it mean something could not.
+  if (action === 'recordEffectiveness')   return jsonResponse(recordEffectiveness(params.entry, params.token));
+  if (action === 'getEffectivenessGaps')  return jsonResponse(getEffectivenessGaps(params.year));
   if (action === 'addSessionPhoto')       return jsonResponse(addSessionPhoto(params.planId, params.dataUrl));
   if (action === 'saveTrainingSession') return jsonResponse(saveTrainingSession(params.session, params.token));
   if (action === 'addTrainingSession')  return jsonResponse(addTrainingSession(params.session));

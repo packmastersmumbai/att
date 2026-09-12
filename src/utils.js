@@ -66,6 +66,29 @@ function getSheetAsObjects(tabName) {
  * Finds the row number (1-based) of the first row where columnName === value.
  * Returns -1 if not found.
  */
+/**
+ * Do two employee ids refer to the same person?
+ *
+ * Sheets stores "004" as the number 4, so the roster's "004" and the
+ * attendance row's 4 are the same person written two ways. A bare string
+ * compare misses exactly the ids with a leading zero — here, the Proprietor
+ * (007) and the Plant In-charge (004) — and the failure is silent: their
+ * training simply never credits.
+ *
+ * Compared as trimmed strings with leading zeros removed, so "004", "4" and
+ * 4 all match, while "4A" stays distinct from "4".
+ */
+function _sameEmpId_(a, b) {
+  return _normEmpId_(a) === _normEmpId_(b);
+}
+
+/** "004" -> "4", 4 -> "4". A blank id matches nothing, not even another blank. */
+function _normEmpId_(v) {
+  var s = String(v == null ? '' : v).trim();
+  if (!s) return '(blank)';           // two missing ids are not the same person
+  return /^\d+$/.test(s) ? String(Number(s)) : s.toUpperCase();
+}
+
 function findRowByValue(sheet, columnName, value) {
   var col = getColIndex(sheet, columnName);
   var lastRow = sheet.getLastRow();
