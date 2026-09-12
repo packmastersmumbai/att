@@ -302,6 +302,12 @@ function _dispatchPost_(params) {
                                             params.name, params.audio, params.lang,
                                             params.cues, params.voice, params.token,
                                             params.format));
+  // KPI register (PM/FRM/MR-14) and KRA sheets (PM/FRM/MR-27).
+  if (action === 'getKpiRegister')   return jsonResponse(getKpiRegister(params.period));
+  if (action === 'seedKpiRegister')  return jsonResponse(seedKpiRegister(params.token));
+  if (action === 'saveKpiEntry')     return jsonResponse(saveKpiEntry(params.entry, params.token));
+  if (action === 'getKraSheet')      return jsonResponse(getKraSheet(params.empId, params.fy));
+  if (action === 'saveKraRow')       return jsonResponse(saveKraRow(params.entry, params.token));
   // New-joiner induction (PM/FRM/HR-08). The rules TEST lives in modules.js;
   // this is the nine-session programme and the clearance that follows it.
   if (action === 'getInductionRegister') return jsonResponse(getInductionRegister());
