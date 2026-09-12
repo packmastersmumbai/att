@@ -157,7 +157,20 @@ function doGet(e) {
     // hand-rolling its own copy.
     HtmlService.createHtmlOutputFromFile('gatepassCard').getContent() + '</head>');
   // Shared floating "Report an issue" widget on every page, before </body>.
-  var feedback = HtmlService.createHtmlOutputFromFile('feedbackWidget').getContent();
+  // The back control rides along with it: sixteen of nineteen pages had no way
+  // back, and idcards — opened from admin in a NEW TAB — had no exit at all
+  // bar closing it. Injected here rather than pasted into every page so one
+  // definition governs the behaviour and a new page inherits it.
+  // backNav is a TEMPLATE, not a plain file: it needs the resolved page name
+  // to decide whether this page is a stop on a journey or an endpoint. Inside
+  // the sandbox the iframe URL carries no ?page=, so reading it client-side
+  // matched nothing and the button appeared on the kiosk and the public
+  // visitor pages.
+  var backTpl = HtmlService.createTemplateFromFile('backNav');
+  backTpl.page = page;
+  backTpl.appUrl = publicBaseUrl();   // the /exec address, not the sandbox iframe
+  var feedback = HtmlService.createHtmlOutputFromFile('feedbackWidget').getContent() +
+                 backTpl.evaluate().getContent();
   withI18n = withI18n.indexOf('</body>') !== -1
     ? withI18n.replace('</body>', feedback + '</body>')
     : withI18n + feedback;

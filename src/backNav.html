@@ -1,0 +1,103 @@
+<!-- Shared back control, injected into every page by doGet().
+
+     Sixteen of nineteen pages had no way back. On the sidebar pages the nav
+     survives on mobile as a horizontal scroller, so back is a convenience;
+     on idcards it is the ONLY exit, because admin opens it with
+     window.open(..., '_blank') — a new tab with no history, no sidebar and no
+     mobile bar. The user's only way out was closing the tab.
+
+     Injected like i18n and the feedback widget rather than pasted into
+     nineteen files: one definition, one behaviour, and a page added later
+     inherits it.
+
+     The hard part is not the button, it is knowing where back goes. A control
+     that does nothing is worse than no control — the user presses it, the page
+     sits there, and they stop trusting the interface. -->
+<style>
+  .qratt-back{
+    position:fixed;left:12px;bottom:12px;z-index:900;
+    display:none;align-items:center;gap:7px;
+    font:600 12px/1 var(--font-sans, system-ui);
+    padding:9px 13px;min-height:40px;
+    color:var(--color-text, #1e293b);
+    background:var(--color-surface, #fff);
+    border:1px solid var(--color-border, #e2e8f0);
+    border-radius:var(--radius-md, 8px);
+    box-shadow:0 2px 10px rgba(2,6,16,.10);
+    cursor:pointer;-webkit-tap-highlight-color:transparent;
+    transition:transform 100ms cubic-bezier(0.23, 1, 0.32, 1),
+               box-shadow 140ms ease;
+  }
+  .qratt-back.on{display:inline-flex}
+  .qratt-back:active{transform:scale(0.97)}
+  .qratt-back:focus-visible{outline:2px solid var(--color-primary, #0f766e);outline-offset:2px}
+  .qratt-back .qratt-back-a{font-size:14px;line-height:1}
+
+  /* The feedback widget sits bottom-RIGHT, so bottom-left is free. Both are
+     on screen together at phone width, which is why this one stays compact
+     rather than stretching. */
+  @media (max-width:420px){
+    .qratt-back{left:10px;bottom:10px;padding:9px 11px}
+  }
+
+  @media print{ .qratt-back{display:none !important} }
+
+  @media (prefers-reduced-motion: reduce){
+    .qratt-back{transition:box-shadow 140ms ease}
+    .qratt-back:active{transform:none}
+  }
+</style>
+
+<button type="button" class="qratt-back" id="qrattBack"
+        aria-label="Go to the dashboard">
+  <span class="qratt-back-a" aria-hidden="true">&larr;</span><span id="qrattBackLbl">Dashboard</span>
+</button>
+
+<script>
+(function () {
+  // Endpoints, not stops on a journey:
+  //   kiosk             a locked scanning station — an exit defeats the point
+  //   scanner_popup     a camera relay window that closes itself
+  //   vpass, vreg       opened by a visitor from a QR code, no app behind them
+  //   gatepass_approve  a host approving from a link in a message
+  //   login             going back from a sign-in screen means nothing
+  var SKIP = ['kiosk', 'scanner_popup', 'vpass', 'vreg', 'gatepass_approve', 'login'];
+
+  // From the server, NOT location.search. Inside the Apps Script sandbox this
+  // runs in an iframe whose URL is userCodeAppPanel with no ?page= on it, so
+  // reading the query returned '' for every page — the skip list matched
+  // nothing and the button appeared on the kiosk and the public QR pages.
+  var page = '<?!= page ?>';
+  if (SKIP.indexOf(page) !== -1) return;
+
+  var btn = document.getElementById('qrattBack');
+  if (!btn) return;
+
+  // MEASURED, not assumed: history.back() inside the Apps Script sandbox does
+  // not move the page. The iframe is permanently cross-origin from the /exec
+  // document, so it can neither read the parent history (SecurityError) nor
+  // drive it. Three earlier drafts each shipped a "Back" that sat there doing
+  // nothing — referrer-based, top.history-based, and a length > 1 test that a
+  // fresh tab satisfied with its own iframe entry.
+  //
+  // So this control does not pretend. It always goes to the dashboard, and it
+  // says "Dashboard" on its face. That is a smaller thing than true back, but
+  // it is a true thing, and a button that always works beats one that works
+  // in a case we cannot detect.
+  //
+  // If the app is ever served outside the sandbox — a custom domain, or GAS
+  // dropping the iframe — restore history.back() behind a check that the
+  // parent history is actually readable.
+  function go() {
+    var url = '<?!= appUrl ?>' + '?page=dashboard';
+    // _top BY NAME: assigning window.top.location throws across the sandbox
+    // boundary, which is why an earlier draft failed silently.
+    try { window.open(url, '_top'); }
+    catch (e) { window.location.href = url; }
+  }
+
+  btn.addEventListener('click', go);
+
+  btn.classList.add('on');
+})();
+</script>
