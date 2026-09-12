@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>KPI &amp; KRA — QR Att.</title>
+  <style>
+    /* Colours, spacing and type come from the shared tokens injected by
+       doGet(); only what is specific to this page is declared here. */
+    :root{
+      --lv-met:#0f766e;  --lv-met-bg:#ccfbf1;
+      --lv-gap:#b91c1c;  --lv-gap-bg:#fee2e2;
+      --lv-pend:#b45309; --lv-pend-bg:#fef3c7;
+      --lv-na:#64748b;   --lv-na-bg:#f1f5f9;
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    html,body{height:100%}
+    body{font-family:var(--font-sans);background:var(--color-bg);color:var(--color-text);
+      font-size:13px;line-height:1.45;display:flex}
+
+    /* ── Sidebar (matches training/reports/visitors) ── */
+    .sb{width:238px;flex-shrink:0;background:var(--color-surface);
+      border-right:1px solid var(--color-border);display:flex;flex-direction:column}
+    .sb-logo{display:flex;align-items:center;gap:10px;padding:16px;border-bottom:1px solid var(--color-border)}
+    .sb-logo-icon{width:32px;height:32px;border-radius:var(--radius-md);background:var(--color-primary);
+      color:#fff;display:grid;place-items:center;font-weight:800;font-size:12px}
+    .sb-logo-name{font-weight:800;font-size:16px;color:var(--color-primary);line-height:1}
+    .sb-logo-sub{font-size:9px;color:var(--color-text-muted);letter-spacing:1.4px;text-transform:uppercase}
+    /* ── Induction badge + panel (PM/FRM/HR-08) ── */
+    .ind{border:0;background:none;cursor:pointer;font-size:12px;line-height:1;padding:0 0 0 4px;vertical-align:baseline}
+    .ind-ok{color:var(--lv-met)} .ind-part{color:var(--lv-pend)} .ind-no{color:var(--lv-na)}
+    #indPanel{display:none;position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:60;
+      overflow:auto;padding:24px}
+    .ind-box{max-width:660px;margin:0 auto;background:var(--color-surface);border-radius:var(--radius-lg);
+      padding:20px;box-shadow:0 12px 40px rgba(0,0,0,.25)}
+    .ind-box h3{font-size:16px;margin-bottom:2px}
+    .ind-sub{font-size:12px;color:var(--color-text-muted);margin-bottom:10px}
+    .ind-t{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:12px}
+    .ind-t td{border-top:1px solid var(--color-border);padding:7px 6px;vertical-align:top}
+    .ind-s{width:100%}
+    .ind-o{display:block;font-size:10px;color:var(--color-text-muted)}
+    .ind-sg{color:var(--lv-met);font-weight:700;font-size:11px}
+    .ind-btn{font:inherit;font-size:12px;font-weight:700;cursor:pointer;padding:7px 13px;min-height:32px;
+      border:1px solid var(--color-primary);border-radius:var(--radius-md);background:var(--color-primary);color:#fff}
+    .ind-btn[disabled]{opacity:.45;cursor:default}
+    .ind-btn.ind-alt{background:none;color:var(--color-text)}
+    .ind-btn.ind-sm{padding:4px 10px;min-height:26px}
+    .ind-clear{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+    .ind-in{font:inherit;font-size:12px;padding:7px;border:1px solid var(--color-border);
+      border-radius:var(--radius-md);min-height:32px}
+    .ind-ok-line{font-size:12px;color:var(--lv-met);font-weight:700;margin-bottom:12px}
+    /* -- KPI page -- */
+    .main{flex:1;overflow:auto;display:flex;flex-direction:column}
+    .hd{display:flex;justify-content:space-between;align-items:center;gap:12px;
+      padding:14px 18px;border-bottom:1px solid var(--color-border);background:var(--color-surface)}
+    .hd-t{font-size:17px;font-weight:800}
+    .hd-s{font-size:11px;color:var(--color-text-muted)}
+    .hd-r{display:flex;gap:8px;align-items:center}
+    .k-wrap{padding:16px 18px}
+    .k-tiles{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+    .k-tile{background:var(--color-surface);border:1px solid var(--color-border);
+      border-radius:var(--radius-md);padding:10px 16px;min-width:104px}
+    .k-tv{font-size:21px;font-weight:800;line-height:1.1}
+    .k-tl{font-size:10px;color:var(--color-text-muted);text-transform:uppercase;letter-spacing:.6px}
+    .k-t{width:100%;border-collapse:collapse;font-size:12px;background:var(--color-surface);
+      border:1px solid var(--color-border);border-radius:var(--radius-md)}
+    .k-t th{text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.6px;
+      color:var(--color-text-muted);padding:8px 7px;border-bottom:1px solid var(--color-border)}
+    .k-t td{padding:8px 7px;border-top:1px solid var(--color-border);vertical-align:top}
+    .k-mode{display:inline-block;margin-left:6px;font-size:9px;font-weight:800;padding:1px 5px;
+      border-radius:3px;letter-spacing:.5px}
+    .k-auto{background:#ccfbf1;color:#0f766e} .k-fetch{background:#dbeafe;color:#1d4ed8}
+    .k-manual{background:#f1f5f9;color:#64748b}
+    .k-src{color:var(--color-text-muted);font-size:11px}
+    .k-no{color:var(--color-text-muted)}
+    .k-h{font-size:14px;font-weight:800;margin:22px 0 8px}
+    .k-kra{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+    .k-m{text-align:center;width:30px;font-size:11px}
+    .k-s1{background:#ccfbf1;color:#0f766e;font-weight:800}
+    .k-s0{background:#fee2e2;color:#b91c1c;font-weight:800}
+    .k-sP{background:#fef3c7;color:#b45309;font-weight:800}
+    .k-ref{font-size:10px;font-weight:800;background:#eef2ff;color:#4338ca;padding:1px 5px;border-radius:3px}
+    .empty{padding:16px;color:var(--color-text-muted);text-align:center}
+    .sb-nav{padding:12px 10px;flex:1}
+    .sb-section{font-size:9px;font-weight:700;color:var(--color-text-muted);letter-spacing:1.2px;
+      text-transform:uppercase;padding:8px 8px 4px}
+    .sb-item{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:var(--radius-md);
+      color:var(--color-text);text-decoration:none;font-size:13px;font-weight:500}
+    .sb-item:hover{background:#f5f0ee}
+    .sb-item.active{background:var(--color-primary);color:#fff}
+    .sb-icon{width:17px;height:17px;flex-shrink:0}
+
+    /* ── Main ── */
+    .main{flex:1;overflow:auto;padding:20px 24px;display:flex;flex-direction:column;gap:18px}
+    .doc{background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-md)}
+    .doc-hd{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;
+      padding:14px 16px;border-bottom:1px solid var(--color-border);flex-wrap:wrap}
+    .doc-t{font-size:16px;font-weight:800}
+    .doc-meta{font-family:var(--font-mono);font-size:11px;color:var(--color-text-muted);margin-top:2px}
+    .ctrls{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+    .seg{display:flex;border:1px solid var(--color-border);border-radius:var(--radius-md);overflow:hidden}
+    .seg button{border:0;background:var(--color-surface);color:var(--color-text-muted);cursor:pointer;
+      font:600 11px var(--font-sans);padding:7px 12px;min-height:34px}
+    .seg button[aria-pressed="true"]{background:var(--color-primary);color:#fff}
+    .btn{border:1px solid var(--color-border);background:var(--color-surface);color:var(--color-text);
+      border-radius:var(--radius-md);font:600 11px var(--font-sans);padding:7px 12px;
+      min-height:34px;cursor:pointer}
+    .btn-pri{background:var(--color-primary);border-color:var(--color-primary);color:#fff}
+    .btn:disabled{opacity:.5;cursor:default}
+
+    .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));
+      border-bottom:1px solid var(--color-border)}
+    .kpi{padding:10px 16px;border-right:1px solid var(--color-border)}
+    .kpi:last-child{border-right:0}
+    .kpi-l{font-size:10px;font-weight:700;color:var(--color-text-muted);
+      text-transform:uppercase;letter-spacing:.6px}
+    .kpi-v{font:800 20px/1.1 var(--font-mono);margin-top:3px;font-variant-numeric:tabular-nums}
+    .kpi-v.warn{color:var(--color-warning)} .kpi-v.bad{color:var(--color-danger)}
+
+    .scroll{overflow-x:auto}
+    table{border-collapse:collapse;width:100%;font-size:12px}
+    th,td{border:1px solid var(--color-border);padding:6px 8px;text-align:left}
+    thead th{background:var(--color-bg);font-size:10px;font-weight:700;color:var(--color-text-muted);
+      text-transform:uppercase;letter-spacing:.5px;vertical-align:bottom}
+    /* Skill names are long and their columns are narrow, so the header text
+       is rotated rather than wrapped. Capped well below the earlier 150px:
+       a fourteen-skill matrix does not need a header band taller than the
+       rows beneath it, and the full name is on the cell's own tooltip. */
+    .sk-h{width:44px;min-width:44px;text-align:center;padding:6px 2px}
+    .sk-h span{display:block;writing-mode:vertical-rl;transform:rotate(180deg);
+      white-space:nowrap;margin:0 auto;max-height:104px;overflow:hidden;text-overflow:ellipsis}
+    /* The name column takes what a name needs and no more. Without the cap
+       three skills left it ~600px wide and the matrix read as mostly blank
+       paper — which is also how it would print. */
+    .emp{width:210px;min-width:190px;max-width:260px;overflow-wrap:anywhere}
+    .ovr{width:96px;min-width:96px;text-align:center;white-space:nowrap}
+    /* Remarks absorbs the leftover width. Every other column is sized to its
+       content, so without a column that WANTS the slack the table hands it to
+       the name column and the matrix reads as mostly blank paper. */
+    .rem{width:auto;min-width:150px;overflow-wrap:anywhere}
+
+    .who{display:flex;align-items:center;gap:8px}
+    .ph{width:30px;height:30px;border-radius:50%;object-fit:cover;flex-shrink:0;
+      border:1px solid var(--color-border);background:var(--color-bg)}
+    /* The photo is on the printed F-HR-01, so absence needs a placeholder of
+       the same size — otherwise rows change height when one person has none. */
+    .ph-x{width:30px;height:30px;border-radius:50%;flex-shrink:0;background:var(--color-bg);
+      border:1px solid var(--color-border);display:grid;place-items:center;
+      font:700 10px var(--font-mono);color:var(--color-muted)}
+    .who-n{font-weight:600;min-width:0}
+    .who-r{font-size:10px;color:var(--color-muted)}
+
+    /* A level carries its own mark as well as a colour: "!" below minimum,
+       "•" awaiting a supervisor. The matrix is printed in black and white
+       and read by people who cannot separate the hues. */
+    .lv{display:inline-flex;align-items:center;justify-content:center;
+      font:700 11px var(--font-mono);padding:4px 5px;border-radius:var(--radius-md);
+      min-width:40px;min-height:26px;cursor:pointer;border:1px solid transparent;
+      font-variant-numeric:tabular-nums}
+    .lv:hover{border-color:var(--color-primary)}
+    .lv:focus-visible,.btn:focus-visible,.seg button:focus-visible,.inp:focus-visible{
+      outline:2px solid var(--color-primary);outline-offset:2px}
+    .l-met {background:var(--lv-met-bg); color:var(--lv-met)}
+    .l-gap {background:var(--lv-gap-bg); color:var(--lv-gap)}
+    .l-pend{background:var(--lv-pend-bg);color:var(--lv-pend)}
+    .l-na  {background:var(--lv-na-bg);  color:var(--lv-na)}
+    .cellw{text-align:center;padding:3px}
+    /* The MIN REQUIRED row is policy, not a person — it reads as part of the
+       header rather than as another employee. */
+    .minrow td{background:var(--color-bg);font-weight:700}
+    .minrow .lv{cursor:default;background:transparent;color:var(--color-text)}
+    /* Marks the minimums as unsigned. Prints too — a draft that prints as
+       though it were policy is worse than no marking at all. */
+    .draft{display:inline-block;margin-left:7px;padding:1px 6px;border-radius:var(--radius-md);
+      background:var(--lv-pend-bg);color:var(--lv-pend);font:700 9px var(--font-mono);
+      text-transform:uppercase;letter-spacing:.5px;vertical-align:middle}
+    .badge{display:inline-block;font:700 10px var(--font-mono);padding:3px 7px;
+      border-radius:var(--radius-md)}
+    .b-ok{background:var(--lv-met-bg);color:var(--lv-met)}
+    .b-no{background:var(--lv-gap-bg);color:var(--lv-gap)}
+
+    .legend{display:flex;gap:14px;flex-wrap:wrap;padding:10px 16px;font-size:11px;
+      color:var(--color-text-muted);border-top:1px solid var(--color-border)}
+    .legend span{display:inline-flex;align-items:center;gap:5px}
+    .empty{padding:34px 16px;text-align:center;color:var(--color-text-muted);font-size:13px}
+
+    /* Prepared / Reviewed / Approved — the signature blocks on F-HR-01.
+       Shown on screen too, so what prints is never a surprise. */
+    .sign{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:24px;
+      padding:22px 16px 14px;border-top:1px solid var(--color-border)}
+    .sign div{border-top:1px solid var(--color-text);padding-top:5px;font-size:10px;
+      font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--color-text-muted)}
+
+    /* ── Cell panel ── */
+    .backdrop{display:none;position:fixed;inset:0;background:rgba(2,6,16,.45);z-index:40}
+    .backdrop.on{display:block}
+    .panel{position:fixed;top:0;right:0;bottom:0;width:420px;max-width:92vw;z-index:41;
+      background:var(--color-surface);border-left:1px solid var(--color-border);
+      transform:translateX(100%);transition:transform .18s ease;display:flex;flex-direction:column}
+    .panel.on{transform:none}
+    .panel-hd{padding:14px 16px;border-bottom:1px solid var(--color-border);
+      display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+    .panel-b{padding:14px 16px;overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:14px}
+    .fld{display:flex;flex-direction:column;gap:5px}
+    /* Direct child only — the same trap the session panel hit, where a
+       descendant selector uppercased every worker's name. */
+    .fld > label{font-size:10px;font-weight:700;color:var(--color-text-muted);
+      text-transform:uppercase;letter-spacing:.5px}
+    .inp{border:1px solid var(--color-border);border-radius:var(--radius-md);padding:8px 10px;
+      font:400 13px var(--font-sans);background:var(--color-surface);color:var(--color-text);
+      min-height:38px;width:100%}
+    .inp:focus{outline:none;border-color:var(--color-primary);box-shadow:0 0 0 3px rgba(0,6,102,.10)}
+    .now{background:var(--color-bg);border:1px solid var(--color-border);
+      border-radius:var(--radius-md);padding:10px 12px;font-size:12px}
+    .now b{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.5px;
+      color:var(--color-text-muted);margin-bottom:5px}
+    .hist{border:1px solid var(--color-border);border-radius:var(--radius-md);
+      max-height:230px;overflow-y:auto}
+    .hist-r{display:flex;align-items:center;gap:9px;padding:7px 10px;
+      border-bottom:1px solid var(--color-border);font-size:12px}
+    .hist-r:last-child{border-bottom:0}
+    .hist-d{font:600 11px var(--font-mono);width:80px;flex-shrink:0;color:var(--color-text-muted)}
+    .hist-t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .hist-s{font:700 11px var(--font-mono);width:56px;text-align:right;flex-shrink:0}
+    .hist-r.absent{color:var(--color-muted)}
+    .lvpick{display:flex;gap:6px;flex-wrap:wrap}
+    .lvpick button{min-width:52px;min-height:38px;border:1px solid var(--color-border);
+      border-radius:var(--radius-md);background:var(--color-surface);color:var(--color-text);
+      font:700 12px var(--font-mono);cursor:pointer}
+    .lvpick button[aria-pressed="true"]{background:var(--color-primary);
+      border-color:var(--color-primary);color:#fff}
+
+    /* Below 900px the sidebar becomes a horizontal strip — a supervisor on
+       the floor carries a phone. The name column stays pinned so a level is
+       never read against the wrong person. */
+    @media (max-width:900px){
+      body{flex-direction:column}
+      .sb{width:100%;border-right:0;border-bottom:1px solid var(--color-border)}
+      .sb-logo{padding:10px 14px}
+      .sb-nav{display:flex;gap:4px;overflow-x:auto;padding:8px 10px}
+      .sb-section{display:none}
+      .sb-item{white-space:nowrap;padding:8px 12px}
+      .main{padding:14px}
+      .doc-hd{flex-direction:column;align-items:stretch}
+      .panel{width:100%}
+      .emp{min-width:140px;position:sticky;left:0;background:var(--color-surface);z-index:1}
+      .minrow .emp{background:var(--color-bg)}
+    }
+    @media print{
+      .sb,.ctrls,.panel,.backdrop{display:none!important}
+      .main{padding:0}
+      /* F-HR-01 prints landscape; the whole matrix must fit one width. */
+      @page{size:A4 landscape;margin:10mm}
+      /* On screen a truncated header is recoverable — the full name is on the
+         cell's tooltip. On paper it is not, and this is the audit artefact,
+         so the header band is allowed to grow and every name prints whole. */
+      .sk-h span{max-height:none}
+      /* The scroller must not clip on paper: what is off-screen is simply
+         absent from the print, which would silently drop skill columns. */
+      .scroll{overflow:visible}
+    }
+  </style>
+</head>
+<body>
+  <aside class="sb">
+    <div class="sb-logo">
+      <div class="sb-logo-icon">QR</div>
+      <div>
+        <div class="sb-logo-name">QR Att.</div>
+        <div class="sb-logo-sub">Attendance System</div>
+      </div>
+    </div>
+    <nav class="sb-nav">
+      <div class="sb-section">Operations</div>
+      <a class="sb-item" href="?page=kiosk" data-page="kiosk">
+        <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18"/>
+        </svg>
+        Kiosk
+      </a>
+      <a class="sb-item" href="?page=scanner" data-page="scanner">
+        <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="5" height="5"/><rect x="16" y="3" width="5" height="5"/><rect x="3" y="16" width="5" height="5"/><path d="M21 16h-3v3m0-3v3h-3"/></svg>
+        Scanner
+      </a>
+      <a class="sb-item" href="?page=dashboard" data-page="dashboard">
+        <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+          <rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>
+        </svg>
+        Dashboard
+      </a>
+      <a class="sb-item" href="?page=reports" data-page="reports">
+        <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/>
+        </svg>
+        Reports
+      </a>
+      <a class="sb-item" href="?page=visitors" data-page="visitors">
+        <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+        </svg>
+        Visitors
+      </a>
+      <a class="sb-item" href="?page=training" data-page="training">
+        <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/>
+          <line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+        </svg>
+        Training
+      </a>
+      <a class="sb-item" href="?page=skillmatrix" data-page="skillmatrix">
+        <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/>
+          <line x1="9" y1="9" x2="9" y2="21"/>
+        </svg>
+        Skill matrix
+      </a>
+      <a class="sb-item active" href="?page=kpi" data-page="kpi">
+        <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/>
+          <line x1="6" y1="20" x2="6" y2="14"/>
+        </svg>
+        KPI &amp; KRA
+      </a>
+      <a href="?page=mockdrill" data-page="mockdrill" class="sb-item">
+        <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2 3 7v6c0 5 3.8 8.6 9 9 5.2-.4 9-4 9-9V7z"/><path d="M12 8v5"/><line x1="12" y1="16" x2="12" y2="16"/></svg>
+        Mock drills
+      </a>
+      <div class="sb-section" style="margin-top:8px">System</div>
+      <a class="sb-item" href="?page=admin" data-page="admin">
+        <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 1 0-16 0"/>
+        </svg>
+        Admin
+      </a>
+    </nav>
+  </aside>
+  <main class="main">
+    <header class="hd">
+      <div>
+        <h1 class="hd-t">KPI &amp; KRA</h1>
+        <div class="hd-s" id="stamp">&nbsp;</div>
+      </div>
+      <div class="hd-r">
+        <input type="month" id="period" class="ind-in">
+        <button class="ind-btn ind-alt" onclick="load()">Refresh</button>
+      </div>
+    </header>
+
+    <div class="k-wrap">
+      <div class="k-tiles" id="tiles"></div>
+      <table class="k-t" id="kpiT"><tbody><tr><td class="empty">Loading&hellip;</td></tr></tbody></table>
+
+      <h2 class="k-h">KRA &mdash; PM/FRM/MR-27</h2>
+      <div class="k-kra">
+        <select id="kraEmp" class="ind-in"></select>
+        <button class="ind-btn ind-alt" onclick="loadKra()">Open sheet</button>
+      </div>
+      <div id="kraBox"></div>
+    </div>
+  </main>
+
+  <script>
+    /* Shared with skillmatrix.html; kept local so this page stands alone. */
+    function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+
+    /* The PIN is exchanged for a short-lived token per action, never stored. */
+    function withAdmin(promptText, box, fn) {
+      var pin = window.prompt(promptText);
+      if (!pin) return;
+      google.script.run
+        .withSuccessHandler(function (v) {
+          if (!v || !v.success || !v.token) { alert('That PIN was not accepted.'); return; }
+          fn(v.token);
+        })
+        .withFailureHandler(function (e) { alert('Error: ' + (e && e.message)); })
+        .verifyPIN(pin);
+    }
+  </script>
+  <script>
+    var MONTHS = ['Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec','Jan','Feb','Mar'];
+    var REG = null, KRA = null, PEOPLE = [];
+
+    function period() {
+      var v = document.getElementById('period').value;
+      return v || new Date().toISOString().slice(0, 7);
+    }
+
+    function load() {
+      document.getElementById('kpiT').innerHTML =
+        '<tbody><tr><td class="empty">Loading&hellip;</td></tr></tbody>';
+      google.script.run
+        .withSuccessHandler(function (r) { REG = r; renderKpi(); })
+        .withFailureHandler(function (e) {
+          document.getElementById('kpiT').innerHTML =
+            '<tbody><tr><td class="empty">' + esc(e && e.message) + '</td></tr></tbody>';
+        })
+        .getKpiRegister(period());
+    }
+
+    function renderKpi() {
+      var d = REG || {};
+      document.getElementById('stamp').textContent = d.docStamp || '';
+
+      if (!d.seeded) {
+        document.getElementById('kpiT').innerHTML =
+          '<tbody><tr><td class="empty">The register is empty. ' +
+          '<button class="ind-btn ind-sm" onclick="seed()">Seed the 15 indicators</button>' +
+          '</td></tr></tbody>';
+        document.getElementById('tiles').innerHTML = '';
+        return;
+      }
+
+      var k = d.kpis || {};
+      document.getElementById('tiles').innerHTML =
+        tile(k.withFigure, 'with a figure') + tile(k.auto, 'computed here') +
+        tile(k.fetched, 'fetched') + tile(k.manual, 'entered by hand');
+
+      /* Mode is shown on every row. A number nobody can trace to a source is
+         worth less than no number, so the register says where each came from. */
+      document.getElementById('kpiT').innerHTML =
+        '<thead><tr><th>#</th><th>Indicator</th><th>Owner</th><th>ZED</th>' +
+        '<th>Target</th><th>Value</th><th>Source</th><th></th></tr></thead><tbody>' +
+        (d.rows || []).map(function (r) {
+          var val = (r.value === '' || r.value === null)
+            ? '<span class="k-no">&mdash;</span>'
+            : '<b>' + esc(String(r.value)) + '</b>';
+          var act = r.mode === 'MANUAL'
+            ? '<button class="ind-btn ind-sm" onclick="enter(\'' + esc(r.kpiId) + '\')">Enter</button>'
+            : '';
+          return '<tr><td>' + esc(r.kpiId.replace('KPI-', '')) + '</td>' +
+            '<td>' + esc(r.indicator) + '<span class="k-mode k-' + esc(r.mode.toLowerCase()) +
+              '">' + esc(r.mode) + '</span></td>' +
+            '<td>' + esc(r.owner) + '</td><td>' + esc(r.zed) + '</td>' +
+            '<td>' + esc(r.target) + '</td><td>' + val + '</td>' +
+            '<td class="k-src">' + esc(r.note || r.source) + '</td>' +
+            '<td>' + act + '</td></tr>';
+        }).join('') + '</tbody>';
+    }
+
+    function tile(n, label) {
+      return '<div class="k-tile"><div class="k-tv">' + (n == null ? '-' : n) +
+             '</div><div class="k-tl">' + esc(label) + '</div></div>';
+    }
+
+    function seed() {
+      withAdmin('Admin PIN to seed the register', function () {}, function (tok) {
+        google.script.run.withSuccessHandler(function () { load(); })
+          .seedKpiRegister(tok);
+      });
+    }
+
+    function enter(kpiId) {
+      var v = prompt('Figure for ' + kpiId + ' (' + period() + ')');
+      if (v === null) return;
+      var by = prompt('Entered by');
+      if (!by) return;
+      withAdmin('Admin PIN to record this figure', function () {}, function (tok) {
+        google.script.run.withSuccessHandler(function (r) {
+          if (r && r.success === false) { alert(r.error); return; }
+          REG = r; renderKpi();
+        }).saveKpiEntry({ kpiId: kpiId, period: period(), value: v, enteredBy: by }, tok);
+      });
+    }
+
+    /* -- KRA -- */
+    function loadPeople() {
+      google.script.run.withSuccessHandler(function (r) {
+        PEOPLE = (r && r.people) || [];
+        document.getElementById('kraEmp').innerHTML =
+          '<option value="">Whose sheet?</option>' + PEOPLE.map(function (p) {
+            return '<option value="' + esc(p.empId) + '">' + esc(p.name) + '</option>';
+          }).join('');
+      }).getSkillMatrix();
+    }
+
+    function loadKra() {
+      var id = document.getElementById('kraEmp').value;
+      if (!id) return;
+      google.script.run.withSuccessHandler(function (r) { KRA = r; renderKra(); })
+        .getKraSheet(id, '');
+    }
+
+    function renderKra() {
+      var d = KRA || {};
+      var box = document.getElementById('kraBox');
+      if (!d.success) { box.innerHTML = '<p class="empty">' + esc(d.error || '') + '</p>'; return; }
+
+      var head = '<tr><th>#</th><th>KRA activity</th><th>KPI</th>' +
+        MONTHS.map(function (m) { return '<th class="k-m">' + m + '</th>'; }).join('') + '</tr>';
+
+      var rows = (d.rows || []).map(function (r) {
+        return '<tr><td>' + r.kraNo + '</td><td>' + esc(r.activity) + '</td>' +
+          '<td>' + (r.kpiRef ? '<span class="k-ref">' + esc(r.kpiRef) + '</span>' : '') + '</td>' +
+          MONTHS.map(function (m) {
+            var v = r.scores[m] || '';
+            return '<td class="k-m k-s' + esc(v) + '">' + esc(v) + '</td>';
+          }).join('') + '</tr>';
+      }).join('');
+
+      box.innerHTML =
+        '<p class="hd-s">' + esc(d.fy) + ' &middot; ' + (d.rows || []).length + ' of 10 KRAs' +
+        (d.scorePct === '' ? '' : ' &middot; score ' + d.scorePct + '%') +
+        '<br><small>' + esc(d.docStamp || '') + '</small></p>' +
+        (rows
+          ? '<table class="k-t"><thead>' + head + '</thead><tbody>' + rows + '</tbody></table>'
+          : '<p class="empty">No KRAs recorded for this person yet.</p>');
+    }
+
+    document.getElementById('period').value = new Date().toISOString().slice(0, 7);
+    load();
+    loadPeople();
+  </script>
+</body>
+</html>

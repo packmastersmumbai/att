@@ -416,6 +416,52 @@ function deleteInduction(empId, token) {
 }
 
 /**
+ * Badges for MANY people in one pass.
+ *
+ * _inductionBadge_ reads three sheets per call, which is fine for one person
+ * on a profile and ruinous for a 29-row matrix — it took the skill matrix to
+ * 20s and the page to a 503. Read each sheet once, index by EmpID, then answer
+ * from memory.
+ */
+function _inductionBadgeMap_() {
+  var rec = {}, signed = {}, passed = {};
+  try {
+    getSheetAsObjects(INDUCTION_SHEETS.RECORD).forEach(function (r) {
+      rec[String(r.EmpID)] = r;
+    });
+    getSheetAsObjects(INDUCTION_SHEETS.SESSIONS).forEach(function (x) {
+      if (!String(x.SignedAt || '').trim()) return;
+      var k = String(x.EmpID);
+      signed[k] = (signed[k] || 0) + 1;
+    });
+  } catch (e) { /* no sheet yet is not an error */ }
+  try {
+    getSheetAsObjects(MODULE_SHEETS.ASSESSMENTS).forEach(function (a) {
+      if (String(a.TopicID) !== 'TRN-IND') return;
+      var k = String(a.EmpID);
+      var at = String(a.TakenAt || '');
+      if (passed[k] && passed[k].at > at) return;   // latest attempt wins
+      passed[k] = { at: at, ok: String(a.Passed).toUpperCase() === 'YES' };
+    });
+  } catch (e) { /* ditto */ }
+
+  return function (empId) {
+    var id = String(empId);
+    var r = rec[id];
+    if (!r) return { status: 'NONE', label: 'Not inducted' };
+    if (String(r.ClearedAt || '').trim()) {
+      return { status: 'CLEARED', label: 'Inducted',
+               on: String(r.ClearedAt).slice(0, 10), by: r.ClearedBy || '',
+               level: r.CompetenceLevel || '',
+               nextDue: _isoDate_(r.NextAssessmentDue),
+               docStamp: r.DocStamp || '' };
+    }
+    var n = signed[id] || 0;
+    return { status: 'PARTIAL', label: n + ' of 9 sessions', signed: n, total: 9 };
+  };
+}
+
+/**
  * Everyone who needs an induction, and where each one stands.
  *
  * "Needs" is every ACTIVE employee: HR-08 covers "permanent, contract or

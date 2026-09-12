@@ -114,6 +114,10 @@ function getSkillMatrix(group) {
   var today = _isoDate_(new Date());
   var byRole = _minByRole_();
 
+  // One pass over the induction sheets for the whole matrix, not one
+  // read per person — the per-person form took this call to 20 seconds.
+  var indBadge = _inductionBadgeMap_();
+
   var rows = people.map(function (e) {
     var role = String(e.JobRole || '').trim();
     var cells = skills.map(function (s) {
@@ -144,7 +148,7 @@ function getSkillMatrix(group) {
       // The induction badge rides along with the matrix row: both answer
       // "is this person competent to be on the floor", and a supervisor
       // should not have to open a second screen to get half the answer.
-      induction: _inductionBadge_(String(e.EmpID)),
+      induction: indBadge(String(e.EmpID)),
       cells:    cells,
       gaps:     gaps.length,
       // The OVERALL column on F-HR-01. "MEETS" is a claim about every
