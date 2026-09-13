@@ -63,7 +63,9 @@
     .k-logo-wrap { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
     .k-logo-mark {
       width: 28px; height: 28px;
-      background: linear-gradient(135deg, #38BDF8 0%, #2563EB 100%);
+      /* Gradient starts at #0369A1, not #38BDF8: the white "PM" monogram read
+         2.1:1 against the light end of the old ramp; it is 5.3:1 now. */
+      background: linear-gradient(135deg, #0369A1 0%, #1D4ED8 100%);
       border-radius: 6px;
       display: flex; align-items: center; justify-content: center;
       font-size: 13px; font-weight: 900; color: #fff; letter-spacing: -1px;
@@ -75,7 +77,7 @@
       letter-spacing: 3px; color: #38BDF8; line-height: 1;
     }
     .k-brand-sub {
-      font-size: 11px; color: var(--muted-dk);
+      font-size: 11px; color: var(--muted);
       letter-spacing: 3px; text-transform: uppercase;
       margin-top: 2px;
     }
@@ -102,8 +104,23 @@
       color: var(--muted); text-decoration: none; cursor: pointer;
       border: 1px solid transparent; transition: color .15s, background .15s, border-color .15s;
       white-space: nowrap;
+      /* 44px minimum touch target — gate staff hit these one-handed. */
+      min-height: 44px; display: inline-flex; align-items: center;
     }
     .k-nav-link:hover { color: var(--text); background: var(--surface); border-color: var(--border-md); }
+
+    /* ── Focus ring ──
+       Every control needs a visible keyboard focus indicator (WCAG 2.4.7).
+       :focus-visible keeps it off mouse clicks and on for keyboard users. */
+    a:focus-visible,
+    button:focus-visible,
+    select:focus-visible,
+    input:focus-visible,
+    [tabindex]:focus-visible {
+      outline: 2px solid var(--teal);
+      outline-offset: 2px;
+      border-radius: 4px;
+    }
 
     /* ════════════════════════════════════════
        MAIN 3-COLUMN
@@ -134,7 +151,7 @@
       font-variant-numeric: tabular-nums;
     }
     .s-hero .lbl {
-      font-size: 10px; color: var(--muted);
+      font-size: 11px; color: var(--muted);
       text-transform: uppercase; letter-spacing: 2px;
       margin-top: 4px;
     }
@@ -164,7 +181,7 @@
       color: var(--green); line-height: 1;
     }
     .s-eff .lbl {
-      font-size: 10px; color: var(--muted);
+      font-size: 11px; color: var(--muted);
       text-transform: uppercase; letter-spacing: 2px;
       margin-top: 4px;
     }
@@ -172,9 +189,12 @@
     .pct-fill { height: 100%; background: var(--green); border-radius: 2px; transition: width .6s ease; }
 
     /* Terminals pill */
+    /* margin-top:auto pins this to the bottom of the rail. The old rule set
+       padding-top:16px and then a `padding` shorthand on the next line, which
+       silently discarded it. */
     .terminals-online {
       display: flex; align-items: center; gap: 6px;
-      margin-top: auto; padding-top: 16px;
+      margin-top: auto;
       padding: 8px 11px;
       border-radius: 8px;
       background: var(--green-dim);
@@ -186,7 +206,7 @@
       animation: blink 3s infinite; flex-shrink: 0;
     }
     @keyframes blink { 0%,88%,100%{opacity:1} 94%{opacity:.15} }
-    .to-lbl { font-size: 10px; color: var(--green); font-weight: 600; letter-spacing: .5px; }
+    .to-lbl { font-size: 11px; color: var(--green); font-weight: 600; letter-spacing: .5px; }
 
     /* ── CENTER COLUMN: Arrivals Grid ── */
     .k-center {
@@ -196,7 +216,7 @@
       overflow: hidden;
     }
     .sec-label {
-      font-size: 10px; color: var(--muted-dk);
+      font-size: 11px; color: var(--muted);
       letter-spacing: 4px; text-transform: uppercase;
       margin-bottom: 14px; flex-shrink: 0;
     }
@@ -205,7 +225,9 @@
       /* auto-fit so column count always matches available width — a fixed
          repeat(8,1fr) overflowed on wide/tablet screens and the aspect-ratio
          rows overlapped the cards below (names clipped by the next row). */
-      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+      /* 150px, not 120px: every label on the card is now at the 11px floor and
+         a 120px card cannot hold them without clipping the name. */
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
       grid-auto-rows: min-content;
       gap: 6px;
       align-content: start;
@@ -215,6 +237,8 @@
     }
 
     /* Arrival card — full-bleed photo with overlay */
+    /* A <button> so it is keyboard-reachable; the appearance resets below keep
+       it looking like the photo tile it is, not a browser button. */
     .a-card {
       position: relative;
       border-radius: 14px;
@@ -222,6 +246,9 @@
       aspect-ratio: 1/1;
       border: 1.5px solid var(--border);
       transition: border-color .25s;
+      display: block; width: 100%; padding: 0;
+      background: transparent; font: inherit; color: inherit;
+      text-align: left; -webkit-appearance: none; appearance: none;
     }
     .a-card.newest { border-color: rgba(56,189,248,.6); }
     .a-card-bg {
@@ -239,12 +266,15 @@
       position: absolute; inset: 0;
       background: linear-gradient(to top, rgba(0,0,0,.88) 0%, rgba(0,0,0,.4) 45%, transparent 75%);
     }
-    /* LATE top-right badge */
+    /* LATE top-right badge — an HR-consequential flag, so it is opaque and
+       dark-on-amber (10.6:1) rather than white-on-translucent-amber (2.1:1).
+       It sits over the transparent top of the photo gradient, where a light
+       photo used to wash it out entirely. */
     .a-late-tag {
       position: absolute; top: 8px; right: 8px;
-      background: rgba(245,158,11,.85); color: #fff;
-      font-size: 9px; font-weight: 800; letter-spacing: .8px;
-      padding: 2px 6px; border-radius: 6px;
+      background: #F59E0B; color: #1B1200;
+      font-size: 11px; font-weight: 800; letter-spacing: .8px;
+      padding: 2px 7px; border-radius: 6px;
     }
     /* newest top-left dot */
     .a-new-dot {
@@ -257,8 +287,10 @@
       position: absolute; bottom: 0; left: 0; right: 0;
       padding: 6px 7px 7px;
     }
+    /* The employee ID is how two people with the same name are told apart, so
+       it has to survive poor light: 11px and near-opaque, not 8px at 50%. */
     .a-code {
-      font-size: 8px; font-weight: 700; color: rgba(255,255,255,.5);
+      font-size: 11px; font-weight: 700; color: rgba(255,255,255,.85);
       letter-spacing: 1px; text-transform: uppercase; margin-bottom: 1px;
     }
     /* Full names, not first names — two people can share a first name, and
@@ -271,12 +303,12 @@
     }
     /* Only rendered when two people on site share a name. */
     .a-org {
-      font-size: 9px; font-weight: 600; color: rgba(255,255,255,.62);
+      font-size: 11px; font-weight: 600; color: rgba(255,255,255,.8);
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
       line-height: 1.25; margin-top: 1px;
     }
     .a-time {
-      font-size: 9px; font-weight: 600; margin-top: 3px;
+      font-size: 11px; font-weight: 600; margin-top: 3px;
       display: flex; align-items: center; gap: 4px; flex-wrap: wrap;
     }
     .a-tin  { color: #6EE7B7; }
@@ -312,15 +344,15 @@
     .log-av {
       width: 26px; height: 26px; border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
-      font-size: 10px; font-weight: 700; flex-shrink: 0;
+      font-size: 11px; font-weight: 700; flex-shrink: 0;
     }
     .log-body { flex: 1; min-width: 0; }
     .log-name {
       font-size: 12px; color: #94A3B8;
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
-    .log-action { font-size: 10px; color: var(--muted); margin-top: 1px; }
-    .log-t { font-size: 10px; color: var(--muted-dk); flex-shrink: 0; font-family: var(--mono); }
+    .log-action { font-size: 11px; color: var(--muted); margin-top: 1px; }
+    .log-t { font-size: 11px; color: var(--muted); flex-shrink: 0; font-family: var(--mono); }
 
     /* Arrow directions */
     .arr-in  { color: var(--green); font-weight: 700; font-size: 13px; }
@@ -337,7 +369,7 @@
       width: 6px; height: 6px; border-radius: 50%;
       background: var(--green); animation: blink 3s infinite .5s; flex-shrink: 0;
     }
-    .ls-lbl { font-size: 10px; color: var(--muted); }
+    .ls-lbl { font-size: 11px; color: var(--muted); }
 
     /* ════════════════════════════════════════
        BOTTOM BAR
@@ -355,12 +387,12 @@
       width: 6px; height: 6px; border-radius: 50%;
       background: var(--green); animation: blink 3s infinite 1s;
     }
-    .kb-sys-txt { font-size: 10px; color: var(--green); font-weight: 600; letter-spacing: 1px; text-transform: uppercase; }
-    .kb-center { font-size: 11px; color: var(--muted-dk); letter-spacing: 1px; text-transform: uppercase; display: flex; align-items: center; }
+    .kb-sys-txt { font-size: 11px; color: var(--green); font-weight: 600; letter-spacing: 1px; text-transform: uppercase; }
+    .kb-center { font-size: 11px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; display: flex; align-items: center; }
     .kb-scan-txt {
       animation: kb-pulse 2s ease-in-out infinite;
       letter-spacing: 1.5px;
-      font-size: 10px;
+      font-size: 11px;
       font-weight: 700;
     }
     .kb-scan-icon {
@@ -375,194 +407,9 @@
       50% { opacity: 1; }
     }
     .kb-right { display: flex; align-items: center; gap: 14px; }
-    .kb-stat { font-size: 10px; color: var(--muted); }
+    .kb-stat { font-size: 11px; color: var(--muted); }
     .kb-stat span { color: var(--text-dim); }
 
-    /* ════════════════════════════════════════
-       SETTINGS GEAR BUTTON
-    ════════════════════════════════════════ */
-    .k-settings-btn {
-      position: fixed; bottom: 52px; right: 18px; z-index: 50;
-      width: 34px; height: 34px; border-radius: 50%;
-      background: rgba(255,255,255,.05);
-      border: 1px solid rgba(255,255,255,.10);
-      display: flex; align-items: center; justify-content: center;
-      cursor: pointer; font-size: 15px;
-      transition: background .2s, border-color .2s;
-      color: var(--muted); user-select: none;
-    }
-    .k-settings-btn:hover { background: rgba(255,255,255,.10); border-color: rgba(255,255,255,.18); color: var(--text-dim); }
-
-    /* ════════════════════════════════════════
-       SETTINGS OVERLAY
-    ════════════════════════════════════════ */
-    .settings-overlay {
-      position: fixed; inset: 0;
-      background: rgba(4,10,20,.88);
-      z-index: 100; display: none;
-      align-items: stretch; justify-content: stretch;
-      animation: fadeIn .2s ease;
-    }
-    .settings-overlay.open { display: flex; }
-    @keyframes fadeIn { from{opacity:0} to{opacity:1} }
-    .settings-panel {
-      display: flex;
-      width: 100%;
-      height: 100%;
-      background: #0D1C30;
-      animation: slideUp .22s ease;
-    }
-    @keyframes slideUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
-    /* Left config sidebar */
-    .sp-sidebar {
-      width: 200px;
-      flex-shrink: 0;
-      background: #07111F;
-      border-right: 1px solid rgba(255,255,255,.06);
-      display: flex;
-      flex-direction: column;
-      padding: 20px 0;
-    }
-    .sp-sidebar-title {
-      font-size: 11px;
-      font-weight: 800;
-      letter-spacing: 3px;
-      text-transform: uppercase;
-      color: #475569;
-      padding: 0 16px 14px;
-      border-bottom: 1px solid rgba(255,255,255,.05);
-      margin-bottom: 8px;
-    }
-    .sp-nav-item {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 10px 16px;
-      font-size: 12px;
-      font-weight: 500;
-      color: #475569;
-      cursor: pointer;
-      transition: background .15s, color .15s;
-      border-left: 2px solid transparent;
-    }
-    .sp-nav-item:hover { background: rgba(255,255,255,.03); color: #94A3B8; }
-    .sp-nav-item.active { background: rgba(37,99,235,.1); color: #60A5FA; border-left-color: #2563EB; }
-    .sp-nav-item svg { width: 13px; height: 13px; flex-shrink: 0; }
-    .sp-sidebar-spacer { flex: 1; }
-    .sp-admin-warning {
-      margin: 12px 10px;
-      background: rgba(220,38,38,.08);
-      border: 1px solid rgba(220,38,38,.18);
-      border-radius: 6px;
-      padding: 10px 12px;
-    }
-    .sp-admin-label { font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: #F87171; margin-bottom: 3px; }
-    .sp-admin-sub { font-size: 11px; color: #7F1D1D; }
-    .btn-sp-save {
-      margin: 0 10px 8px;
-      background: #2563EB; color: #fff;
-      border: none; border-radius: 6px;
-      padding: 10px 14px; font-size: 12px;
-      font-weight: 700; font-family: inherit;
-      cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;
-      transition: background .15s;
-    }
-    .btn-sp-save:hover { background: #1D4ED8; }
-    .sp-exit-link {
-      margin: 0 10px 16px;
-      text-align: center;
-      font-size: 10px;
-      color: #334155;
-      cursor: pointer;
-      letter-spacing: 1px;
-      text-transform: uppercase;
-      font-weight: 600;
-      transition: color .15s;
-    }
-    .sp-exit-link:hover { color: #94A3B8; }
-    /* Right main area */
-    .sp-main {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-    }
-    .sp-header {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 20px 28px;
-      border-bottom: 1px solid rgba(255,255,255,.06);
-      flex-shrink: 0;
-    }
-    .sp-title { font-size: 20px; font-weight: 800; color: var(--text); }
-    .sp-sub { font-size: 12px; color: var(--muted); margin-top: 3px; }
-    .sp-close { color: var(--muted-dk); font-size: 24px; cursor: pointer; line-height: 1; transition: color .15s; }
-    .sp-close:hover { color: #94A3B8; }
-    .sp-body {
-      flex: 1;
-      overflow-y: auto;
-      padding: 24px 28px;
-      display: flex;
-      flex-direction: column;
-      gap: 24px;
-    }
-    .sp-section { display: none; }
-    .sp-section.active { display: flex; flex-direction: column; gap: 20px; }
-    .sp-section-label {
-      font-size: 10px; letter-spacing: 2px; text-transform: uppercase;
-      color: var(--muted-dk); font-weight: 700; margin-bottom: 10px;
-    }
-
-    /* Toggle grid */
-    .toggle-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    .toggle-row {
-      display: flex; align-items: center; justify-content: space-between;
-      background: rgba(255,255,255,.03);
-      border: 1px solid rgba(255,255,255,.05);
-      border-radius: 9px; padding: 10px 14px; gap: 10px;
-    }
-    .tr-info { flex: 1; }
-    .tr-name { font-size: 13px; font-weight: 500; color: var(--text-dim); }
-    .tr-desc { font-size: 10px; color: var(--muted-dk); margin-top: 2px; }
-    /* iOS-style toggle */
-    .tog { position: relative; width: 38px; height: 22px; flex-shrink: 0; }
-    .tog input { opacity: 0; width: 0; height: 0; position: absolute; }
-    .tog-slider { position: absolute; inset: 0; background: #1E293B; border-radius: 999px; cursor: pointer; transition: background .2s; }
-    .tog-slider::before { content:''; position: absolute; width: 16px; height: 16px; left: 3px; top: 3px; background: #475569; border-radius: 50%; transition: transform .2s, background .2s; }
-    .tog input:checked + .tog-slider { background: #2563EB; }
-    .tog input:checked + .tog-slider::before { transform: translateX(16px); background: #fff; }
-
-    /* Threshold slider */
-    .thresh-row { display: flex; align-items: center; gap: 12px; }
-    .thresh-slider { flex: 1; accent-color: #2563EB; }
-    .thresh-val { font-size: 13px; font-weight: 700; color: var(--teal); min-width: 36px; text-align: right; }
-
-    /* Dept select */
-    .sp-select {
-      width: 100%; background: rgba(255,255,255,.05);
-      border: 1px solid rgba(255,255,255,.10);
-      color: var(--text-dim); border-radius: 8px;
-      padding: 9px 12px; font-size: 13px;
-      font-family: inherit; outline: none;
-    }
-    .sp-select:focus { border-color: var(--teal); }
-
-    /* Live visitor row */
-    .live-vis-row {
-      display: flex; align-items: center;
-      justify-content: space-between;
-      background: rgba(56,189,248,.05);
-      border: 1px solid rgba(56,189,248,.12);
-      border-radius: 10px; padding: 12px 16px;
-    }
-    .lv-icon {
-      width: 32px; height: 32px; border-radius: 50%;
-      background: rgba(56,189,248,.10);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 14px; flex-shrink: 0;
-    }
-    .lv-info { flex: 1; margin: 0 12px; }
-    .lv-title { font-size: 13px; font-weight: 600; color: var(--text-dim); }
-    .lv-desc { font-size: 11px; color: var(--muted-dk); margin-top: 2px; }
     @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
 
     /* ════════════════════════════════════════
@@ -665,15 +512,17 @@
       animation: blink 3s infinite;
     }
     .k-gate-row { display: flex; align-items: center; gap: 8px; }
+    /* The gate stamps every attendance record this terminal writes, so it is
+       a 13px control at full touch height, not an 11px corner afterthought. */
     .k-gate-select {
       background: rgba(255,255,255,.06);
       border: 1px solid var(--border-md);
-      color: var(--text-dim);
+      color: var(--text);
       border-radius: 6px;
-      padding: 4px 8px;
-      font-size: 11px;
+      padding: 8px 10px;
+      min-height: 44px;
+      font-size: 13px; font-weight: 600;
       font-family: var(--font);
-      outline: none;
       cursor: pointer;
     }
     .k-gate-select:focus { border-color: var(--teal); }
@@ -686,40 +535,51 @@
     #kioskScanLauncher {
       display: flex; flex-direction: column; align-items: center;
     }
+    /* #fff on --blue (#3B82F6) is 3.7:1 — under AA for 13px text. #1D4ED8
+       reads 6.4:1 and keeps the same blue identity. */
     .k-scan-btn {
       display: flex; align-items: center; gap: 8px;
-      background: var(--blue); color: #fff;
+      background: #1D4ED8; color: #fff;
       border: none; border-radius: 9px;
-      padding: 11px 26px;
-      font-size: 13px; font-weight: 700;
+      padding: 13px 26px;
+      min-height: 48px;
+      font-size: 14px; font-weight: 700;
       font-family: var(--font);
       cursor: pointer;
       transition: background .15s;
     }
-    .k-scan-btn:hover { background: #2563EB; }
+    .k-scan-btn:hover { background: #1E40AF; }
 
-    /* Result card rendered in kiosk */
+    /* ── Result card ──
+       This is the only thing on the screen the guard actually acts on, and it
+       is read on a shared phone in poor light. It used to carry the entire
+       outcome signal in a 1px border at 45% alpha with a 16px name — smaller
+       than the clock. Borders are now 3px and fully opaque, the name is 28px,
+       and the outcome word is printed above it so the state never depends on
+       colour alone. */
     #kioskResult .krc {
-      background: rgba(255,255,255,.04);
+      background: rgba(255,255,255,.06);
       border-radius: 10px;
-      padding: 14px 16px 12px;
+      padding: 18px 16px 14px;
       text-align: center;
     }
-    #kioskResult .krc.k-check-in  { border: 1px solid rgba(16,185,129,.45); }
-    #kioskResult .krc.k-check-out { border: 1px solid rgba(56,189,248,.45); }
-    #kioskResult .krc.k-blocked   { border: 1px solid rgba(239,68,68,.45); }
-    #kioskResult .krc.k-unknown   { border: 1px solid rgba(245,158,11,.45); }
-    #kioskResult .krc-name { font-size: 16px; font-weight: 700; color: var(--text); }
-    #kioskResult .krc-dept { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    #kioskResult .krc.k-check-in  { border: 3px solid #10B981; }
+    #kioskResult .krc.k-check-out { border: 3px solid #38BDF8; }
+    /* Blocked Violet, per DESIGN.md. Red stays reserved for system errors so a
+       barred person and a failed network call never look the same. */
+    #kioskResult .krc.k-blocked   { border: 3px solid #A78BFA; }
+    #kioskResult .krc.k-unknown   { border: 3px solid #F59E0B; }
+    #kioskResult .krc-name { font-size: 28px; font-weight: 800; color: var(--text); line-height: 1.15; }
+    #kioskResult .krc-dept { font-size: 13px; color: var(--muted); margin-top: 3px; }
     #kioskResult .krc-badge {
-      display: inline-block; padding: 3px 10px; border-radius: 999px;
-      font-size: 10px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase;
-      margin-bottom: 8px;
+      display: inline-block; padding: 5px 14px; border-radius: 999px;
+      font-size: 14px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase;
+      margin-bottom: 10px;
     }
     #kioskResult .krc-av {
-      width: 56px; height: 56px; border-radius: 50%;
+      width: 68px; height: 68px; border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
-      font-size: 18px; font-weight: 800;
+      font-size: 22px; font-weight: 800;
       margin: 0 auto 10px;
     }
     #kioskResult .krc-meta {
@@ -727,8 +587,8 @@
       background: rgba(255,255,255,.03); border-radius: 8px; padding: 10px 14px;
       margin: 10px 0 0;
     }
-    #kioskResult .krc-meta-lbl { font-size: 9px; color: var(--muted-dk); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 2px; }
-    #kioskResult .krc-meta-val { font-size: 12px; font-weight: 700; }
+    #kioskResult .krc-meta-lbl { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 2px; }
+    #kioskResult .krc-meta-val { font-size: 13px; font-weight: 700; }
 
     /* ── Items on the scan card ── */
     .kgp { margin-top: 10px; text-align: left; }
@@ -744,10 +604,13 @@
     .kgp-desc { flex: 1; color: #E2E8F0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .kgp-qty  { color: var(--muted); font-size: 11px; flex-shrink: 0; }
     .kgp-done { color: #10B981; font-weight: 700; flex-shrink: 0; }
+    /* Settlement buttons decide whether an item is recorded as returned or
+       kept — a wrong tap writes a wrong custody record and notifies the host.
+       Full 44px height and a 12px gap, not 23px and 5px apart. */
     .kgp-ret {
       flex-shrink: 0; background: rgba(16,185,129,.15); border: 1px solid rgba(16,185,129,.4);
-      color: #34D399; border-radius: 6px; padding: 4px 10px;
-      font-size: 11px; font-weight: 700; font-family: var(--font); cursor: pointer;
+      color: #34D399; border-radius: 6px; padding: 4px 14px; min-height: 44px;
+      font-size: 12px; font-weight: 700; font-family: var(--font); cursor: pointer;
     }
     /* The shared item card (gatepassCard.html) ships light defaults; the kiosk
        is dark, so it re-points the card's own variables rather than forking
@@ -767,14 +630,14 @@
     }
 
     /* State reads as a label; the button reads as an action. */
-    .kgp-state { flex-shrink: 0; font-size: 10px; font-weight: 700; letter-spacing: .3px;
+    .kgp-state { flex-shrink: 0; font-size: 11px; font-weight: 700; letter-spacing: .3px;
       border-radius: 5px; padding: 3px 7px; text-transform: uppercase; }
     .kgp-owed { background: rgba(251,191,36,.16); color: #FCD34D; }
     .kgp-back { background: rgba(16,185,129,.14); color: #34D399; }
     .kgp-allback { font-size: 12px; font-weight: 700; color: #34D399;
       padding: 7px 0 2px; text-align: center; }
-    .kgp-addlabel { font-size: 10px; font-weight: 700; letter-spacing: .5px;
-      text-transform: uppercase; color: var(--muted-dk); margin: 12px 0 -2px;
+    .kgp-addlabel { font-size: 11px; font-weight: 700; letter-spacing: .5px;
+      text-transform: uppercase; color: var(--muted); margin: 12px 0 -2px;
       padding-top: 10px; border-top: 1px solid rgba(255,255,255,.07); }
 
     .kgp-form { margin-top: 9px; }
@@ -802,24 +665,28 @@
     .kgp-add:disabled { opacity: .5; cursor: default; }
 
     /* ── Check-out settlement ── */
-    .kgp-choose { display: flex; gap: 5px; flex-shrink: 0; }
+    .kgp-choose { display: flex; gap: 12px; flex-shrink: 0; }
     .kgp-keep {
       background: rgba(248,113,113,.14); border: 1px solid rgba(248,113,113,.4);
-      color: #FCA5A5; border-radius: 6px; padding: 4px 10px;
-      font-size: 11px; font-weight: 700; font-family: var(--font); cursor: pointer;
+      color: #FCA5A5; border-radius: 6px; padding: 4px 14px; min-height: 44px;
+      font-size: 12px; font-weight: 700; font-family: var(--font); cursor: pointer;
     }
     .kgp-answered { opacity: .85; }
-    .kgp-verdict { flex-shrink: 0; font-size: 11px; font-weight: 700; cursor: pointer; border-radius: 6px; padding: 4px 9px; }
+    .kgp-verdict { flex-shrink: 0; font-size: 11px; font-weight: 700; cursor: pointer; border-radius: 6px; padding: 7px 9px; min-height: 32px; }
     .kgp-v-ret  { background: rgba(16,185,129,.15); color: #34D399; }
     .kgp-v-kept { background: rgba(248,113,113,.14); color: #FCA5A5; }
     .kgp-muted  { opacity: .45; }
     .kgp-muted .kgp-done { color: var(--muted); font-weight: 600; font-size: 11px; }
+    /* #fff on #0D9488 is 3.7:1; #0F766E reads 5.1:1. */
     .kgp-done-btn {
-      width: 100%; margin-top: 10px; padding: 11px; border: none; border-radius: 9px;
-      background: #0D9488; color: #fff; font-size: 13px; font-weight: 700;
+      width: 100%; margin-top: 10px; padding: 13px; min-height: 48px;
+      border: none; border-radius: 9px;
+      background: #0F766E; color: #fff; font-size: 14px; font-weight: 700;
       font-family: var(--font); cursor: pointer;
     }
-    .kgp-done-btn:disabled { background: #334155; color: #64748B; cursor: default; }
+    /* #64748B on #334155 was 2.2:1 — a disabled control still has to be
+       readable, otherwise the guard cannot tell what is blocking completion. */
+    .kgp-done-btn:disabled { background: #334155; color: #A9B6C7; cursor: default; }
     .kgp-reason {
       width: 100%; margin-bottom: 7px; padding: 11px; border: 1px solid var(--border-md);
       border-radius: 8px; background: rgba(255,255,255,.05); color: #E2E8F0;
@@ -838,25 +705,29 @@
     .k-manual-row {
       display: flex; gap: 8px; margin-top: 12px;
     }
+    /* This row is the recovery path when a QR will not read — the moment the
+       guard is under the most pressure. Full touch height, and a placeholder
+       that is actually legible (--muted-dk was 4.0:1). */
     .k-manual-input {
       flex: 1;
       background: rgba(255,255,255,.06);
       border: 1px solid var(--border-md);
       color: var(--text);
       border-radius: 8px;
-      padding: 9px 12px;
-      font-size: 12px;
+      padding: 12px;
+      min-height: 44px;
+      font-size: 13px;
       font-family: var(--font);
-      outline: none;
       transition: border-color .15s;
     }
-    .k-manual-input::placeholder { color: var(--muted-dk); }
+    .k-manual-input::placeholder { color: var(--muted); }
     .k-manual-input:focus { border-color: var(--teal); }
     .k-manual-btn {
-      background: var(--blue); color: #fff;
+      background: #1D4ED8; color: #fff;
       border: none; border-radius: 8px;
-      padding: 9px 18px;
-      font-size: 12px; font-weight: 700;
+      padding: 12px 18px;
+      min-height: 44px;
+      font-size: 13px; font-weight: 700;
       font-family: var(--font);
       cursor: pointer;
       transition: background .15s;
@@ -867,12 +738,13 @@
     /* Language toggle — dark chrome to match the kiosk top bar */
     .k-lang-toggle { display: flex; gap: 6px; margin-left: 14px; }
     .k-lang-btn {
-      min-height: 30px; padding: 5px 10px;
+      min-height: 44px; min-width: 44px; padding: 5px 12px;
       border: 1px solid rgba(255,255,255,.14); border-radius: 8px;
       background: rgba(255,255,255,.05); color: var(--muted);
-      font-size: 11px; font-weight: 700; font-family: inherit; cursor: pointer;
+      font-size: 12px; font-weight: 700; font-family: inherit; cursor: pointer;
     }
-    .k-lang-btn.active { background: var(--blue); color: #fff; border-color: var(--blue); }
+    /* #fff on --blue is 3.7:1; #1D4ED8 takes the active pill to 6.4:1. */
+    .k-lang-btn.active { background: #1D4ED8; color: #fff; border-color: #1D4ED8; }
   </style>
 </head>
 <body>
@@ -933,12 +805,12 @@
         <div class="pct-bar"><div class="pct-fill" id="pctBar" style="width:0%"></div></div>
       </div>
 
-      <div style="margin-top:10px;font-size:10px;color:var(--muted);letter-spacing:.5px">
+      <div style="margin-top:10px;font-size:11px;color:var(--muted);letter-spacing:.5px">
         <span data-i18n="kiosk_late_after">Late after</span> <span id="kLateAfter" style="color:var(--amber);font-weight:700">09:30</span>
       </div>
 
       <div class="terminals-online" style="margin-top:18px;">
-        <div class="to-dot"></div>
+        <div class="to-dot" aria-hidden="true"></div>
         <div class="to-lbl" data-i18n="kiosk_terminals_online">All Terminals Online</div>
       </div>
 
@@ -952,8 +824,8 @@
         <div class="k-scan-top">
           <div class="k-scan-status"><span class="pulse-dot"></span><span data-i18n="kiosk_ready_to_scan">Ready to Scan</span></div>
           <div class="k-gate-row">
-            <label style="font-size:10px;color:var(--muted);letter-spacing:1px;text-transform:uppercase" data-i18n="kiosk_gate">Gate</label>
-            <select id="kioskGate" class="k-gate-select">
+            <label for="kioskGate" style="font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase" data-i18n="kiosk_gate">Gate</label>
+            <select id="kioskGate" class="k-gate-select" onchange="kioskRememberGate()">
               <option value="Main Gate" data-i18n="gate_main">Main Gate</option>
               <option value="Side Gate" data-i18n="gate_side">Side Gate</option>
               <option value="Reception" data-i18n="gate_reception">Reception</option>
@@ -976,7 +848,11 @@
           </div>
 
           <!-- Result card (shown inside kiosk after scan) -->
-          <div id="kioskResult" style="display:none;width:100%;padding:12px 0"></div>
+          <!-- role=status + aria-live: the scan outcome is injected here by
+               innerHTML, so without a live region a screen-reader user scans a
+               person and hears nothing at all. -->
+          <div id="kioskResult" role="status" aria-live="assertive" aria-atomic="true"
+               style="display:none;width:100%;padding:12px 0"></div>
         </div>
 
         <!-- Manual input -->
@@ -990,7 +866,7 @@
       <!-- Arrivals grid below -->
       <div class="sec-label" style="margin-top:16px" data-i18n="kiosk_recent_arrivals">Recent Arrivals</div>
       <div class="arrivals-grid" id="arrivalsGrid">
-        <div style="color:var(--muted-dk);font-size:12px;grid-column:1/-1;text-align:center;padding:24px 0" data-i18n="kiosk_loading">Loading…</div>
+        <div style="color:var(--muted);font-size:13px;grid-column:1/-1;text-align:center;padding:24px 0" data-i18n="kiosk_loading">Loading…</div>
       </div>
     </div>
 
@@ -999,7 +875,7 @@
   <!-- ══════════════ BOTTOM BAR ══════════════ -->
   <div class="k-bottom">
     <div class="kb-left">
-      <div class="kb-sys-dot"></div>
+      <div class="kb-sys-dot" aria-hidden="true"></div>
       <div class="kb-sys-txt" data-i18n="kiosk_system_active">System Active</div>
     </div>
     <div class="kb-center" id="orgLabel">
@@ -1017,34 +893,39 @@
   <!-- ══════════════ IDLE / SLEEP OVERLAY ══════════════ -->
   <div id="idleOverlay" style="display:none;position:fixed;inset:0;z-index:900;background:rgba(4,10,20,.94);
        align-items:center;justify-content:center;flex-direction:column;gap:14px;cursor:pointer">
-    <div style="font-size:48px">😴</div>
-    <div style="font-size:20px;font-weight:800;color:#E2E8F0" data-i18n="kiosk_paused">Kiosk paused</div>
-    <div style="font-size:13px;color:#64748B;text-align:center;max-width:280px;line-height:1.6" data-i18n="kiosk_idle_hint">
-      Idle — live updates stopped to save quota. Tap anywhere or scan to resume.
+    <!-- A drawn scan glyph, not a sleeping-face emoji: this is what a
+         supervisor walking the floor at 03:00 sees, and it should read as a
+         terminal waiting for a scan, not as one that is broken. -->
+    <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="#38BDF8"
+         stroke-width="1.5" stroke-linecap="round" aria-hidden="true">
+      <path d="M3 8V5a2 2 0 0 1 2-2h3M16 3h3a2 2 0 0 1 2 2v3M21 16v3a2 2 0 0 1-2 2h-3M8 21H5a2 2 0 0 1-2-2v-3"/>
+      <line x1="3" y1="12" x2="21" y2="12"/>
+    </svg>
+    <div style="font-size:22px;font-weight:800;color:#F1F5F9" data-i18n="kiosk_paused">Ready — tap to wake</div>
+    <div style="font-size:14px;color:#94A3B8;text-align:center;max-width:300px;line-height:1.6" data-i18n="kiosk_idle_hint">
+      Scanning still works. Tap anywhere to bring the live display back.
     </div>
-    <div id="idleClock" style="font-size:34px;font-weight:800;color:#334155;margin-top:6px"></div>
+    <div id="idleClock" style="font-size:34px;font-weight:800;color:#94A3B8;margin-top:6px"></div>
   </div>
 
-  <!-- ══════════════ SETTINGS GEAR ══════════════ -->
-  <div class="k-settings-btn" onclick="openSettings()" title="Kiosk Settings">⚙</div>
 
   <!-- ══════════════ PERSON DETAIL MODAL ══════════════ -->
-  <div id="pmBackdrop" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(2,6,16,.72);align-items:center;justify-content:center;padding:16px">
+  <div id="pmBackdrop" role="dialog" aria-modal="true" aria-labelledby="pmName" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(2,6,16,.72);align-items:center;justify-content:center;padding:16px">
     <div style="width:100%;max-width:380px;max-height:88vh;display:flex;flex-direction:column;background:#0F172A;border:1px solid #1E293B;border-radius:16px;overflow:hidden;font-size:13px">
       <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid #1E293B">
-        <div id="pmAv" style="width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;flex-shrink:0"></div>
+        <div id="pmAv" aria-hidden="true" style="width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;flex-shrink:0"></div>
         <div style="flex:1;min-width:0">
           <div id="pmName" style="font-weight:700;color:#F1F5F9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>
-          <div id="pmSub" style="font-size:11px;color:#64748B"></div>
+          <div id="pmSub" style="font-size:11px;color:#94A3B8"></div>
         </div>
-        <div onclick="pmClose()" style="cursor:pointer;color:#64748B;font-size:20px;line-height:1;padding:2px 6px">&times;</div>
+        <button type="button" onclick="pmClose()" aria-label="Close" style="cursor:pointer;color:#94A3B8;font-size:22px;line-height:1;min-width:44px;min-height:44px;background:transparent;border:none;font-family:inherit">&times;</button>
       </div>
       <div style="padding:8px 14px 4px;display:flex;align-items:baseline;justify-content:space-between">
         <span id="pmMonth" style="font-size:11px;font-weight:700;color:#94A3B8;letter-spacing:.5px"></span>
-        <span id="pmTotals" style="font-size:11px;color:#64748B"></span>
+        <span id="pmTotals" style="font-size:11px;color:#94A3B8"></span>
       </div>
-      <div id="pmHead" style="display:grid;grid-template-columns:2fr 1.2fr 1.2fr 1.4fr;gap:0;padding:0 14px;font-size:10px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid #1E293B;padding-bottom:5px">
-        <span>Date</span><span>In</span><span>Out</span><span style="text-align:right">Late</span>
+      <div id="pmHead" style="display:grid;grid-template-columns:2fr 1.2fr 1.2fr 1.4fr;gap:0;padding:0 14px;font-size:11px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid #1E293B;padding-bottom:5px">
+        <span data-i18n="kiosk_col_date">Date</span><span data-i18n="kiosk_col_in">In</span><span data-i18n="kiosk_col_out">Out</span><span style="text-align:right" data-i18n="kiosk_col_late">Late</span>
       </div>
       <div id="pmRows" style="flex:1;overflow-y:auto;padding:0 14px"></div>
       <div style="padding:10px 14px;border-top:1px solid #1E293B">
@@ -1066,142 +947,16 @@
   </div>
 
   <!-- confirm dialog -->
-  <div id="pmConfirm" style="display:none;position:fixed;inset:0;z-index:1001;background:rgba(2,6,16,.8);align-items:center;justify-content:center;padding:24px">
+  <div id="pmConfirm" role="alertdialog" aria-modal="true" aria-labelledby="pmConfirmText" style="display:none;position:fixed;inset:0;z-index:1001;background:rgba(2,6,16,.8);align-items:center;justify-content:center;padding:24px">
     <div style="width:100%;max-width:300px;background:#0F172A;border:1px solid #1E293B;border-radius:14px;padding:18px;text-align:center;font-size:13px">
       <div id="pmConfirmText" style="color:#E2E8F0;margin-bottom:16px;line-height:1.5"></div>
       <div style="display:flex;gap:8px">
-        <button onclick="pmConfirmCancel()" style="flex:1;padding:10px;border:1px solid #334155;border-radius:8px;background:transparent;color:#94A3B8;font-weight:600;font-family:inherit;cursor:pointer">Cancel</button>
-        <button onclick="pmConfirmOk()" style="flex:1;padding:10px;border:none;border-radius:8px;background:#2563EB;color:#fff;font-weight:700;font-family:inherit;cursor:pointer">Confirm</button>
+        <button type="button" onclick="pmConfirmCancel()" style="flex:1;padding:12px;min-height:44px;border:1px solid #334155;border-radius:8px;background:transparent;color:#94A3B8;font-weight:600;font-family:inherit;cursor:pointer" data-i18n="kiosk_cancel">Cancel</button>
+        <button type="button" onclick="pmConfirmOk()" style="flex:1;padding:12px;min-height:44px;border:none;border-radius:8px;background:#1D4ED8;color:#fff;font-weight:700;font-family:inherit;cursor:pointer" data-i18n="kiosk_confirm">Confirm</button>
       </div>
     </div>
   </div>
 
-  <!-- ══════════════ SETTINGS OVERLAY ══════════════ -->
-  <div class="settings-overlay" id="settingsOverlay">
-    <div class="settings-panel">
-
-      <!-- Left sidebar -->
-      <div class="sp-sidebar">
-        <div class="sp-sidebar-title">Kiosk Config</div>
-
-        <div class="sp-nav-item active" id="spNav-kpi" onclick="switchSpSection('kpi')">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-          KPI Management
-        </div>
-        <div class="sp-nav-item" id="spNav-filters" onclick="switchSpSection('filters')">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/></svg>
-          Display Filters
-        </div>
-        <div class="sp-nav-item" id="spNav-alerts" onclick="switchSpSection('alerts')">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-          Alert Thresholds
-        </div>
-
-        <div class="sp-sidebar-spacer"></div>
-
-        <div class="sp-admin-warning">
-          <div class="sp-admin-label">&#9903; Admin Security</div>
-          <div class="sp-admin-sub">PIN Protected Session</div>
-        </div>
-
-        <button class="btn-sp-save" onclick="saveSettings()">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="12" height="12"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17,21 17,13 7,13 7,21"/><polyline points="7,3 7,8 15,8"/></svg>
-          Save Changes
-        </button>
-        <div class="sp-exit-link" onclick="closeSettings()">&#8617; Exit Settings</div>
-      </div>
-
-      <!-- Right main area -->
-      <div class="sp-main">
-        <div class="sp-header">
-          <div>
-            <div class="sp-title">Kiosk Layout Editor</div>
-            <div class="sp-sub">Modify data visualisation parameters for the active Registrar terminal. Changes apply in real-time to the peripheral displays.</div>
-          </div>
-          <span class="sp-close" onclick="closeSettings()">&#215;</span>
-        </div>
-        <div class="sp-body">
-
-          <!-- Section: KPI Management -->
-          <div class="sp-section active" id="sp-section-kpi">
-            <div>
-              <div class="sp-section-label">KPI Visibility &amp; Order</div>
-              <div class="toggle-grid">
-                <div class="toggle-row">
-                  <div class="tr-info"><div class="tr-name">Active Personnel</div><div class="tr-desc">Current head count</div></div>
-                  <label class="tog"><input type="checkbox" id="togPersonnel" checked><span class="tog-slider"></span></label>
-                </div>
-                <div class="toggle-row">
-                  <div class="tr-info"><div class="tr-name">Scan Throughput</div><div class="tr-desc">Scans / minute</div></div>
-                  <label class="tog"><input type="checkbox" id="togThroughput" checked><span class="tog-slider"></span></label>
-                </div>
-                <div class="toggle-row">
-                  <div class="tr-info"><div class="tr-name">Wait Metrics</div><div class="tr-desc">Avg delay time</div></div>
-                  <label class="tog"><input type="checkbox" id="togWait"><span class="tog-slider"></span></label>
-                </div>
-                <div class="toggle-row">
-                  <div class="tr-info"><div class="tr-name">Visitor Logs</div><div class="tr-desc">Total daily visitors</div></div>
-                  <label class="tog"><input type="checkbox" id="togVisLogs" checked><span class="tog-slider"></span></label>
-                </div>
-                <div class="toggle-row">
-                  <div class="tr-info"><div class="tr-name">Device Health</div><div class="tr-desc">Scanner hardware status</div></div>
-                  <label class="tog"><input type="checkbox" id="togDevice"><span class="tog-slider"></span></label>
-                </div>
-                <div class="toggle-row">
-                  <div class="tr-info"><div class="tr-name">Alert Count</div><div class="tr-desc">Unresolved issues</div></div>
-                  <label class="tog"><input type="checkbox" id="togAlerts"><span class="tog-slider"></span></label>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Section: Display Filters -->
-          <div class="sp-section" id="sp-section-filters">
-            <div>
-              <div class="sp-section-label">Department Filter</div>
-              <select class="sp-select" id="spDeptFilter">
-                <option value="">All Institutional Departments</option>
-                <option value="Engineering">Engineering</option>
-                <option value="Operations">Operations</option>
-                <option value="Administration">Administration</option>
-                <option value="Sales">Sales</option>
-                <option value="HR">HR</option>
-              </select>
-              <div style="font-size:11px;color:var(--muted-dk);margin-top:6px">Limits data aggregation to a specific sector for global institutional visibility</div>
-            </div>
-            <div>
-              <div class="sp-section-label">Live Visitor Display</div>
-              <div class="live-vis-row">
-                <div class="lv-icon">&#128101;</div>
-                <div class="lv-info">
-                  <div class="lv-title">Show visitor silhouettes on main entry screen</div>
-                  <div class="lv-desc">Displays anonymous visitor badges on the main display</div>
-                </div>
-                <label class="tog"><input type="checkbox" id="togLiveVis" checked><span class="tog-slider"></span></label>
-              </div>
-            </div>
-          </div>
-
-          <!-- Section: Alert Thresholds -->
-          <div class="sp-section" id="sp-section-alerts">
-            <div>
-              <div class="sp-section-label">Alert Threshold</div>
-              <div class="thresh-row">
-                <span style="font-size:11px;color:var(--muted-dk)">0%</span>
-                <input type="range" class="thresh-slider" id="spThreshold" min="0" max="100" value="85"
-                  oninput="document.getElementById('threshVal').textContent=this.value+'%'">
-                <span style="font-size:11px;color:var(--muted-dk)">100%</span>
-                <span class="thresh-val" id="threshVal">85%</span>
-              </div>
-              <div style="font-size:11px;color:var(--muted-dk);margin-top:4px">System triggers a visual override alert when occupancy or scanning latency exceeds this percentage</div>
-            </div>
-          </div>
-
-        </div>
-      </div>
-
-    </div>
-  </div>
 
   <!-- ══════════════ SCRIPTS ══════════════ -->
   <script>
@@ -1351,7 +1106,7 @@
 
         var grid = document.getElementById('arrivalsGrid');
         if (!arrivals.length) {
-          grid.innerHTML = '<div style="color:var(--muted-dk);font-size:12px;grid-column:1/-1;text-align:center;padding:28px 0">' + esc(qrattT('kiosk_no_arrivals')) + '</div>';
+          grid.innerHTML = '<div style="color:var(--muted);font-size:13px;grid-column:1/-1;text-align:center;padding:28px 0">' + esc(qrattT('kiosk_no_arrivals')) + '</div>';
         } else {
           // Three different visitors all rendering as "Visitor" is not a name.
           // Show the whole name, and where two people on site share one, add
@@ -1374,13 +1129,18 @@
             var bgHtml = photo
               ? '<div class="a-card-bg" style="background-image:url(\'' + esc(photo) + '\')"></div>'
               : '<div class="a-av-fill" style="background:' + c + '33;color:' + c + '">' + esc(ini) + '</div>';
-            return '<div class="a-card' + (i === 0 ? ' newest' : '') + '"' +
-              ' data-emp="' + esc(String(code)) + '" data-name="' + esc(fullName) + '" style="cursor:pointer' +
+            // A real <button>, not a clickable div: the card opens a person's
+            // record, so it has to be reachable by keyboard and announced.
+            return '<button type="button" class="a-card' + (i === 0 ? ' newest' : '') + '"' +
+              ' data-emp="' + esc(String(code)) + '" data-name="' + esc(fullName) + '"' +
+              ' aria-label="' + esc(fullName + (code ? ' (' + code + ')' : '') +
+                (late ? ' — late' : '') + (i === 0 ? ' — latest arrival' : '')) + '"' +
+              ' style="cursor:pointer' +
               (late ? ';border-color:rgba(245,158,11,.7)' : '') + '">' +
               bgHtml +
               '<div class="a-overlay"></div>' +
               (late ? '<div class="a-late-tag">LATE</div>' : '') +
-              (i === 0 ? '<div class="a-new-dot"></div>' : '') +
+              (i === 0 ? '<div class="a-new-dot" title="Latest arrival"></div>' : '') +
               '<div class="a-info">' +
                 (code ? '<div class="a-code">#' + esc(String(code)) + '</div>' : '') +
                 '<div class="a-name">' + esc(fullName) + '</div>' +
@@ -1390,7 +1150,7 @@
                   (hasOut ? '<span class="a-tout">↑ ' + esc(r.TimeOUT) + '</span>' : '') +
                 '</div>' +
               '</div>' +
-              '</div>';
+              '</button>';
           }).join('');
         }
       });
@@ -1418,7 +1178,7 @@
       document.getElementById('pmTotals').textContent = '';
       // Attendance column headers — meaningful only for the employee view.
       document.getElementById('pmHead').style.display = 'grid';
-      document.getElementById('pmRows').innerHTML = '<div style="padding:16px 0;color:#64748B;font-size:12px">' + esc(qrattT('kiosk_loading')) + '</div>';
+      document.getElementById('pmRows').innerHTML = '<div style="padding:16px 0;color:#94A3B8;font-size:13px">' + esc(qrattT('kiosk_loading')) + '</div>';
       var btn = document.getElementById('pmCheckoutBtn');
       btn.disabled = false; btn.textContent = qrattT('kiosk_check_out');
       document.getElementById('pmBackdrop').style.display = 'flex';
@@ -1440,7 +1200,7 @@
         document.getElementById('pmTotals').textContent = d.presentDays + ' ' + qrattT('kiosk_present_days') + ' · ' + d.lateDays + ' ' + qrattT('kiosk_late_days');
         pmSetCheckoutState(d.inToday, d.outToday);
         if (!d.rows.length) {
-          document.getElementById('pmRows').innerHTML = '<div style="padding:16px 0;color:#64748B;font-size:12px">' + esc(qrattT('kiosk_no_attendance_month')) + '</div>';
+          document.getElementById('pmRows').innerHTML = '<div style="padding:16px 0;color:#94A3B8;font-size:13px">' + esc(qrattT('kiosk_no_attendance_month')) + '</div>';
           return;
         }
         document.getElementById('pmRows').innerHTML = d.rows.map(function(r) {
@@ -1517,6 +1277,18 @@
       document.getElementById('pmConfirm').style.display = 'flex';
     }
     function pmConfirmCancel() { document.getElementById('pmConfirm').style.display = 'none'; pmConfirmAction = null; }
+
+    /* Escape closes whatever is open, innermost first. Without this the only
+       way out of a modal was a pointer — there is no keyboard exit otherwise. */
+    document.addEventListener('keydown', function(e) {
+      if (e.key !== 'Escape' && e.keyCode !== 27) return;
+      var reason  = document.getElementById('kGpReasonBox');
+      var confirm = document.getElementById('pmConfirm');
+      var detail  = document.getElementById('pmBackdrop');
+      if (reason && reason.style.display !== 'none' && reason.style.display !== '') { kGpReasonCancel(); return; }
+      if (confirm && confirm.style.display !== 'none' && confirm.style.display !== '') { pmConfirmCancel(); return; }
+      if (detail && detail.style.display !== 'none' && detail.style.display !== '') { pmClose(); }
+    });
     function pmConfirmOk() {
       document.getElementById('pmConfirm').style.display = 'none';
       if (pmConfirmAction !== 'checkout' || !pmEmpId) return;
@@ -1579,52 +1351,15 @@
     loadData();
     startPolling();
 
-    /* ════════════════════════════════════════
-       SETTINGS
-    ════════════════════════════════════════ */
-    function openSettings()  { document.getElementById('settingsOverlay').classList.add('open'); }
-    function closeSettings() { document.getElementById('settingsOverlay').classList.remove('open'); }
-
-    function switchSpSection(name) {
-      ['kpi','filters','alerts'].forEach(function(s) {
-        document.getElementById('spNav-' + s).classList.toggle('active', s === name);
-        document.getElementById('sp-section-' + s).classList.toggle('active', s === name);
-      });
-    }
-
-    function saveSettings() {
-      var cfg = {
-        personnel:  document.getElementById('togPersonnel').checked,
-        throughput: document.getElementById('togThroughput').checked,
-        visLogs:    document.getElementById('togVisLogs').checked,
-        threshold:  document.getElementById('spThreshold').value,
-        dept:       document.getElementById('spDeptFilter').value,
-        liveVis:    document.getElementById('togLiveVis').checked
-      };
-      try { localStorage.setItem('kioskConfig', JSON.stringify(cfg)); } catch(e) {}
-      closeSettings();
-    }
-
-    /* Click outside to close */
-    document.getElementById('settingsOverlay').addEventListener('click', function(e) {
-      if (e.target === this) closeSettings();
-    });
-
-    /* Load saved config */
-    try {
-      var saved = JSON.parse(localStorage.getItem('kioskConfig') || 'null');
-      if (saved) {
-        if (saved.personnel  !== undefined) document.getElementById('togPersonnel').checked  = saved.personnel;
-        if (saved.throughput !== undefined) document.getElementById('togThroughput').checked = saved.throughput;
-        if (saved.visLogs    !== undefined) document.getElementById('togVisLogs').checked    = saved.visLogs;
-        if (saved.threshold  !== undefined) {
-          document.getElementById('spThreshold').value = saved.threshold;
-          document.getElementById('threshVal').textContent = saved.threshold + '%';
-        }
-        if (saved.dept) document.getElementById('spDeptFilter').value = saved.dept;
-        if (saved.liveVis !== undefined) document.getElementById('togLiveVis').checked = saved.liveVis;
-      }
-    } catch(e) {}
+    /* The "Kiosk Layout Editor" settings overlay was removed 2026-09-13. Its
+       six toggles, department filter and alert-threshold slider were written to
+       localStorage by saveSettings() and read back only into their own
+       controls — no render path ever consumed them. A supervisor could set a
+       department filter, press Save, and believe the display was filtered when
+       nothing had changed. The panel also carried a "PIN Protected Session"
+       label while openSettings() was an unguarded class toggle. On a terminal
+       whose records are ISO audit evidence, a control that lies is worse than
+       one that is missing. Restore only alongside a render path that reads it. */
   </script>
 <script>
   (function() {
@@ -1683,6 +1418,34 @@
     if (e.data.qratt_code) kioskOnScan(e.data.qratt_code, e.source);
     if (e.data.qratt_closed) kioskOnScannerClosed();
   });
+
+  /* ── Gate identity ──
+     The selected gate is stamped into every attendance record this terminal
+     writes, and these are ISO audit evidence. It used to reset to "Main Gate"
+     on every page load with no echo anywhere, so a guard posted at the Rear
+     Gate could write an entire shift against the wrong one and nothing on
+     screen would ever say so. It now persists per device and is printed on
+     each result card. */
+  function kioskGateName() {
+    var el = document.getElementById('kioskGate');
+    return el ? el.value : '';
+  }
+
+  function kioskRememberGate() {
+    try { localStorage.setItem('qratt_kiosk_gate', kioskGateName()); } catch (e) {}
+  }
+
+  function kioskRestoreGate() {
+    var saved;
+    try { saved = localStorage.getItem('qratt_kiosk_gate'); } catch (e) { return; }
+    if (!saved) return;
+    var el = document.getElementById('kioskGate');
+    if (!el) return;
+    for (var i = 0; i < el.options.length; i++) {
+      if (el.options[i].value === saved) { el.value = saved; return; }
+    }
+  }
+  kioskRestoreGate();
 
   function kioskOpenScanner() {
     if (kioskScanWin && !kioskScanWin.closed) { kioskScanWin.focus(); return; }
@@ -1783,21 +1546,38 @@
         '<div><div class="krc-meta-lbl">' + esc(qrattT('kiosk_meta_duration')) + '</div><div class="krc-meta-val" style="color:var(--text-dim)">' + esc(res.duration || '–') + '</div></div>' +
         '</div>';
     } else {
-      metaHtml = '<div style="font-size:11px;color:var(--muted);margin-top:10px">' +
+      // A failed scan is the state the guard most needs to read, so it is not
+      // 11px muted grey — it is the largest text in the failure card.
+      metaHtml = '<div style="font-size:15px;font-weight:600;color:var(--text-dim);margin-top:10px;line-height:1.4">' +
         esc(res.message || res.error || qrattT('kiosk_qr_not_recognised')) + '</div>';
     }
+
+    // The outcome in words, above the name. Colour and icon are reinforcement,
+    // never the only carrier of the state.
+    var oWord = res.action === 'CHECK_IN'  ? '✓ ' + qrattT('kiosk_meta_check_in') :
+                res.action === 'CHECK_OUT' ? '↑ ' + qrattT('kiosk_meta_check_out') :
+                res.action === 'BLOCKED'   ? '✕ ' + qrattT('kiosk_badge_blocked') :
+                                             '⚠ ' + qrattT('kiosk_badge_error');
+    var oCol  = res.action === 'CHECK_IN'  ? '#10B981' :
+                res.action === 'CHECK_OUT' ? '#38BDF8' :
+                res.action === 'BLOCKED'   ? '#A78BFA' : '#F59E0B';
 
     r.innerHTML = '<div class="krc ' + type + '">' +
       '<div class="krc-av" style="background:' + c + '22;color:' + c + '">' + esc(ini) + '</div>' +
       '<span class="krc-badge ' + bCls + '">' + bLbl + '</span>' +
+      '<div style="font-size:20px;font-weight:800;letter-spacing:.5px;color:' + oCol + ';margin-bottom:6px">' + esc(oWord) + '</div>' +
       '<div class="krc-name">' + esc(res.name || qrattT('kiosk_unknown')) + '</div>' +
       '<div class="krc-dept">' + esc(res.department || '') + '</div>' +
+      // The gate is stamped on every record this writes, so the card says which
+      // one. A shift spent on the wrong gate is otherwise undetectable.
+      '<div style="font-size:11px;color:var(--muted);margin-top:4px;letter-spacing:.5px;text-transform:uppercase">' +
+        esc(kioskGateName()) + '</div>' +
       metaHtml +
       // Items live on the scan card itself. The guard is holding the visitor
       // at this moment — sending them to another page to log a laptop is what
       // made this unusable.
       (res.type === 'VIS' && res.empId ? '<div id="kGpMount" class="kgp"></div>' : '') +
-      '<button onclick="kioskDismissResult()" style="margin-top:12px;background:rgba(255,255,255,.06);border:1px solid var(--border-md);color:var(--muted);border-radius:6px;padding:6px 18px;font-size:11px;font-weight:600;font-family:var(--font);cursor:pointer;">' + esc(qrattT('kiosk_dismiss')) + '</button>' +
+      '<button type="button" onclick="kioskDismissResult()" style="margin-top:12px;background:rgba(255,255,255,.06);border:1px solid var(--border-md);color:var(--text-dim);border-radius:6px;padding:12px 22px;min-height:44px;font-size:13px;font-weight:600;font-family:var(--font);cursor:pointer;">' + esc(qrattT('kiosk_dismiss')) + '</button>' +
       '</div>';
 
     if (res.type === 'VIS' && res.empId) {

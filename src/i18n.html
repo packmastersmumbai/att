@@ -271,6 +271,13 @@ var QRATT_I18N = {
   gp_n_still_out:   { en: 'still with the visitor', hi: 'अभी विज़िटर के पास है' },
   gp_nothing_owed:  { en: 'Nothing owed back',  hi: 'कुछ भी बाकी नहीं' },
   kiosk_cancel:              { en: 'Cancel',                hi: 'रद्द करें' },
+  /* Person-detail modal column headers — these were the only strings in the
+     modal with no key, so they stayed English when the page switched to Hindi. */
+  kiosk_col_date:            { en: 'Date',                  hi: 'दिनांक' },
+  kiosk_col_in:              { en: 'In',                    hi: 'अंदर' },
+  kiosk_col_out:             { en: 'Out',                   hi: 'बाहर' },
+  kiosk_col_late:            { en: 'Late',                  hi: 'देर' },
+  kiosk_confirm:             { en: 'Confirm',               hi: 'पुष्टि करें' },
   kiosk_gp_no_action:        { en: 'no action',             hi: 'कुछ नहीं' },
   kiosk_gp_tap_change:       { en: 'Tap to change',         hi: 'बदलने के लिए दबाएँ' },
   kiosk_gp_settle_before_exit: { en: 'item(s) still out — settle before they leave',
@@ -307,9 +314,11 @@ var QRATT_I18N = {
   kiosk_auto_refresh:  { en: 'Auto-refresh:', hi: 'ऑटो-रिफ्रेश:' },
 
   // ── kiosk.html — idle overlay ────────────────────────────────────────────
-  kiosk_paused:    { en: 'Kiosk paused', hi: 'कियोस्क रुका हुआ है' },
-  kiosk_idle_hint: { en: 'Idle — live updates stopped to save quota. Tap anywhere or scan to resume.',
-                     hi: 'निष्क्रिय — कोटा बचाने के लिए लाइव अपडेट रोक दिए गए हैं। जारी रखने के लिए कहीं भी टैप करें या स्कैन करें।' },
+  /* The idle screen is what a supervisor sees on a night walk, so it says the
+     terminal is ready — not that it is paused, and not why Google bills us. */
+  kiosk_paused:    { en: 'Ready — tap to wake', hi: 'तैयार — जगाने के लिए टैप करें' },
+  kiosk_idle_hint: { en: 'Scanning still works. Tap anywhere to bring the live display back.',
+                     hi: 'स्कैनिंग अभी भी चालू है। लाइव डिस्प्ले वापस लाने के लिए कहीं भी टैप करें।' },
 
   // ── kiosk.html — person detail modal ────────────────────────────────────
   kiosk_check_out:            { en: 'Check Out',                 hi: 'चेक आउट करें' },
