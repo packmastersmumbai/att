@@ -116,9 +116,27 @@
   <script>
     (function() {
       var base = 'https://script.google.com/macros/s/AKfycbzkGp766lCPYqhitkbYsv0jQGPtBE_dLzpc3CiwuXIWmm7CbFps4XMTb5kmxLAryR0CMQ/exec';
-      var valid = ['scanner','dashboard','reports','visitors','kiosk','admin','idcards'];
-      var page = new URLSearchParams(location.search).get('page') || 'kiosk';
+
+      /* Every page the launcher may forward to. The visitor-facing ones were
+         missing, which meant a pass link fell through to the default and put
+         the visitor on the gate kiosk instead of their own pass. */
+      var valid = ['scanner','dashboard','reports','visitors','kiosk','admin','idcards',
+                   'vpass','vreg','gatepass_approve','people','training','kpi',
+                   'induction','skillmatrix','mockdrill','assess','login'];
+
+      /* Pages reached from a QR code or a WhatsApp link, always by someone who
+         is not signed in to Google. They carry an id and must land on the
+         record itself, so they forward straight through rather than showing a
+         portal card and asking for another tap. */
+      var AUTO = ['vpass','gatepass_approve','vreg'];
+
+      /* Keep the WHOLE query string, not just ?page. publicPassUrl() emits
+         ?page=vpass&id=VIS-… and the id is the only thing identifying the
+         pass; reading page alone silently dropped it. */
+      var qs   = new URLSearchParams(location.search);
+      var page = qs.get('page') || 'kiosk';
       if (valid.indexOf(page) === -1) page = 'kiosk';
+      qs.set('page', page);
 
       // Cache-buster that rotates DAILY. The GAS app already sends no-store, but
       // Chrome mobile still served a stale copy of the exact app URL because the
@@ -132,7 +150,16 @@
       // script.google.com can't read this localStorage, so it's forwarded
       // via ?lang= on every app URL instead).
       var chosenLang = localStorage.getItem('qratt_lang') === 'hi' ? 'hi' : 'en';
-      function appUrl(pg) { return base + '?page=' + pg + '&v=' + appVer + '&lang=' + chosenLang; }
+
+      /* Builds on the incoming query string so id, emp and anything else a
+         link carries survives the hop. */
+      function appUrl(pg) {
+        var q = new URLSearchParams(qs.toString());
+        if (pg) q.set('page', pg);
+        q.set('v', appVer);
+        q.set('lang', chosenLang);
+        return base + '?' + q.toString();
+      }
 
       // Reflect the current choice on the picker buttons, and re-point the
       // "Open the app" link whenever the visitor taps a different language.
@@ -164,16 +191,35 @@
         loader.style.opacity = '1';
         app.classList.remove('ready');
         app.src = appUrl(pg);
-        history.replaceState(null, '', '?page=' + pg);
+        // Track the page in the address bar without discarding the rest of the
+        // query — an in-app hop should not strip an id the link arrived with.
+        qs.set('page', pg);
+        history.replaceState(null, '', '?' + qs.toString());
       }
 
-      // Deliberately NOT loading the iframe. Google refuses to frame the web app
-      // (its auth interstitial sends X-Frame-Options: SAMEORIGIN) and a blocked
-      // cross-origin iframe is undetectable from the parent — it fires no usable
-      // event, exposes no child frames, and its postMessages never arrive. So the
-      // portal acts as a launcher and opens the app directly.
+      /* Visitor links forward straight through.
+
+         The portal exists because Google's auth interstitial sends
+         X-Frame-Options: SAMEORIGIN — but that interstitial only appears for a
+         signed-in Google account. A visitor opening a pass from a QR or a
+         WhatsApp message is anonymous: measured against this deployment, that
+         request returns 200 with no X-Frame-Options, no CSP frame-ancestors
+         and no redirect at all.
+
+         So for those three pages we skip the card and the extra tap. Staff
+         pages keep the tap-through portal, because a supervisor on a shared
+         plant phone may well be signed in — if the interstitial ever comes
+         back it degrades to the old behaviour instead of breaking.
+
+         replace(), not assign(): Back should return to whatever the visitor
+         was in before, not to a launcher that immediately forwards again. */
+      if (AUTO.indexOf(page) !== -1) {
+        location.replace(appUrl(page));
+        return;
+      }
+
       document.getElementById('blockedLink').href = appUrl(page);
-      history.replaceState(null, '', '?page=' + page);
+      history.replaceState(null, '', '?' + qs.toString());
       loader.style.display = 'none';
 
       // If Google ever allows framing again, the app's nav ping proves it rendered;
