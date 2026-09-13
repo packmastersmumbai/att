@@ -24,7 +24,8 @@
       font-weight: 900; font-size: 14px; color: #fff; letter-spacing: 1px;
     }
     .loader-name { font-weight: 800; font-size: 22px; color: #f1f5f9; letter-spacing: 2px; text-transform: uppercase; }
-    .loader-sub { font-size: 11px; color: #475569; text-transform: uppercase; letter-spacing: 3px; margin-top: -22px; padding-left: 58px; }
+    .loader-sub { font-size: 11px; color: #8FA3BC; text-transform: uppercase; letter-spacing: 3px; margin-top: -22px; padding-left: 58px; }
+    .loader-note { font-size: 12px; color: #8FA3BC; text-align: center; max-width: 260px; line-height: 1.5; min-height: 18px; padding: 0 16px; }
     .loader-bar { width: 180px; height: 2px; background: #1e293b; border-radius: 2px; overflow: hidden; }
     .loader-bar-fill {
       height: 100%; width: 0%; background: linear-gradient(90deg, #000666, #2563eb, #06b6d4);
@@ -88,6 +89,8 @@
     <div class="loader-sub">Attendance System</div>
     <div class="loader-bar"><div class="loader-bar-fill"></div></div>
     <div class="loader-dots"><span></span><span></span><span></span></div>
+    <!-- Filled in after a few seconds so a slow start reads as slow, not hung. -->
+    <div id="loaderNote" class="loader-note" role="status" aria-live="polite"></div>
   </div>
 
   <iframe
@@ -216,23 +219,54 @@
       function frameReady() {
         if (settled) return;
         settled = true;
+        clearInterval(poll);
+        clearInterval(tick);
         loader.style.opacity = '0';
         setTimeout(function () { loader.style.display = 'none'; }, 320);
         app.classList.add('ready');
       }
-      app.addEventListener('load', function () {
-        // A frame that was refused also fires load, so give the app a moment to
-        // paint and confirm it actually has a document before hiding the card.
-        setTimeout(frameReady, 600);
-      });
+
+      /* Reveal as soon as the app has actually painted, not on the iframe's
+         load event. GAS loads an outer shell first and only then does its
+         nested sandbox fetch the real page, so 'load' fires at a moment that
+         has nothing to do with the app being visible — and the old 600ms pause
+         after it was dead time added to an already slow start.
+
+         The app measures ~3s of server render plus ~2.5s of GAS bootstrap, so
+         this screen is on show for about five seconds. Polling hands those
+         seconds back as soon as they are earned. */
+      var poll = setInterval(function () {
+        try {
+          var d = app.contentDocument;            // same-origin only; GAS is not
+          if (d && d.body && d.body.innerHTML.length > 200) frameReady();
+        } catch (e) {
+          /* Cross-origin, which is the normal case here — we cannot read the
+             frame, so fall back to the load event below. */
+        }
+      }, 200);
+
+      app.addEventListener('load', function () { setTimeout(frameReady, 250); });
+
+      /* Say what is happening. A spinner that never changes reads as hung; the
+         wait is real, so the screen should account for it rather than hide it. */
+      var waited = 0;
+      var note = document.getElementById('loaderNote');
+      var tick = setInterval(function () {
+        waited += 1;
+        if (!note) return;
+        if (waited === 4)  note.textContent = 'Still loading — Google Apps Script is slow to start.';
+        if (waited === 9)  note.textContent = 'Taking longer than usual. Hold on…';
+      }, 1000);
 
       setTimeout(function () {
         if (settled) return;
         settled = true;
+        clearInterval(poll);
+        clearInterval(tick);
         loader.style.display = 'none';
         blocked.style.display = '';
         app.style.display = 'none';
-      }, 12000);
+      }, 20000);
 
       /* In-app navigation. The pages post here instead of navigating the top
          frame, which would break out of the launcher and put the raw

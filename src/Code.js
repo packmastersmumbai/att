@@ -46,9 +46,14 @@ function doGet(e) {
     }
   }
 
-  var page = (e && e.parameter && e.parameter.page) ? e.parameter.page : 'scanner';
+  // The home page, defined once. The launcher (index.html) defaults to the same
+  // page; when these two disagree, opening the bare app and opening the short
+  // URL land somewhere different.
+  var HOME_PAGE = 'kiosk';
+
+  var page = (e && e.parameter && e.parameter.page) ? e.parameter.page : HOME_PAGE;
   var validPages = ['scanner', 'scanner_popup', 'dashboard', 'reports', 'visitors', 'kiosk', 'admin', 'idcards', 'e2e', 'vreg', 'vpass', 'gatepass_approve', 'training', 'skillmatrix', 'mockdrill', 'selftest', 'kpi', 'assess', 'present', 'people', 'induction'];
-  if (validPages.indexOf(page) === -1) page = 'scanner';
+  if (validPages.indexOf(page) === -1) page = HOME_PAGE;
 
   var template = HtmlService.createTemplateFromFile('pages/' + page);
   template.page = page;
