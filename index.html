@@ -234,13 +234,26 @@
         app.style.display = 'none';
       }, 12000);
 
-      // If Google ever allows framing again, the app's nav ping proves it rendered;
-      // lift the iframe above the launcher at that point.
+      /* In-app navigation. The pages post here instead of navigating the top
+         frame, which would break out of the launcher and put the raw
+         script.google.com URL back in the address bar. */
       window.addEventListener('message', function(e) {
-        if (e.data && e.data.qratt_nav && valid.indexOf(e.data.qratt_nav) !== -1) {
-          loadPage(e.data.qratt_nav);
-          document.getElementById('blockedLink').href = appUrl(e.data.qratt_nav);
-        }
+        if (!e.data || !e.data.qratt_nav) return;
+        if (valid.indexOf(e.data.qratt_nav) === -1) return;
+
+        /* Drop the record-scoped params of the page being left. Carrying an id
+           from a visitor pass onto the dashboard would be meaningless at best,
+           and on a page that reads id it would open the wrong record. */
+        ['id', 'emp', 'plan', 'topic'].forEach(function(k) { qs.delete(k); });
+
+        /* Tell the page we are handling it, which cancels the ordinary
+           navigation it queued. The app cannot detect the launcher on its own:
+           GAS always nests a sandbox iframe, so "am I framed" is true either
+           way. This reply is the only reliable signal. */
+        try { e.source && e.source.postMessage({ qratt_nav_ok: true }, '*'); } catch (ex) {}
+
+        loadPage(e.data.qratt_nav);
+        document.getElementById('blockedLink').href = appUrl(e.data.qratt_nav);
       });
     })();
   </script>

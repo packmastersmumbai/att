@@ -1797,11 +1797,33 @@
       // requested page directly. Shared/external entry links stay pretty via the
       // launcher; navigation between pages, once inside, stays inside the app.
       var url = APP_URL + '?page=' + encodeURIComponent(page);
-      try {
-        (window.top || window).location.href = url;
-      } catch(e) {
-        window.open(url, '_top');
-      }
+
+      /* Ask the GitHub Pages launcher to swap the page, so the short URL
+         survives the hop instead of the address bar reverting to
+         script.google.com.
+
+         We cannot test for "am I framed": GAS always nests its own sandbox
+         iframe, so window.top !== window.self is true even when the app is
+         opened directly. Instead, ask and also queue the ordinary navigation —
+         if a launcher is really above us it replies qratt_nav_ok and that
+         cancels the fallback. If nothing answers, the nav happens as before.
+         Self-detecting, and it cannot strand the user either way. */
+      var fallback = setTimeout(function () {
+        try {
+          (window.top || window).location.href = url;
+        } catch (e) {
+          window.open(url, '_top');
+        }
+      }, 250);
+
+      window.addEventListener('message', function ack(ev) {
+        if (ev.data && ev.data.qratt_nav_ok) {
+          clearTimeout(fallback);
+          window.removeEventListener('message', ack);
+        }
+      });
+
+      try { window.top.postMessage({ qratt_nav: page }, '*'); } catch (e) {}
     }
     window.qrattNav = navigate;
     document.querySelectorAll('[data-page], a[href^="?page="]').forEach(function(a) {
