@@ -462,7 +462,9 @@
       .a-card { border-radius: 16px; }
       .a-av-fill { font-size: 46px; }
       .a-name { font-size: 15px; }
-      .a-code { font-size: 10px; }
+      /* Was 10px here, which re-shrank the employee ID on exactly the phones
+         where it is hardest to read. The floor applies at every breakpoint. */
+      .a-code { font-size: 11px; }
       .a-time { font-size: 11px; }
       .a-info { padding: 9px 10px 11px; }
 
@@ -1032,7 +1034,7 @@
           document._orgSet = true;
           var orgRaw = ('<?= getConfigValue("OrgName") || "My Organisation" ?>');
           var orgSpan = document.createElement('span');
-          orgSpan.style.cssText = 'margin-left:12px;opacity:0.5;font-size:10px;letter-spacing:1px;';
+          orgSpan.style.cssText = 'margin-left:12px;opacity:0.75;font-size:11px;letter-spacing:1px;';
           orgSpan.textContent = orgRaw.toUpperCase();
           document.getElementById('orgLabel').appendChild(orgSpan);
         }
