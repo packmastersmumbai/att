@@ -735,6 +735,8 @@ function sendBlacklistAlert(qrCode, personName, gate) {
  * Called by time-based trigger at configured hour.
  */
 function sendDailySummary() {
+  isoAnnounce();   // daily: tell the ISO this app is bound (never throws)
+
   var todayStr = today();
   var logs     = getSheetAsObjects(SHEETS.LOGS);
   var todayLogs = logs.filter(function(r) { return r.Date === todayStr; });
