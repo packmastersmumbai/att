@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Induction — <?= orgName ?></title>
+<style>
+  /* Two registers that were never in the same place: workers inducted under
+     HR-08's nine sessions, and visitors who acknowledged the safety rules at
+     the gate. Same question — who has been briefed, and is it still good. */
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--font-sans);background:var(--color-bg);color:var(--color-text);
+    font-size:14px;line-height:1.5;-webkit-text-size-adjust:100%}
+
+  .wrap{max-width:1100px;margin:0 auto;padding:16px 16px 60px}
+  .hd{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;
+    flex-wrap:wrap;margin-bottom:14px}
+  h1{font-size:20px;font-weight:800}
+  .stamp{font:600 11px var(--font-mono);color:var(--color-text-muted);text-align:right}
+  .muted{color:var(--color-text-muted);font-size:12.5px}
+
+  .seg{display:inline-flex;border:1px solid var(--color-border);border-radius:var(--radius-md);
+    overflow:hidden;margin-bottom:14px}
+  .seg button{border:0;background:var(--color-surface);color:var(--color-text-muted);
+    font:700 14px var(--font-sans);padding:11px 18px;min-height:44px;cursor:pointer}
+  .seg button[aria-pressed="true"]{background:var(--color-primary);color:#fff}
+
+  .bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+  .inp{border:1px solid var(--color-border);border-radius:var(--radius-md);
+    padding:10px 12px;font:400 14px var(--font-sans);background:var(--color-surface);
+    color:var(--color-text);min-height:42px}
+  #q{flex:1 1 220px}
+
+  .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));
+    gap:8px;margin-bottom:16px}
+  .tile{background:var(--color-surface);border:1px solid var(--color-border);
+    border-radius:var(--radius-md);padding:12px 14px}
+  .tile b{display:block;font:800 24px/1.1 var(--font-mono)}
+  .tile span{font-size:10px;letter-spacing:.7px;text-transform:uppercase;
+    color:var(--color-text-muted)}
+  .tile.warn b{color:#b45309}
+
+  table{width:100%;border-collapse:collapse;background:var(--color-surface);
+    border:1px solid var(--color-border);border-radius:var(--radius-md);overflow:hidden}
+  th{font-size:10px;letter-spacing:.7px;text-transform:uppercase;text-align:left;
+    color:var(--color-text-muted);padding:10px;border-bottom:1px solid var(--color-border);
+    font-weight:700;white-space:nowrap}
+  td{padding:10px;border-bottom:1px solid var(--color-border);vertical-align:middle}
+  .nm{font-weight:700}
+  .sub{font:600 11px var(--font-mono);color:var(--color-text-muted)}
+
+  /* Nine blocks, one per HR-08 session — the shape of the form itself, so a
+     half-finished induction is visible without reading a number. */
+  .nine{display:flex;gap:2px}
+  .nine i{width:8px;height:15px;border-radius:2px;background:var(--color-border)}
+  .nine i.on{background:#0f766e}
+
+  .pill{display:inline-block;font:700 10px var(--font-sans);padding:3px 8px;
+    border-radius:20px;white-space:nowrap}
+  .p-ok{background:#ccfbf1;color:#0f766e}
+  .p-part{background:#fef3c7;color:#92400e}
+  .p-no{background:#fee2e2;color:#b91c1c}
+  .p-mute{background:var(--color-border);color:var(--color-text-muted)}
+
+  .btn{border:1px solid var(--color-border);background:var(--color-surface);
+    color:var(--color-text);border-radius:var(--radius-md);font:700 13px var(--font-sans);
+    padding:8px 13px;min-height:38px;cursor:pointer}
+  .btn-pri{background:var(--color-primary);border-color:var(--color-primary);color:#fff}
+  .btn:focus-visible,.inp:focus-visible,.seg button:focus-visible{
+    outline:3px solid var(--color-primary);outline-offset:2px}
+  .empty{text-align:center;color:var(--color-text-muted);padding:26px;font-size:13px}
+  @media (max-width:720px){ .c-hide{display:none} .wrap{padding:12px 12px 60px} }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hd">
+    <div>
+      <h1>Induction</h1>
+      <p class="muted">Workers under PM/FRM/HR-08, and visitors briefed at the gate.</p>
+    </div>
+    <div class="stamp" id="stamp"></div>
+  </div>
+
+  <div class="seg" role="tablist">
+    <button id="tabW" aria-pressed="true" onclick="setTab('w')">Workers</button>
+    <button id="tabV" aria-pressed="false" onclick="setTab('v')">Visitors</button>
+  </div>
+
+  <div class="bar">
+    <input id="q" class="inp" placeholder="Search name, ID or company…" oninput="draw()">
+    <select id="fState" class="inp" onchange="draw()">
+      <option value="">Anyone</option>
+      <option value="none">Not started</option>
+      <option value="part">Part done</option>
+      <option value="done">Complete</option>
+    </select>
+    <select id="fMonth" class="inp" onchange="load()" hidden></select>
+  </div>
+
+  <div class="tiles" id="tiles"></div>
+  <table><thead id="head"></thead><tbody id="rows">
+    <tr><td class="empty">Loading…</td></tr>
+  </tbody></table>
+</div>
+
+<script>
+var DATA = null, TAB = 'w', TOKEN = '';
+var el = function (id) { return document.getElementById(id); };
+function esc(s) {
+  return String(s == null ? '' : s).replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function load() {
+  el('rows').innerHTML = '<tr><td class="empty">Loading…</td></tr>';
+  google.script.run
+    .withSuccessHandler(function (r) {
+      if (!r || !r.success) {
+        el('rows').innerHTML = '<tr><td class="empty">' +
+          esc((r && r.error) || 'Could not load') + '</td></tr>';
+        return;
+      }
+      DATA = r;
+      el('stamp').textContent = r.stamp || '';
+      fillMonths();
+      draw();
+    })
+    .withFailureHandler(function (e) {
+      el('rows').innerHTML = '<tr><td class="empty">' + esc(e && e.message) + '</td></tr>';
+    })
+    .getInductionModule(el('fMonth').value || '');
+}
+
+function fillMonths() {
+  var sel = el('fMonth'), keep = sel.value || DATA.month;
+  sel.innerHTML = (DATA.months || []).map(function (m) {
+    return '<option' + (m === keep ? ' selected' : '') + '>' + esc(m) + '</option>';
+  }).join('');
+}
+
+function setTab(t) {
+  TAB = t;
+  el('tabW').setAttribute('aria-pressed', t === 'w');
+  el('tabV').setAttribute('aria-pressed', t === 'v');
+  // The month only means something for visitors: a worker's induction is a
+  // one-off on joining, not something that happens in a month.
+  el('fMonth').hidden = (t !== 'v');
+  el('q').placeholder = t === 'w' ? 'Search name, ID or department…' : 'Search name or company…';
+  draw();
+}
+
+/* ---------- workers ---------- */
+
+function workerState(r) {
+  if (r.cleared) return 'done';
+  if (r.started || r.signedCount) return 'part';
+  return 'none';
+}
+
+function drawWorkers() {
+  var q = el('q').value.trim().toLowerCase(), f = el('fState').value;
+  var rows = (DATA.workers || []).filter(function (r) {
+    if (f && workerState(r) !== f) return false;
+    if (!q) return true;
+    return (r.name + ' ' + r.empId + ' ' + r.department + ' ' + r.jobRole)
+      .toLowerCase().indexOf(q) !== -1;
+  });
+
+  var k = DATA.workerKpis || {};
+  el('tiles').innerHTML =
+    tile(rows.length, 'shown') + tile(k.started, 'started') +
+    tile(k.cleared, 'cleared to work') +
+    tile(k.uncleared, 'NOT cleared', k.uncleared > 0);
+
+  el('head').innerHTML = '<tr><th>Person</th><th class="c-hide">Department</th>' +
+    '<th>Sessions</th><th>Rules test</th><th>Status</th><th></th></tr>';
+
+  el('rows').innerHTML = rows.length ? rows.map(function (r) {
+    var b = '';
+    for (var i = 0; i < r.totalSessions; i++) {
+      b += '<i class="' + (i < r.signedCount ? 'on' : '') + '"></i>';
+    }
+    return '<tr>' +
+      '<td><div class="nm">' + esc(r.name) + '</div>' +
+        '<div class="sub">' + esc(r.empId) +
+        (r.engagement ? ' · ' + esc(r.engagement) : '') + '</div></td>' +
+      '<td class="c-hide">' + esc(r.department || '—') + '</td>' +
+      '<td><div class="nine" title="' + r.signedCount + ' of ' + r.totalSessions + '">' + b +
+        '</div><span class="sub">' + r.signedCount + ' of ' + r.totalSessions + '</span></td>' +
+      '<td>' + (r.rulesTestPassed
+        ? '<span class="pill p-ok">passed</span>'
+        : '<span class="pill p-mute">not taken</span>') + '</td>' +
+      '<td>' + (r.cleared
+        ? '<span class="pill p-ok">Cleared' + (r.competenceLevel ? ' · ' + esc(r.competenceLevel) : '') + '</span>'
+        : r.started ? '<span class="pill p-part">In progress</span>'
+                    : '<span class="pill p-no">Not started</span>') + '</td>' +
+      '<td><button class="btn' + (r.started ? '' : ' btn-pri') + '" onclick="act(\'' +
+        esc(r.empId) + '\',' + (r.started ? 'true' : 'false') + ')">' +
+        (r.started ? 'Open' : 'Start') + '</button></td>' +
+      '</tr>';
+  }).join('') : '<tr><td colspan="6" class="empty">Nobody matches.</td></tr>';
+}
+
+/* ---------- visitors ---------- */
+
+function drawVisitors() {
+  var q = el('q').value.trim().toLowerCase(), f = el('fState').value;
+  var map = { none: 'NONE', part: 'EXPIRED', done: 'VALID' };
+  var rows = (DATA.visitors || []).filter(function (r) {
+    if (f && r.state !== map[f]) return false;
+    if (!q) return true;
+    return (r.name + ' ' + r.company + ' ' + r.visitorId).toLowerCase().indexOf(q) !== -1;
+  });
+
+  var k = DATA.visitorKpis || {};
+  el('tiles').innerHTML =
+    tile(rows.length, 'shown') + tile(k.inducted, 'briefed, still valid') +
+    tile(k.expired, 'expired or superseded', k.expired > 0) +
+    tile(k.never, 'never acknowledged', k.never > 0);
+
+  el('head').innerHTML = '<tr><th>Visitor</th><th class="c-hide">Company</th>' +
+    '<th>Acknowledged</th><th class="c-hide">Rules version</th><th>Status</th></tr>';
+
+  el('rows').innerHTML = rows.length ? rows.map(function (r) {
+    return '<tr>' +
+      '<td><div class="nm">' + esc(r.name || '—') + '</div>' +
+        '<div class="sub">' + esc(r.visitorId) + '</div></td>' +
+      '<td class="c-hide">' + esc(r.company || '—') + '</td>' +
+      '<td>' + (r.ackAt ? '<span class="sub">' + esc(String(r.ackAt).slice(0, 16).replace('T', ' ')) +
+        '</span>' : '<span class="muted">—</span>') + '</td>' +
+      '<td class="c-hide"><span class="sub">' + esc(r.version || '—') + '</span></td>' +
+      '<td>' + (r.state === 'VALID' ? '<span class="pill p-ok">Briefed</span>'
+        : r.state === 'EXPIRED' ? '<span class="pill p-part">Expired</span>'
+        : '<span class="pill p-no">Never</span>') + '</td>' +
+      '</tr>';
+  }).join('') : '<tr><td colspan="5" class="empty">' +
+    'No visitor inductions in ' + esc(DATA.month) + '.</td></tr>';
+}
+
+function draw() {
+  if (!DATA) return;
+  if (TAB === 'w') drawWorkers(); else drawVisitors();
+}
+
+function tile(n, label, warn) {
+  return '<div class="tile' + (warn ? ' warn' : '') + '"><b>' +
+    (n === undefined ? '—' : n) + '</b><span>' + esc(label) + '</span></div>';
+}
+
+/* ---------- acting on a row ---------- */
+
+function act(empId, started) {
+  if (started) return open(empId);
+  withToken(function () {
+    google.script.run
+      .withSuccessHandler(function (r) {
+        if (!r || !r.success) { window.alert((r && r.error) || 'Could not start it.'); return; }
+        load();
+      })
+      .withFailureHandler(function (e) {
+        if (/unauthori[sz]ed/i.test(String(e && e.message))) TOKEN = '';
+        window.alert('Error: ' + (e && e.message));
+      })
+      .startInduction(empId, TOKEN);
+  });
+}
+
+function open(empId) {
+  // Cross-origin sandbox: window.top.location throws, _top on a real URL works.
+  window.open('<?!= publicUrl ?>' + '?page=people&emp=' + encodeURIComponent(empId), '_top');
+}
+
+function withToken(then) {
+  if (TOKEN) return then();
+  var pin = window.prompt('Admin PIN to start an induction');
+  if (!pin) return;
+  google.script.run
+    .withSuccessHandler(function (v) {
+      if (!v || !v.success || !v.token) { window.alert('That PIN was not accepted.'); return; }
+      TOKEN = v.token; then();
+    })
+    .withFailureHandler(function (e) { window.alert('Error: ' + (e && e.message)); })
+    .verifyPIN(pin);
+}
+
+document.addEventListener('DOMContentLoaded', load);
+</script>
+</body>
+</html>
