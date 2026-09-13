@@ -205,9 +205,54 @@ function _kpiTrainingAdherence_(ym) {
  * zero: "the 5S app recorded nothing this month" and "every zone scored 0" are
  * different claims, and only one of them is a finding.
  */
+/* Bump in the SAME COMMIT as any change to what _kpiFetch_ returns.
+   CacheService is script-scoped, not version-scoped: a deploy does NOT clear
+   it, so without a stamp new code reads old-shaped entries for a whole TTL
+   and the symptom looks like random undefineds, not a cache problem. */
+var KPI_FETCH_BUILD_ = '2026-09-13a';
+
+/* Ten minutes. Set by "how long can this be wrong before someone acts on it",
+   not by how long we want the speed to last: these figures are monthly, but a
+   manager refreshing after a 5S entry lands should see it within a tea break.
+   A per-execution memo rides in front so three indicators sharing a dataset
+   pay for one call, not three. */
+var KPI_FETCH_TTL_ = 600;
+var _KPI_FETCH_MEMO_ = {};
+
 function _kpiFetch_(dataset, ym) {
   var name = String(dataset || '').trim();
   if (!name) return { value: '', note: 'no dataset configured', from: '' };
+
+  var key = 'kpifetch_' + KPI_FETCH_BUILD_ + '_' + name + '_' + String(ym || '');
+  if (_KPI_FETCH_MEMO_[key]) return _KPI_FETCH_MEMO_[key];
+
+  var cache = null;
+  try { cache = CacheService.getScriptCache(); } catch (e) {}
+  if (cache) {
+    try {
+      var hit = cache.get(key);
+      if (hit) {
+        var parsed = JSON.parse(hit);
+        _KPI_FETCH_MEMO_[key] = parsed;
+        return parsed;
+      }
+    } catch (e) { /* an unreadable entry is a miss, never an error */ }
+  }
+
+  var out = _kpiFetchLive_(name, ym);
+
+  /* Only a SUCCESSFUL read is cached. Caching "fetch failed" would turn one
+     bad minute in another app into ten minutes of this page reporting a
+     failure that has already cleared. */
+  if (cache && out.note.indexOf('fetch failed') !== 0) {
+    try { cache.put(key, JSON.stringify(out), KPI_FETCH_TTL_); } catch (e) {}
+  }
+  _KPI_FETCH_MEMO_[key] = out;
+  return out;
+}
+
+/** The actual cross-library read. Kept separate so the cache wraps one thing. */
+function _kpiFetchLive_(name, ym) {
   try {
     var res = PMCore.fetch(name, ym);
     var rows = (res && res.rows) || [];
@@ -218,6 +263,29 @@ function _kpiFetch_(dataset, ym) {
   } catch (e) {
     return { value: '', note: 'fetch failed: ' + String(e.message).slice(0, 60), from: name };
   }
+}
+
+/**
+ * Drop every cached indicator figure.
+ *
+ * Editor-run: the figures come from other apps, so there is no write path in
+ * THIS app to hook invalidation into — the TTL is the mechanism, and this is
+ * the manual override for when somebody needs the number now.
+ */
+function kpiFetchCacheClear() {
+  _KPI_FETCH_MEMO_ = {};
+  var cleared = 0;
+  try {
+    var cache = CacheService.getScriptCache();
+    var ym = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM');
+    getSheetAsObjects(KPI_SHEETS.DEFS).forEach(function (d) {
+      var n = String(d.Dataset || '').trim();
+      if (!n) return;
+      cache.remove('kpifetch_' + KPI_FETCH_BUILD_ + '_' + n + '_' + ym);
+      cleared++;
+    });
+  } catch (e) { return { success: false, error: e.message }; }
+  return { success: true, cleared: cleared, build: KPI_FETCH_BUILD_ };
 }
 
 /** Record a MANUAL figure. Append-only — a correction is a new row. */
