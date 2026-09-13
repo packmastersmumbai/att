@@ -5,6 +5,10 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>QR Scanner</title>
 <style>
+/* This surface is dark; the shared focus ring in tokens.html defaults to
+   brand navy, which would be invisible here. Only the accent changes. */
+:root { --qr-focus-ring: #38BDF8; }
+
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;overflow:hidden;background:#07111F;font-family:system-ui,sans-serif;color:#F1F5F9;}
 
@@ -58,17 +62,6 @@ video{width:100%;height:100%;object-fit:cover;display:block;}
 @keyframes spin{to{transform:rotate(360deg)}}
 canvas{display:none}
 
-    /* Visible keyboard focus indicator (WCAG 2.4.7). */
-    a:focus-visible,
-    button:focus-visible,
-    select:focus-visible,
-    input:focus-visible,
-    textarea:focus-visible,
-    [tabindex]:focus-visible {
-      outline: 2px solid #38BDF8;
-      outline-offset: 2px;
-      border-radius: 4px;
-    }
 </style>
 </head>
 <body>

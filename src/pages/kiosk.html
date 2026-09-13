@@ -12,6 +12,9 @@
 
     /* ── Design Tokens ── */
     :root {
+      /* Focus ring lives in tokens.html; this surface is dark, so it
+         only overrides the accent. */
+      --qr-focus-ring: #38BDF8;
       --bg:        #07111F;
       --bg2:       #0D1B2A;
       --surface:   rgba(255,255,255,.04);
@@ -109,18 +112,6 @@
     }
     .k-nav-link:hover { color: var(--text); background: var(--surface); border-color: var(--border-md); }
 
-    /* ── Focus ring ──
-       Every control needs a visible keyboard focus indicator (WCAG 2.4.7).
-       :focus-visible keeps it off mouse clicks and on for keyboard users. */
-    a:focus-visible,
-    button:focus-visible,
-    select:focus-visible,
-    input:focus-visible,
-    [tabindex]:focus-visible {
-      outline: 2px solid var(--teal);
-      outline-offset: 2px;
-      border-radius: 4px;
-    }
 
     /* ════════════════════════════════════════
        MAIN 3-COLUMN

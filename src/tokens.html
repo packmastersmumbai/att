@@ -149,5 +149,56 @@
   --radius-lg: var(--qr-radius-lg);
   --shadow-sm: var(--qr-shadow-sm);
   --shadow-md: var(--qr-shadow-md);
+
+  /* ── Focus ring ──────────────────────────────────────────────────────
+     The accent differs per surface (navy on light pages, sky on the dark
+     gate screens), so the ring reads it from a variable a page can reset
+     in its own :root rather than restating the whole rule. */
+  --qr-focus-ring: var(--qr-navy);
+}
+
+/* ══ Shared behaviour ═══════════════════════════════════════════════════
+   Rules, not just values. Same cascade trick as the tokens above: this file
+   is injected before every page's <style>, so these are defaults that any
+   page overrides simply by declaring the same selector. Each of the three
+   below was independently written into a dozen or more pages during the
+   2026-09-13 accessibility pass; keeping them here means the next new page
+   inherits them instead of forgetting them. */
+
+/* Visible keyboard focus indicator (WCAG 2.4.7). Twenty-two pages had grown
+   a near-identical copy of this; several had none at all, and two had an
+   outline:none that out-specified it. :focus-visible keeps the ring off
+   mouse clicks and on for keyboard users. */
+a:focus-visible,
+button:focus-visible,
+select:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+summary:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--qr-focus-ring);
+  outline-offset: 2px;
+  border-radius: var(--qr-radius-md);
+}
+
+/* Visually hidden, still announced. For labels whose text is already carried
+   visually by an adjacent placeholder, icon or heading. Five pages had each
+   defined their own identical copy. */
+.sr-only {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Gate staff work one-handed, in gloves, under time pressure. 44px is the
+   floor for anything tappable — the pass that established it left 71 hard
+   -coded 44px values behind, which is what --qr-control-h-touch is for. */
+.qr-touch {
+  min-height: var(--qr-control-h-touch);
+  min-width: var(--qr-control-h-touch);
 }
 </style>

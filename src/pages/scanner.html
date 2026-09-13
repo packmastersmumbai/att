@@ -7,6 +7,10 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700;800;900&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
+/* This surface is dark; the shared focus ring in tokens.html defaults to
+   brand navy, which would be invisible here. Only the accent changes. */
+:root { --qr-focus-ring: #38BDF8; }
+
     
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html { height: 100%; }
@@ -207,13 +211,6 @@
       margin: 0;
       font-weight: 500;
     }
-    /* Visually hidden, still announced — for labels whose text is already
-       carried visually by an adjacent placeholder or heading. */
-    .sr-only {
-      position: absolute; width: 1px; height: 1px;
-      padding: 0; margin: -1px; overflow: hidden;
-      clip: rect(0 0 0 0); white-space: nowrap; border: 0;
-    }
 
     /* The gate stamps every record this scanner writes. */
     .gate-row select {
@@ -229,20 +226,6 @@
     }
     .gate-row select:focus { border-color: #38BDF8; }
 
-    /* ── Focus ring ──
-       Every control needs a visible keyboard focus indicator (WCAG 2.4.7).
-       The gate selector and the manual-code input — the two controls that
-       decide what gets written and against which gate — had outline:none with
-       only a 1px border-colour change as a replacement. */
-    a:focus-visible,
-    button:focus-visible,
-    select:focus-visible,
-    input:focus-visible,
-    [tabindex]:focus-visible {
-      outline: 2px solid #38BDF8;
-      outline-offset: 2px;
-      border-radius: 4px;
-    }
 
     /* Camera viewport */
     .cam-wrap {

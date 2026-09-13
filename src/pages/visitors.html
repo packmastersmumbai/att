@@ -20,23 +20,7 @@
     a { color: inherit; text-decoration: none; }
     button { cursor: pointer; border: none; background: none; font-family: inherit; font-size: inherit; }
 
-    /* Visible keyboard focus on every interactive control. The page previously
-       had a ring only on .gp-seg buttons, so tabbing anywhere else was silent. */
-    a:focus-visible,
-    button:focus-visible,
-    select:focus-visible,
-    input:focus-visible,
-    [tabindex]:focus-visible {
-      outline: 2px solid var(--color-primary);
-      outline-offset: 2px;
-      border-radius: 4px;
-    }
 
-    /* Accessible name for controls that show no visible label text. */
-    .sr-only {
-      position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
-      overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
-    }
 
     /* ── Left Sidebar ──────────────────────────────────────── */
     .sidebar {
