@@ -191,6 +191,23 @@ function doGet(e) {
   // the sandbox the iframe URL carries no ?page=, so reading it client-side
   // matched nothing and the button appeared on the kiosk and the public
   // visitor pages.
+  /* Idle warming, on the staff pages only.
+     The public visitor pages (vreg, vpass, gatepass_approve) have nothing to
+     warm and no business spending a visitor's data or making a call on their
+     behalf — a warm endpoint sitting on an unauthenticated screen is exactly
+     what the caching rule says not to ship. */
+  var WARMED_PAGES = ['dashboard', 'people', 'induction', 'skillmatrix', 'training'];
+  if (WARMED_PAGES.indexOf(page) !== -1) {
+    /* A TEMPLATE, not a plain file: the warmer needs the resolved page name to
+       know what to warm next, and it cannot work that out client-side — the
+       sandbox iframe URL has no ?page= and half these pages have no sidebar to
+       read it from. Same reason backNav is a template. */
+    var warmTpl = HtmlService.createTemplateFromFile('prefetch');
+    warmTpl.warmPage = page;
+    withI18n = withI18n.replace('</body>',
+      warmTpl.evaluate().getContent() + '</body>');
+  }
+
   var backTpl = HtmlService.createTemplateFromFile('backNav');
   backTpl.page = page;
   backTpl.appUrl = publicBaseUrl();   // the /exec address, not the sandbox iframe

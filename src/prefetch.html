@@ -1,0 +1,146 @@
+<!--
+  prefetch.html — warm the slow reads while the browser is idle.
+
+  Every page here costs a ~1.8-2.3s platform floor before a handler runs, and
+  the slowest reads add 3-4s of real work on top. Caching took the work down
+  (see qratt-latency-and-caching in project memory) but the FIRST load after a
+  deploy, or after a TTL lapses, still pays it in full — and the person who
+  pays it is whoever opens the app first that morning.
+
+  Warming on requestIdleCallback rather than on load or on login: the browser
+  says when it is genuinely free, so a warm never competes with the page the
+  user is actually looking at. If they are busy, nothing fires and nothing is
+  lost. Copied in shape from PM QMS's prefetchFormData, which solved this
+  first.
+
+  Three non-negotiables, all from the caching rule:
+    1. Never block. No await, no spinner, no error shown.
+    2. Guard against duplicates, but release the guard on failure so a retry
+       works.
+    3. Warm what the user is LIKELY to open next, not everything.
+-->
+<script>
+(function () {
+  if (typeof google === 'undefined' || !google.script || !google.script.run) return;
+
+  /* Raw scriptlet, not the escaping one: a page name is a bare word, but the
+     escaping form mangles anything it touches inside a JS string. */
+  var PAGE = '<?!= warmPage ?>';
+
+  /* Bumped with any change to what a warmed call returns, so a stale entry
+     from a previous shape is never read as current. */
+  var WARM_PFX = 'qratt_warm_v1_';
+  var WARM_TTL = 5 * 60 * 1000;      // 5 min, under the server's own 10
+
+  var inFlight = {};
+
+  function fresh(key) {
+    try {
+      var raw = sessionStorage.getItem(WARM_PFX + key);
+      if (!raw) return false;
+      return (Date.now() - (JSON.parse(raw).ts || 0)) < WARM_TTL;
+    } catch (e) { return false; }   // private mode, quota, blocked storage
+  }
+
+  /**
+   * Fire one warm call. Fire-and-forget by construction: nothing downstream
+   * waits on it, and a failure costs only the old speed.
+   */
+  function warm(key, fn, args) {
+    if (inFlight[key] || fresh(key)) return;
+    inFlight[key] = true;
+
+    var runner = google.script.run
+      .withSuccessHandler(function (d) {
+        delete inFlight[key];
+        if (!d) return;
+        /* The PAYLOAD is not stored — only the fact that the server has now
+           built it and holds it in its own cache. Parking a 54KB matrix in
+           sessionStorage would buy nothing: the page re-fetches anyway, and
+           the win is that the server answer is now warm. */
+        try {
+          sessionStorage.setItem(WARM_PFX + key, JSON.stringify({ ts: Date.now() }));
+        } catch (e) { /* quota or blocked — the warm still happened */ }
+      })
+      .withFailureHandler(function () {
+        // Released, so the next idle moment may try again.
+        delete inFlight[key];
+      });
+
+    try { runner[fn].apply(runner, args || []); }
+    catch (e) { delete inFlight[key]; }
+  }
+
+  /* ONLY warm a call that keeps something between requests.
+
+     This is the whole trap, and it was measured rather than assumed: calling
+     getInductionModule twice in a row costs 3,769ms then 3,942ms — no cheaper
+     the second time, because its memo is a module global that dies with the
+     execution. Warming it spends a real request and buys the user NOTHING.
+     The first version of this file warmed exactly that, and the test still
+     passed, because "the warm completed" is not "the warm helped".
+
+     getKpiRegister is the one endpoint here with a CacheService entry behind
+     it (_kpiFetch_, 10 min), so it is the one worth warming: measured
+     6,622ms cold -> 908ms warm.
+
+     If another endpoint gains a cross-request cache, add it here. Until then
+     one entry is the honest length of this list. */
+  var PLAN = {
+    dashboard:   [['kpi', 'getKpiRegister', [nowMonth()]]],
+    people:      [['kpi', 'getKpiRegister', [nowMonth()]]],
+    induction:   [['kpi', 'getKpiRegister', [nowMonth()]]],
+    skillmatrix: [['kpi', 'getKpiRegister', [nowMonth()]]],
+    training:    [['kpi', 'getKpiRegister', [nowMonth()]]]
+  };
+
+  function nowMonth() {
+    var d = new Date(), m = d.getMonth() + 1;
+    return d.getFullYear() + '-' + (m < 10 ? '0' : '') + m;
+  }
+
+  /* The page name comes FROM THE SERVER, injected below.
+
+     Both client-side guesses fail here and fail silently. The sandbox iframe
+     URL carries no ?page= — CLAUDE.md records this — and half these pages
+     (people, induction, present) have no sidebar, so there is no
+     .sb-item.active to read either. The warmer loaded, found no plan for ''
+     and did nothing at all, which looks exactly like a warmer that was never
+     shipped. backNav learned this first; this is the same fix. */
+  function currentPage() { return PAGE; }
+
+  function go() {
+    var jobs = PLAN[currentPage()];
+    if (!jobs || !jobs.length) return;
+    /* Staggered. Two google.script.run calls launched together contend with
+       each other and with whatever the page itself is still loading. */
+    jobs.forEach(function (j, i) {
+      setTimeout(function () { warm(j[0], j[1], j[2]); }, i * 1500);
+    });
+  }
+
+  /* Wait for the page's own data to arrive, not just for window.load.
+
+     Measured here: the People page fires load early and does not paint a row
+     until ~19s, because its own google.script.run is still in flight. An
+     8-second idle timeout therefore fired while the page was at its busiest —
+     the warm would have competed with the request the user is actually
+     waiting on, which is the exact opposite of the point.
+
+     So: no timeout on requestIdleCallback. Wait for genuine idle, however
+     long that takes, with one long backstop for a browser that never reports
+     it. If the user closes the tab first, nothing was owed. */
+  function schedule() {
+    if (window.requestIdleCallback) window.requestIdleCallback(go);   // no timeout, deliberately
+    else setTimeout(go, 12000);
+    setTimeout(go, 45000);      // backstop; go() is idempotent via the guards
+  }
+
+  if (document.readyState === 'complete') setTimeout(schedule, 3000);
+  else window.addEventListener('load', function () { setTimeout(schedule, 3000); });
+
+  // Exposed so a page can warm something specific on a real intent signal —
+  // the pattern MMT uses when an operator picks a machine.
+  window.qrattWarm = warm;
+})();
+</script>
