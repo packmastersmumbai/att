@@ -25,6 +25,31 @@
     a { color: inherit; text-decoration: none; }
     button { cursor: pointer; border: none; background: none; font-family: inherit; font-size: inherit; }
 
+    /* Visible keyboard focus. The page previously relied on a border-colour
+       change on inputs alone, which is invisible on buttons, links and tabs.
+       --primary (#000666) on white is 17.2:1, so the ring is unmissable. */
+    a:focus-visible,
+    button:focus-visible,
+    select:focus-visible,
+    input:focus-visible,
+    textarea:focus-visible,
+    [tabindex]:focus-visible {
+      outline: 2px solid var(--primary);
+      outline-offset: 2px;
+      border-radius: 4px;
+    }
+
+    /* Visually hidden but announced by screen readers. */
+    .sr-only {
+      position: absolute; width: 1px; height: 1px;
+      padding: 0; margin: -1px; overflow: hidden;
+      clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+    }
+
+    /* Headings promoted from styled divs — reset UA margins/sizes so the
+       existing visual rhythm is unchanged. */
+    h1, h2, h3, h4 { font-size: inherit; font-weight: inherit; margin: 0; }
+
     /* ── Sidebar ──────────────────────────────────────── */
     .sidebar {
       width: 240px;
@@ -61,7 +86,7 @@
       overflow-y: auto;
     }
     .sb-section {
-      font-size: 10px;
+      font-size: 11px;   /* 11px floor: was 10px */
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 1.2px;
@@ -73,6 +98,7 @@
       align-items: center;
       gap: 10px;
       padding: 9px 10px;
+      min-height: 44px;   /* WCAG 2.5.5 target size */
       border-radius: var(--radius-md);
       font-size: 13px;
       font-weight: 500;
@@ -94,11 +120,12 @@
       background: var(--primary);
       color: #fff;
       display: flex; align-items: center; justify-content: center;
-      font-size: 10px; font-weight: 700;
+      font-size: 11px; font-weight: 700;   /* 11px floor: was 10px */
       flex-shrink: 0;
     }
     .sb-user-name { font-size: 12px; font-weight: 600; color: var(--text); }
-    .sb-user-sub  { font-size: 10px; color: #6b7280; margin-top: 1px; }
+    /* 11px floor (was 10px). #6b7280 on #fff is 4.83:1 — passes AA body text. */
+    .sb-user-sub  { font-size: 11px; color: #6b7280; margin-top: 1px; }
 
     /* ── Main area ────────────────────────────────────── */
     .main {
@@ -136,7 +163,7 @@
       color: var(--primary);
     }
     .pin-icon svg { width: 26px; height: 26px; }
-    .pin-card h2 { font-size: 20px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+    .pin-card h1 { font-size: 20px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
     .pin-card p  { font-size: 13px; color: var(--muted); margin-bottom: 24px; }
     #pinInput {
       width: 100%;
@@ -147,7 +174,8 @@
       font-family: var(--mono);
       letter-spacing: 10px;
       text-align: center;
-      outline: none;
+      /* outline:none removed — as an ID selector it out-specified the global
+         :focus-visible ring, leaving the PIN field with no visible focus. */
       transition: border-color .15s;
       background: var(--bg);
     }
@@ -192,8 +220,9 @@
     .panel-title { font-size: 20px; font-weight: 800; color: var(--text); }
     .panel-subtitle { font-size: 13px; color: var(--muted); margin-top: 2px; }
     .btn-lock {
-      display: flex; align-items: center; gap: 6px;
+      display: flex; align-items: center; justify-content: center; gap: 6px;
       padding: 7px 14px;
+      min-height: 44px;   /* WCAG 2.5.5 target size */
       border-radius: var(--radius-sm);
       border: 1px solid var(--border);
       font-size: 12px;
@@ -211,7 +240,8 @@
       gap: 0;
     }
     .tab-btn {
-      padding: 10px 20px;
+      padding: 12px 20px;
+      min-height: 44px;   /* WCAG 2.5.5 target size */
       font-size: 13px;
       font-weight: 600;
       color: var(--muted);
@@ -253,8 +283,9 @@
 
     /* ── Buttons ──────────────────────────────────────── */
     .btn {
-      display: inline-flex; align-items: center; gap: 6px;
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
       padding: 8px 16px;
+      min-height: 44px;   /* WCAG 2.5.5 target size */
       border-radius: var(--radius-sm);
       font-weight: 600;
       font-size: 13px;
@@ -348,12 +379,14 @@
     label { display: block; font-size: 12px; font-weight: 600; margin-bottom: 5px; color: var(--muted); }
     .input {
       width: 100%;
-      padding: 9px 13px;
+      padding: 11px 13px;
+      min-height: 44px;   /* WCAG 2.5.5 target size */
       border: 1.5px solid var(--border);
       border-radius: var(--radius-sm);
       font-size: 14px;
       font-family: var(--font);
-      outline: none;
+      /* outline:none removed — the global :focus-visible ring is the
+         replacement, and a border-colour change alone is too weak a cue. */
       background: var(--bg);
       color: var(--text);
       transition: border-color .15s, background .15s;
@@ -388,10 +421,13 @@
     .alert-toggle-locked { cursor: default; background: rgba(248,113,113,.05); border-color: rgba(248,113,113,.3); }
     .alert-toggle-locked:hover { background: rgba(248,113,113,.05); }
     .alert-name { font-size: 13px; font-weight: 600; color: var(--text); }
-    .alert-desc { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+    /* --text-muted is not a token this app defines (tokens.html exposes --muted
+       and --color-text-muted), so this silently inherited the parent colour.
+       --muted is #4a5568 = 7.53:1 on white — comfortably AA. */
+    .alert-desc { font-size: 11px; color: var(--muted); margin-top: 2px; }
     .alert-check { width: 18px; height: 18px; flex-shrink: 0; cursor: pointer; accent-color: var(--primary, #2563EB); }
     .alert-always {
-      flex-shrink: 0; font-size: 10px; font-weight: 700; letter-spacing: .5px;
+      flex-shrink: 0; font-size: 11px; font-weight: 700; letter-spacing: .5px;   /* 11px floor: was 10px */
       text-transform: uppercase; color: #DC2626;
       background: rgba(220,38,38,.1); border-radius: 5px; padding: 4px 9px;
     }
@@ -399,13 +435,15 @@
     /* ── Telegram preview ─────────────────────────────── */
     .tg-preview-wrap { display: flex; flex-direction: column; gap: 14px; }
     .tg-msg-label {
-      font-size: 11px; font-weight: 700; color: var(--text-muted);
+      font-size: 11px; font-weight: 700; color: var(--muted);   /* --text-muted is undefined here */
       text-transform: uppercase; letter-spacing: .5px; margin-bottom: 5px;
     }
     .tg-msg-off { opacity: .4; }
     .tg-off-tag {
-      background: rgba(148,163,184,.25); color: var(--text-muted);
-      border-radius: 4px; padding: 1px 6px; font-size: 9px; letter-spacing: 0;
+      /* --text-muted is undefined; --muted (#4a5568) on the flattened
+         rgba(148,163,184,.25)-over-white chip (~#dfe3e9) is ~6.4:1. */
+      background: rgba(148,163,184,.25); color: var(--muted);
+      border-radius: 4px; padding: 1px 6px; font-size: 11px; letter-spacing: 0;   /* 11px floor: was 9px */
     }
     /* Approximates the Telegram bubble so the preview reads as a message, not
        a config field — line length and wrapping are what actually differ. */
@@ -459,7 +497,8 @@
     .modal-title    { font-size: 16px; font-weight: 700; }
     .modal-subtitle { font-size: 12px; color: var(--muted); margin-top: 2px; }
     .modal-close {
-      width: 28px; height: 28px;
+      width: 44px; height: 44px;   /* WCAG 2.5.5 target size (was 28px) */
+      margin: -8px -8px -8px 0;    /* keeps the glyph optically where it was */
       border-radius: var(--radius-md);
       display: flex; align-items: center; justify-content: center;
       color: var(--muted);
@@ -490,6 +529,7 @@
     .qr-link {
       display: inline-flex;
       align-items: center;
+      min-height: 44px;   /* WCAG 2.5.5 target size */
       gap: 4px;
       color: var(--primary);
       font-size: 12px;
@@ -529,17 +569,21 @@
     /* ── Employee active/inactive toggle ─────────────────── */
     .emp-toggle {
       position: relative;
-      display: inline-block;
+      display: inline-flex;
+      align-items: center;
       width: 44px;
-      height: 24px;
+      height: 44px;   /* WCAG 2.5.5 target size; the 24px track is centred in it */
       cursor: pointer;
       flex-shrink: 0;
     }
     .emp-toggle .emp-tog-chk { opacity: 0; width: 0; height: 0; position: absolute; }
     .emp-tog-slider {
+      /* The hit area grew to 44px tall; the visible track stays 24px, centred,
+         so the control looks exactly as before. */
       position: absolute;
-      inset: 0;
-      background: #d1d5db;
+      left: 0; right: 0; top: 10px;
+      height: 24px;
+      background: #9ca3af;   /* was #d1d5db (1.5:1 on white); #9ca3af is 3.0:1 — AA for UI components */
       border-radius: 999px;
       transition: background .2s;
     }
@@ -646,17 +690,25 @@
             <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
           </svg>
         </div>
-        <h2>Admin Access</h2>
+        <!-- h1: the PIN gate and the admin panel are mutually exclusive views,
+             so each needs its own top-level heading. -->
+        <h1>Admin Access</h1>
         <p>Enter your PIN to access the administration panel</p>
+        <!-- A placeholder is not an accessible name: the real label is visually
+             hidden because the field is self-evident in this centred card. -->
+        <label class="sr-only" for="pinInput">Admin PIN</label>
         <input
           type="password"
           id="pinInput"
           placeholder="• • • • • •"
           maxlength="6"
           autocomplete="off"
+          inputmode="numeric"
+          aria-describedby="pinError"
           onkeydown="if(event.key==='Enter')checkPIN()"
         >
-        <div id="pinError"></div>
+        <!-- Announced when checkPIN() writes the failure reason here. -->
+        <div id="pinError" role="status" aria-live="polite"></div>
         <button class="btn-unlock" onclick="checkPIN()">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="15" height="15"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
           Unlock
@@ -671,7 +723,7 @@
       <div class="panel-header no-print">
         <div class="panel-header-top">
           <div>
-            <div class="panel-title">Administration</div>
+            <h1 class="panel-title">Administration</h1>
             <div class="panel-subtitle">Manage employees, system configuration, and access control</div>
           </div>
           <button class="btn-lock" onclick="lockAdmin()">
@@ -698,7 +750,7 @@
           <div class="card">
             <div class="card-header">
               <div>
-                <div class="card-title">Employees</div>
+                <h2 class="card-title">Employees</h2>
                 <div class="card-sub">All registered staff with QR codes</div>
               </div>
               <button class="btn btn-success" onclick="openAddEmpModal()">
@@ -748,7 +800,7 @@
           <div class="card">
             <div class="card-header">
               <div>
-                <div class="card-title">System Configuration</div>
+                <h2 class="card-title">System Configuration</h2>
                 <div class="card-sub">Organisation details, notifications, and scheduling</div>
               </div>
               <button class="btn btn-primary" onclick="saveConfig()">
@@ -758,51 +810,51 @@
             </div>
 
             <div class="cfg-block">
-              <div class="cfg-section-title">Organisation</div>
+              <h3 class="cfg-section-title">Organisation</h3>
               <div class="form-grid-2">
                 <div class="form-group">
-                  <label>Organisation Name <span style="color:var(--danger)">*</span></label>
+                  <label for="cfgOrgName">Organisation Name <span style="color:var(--danger)">*</span></label>
                   <input type="text" id="cfgOrgName" class="input" placeholder="e.g. Acme Corp">
                 </div>
                 <div class="form-group">
-                  <label>Admin PIN <span style="color:var(--danger)">*</span></label>
+                  <label for="cfgAdminPIN">Admin PIN <span style="color:var(--danger)">*</span></label>
                   <input type="password" id="cfgAdminPIN" class="input" maxlength="6" placeholder="6-digit PIN">
                 </div>
               </div>
             </div>
 
             <div class="cfg-block">
-              <div class="cfg-section-title">Owner Contact &amp; Notifications</div>
+              <h3 class="cfg-section-title">Owner Contact &amp; Notifications</h3>
               <div class="form-grid-2">
                 <div class="form-group">
-                  <label>Owner WhatsApp</label>
+                  <label for="cfgOwnerPhone">Owner WhatsApp</label>
                   <input type="tel" id="cfgOwnerPhone" class="input" placeholder="+919876543210">
                   <div class="form-hint">Include country code</div>
                 </div>
                 <div class="form-group">
-                  <label>Owner Email</label>
+                  <label for="cfgOwnerEmail">Owner Email</label>
                   <input type="email" id="cfgOwnerEmail" class="input" placeholder="owner@company.com">
                 </div>
               </div>
               <div class="form-group">
-                <label>CallMeBot API Key</label>
+                <label for="cfgCallMeBotKey">CallMeBot API Key</label>
                 <input type="text" id="cfgCallMeBotKey" class="input" placeholder="Your CallMeBot key">
                 <div class="form-hint">Used for WhatsApp notifications</div>
               </div>
               <div class="form-grid-2">
                 <div class="form-group">
-                  <label>Telegram Bot Token</label>
+                  <label for="cfgTelegramBotToken">Telegram Bot Token</label>
                   <input type="text" id="cfgTelegramBotToken" class="input" placeholder="123456:ABC-DEF…">
                   <div class="form-hint">From @BotFather</div>
                 </div>
                 <div class="form-group">
-                  <label>Telegram Channel ID</label>
+                  <label for="cfgTelegramChatID">Telegram Channel ID</label>
                   <input type="text" id="cfgTelegramChatID" class="input" placeholder="@mychannel or -100…">
                   <div class="form-hint">Bot must be a channel admin. Posts visitor arrivals + daily summary.</div>
                 </div>
               </div>
               <div class="form-group">
-                <label>Live Check-in/out Posts</label>
+                <label for="cfgTelegramLiveScans">Live Check-in/out Posts</label>
                 <select id="cfgTelegramLiveScans" class="input">
                   <option value="off">Off</option>
                   <option value="on">On — post every IN/OUT to the channel</option>
@@ -820,7 +872,7 @@
 
             <!-- ── Which alerts are sent ── -->
             <div class="cfg-block">
-              <div class="cfg-section-title">Alerts</div>
+              <h3 class="cfg-section-title">Alerts</h3>
               <div class="form-hint" style="margin-bottom:10px">
                 Choose which events post to Telegram. Turning one off stops that message entirely —
                 the underlying record is still written either way.
@@ -885,7 +937,7 @@
 
             <!-- ── What each message contains ── -->
             <div class="cfg-block">
-              <div class="cfg-section-title">Message content</div>
+              <h3 class="cfg-section-title">Message content</h3>
               <div class="form-grid-2">
                 <label class="alert-toggle">
                   <div>
@@ -916,38 +968,42 @@
 
             <!-- ── Live preview ── -->
             <div class="cfg-block">
-              <div class="cfg-section-title">
+              <h3 class="cfg-section-title">
                 Preview
                 <button class="btn btn-ghost btn-sm" style="float:right;margin-top:-4px" onclick="loadAlertPreview(this)">Refresh</button>
-              </div>
+              </h3>
               <div class="form-hint" style="margin-bottom:10px">
                 Rendered by the same code that sends the real messages. <b>Save first</b> — the preview
                 reflects saved settings, not unsaved edits.
               </div>
-              <div id="alertPreview" class="tg-preview-wrap">
+              <!-- Replaced by innerHTML with either the samples or a failure
+                   message, so the outcome must be announced. -->
+              <div id="alertPreview" class="tg-preview-wrap" role="status" aria-live="polite">
                 <div class="form-hint">Loading preview…</div>
               </div>
             </div>
 
             <div class="cfg-block">
-              <div class="cfg-section-title">Scheduling</div>
+              <h3 class="cfg-section-title">Scheduling</h3>
               <div class="form-grid-2">
                 <div class="form-group">
-                  <label>Daily Digest Time</label>
+                  <label for="cfgSummaryHr">Daily Digest Time</label>
                   <div style="display:flex;align-items:center;gap:6px">
-                    <input type="number" id="cfgSummaryHr" class="input" min="0" max="23" placeholder="9" style="flex:1">
-                    <span style="font-weight:700;color:var(--color-text-muted)">:</span>
-                    <input type="number" id="cfgSummaryMin" class="input" min="0" max="59" step="5" placeholder="00" style="flex:1">
+                    <!-- Two controls share one visual label; each needs its own
+                         accessible name, so the hour/minute role is spelled out. -->
+                    <input type="number" id="cfgSummaryHr" class="input" min="0" max="23" placeholder="9" style="flex:1" aria-label="Daily digest time — hour">
+                    <span aria-hidden="true" style="font-weight:700;color:var(--muted)">:</span>
+                    <input type="number" id="cfgSummaryMin" class="input" min="0" max="59" step="5" placeholder="00" style="flex:1" aria-label="Daily digest time — minute">
                   </div>
                   <div class="form-hint">Google fires this within ~15 min of the chosen time — it cannot be exact.</div>
                 </div>
                 <div class="form-group">
-                  <label>Auto Checkout Hour (0–23)</label>
+                  <label for="cfgAutoCheckoutHr">Auto Checkout Hour (0–23)</label>
                   <input type="number" id="cfgAutoCheckoutHr" class="input" min="0" max="23" placeholder="23">
                   <div class="form-hint">Hour to auto-checkout all present staff</div>
                 </div>
                 <div class="form-group">
-                  <label>Late After (HH:MM)</label>
+                  <label for="cfgLateAfter">Late After (HH:MM)</label>
                   <input type="time" id="cfgLateAfter" class="input" placeholder="09:30">
                   <div class="form-hint">Check-in after this time counts as late</div>
                 </div>
@@ -955,7 +1011,7 @@
             </div>
 
             <div class="cfg-block">
-              <div class="cfg-section-title">Training &amp; Competency</div>
+              <h3 class="cfg-section-title">Training &amp; Competency</h3>
               <div class="form-hint" style="margin-bottom:8px">
                 Governs the training calendar and the skill matrix. The minimum
                 levels below are the claim an auditor will hold you to, so they
@@ -964,12 +1020,12 @@
               </div>
               <div class="form-grid-2">
                 <div class="form-group">
-                  <label>Pass Mark</label>
+                  <label for="cfgPassMark">Pass Mark</label>
                   <input type="number" id="cfgPassMark" class="input" min="1" max="100" placeholder="70">
                   <div class="form-hint">Score at or above which an attendee counts as assessed. A blank score stays “not assessed”, never a fail.</div>
                 </div>
                 <div class="form-group">
-                  <label>Level Names</label>
+                  <label for="cfgLevelNames">Level Names</label>
                   <input type="text" id="cfgLevelNames" class="input"
                          placeholder="Beginner|Under supervision|Independent|Can train others">
                   <div class="form-hint">Four names for L1–L4, separated by <b>|</b>. Wording should match your SOP.</div>
@@ -977,29 +1033,29 @@
               </div>
               <div class="form-grid-2">
                 <div class="form-group">
-                  <label>Document Owner</label>
+                  <label for="cfgDocOwner">Document Owner</label>
                   <input type="text" id="cfgDocOwner" class="input" placeholder="Who owns the controlled formats">
                 </div>
                 <div class="form-group">
-                  <label>Approved By</label>
+                  <label for="cfgDocApprover">Approved By</label>
                   <input type="text" id="cfgDocApprover" class="input" placeholder="Who approved them">
                 </div>
                 <div class="form-group">
-                  <label>Approval Date</label>
+                  <label for="cfgDocApprovedOn">Approval Date</label>
                   <input type="text" id="cfgDocApprovedOn" class="input" placeholder="01/04/2025">
                 </div>
                 <div class="form-group">
-                  <label>Version</label>
+                  <label for="cfgDocVersion">Version</label>
                   <input type="text" id="cfgDocVersion" class="input" placeholder="1.0">
                 </div>
                 <div class="form-group">
-                  <label>Next Review Date</label>
+                  <label for="cfgDocNextReview">Next Review Date</label>
                   <input type="text" id="cfgDocNextReview" class="input" placeholder="01/04/2026">
                   <div class="form-hint">Printed at the foot of the mock drill report and every controlled format.</div>
                 </div>
               </div>
               <div class="form-group">
-                <label>Name substitutions in the 2025 records</label>
+                <label for="cfgNameAliases">Name substitutions in the 2025 records</label>
                 <textarea id="cfgNameAliases" class="input" rows="3"
                           placeholder="ATUL WAGHMARE = SHIKHA KUMAR&#10;SATENDRA YADAV = HARISH SINGH"></textarea>
                 <div class="form-hint">
@@ -1010,7 +1066,7 @@
                 </div>
               </div>
               <div class="form-group">
-                <label>Minimum Required Level, per job role</label>
+                <label for="cfgMinRequired">Minimum Required Level, per job role</label>
                 <textarea id="cfgMinRequired" class="input" rows="4"
                           placeholder="Packaging Operator: SKL-01=L3, SKL-04=L3, SKL-16=NA&#10;Security Guard: SKL-16=L3, SKL-01=NA"></textarea>
                 <div class="form-hint">
@@ -1022,7 +1078,7 @@
             </div>
 
             <div class="cfg-block">
-              <div class="cfg-section-title">India Holidays (2026)</div>
+              <h3 class="cfg-section-title">India Holidays (2026)</h3>
               <div class="form-hint" style="margin-bottom:8px">
                 The 3 gazetted national holidays are always observed and cannot be unchecked.
                 Tick any additional festivals your organisation observes. This list is for 2026 —
@@ -1051,7 +1107,7 @@
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="addEmpTitle">
       <div class="modal-header">
         <div>
-          <div class="modal-title" id="addEmpTitle">Add Employee</div>
+          <h2 class="modal-title" id="addEmpTitle">Add Employee</h2>
           <div class="modal-subtitle" id="addEmpSubtitle">A unique QR code will be generated automatically</div>
         </div>
         <button class="modal-close" onclick="closeModal('addEmpOverlay')" aria-label="Close">
@@ -1061,32 +1117,32 @@
       <div class="modal-body">
         <div class="form-grid-2">
           <div class="form-group">
-            <label>Employee Code <span style="color:var(--danger)">*</span></label>
+            <label for="eCode">Employee Code <span style="color:var(--danger)">*</span></label>
             <input type="text" id="eCode" class="input" placeholder="e.g. 556">
             <div id="eCodeLockNote" style="display:none;font-size:11px;color:var(--muted,#64748b);margin-top:4px">Code is the QR identity — not editable.</div>
           </div>
           <div class="form-group">
-            <label>Full Name <span style="color:var(--danger)">*</span></label>
+            <label for="eName">Full Name <span style="color:var(--danger)">*</span></label>
             <input type="text" id="eName" class="input" placeholder="e.g. Priya Sharma">
           </div>
         </div>
         <div class="form-grid-2">
           <div class="form-group">
-            <label>Department</label>
+            <label for="eDept">Department</label>
             <input type="text" id="eDept" class="input" placeholder="e.g. Operations">
           </div>
           <div class="form-group">
-            <label>Job Role</label>
+            <label for="eJobRole">Job Role</label>
             <input type="text" id="eJobRole" class="input" placeholder="e.g. Packaging Operator">
             <div class="form-hint">Sets which minimum competency levels apply on the skill matrix. Blank = the default for every skill.</div>
           </div>
           <div class="form-group">
-            <label>Date of Joining</label>
+            <label for="eDoj">Date of Joining</label>
             <input type="date" id="eDoj" class="input">
             <div class="form-hint">Printed on the induction record (PM/FRM/HR-08). Left blank it reads “[TO BE ENTERED]”.</div>
           </div>
           <div class="form-group">
-            <label>Gender</label>
+            <label for="eGender">Gender</label>
             <select id="eGender" class="input">
               <option value="">Select…</option>
               <option>Male</option><option>Female</option><option>Other</option>
@@ -1094,7 +1150,7 @@
           </div>
         </div>
         <div class="form-group">
-          <label>Blood Group</label>
+          <label for="eBlood">Blood Group</label>
           <select id="eBlood" class="input">
             <option value="">Select…</option>
             <option>A+</option><option>A-</option><option>B+</option><option>B-</option>
@@ -1102,15 +1158,15 @@
           </select>
         </div>
         <div class="form-group">
-          <label>Phone</label>
+          <label for="ePhone">Phone</label>
           <input type="tel" id="ePhone" class="input" placeholder="+91 ...">
         </div>
         <div class="form-group">
-          <label>Email</label>
+          <label for="eEmail">Email</label>
           <input type="email" id="eEmail" class="input" placeholder="employee@company.com">
         </div>
         <div class="form-group">
-          <label>Photo URL</label>
+          <label for="ePhoto">Photo URL</label>
           <input type="url" id="ePhoto" class="input" placeholder="https://… (shown on kiosk &amp; ID card)">
         </div>
       </div>
@@ -1127,12 +1183,12 @@
 
   <!-- ══ MODAL: BLACKLIST ══ -->
   <div class="modal-overlay" id="blacklistModal" onclick="overlayClose(event,'blacklistModal')">
-    <div class="modal" role="dialog" aria-modal="true" style="max-width:700px">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="blacklistTitle" style="max-width:700px">
       <div class="modal-header">
         <div>
-          <div class="modal-title">Security Watchlist</div>
+          <h2 class="modal-title" id="blacklistTitle">Security Watchlist</h2>
           <div class="modal-subtitle" style="display:flex;align-items:center;gap:6px">
-            <span style="display:inline-flex;align-items:center;gap:4px;background:#FEE2E2;color:#991B1B;padding:2px 8px;border-radius:3px;font-size:10px;font-weight:700">
+            <span style="display:inline-flex;align-items:center;gap:4px;background:#FEE2E2;color:#991B1B;padding:2px 8px;border-radius:3px;font-size:11px;font-weight:700"><!-- 11px floor: was 10px -->
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="10" height="10"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
               Admin Authenticated · Enforcement Active
             </span>
@@ -1176,9 +1232,12 @@
   ══════════════════════════════════════════════════ -->
   <div class="modal-overlay" id="addBlOverlay" onclick="overlayClose(event,'addBlOverlay')">
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="addBlTitle">
-      <div class="modal-header" style="border-left:3px solid var(--danger);padding-left:21px">
+      <!-- The danger accent was a 3px left border — the classic "side tab" tell.
+           A tinted header band carries the same warning with less decoration;
+           the title itself stays var(--danger) (4.83:1 on white). -->
+      <div class="modal-header" style="background:rgba(220,38,38,.06)">
         <div>
-          <div class="modal-title" id="addBlTitle" style="color:var(--danger)">Add to Blacklist</div>
+          <h2 class="modal-title" id="addBlTitle" style="color:var(--danger)">Add to Blacklist</h2>
           <div class="modal-subtitle">Blocks this QR code from check-in at all gates</div>
         </div>
         <button class="modal-close" onclick="closeModal('addBlOverlay')" aria-label="Close">
@@ -1187,15 +1246,15 @@
       </div>
       <div class="modal-body">
         <div class="form-group">
-          <label>QR Code / ID <span style="color:var(--danger)">*</span></label>
+          <label for="blQRCode">QR Code / ID <span style="color:var(--danger)">*</span></label>
           <input type="text" id="blQRCode" class="input" placeholder="EMP-000001 or VIS-...">
         </div>
         <div class="form-group">
-          <label>Person Name</label>
+          <label for="blName">Person Name</label>
           <input type="text" id="blName" class="input" placeholder="Optional — for reference">
         </div>
         <div class="form-group">
-          <label>Reason for Restriction <span style="color:var(--danger)">*</span></label>
+          <label for="blReason">Reason for Restriction <span style="color:var(--danger)">*</span></label>
           <select id="blReason" class="input">
             <option value="">Select reason…</option>
             <option value="Unauthorised Entry">Unauthorised Entry</option>
@@ -1207,7 +1266,7 @@
           </select>
         </div>
         <div class="form-group">
-          <label>Notes</label>
+          <label for="blNotes">Notes</label>
           <input type="text" id="blNotes" class="input" placeholder="Optional additional notes">
         </div>
       </div>
@@ -1229,7 +1288,11 @@
     (function() {
       var p = (new URLSearchParams(window.location.search)).get('page') || '';
       document.querySelectorAll('.sb-item[data-page]').forEach(function(a) {
-        a.classList.toggle('active', a.dataset.page === p);
+        var on = a.dataset.page === p;
+        a.classList.toggle('active', on);
+        // "active" was colour-only; aria-current states it for screen readers.
+        if (on) a.setAttribute('aria-current', 'page');
+        else a.removeAttribute('aria-current');
       });
     })();
   </script>
@@ -1297,6 +1360,18 @@
     function openModal(id)  { document.getElementById(id).classList.add('open'); }
     function closeModal(id) { document.getElementById(id).classList.remove('open'); }
     function overlayClose(e, id) { if (e.target === document.getElementById(id)) closeModal(id); }
+
+    /* Escape closes whichever modal is open — the topmost one first, so the
+       Add-Blacklist form closes back to the watchlist rather than both at once.
+       Overlays are listed innermost-first. */
+    document.addEventListener('keydown', function(e) {
+      if (e.key !== 'Escape') return;
+      var order = ['addBlOverlay', 'addEmpOverlay', 'blacklistModal'];
+      for (var i = 0; i < order.length; i++) {
+        var el = document.getElementById(order[i]);
+        if (el && el.classList.contains('open')) { closeModal(order[i]); return; }
+      }
+    });
 
     function importGenderBlood() {
       var b = document.getElementById('importGBBtn');
@@ -1379,7 +1454,9 @@
     /* Gender dot color: blue male / pink female / grey other */
     function genderDotColor(g) {
       g = String(g || '').toLowerCase();
-      return g === 'male' ? '#2563EB' : g === 'female' ? '#EC4899' : '#94A3B8';
+      // #94A3B8 was 2.56:1 on white — below the 3:1 WCAG 1.4.11 floor for a
+      // non-text indicator. #64748b is 4.76:1 and reads as the same grey.
+      return g === 'male' ? '#2563EB' : g === 'female' ? '#EC4899' : '#64748b';
     }
 
     var EMP_BY_ID = {};   // cache of loaded rows, keyed by EmpID (for edit prefill)
@@ -1778,22 +1855,22 @@
   </script>
 <!-- Mobile bottom nav bar (visible ≤640px only) -->
 <nav class="mob-admin-bar no-print">
-  <a class="mob-admin-tab" data-page="dashboard">
+  <a class="mob-admin-tab" href="?page=dashboard" data-page="dashboard">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
     Dashboard
   </a>
-  <a class="mob-admin-tab" data-page="kiosk">
+  <a class="mob-admin-tab" href="?page=kiosk" data-page="kiosk">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18"/></svg>
     Kiosk
-  </a><a class="mob-admin-tab" data-page="scanner">
+  </a><a class="mob-admin-tab" href="?page=scanner" data-page="scanner">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="5" height="5"/><rect x="16" y="3" width="5" height="5"/><rect x="3" y="16" width="5" height="5"/><path d="M21 16h-3v3m0-3v3h-3"/></svg>
     Scanner
   </a>
-  <a class="mob-admin-tab active" data-page="admin">
+  <a class="mob-admin-tab active" href="?page=admin" data-page="admin" aria-current="page">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M12 14c-5 0-8 2-8 3v1h16v-1c0-1-3-3-8-3z"/></svg>
     Admin
   </a>
-  <a class="mob-admin-tab" data-page="reports">
+  <a class="mob-admin-tab" href="?page=reports" data-page="reports">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>
     Reports
   </a>
@@ -1809,7 +1886,14 @@
 <script>
   function showToast(msg, type) {
     var t = document.getElementById('dsToast');
-    if (!t) { t = document.createElement('div'); t.id = 'dsToast'; t.className = 'ds-toast'; document.body.appendChild(t); }
+    if (!t) {
+      t = document.createElement('div'); t.id = 'dsToast'; t.className = 'ds-toast';
+      // The toast is the only channel that reports whether a save, import or
+      // blacklist change succeeded, so it must reach screen readers too.
+      t.setAttribute('role', 'status');
+      t.setAttribute('aria-live', 'polite');
+      document.body.appendChild(t);
+    }
     t.textContent = msg;
     t.className = 'ds-toast show' + (type === 'error' ? ' toast-error' : type === 'success' ? ' toast-success' : '');
     clearTimeout(t._tid);
