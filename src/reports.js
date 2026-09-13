@@ -95,11 +95,23 @@ function exportCSV(filters) {
   return { success: true, csv: rows.join('\n'), filename: 'attendance-' + today() + '.csv' };
 }
 
+/* TTL: 6 minutes, not 15 seconds.
+
+   The payload reads five full sheets — Logs alone is 1,752 rows and growing —
+   which measures ~4.4s of work above the ~2s Apps Script floor. At a 15s TTL
+   almost nobody arrived inside the window, so the common experience was a
+   5-6s wait on a dashboard that looked hung, and a page left open recomputed
+   four times a minute.
+
+   The short TTL was never what kept the data fresh: invalidateDashboardCache()
+   is already wired into every write that can change attendance — check in and
+   check out (scanner.js), visitor registration (visitors.js) and the
+   auto-checkout trigger (triggers.js). A scan drops the cache immediately, so
+   the TTL is only a backstop for a write this app did not make, such as
+   someone editing the sheet by hand. Six minutes is sized for that. */
+var DASH_CACHE_TTL_SEC_ = 360;
+
 function getDashboardData() {
-  // Cache the whole payload ~15s. Kiosks/dashboards poll this every few seconds
-  // and it reads 5 full sheets per call — uncached that exhausts the daily script
-  // runtime quota (→ "refused to connect" for everyone until reset). CacheService
-  // costs no quota; rapid polls now reuse one computation.
   var cache = CacheService.getScriptCache();
   // Stamped so a deploy that changes the payload shape cannot keep serving
   // the old one; _v1 tracks deliberate shape changes.
@@ -107,7 +119,7 @@ function getDashboardData() {
   var hit = cache.get(key);
   if (hit) { try { return JSON.parse(hit); } catch(e) {} }
   var result = _computeDashboardData_();
-  try { cache.put(key, JSON.stringify(result), 15); } catch(e) {}
+  try { cache.put(key, JSON.stringify(result), DASH_CACHE_TTL_SEC_); } catch(e) {}
   return result;
 }
 
@@ -123,7 +135,15 @@ function invalidateDashboardCache() {
 function _computeDashboardData_() {
   var todayStr = today();
   var holiday  = isHoliday(todayStr);
-  var logs     = getSheetAsObjects(SHEETS.LOGS);
+  /* Only today's rows are wanted, and Logs is append-only and chronological,
+     so read the tail rather than all 1,752 rows and climbing.
+
+     Sized against the real sheet (measured 2026-09-14, 69 days of data): the
+     busiest day on record is 36 rows and the mean is 25. 1,500 is 42x the
+     worst day, about two months of activity — so the window cannot miss
+     today's rows even if volume grows several times over. The filter below
+     still decides what counts, so over-reading costs only a short scan. */
+  var logs     = getSheetTailAsObjects(SHEETS.LOGS, 1500);
   var todayLogs = logs.filter(function(r) { return r.Date === todayStr; });
 
   var empLogs = todayLogs.filter(function(r) { return r.Type === 'EMP'; });

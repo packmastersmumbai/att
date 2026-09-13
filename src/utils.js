@@ -33,33 +33,71 @@ function getSheetAsObjects(tabName) {
   var headers = data[0];
   return data.slice(1).map(function(row) {
     var obj = {};
-    headers.forEach(function(h, i) {
-      var val = row[i];
-      if (val instanceof Date) {
-        // Time columns → "H:MM AM/PM"; date columns → "YYYY-MM-DD"
-        // Duration is stored as "Xh Ym" string but GSheets may parse it as a time value
-        var isTimeCol = (h === 'TimeIN' || h === 'TimeOUT');
-        var isDurCol  = (h === 'Duration');
-        if (isDurCol) {
-          // Extract h/m directly from the Date rather than calling formatDate
-          var dh = val.getHours();
-          var dm = val.getMinutes();
-          obj[h] = dh + 'h ' + dm + 'm';
-        } else {
-          obj[h] = isTimeCol ? formatTime(val) : formatDate(val);
-        }
-      } else if (typeof val === 'number' && h === 'Duration') {
-        // Fractional-day numeric → convert to "Xh Ym"
-        var totalMins = Math.round(val * 24 * 60);
-        var dh = Math.floor(totalMins / 60);
-        var dm = totalMins % 60;
+    return _rowToObject_(headers, row);
+  });
+}
+
+/**
+ * One sheet row → an object, with this app's cell conventions applied.
+ *
+ * Extracted so getSheetAsObjects() and getSheetTailAsObjects() cannot drift:
+ * a second hand-written copy of these branches had already dropped the
+ * numeric-Duration case, which turns "8h 30m" into 0.354166… silently.
+ */
+function _rowToObject_(headers, row) {
+  var obj = {};
+  headers.forEach(function(h, i) {
+    var val = row[i];
+    if (val instanceof Date) {
+      // Time columns → "H:MM AM/PM"; date columns → "YYYY-MM-DD"
+      // Duration is stored as "Xh Ym" string but GSheets may parse it as a time value
+      var isTimeCol = (h === 'TimeIN' || h === 'TimeOUT');
+      var isDurCol  = (h === 'Duration');
+      if (isDurCol) {
+        // Extract h/m directly from the Date rather than calling formatDate
+        var dh = val.getHours();
+        var dm = val.getMinutes();
         obj[h] = dh + 'h ' + dm + 'm';
       } else {
-        obj[h] = val;
+        obj[h] = isTimeCol ? formatTime(val) : formatDate(val);
       }
-    });
-    return obj;
+    } else if (typeof val === 'number' && h === 'Duration') {
+      // Fractional-day numeric → convert to "Xh Ym"
+      var totalMins = Math.round(val * 24 * 60);
+      var dh = Math.floor(totalMins / 60);
+      var dm = totalMins % 60;
+      obj[h] = dh + 'h ' + dm + 'm';
+    } else {
+      obj[h] = val;
+    }
   });
+  return obj;
+}
+
+/**
+ * The last N rows of a sheet, as objects, with the same formatting as
+ * getSheetAsObjects().
+ *
+ * Logs is append-only and chronological, and had grown to 1,752 rows. The
+ * dashboard reads it to answer "who is here TODAY" and was pulling — and
+ * date-formatting — every row ever written to find the handful at the end.
+ * Reading a bounded tail keeps that flat as the sheet grows.
+ *
+ * Only safe on an append-only, time-ordered sheet, and only when the caller
+ * wants recent rows. Anything reporting over history must still read it all.
+ */
+function getSheetTailAsObjects(tabName, maxRows) {
+  var sheet = getSheet(tabName);
+  var lastRow = sheet.getLastRow();
+  var lastCol = sheet.getLastColumn();
+  if (lastRow < 2 || lastCol < 1) return [];
+
+  var want = Math.max(1, maxRows || 500);
+  var startRow = Math.max(2, lastRow - want + 1);   // never above the header
+  var headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
+  var rows = sheet.getRange(startRow, 1, lastRow - startRow + 1, lastCol).getValues();
+
+  return rows.map(function (row) { return _rowToObject_(headers, row); });
 }
 
 /**
