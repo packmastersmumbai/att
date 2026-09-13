@@ -1561,8 +1561,14 @@
                 res.action === 'BLOCKED'   ? '#A78BFA' : '#F59E0B';
 
     r.innerHTML = '<div class="krc ' + type + '">' +
-      '<div class="krc-av" style="background:' + c + '22;color:' + c + '">' + esc(ini) + '</div>' +
-      '<span class="krc-badge ' + bCls + '">' + bLbl + '</span>' +
+      // No avatar for a scan that resolved to nobody: a "?" circle reads as a
+      // person whose photo is missing, not as "this is not a person".
+      (isUnknown ? '' :
+        '<div class="krc-av" style="background:' + c + '22;color:' + c + '">' + esc(ini) + '</div>') +
+      // The badge says WHO (employee / visitor / blocked); the banner below says
+      // WHAT HAPPENED. On a failure those collapse to the same word, so the
+      // card read "? ERROR ⚠ ERROR". Keep the banner, drop the badge.
+      (isUnknown ? '' : '<span class="krc-badge ' + bCls + '">' + bLbl + '</span>') +
       '<div style="font-size:20px;font-weight:800;letter-spacing:.5px;color:' + oCol + ';margin-bottom:6px">' + esc(oWord) + '</div>' +
       '<div class="krc-name">' + esc(res.name || qrattT('kiosk_unknown')) + '</div>' +
       '<div class="krc-dept">' + esc(res.department || '') + '</div>' +
