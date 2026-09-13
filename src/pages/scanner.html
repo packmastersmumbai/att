@@ -63,7 +63,7 @@
       line-height: 1;
     }
     .sb-logo-sub {
-      font-size: 9px;
+      font-size: 11px;
       color: #6b7280;
       text-transform: uppercase;
       letter-spacing: 1.5px;
@@ -81,7 +81,8 @@
       display: flex;
       align-items: center;
       gap: 10px;
-      padding: 9px 10px;
+      padding: 11px 10px;
+      min-height: 44px;
       border-radius: 4px;
       font-size: 13px;
       font-weight: 500;
@@ -98,7 +99,7 @@
     .sc-lang-toggle { display: flex; gap: 6px; padding: 10px 8px 0; }
     .sc-lang-btn {
       flex: 1;
-      min-height: 30px; padding: 5px 8px;
+      min-height: 44px; padding: 5px 8px;
       border: 1px solid var(--color-border); border-radius: 6px;
       background: #fff; color: #64748B;
       font-size: 11px; font-weight: 700; font-family: inherit; cursor: pointer;
@@ -126,20 +127,27 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 10px;
+      font-size: 11px;
       font-weight: 700;
       flex-shrink: 0;
     }
     .sb-user-name { font-size: 12px; font-weight: 600; color: #1b1c1c; }
-    .sb-user-sub { font-size: 10px; color: #94a3b8; margin-top: 1px; }
+    /* Sidebar is white here, so the dark theme's muted grey is only 2.6:1. */
+    .sb-user-sub { font-size: 11px; color: #5B6B7F; margin-top: 1px; }
 
     /* ── Main area ── */
+    /* min-height + overflow-y:auto rather than a hard 100vh clip. At 200% zoom
+       the result card and its dismiss button used to fall outside a container
+       that could not scroll, so the guard could neither read nor close it
+       (WCAG 1.4.4 / 1.4.10). dvh keeps mobile browser chrome from stealing
+       height. */
     .main-area {
       flex: 1;
       display: flex;
       flex-direction: column;
-      height: 100vh;
-      overflow: hidden;
+      min-height: 100vh;
+      min-height: 100dvh;
+      overflow-y: auto;
       background: #07111F;
     }
 
@@ -199,17 +207,42 @@
       margin: 0;
       font-weight: 500;
     }
+    /* Visually hidden, still announced — for labels whose text is already
+       carried visually by an adjacent placeholder or heading. */
+    .sr-only {
+      position: absolute; width: 1px; height: 1px;
+      padding: 0; margin: -1px; overflow: hidden;
+      clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+    }
+
+    /* The gate stamps every record this scanner writes. */
     .gate-row select {
       background: rgba(255,255,255,.05);
       border: 1px solid rgba(255,255,255,.1);
-      color: #CBD5E1;
+      color: #E2E8F0;
       border-radius: 6px;
-      padding: 6px 10px;
-      font-size: 12px;
+      padding: 8px 10px;
+      min-height: 44px;
+      font-size: 13px; font-weight: 600;
       font-family: inherit;
       cursor: pointer;
     }
-    .gate-row select:focus { outline: none; border-color: #38BDF8; }
+    .gate-row select:focus { border-color: #38BDF8; }
+
+    /* ── Focus ring ──
+       Every control needs a visible keyboard focus indicator (WCAG 2.4.7).
+       The gate selector and the manual-code input — the two controls that
+       decide what gets written and against which gate — had outline:none with
+       only a 1px border-colour change as a replacement. */
+    a:focus-visible,
+    button:focus-visible,
+    select:focus-visible,
+    input:focus-visible,
+    [tabindex]:focus-visible {
+      outline: 2px solid #38BDF8;
+      outline-offset: 2px;
+      border-radius: 4px;
+    }
 
     /* Camera viewport */
     .cam-wrap {
@@ -224,27 +257,15 @@
       min-height: 240px;
     }
 
-    /* Teal corner-frame overlay */
-    .scan-frame {
-      position: absolute;
-      top: 50%; left: 50%;
-      transform: translate(-50%, -50%);
-      width: 210px; height: 210px;
-      pointer-events: none;
-      z-index: 10;
-    }
-    .sf { position: absolute; width: 30px; height: 30px; }
-    .sf-tl { top:0; left:0;  border-top:3px solid #38BDF8; border-left:3px solid #38BDF8; }
-    .sf-tr { top:0; right:0; border-top:3px solid #38BDF8; border-right:3px solid #38BDF8; }
-    .sf-bl { bottom:0; left:0;  border-bottom:3px solid #38BDF8; border-left:3px solid #38BDF8; }
-    .sf-br { bottom:0; right:0; border-bottom:3px solid #38BDF8; border-right:3px solid #38BDF8; }
+    /* The .scan-frame corner overlay and its .sf corners were removed: the
+       element they styled was replaced by #scanLauncher. */
 
     .scan-hint {
       position: absolute;
       bottom: 16px;
       left: 50%; transform: translateX(-50%);
       font-size: 12px;
-      color: #6b7893;
+      color: #93A4BC;
       white-space: nowrap;
       z-index: 10;
       letter-spacing: .2px;
@@ -260,14 +281,14 @@
       background: rgba(255,255,255,.04);
       border: 1px solid rgba(255,255,255,.09);
       border-radius: 8px;
-      padding: 9px 14px;
+      padding: 12px 14px;
+      min-height: 44px;
       color: #CBD5E1;
       font-size: 13px;
       font-family: inherit;
-      outline: none;
       transition: border-color .15s;
     }
-    .manual-row input::placeholder { color: #2D3F53; }
+    .manual-row input::placeholder { color: #8296AD; }
     .manual-row input:focus { border-color: #38BDF8; }
     .btn-submit {
       background: #2563EB;
@@ -311,7 +332,7 @@
       color: #CBD5E1;
       letter-spacing: .3px;
     }
-    .log-session { font-size: 10px; color: #475569; }
+    .log-session { font-size: 11px; color: #8FA3BC; }
     .log-chip {
       display: inline-flex;
       align-items: center;
@@ -321,7 +342,7 @@
       border: 1px solid rgba(16,185,129,.2);
       border-radius: 999px;
       padding: 3px 8px;
-      font-size: 9px;
+      font-size: 11px;
       font-weight: 700;
       letter-spacing: 1.5px;
       text-transform: uppercase;
@@ -367,18 +388,18 @@
       width: 30px; height: 30px;
       border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
-      font-size: 10px; font-weight: 800;
+      font-size: 11px; font-weight: 800;
       flex-shrink: 0;
     }
     .al-info { flex: 1; min-width: 0; }
     .al-name { font-size: 12px; font-weight: 600; color: #CBD5E1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .al-sub  { font-size: 10px; color: #475569; margin-top: 1px; }
-    .al-time { font-size: 10px; color: #64748B; flex-shrink: 0; }
+    .al-sub  { font-size: 11px; color: #8FA3BC; margin-top: 1px; }
+    .al-time { font-size: 11px; color: #64748B; flex-shrink: 0; }
     .al-dot {
       width: 16px; height: 16px;
       border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
-      font-size: 9px; flex-shrink: 0;
+      font-size: 11px; flex-shrink: 0;
     }
     .dot-in  { background: rgba(16,185,129,.15); color: #10B981; }
     .dot-out { background: rgba(244,114,182,.15); color: #F472B6; }
@@ -389,9 +410,9 @@
       border-top: 1px solid rgba(255,255,255,.05);
       padding-top: 10px;
     }
-    .tp-lbl { font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: #5d7a9e; margin-bottom: 2px; }
+    .tp-lbl { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: #8FA3BC; margin-bottom: 2px; }
     .tp-num { font-size: 30px; font-weight: 900; color: #F1F5F9; line-height: 1; }
-    .tp-sub { font-size: 10px; color: #334155; margin-top: 2px; }
+    .tp-sub { font-size: 11px; color: #9FB0C4; margin-top: 2px; }
 
     /* ── Result overlay ── */
     .result-overlay {
@@ -418,15 +439,23 @@
 
     .rc.check-in  { border: 2px solid rgba(16,185,129,.45); }
     .rc.check-out { border: 2px solid rgba(56,189,248,.45); }
-    .rc.blocked   { border: 2px solid rgba(239,68,68,.45); }
+    /* Blocked Violet per DESIGN.md — red stays for system errors, so a barred
+       person and a failed server never look the same to a guard. */
+    .rc.blocked   { border: 2px solid #A78BFA; }
     .rc.unknown   { border: 2px solid rgba(245,158,11,.45); }
 
+    /* The only dismiss affordance on the result overlay. It was a bare <span>
+       computing to roughly 15x24px — below the 24px WCAG 2.5.8 floor, and not
+       focusable, so a keyboard user could not close the card at all. */
     .rc-close {
-      position: absolute; top: 12px; right: 16px;
-      color: #6b7893; font-size: 20px; cursor: pointer; line-height: 1;
+      position: absolute; top: 6px; right: 8px;
+      display: flex; align-items: center; justify-content: center;
+      min-width: 44px; min-height: 44px;
+      background: transparent; border: none; font-family: inherit;
+      color: #93A4BC; font-size: 24px; cursor: pointer; line-height: 1;
       transition: color .15s;
     }
-    .rc-close:hover { color: #64748B; }
+    .rc-close:hover { color: #E2E8F0; }
 
     .rc-av {
       width: 68px; height: 68px;
@@ -447,28 +476,28 @@
       display: inline-block;
       padding: 3px 12px;
       border-radius: 999px;
-      font-size: 10px; font-weight: 700;
+      font-size: 11px; font-weight: 700;
       letter-spacing: 1.5px;
       text-transform: uppercase;
       margin-bottom: 8px;
     }
     .b-emp { background: rgba(56,189,248,.12); color: #38BDF8; }
     .b-vis { background: rgba(251,191,36,.12);  color: #FCD34D; }
-    .b-blk { background: rgba(239,68,68,.12);   color: #F87171; }
+    .b-blk { background: rgba(167,139,250,.16); color: #C4B5FD; }
     .b-unk { background: rgba(245,158,11,.12);  color: #F59E0B; }
 
-    .rc-name { font-size: 20px; font-weight: 700; color: #F1F5F9; margin-bottom: 3px; }
-    .rc-dept { font-size: 12px; color: #475569; margin-bottom: 14px; }
+    /* An <h2> — margin-top reset so the heading semantics cost no layout. */
+    .rc-name { font-size: 20px; font-weight: 700; color: #F1F5F9; margin: 0 0 3px; line-height: 1.2; }
+    .rc-dept { font-size: 12px; color: #8FA3BC; margin-bottom: 14px; }
 
     .rc-denied {
-      font-size: 10px; font-weight: 700;
+      font-size: 11px; font-weight: 700;
       letter-spacing: 2px; text-transform: uppercase;
       color: #F87171;
       display: flex; align-items: center; justify-content: center; gap: 5px;
       margin-bottom: 8px;
     }
-    .rc-denied-msg { font-size: 12px; color: #475569; margin-bottom: 18px; }
-    .rc-err-code { font-size: 10px; color: #1E293B; margin-top: 4px; font-family: monospace; }
+    .rc-denied-msg { font-size: 12px; color: #8FA3BC; margin-bottom: 18px; }
 
     .rc-stats {
       display: flex;
@@ -480,13 +509,13 @@
       margin-bottom: 18px;
     }
     .rc-stat { text-align: center; }
-    .rc-stat-lbl { font-size: 9px; color: #334155; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 3px; }
+    .rc-stat-lbl { font-size: 11px; color: #9FB0C4; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 3px; }
     .rc-stat-val { font-size: 13px; font-weight: 700; }
     .sv-in  { color: #10B981; }
     .sv-out { color: #38BDF8; }
 
     .btn-dismiss {
-      width: 100%; padding: 11px;
+      width: 100%; padding: 13px; min-height: 48px;
       border-radius: 10px;
       font-size: 13px; font-weight: 600;
       font-family: inherit; cursor: pointer;
@@ -496,7 +525,7 @@
     .btn-dismiss:hover { opacity: .85; }
     .bd-in  { background: rgba(16,185,129,.12); color: #10B981; border: 1px solid rgba(16,185,129,.25) !important; }
     .bd-out { background: rgba(56,189,248,.12); color: #38BDF8; border: 1px solid rgba(56,189,248,.25) !important; }
-    .bd-blk { background: rgba(239,68,68,.12);  color: #F87171; border: 1px solid rgba(239,68,68,.25) !important; }
+    .bd-blk { background: rgba(167,139,250,.16); color: #C4B5FD; border: 1px solid rgba(167,139,250,.3) !important; }
     .bd-unk { background: rgba(245,158,11,.12); color: #F59E0B; border: 1px solid rgba(245,158,11,.25) !important; }
 
     /* Loading spinner */
@@ -526,11 +555,9 @@
     @keyframes shrink { from{width:100%} to{width:0} }
     .df-in  { background: #10B981; }
     .df-out { background: #38BDF8; }
-    .df-blk { background: #F87171; }
+    .df-blk { background: #A78BFA; }
     .df-unk { background: #F59E0B; }
 
-    /* Red corner frames on denied/unknown */
-    .scan-frame.frame-denied .sf { border-color: #EF4444 !important; }
 
     /* ── Scan toast ── */
     .scan-toast {
@@ -547,7 +574,7 @@
     }
     .st-in  { background: #10B981; color: #fff; }
     .st-out { background: #3B82F6; color: #fff; }
-    .st-blk { background: #EF4444; color: #fff; }
+    .st-blk { background: #6D28D9; color: #fff; }
     .st-unk { background: #F59E0B; color: #fff; }
 
     /* Mobile bottom tab bar */
@@ -568,11 +595,11 @@
       align-items: center;
       justify-content: center;
       gap: 3px;
-      font-size: 9px;
+      font-size: 11px;
       font-weight: 600;
       letter-spacing: .5px;
       text-transform: uppercase;
-      color: #6b7893;
+      color: #93A4BC;
       text-decoration: none;
       transition: color .15s;
     }
@@ -610,7 +637,6 @@
         display: flex !important;
       }
 
-      #scanLeft { transition: none; }
 
       .rc {
         background: #fff;
@@ -622,19 +648,20 @@
       }
       .rc.check-in  { border: 2px solid #10B981; }
       .rc.check-out { border: 2px solid #3B82F6; }
-      .rc.blocked   { border: 2px solid #EF4444; }
+      .rc.blocked   { border: 2px solid #7C3AED; }
       .rc.unknown   { border: 2px solid #F59E0B; }
 
+      /* Dark ink on the light desktop card — this one is light-on-light if it
+         follows the dark theme's muted ramp. */
       .rc-av { background: #f1f5f9 !important; color: #334155 !important; border: 2px solid #e2e8f0 !important; font-size: 22px !important; }
       .rc-name { color: #1b1c1c; }
       .rc-dept { color: #64748B; }
       .rc-denied { color: #DC2626; }
       .rc-denied-msg { color: #64748B; }
-      .rc-err-code { color: #94a3b8; }
-      .rc-close { color: #94a3b8; }
+      .rc-close { color: #5B6B7F; }
       .rc-close:hover { color: #334155; }
       .rc-stats { background: #f8fafc; }
-      .rc-stat-lbl { color: #94a3b8; }
+      .rc-stat-lbl { color: #5B6B7F; }
 
       /* Action status row */
       .rc-action-row {
@@ -646,11 +673,11 @@
         padding: 12px 16px;
         margin-bottom: 14px;
       }
-      .rc-action-label { font-size: 9px; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 3px; }
+      .rc-action-label { font-size: 11px; color: #5B6B7F; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 3px; }
       .rc-action-val   { font-size: 13px; font-weight: 800; }
       .rc-action-val.av-in  { color: #10B981; }
       .rc-action-val.av-out { color: #3B82F6; }
-      .rc-action-val.av-blk { color: #EF4444; }
+      .rc-action-val.av-blk { color: #6D28D9; }
 
       .btn-dismiss-manual {
         width: 100%;
@@ -681,66 +708,36 @@
       width: 20px; height: 20px;
       border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
-      font-size: 10px; font-weight: 800;
+      font-size: 11px; font-weight: 800;
       border: 2px solid #fff;
     }
     .rc-dot-in  { background: #10B981; color: #fff; }
     .rc-dot-out { background: #38BDF8; color: #fff; }
-    .rc-dot-blk { background: #EF4444; color: #fff; }
-
-    .mobile-sentinel {
-      display: none;
-    }
-    @media (max-width: 768px) {
-      .mobile-sentinel {
-        display: flex;
-        align-items: flex-start;
-        gap: 10px;
-        padding: 14px 16px 12px;
-        background: #0D1B2A;
-        border-top: 1px solid rgba(255,255,255,.06);
-        flex-shrink: 0;
-      }
-      .ms-icon {
-        width: 32px; height: 32px;
-        background: rgba(0,6,102,.4);
-        border: 1px solid rgba(0,6,102,.6);
-        border-radius: 50%;
-        display: flex; align-items: center; justify-content: center;
-        flex-shrink: 0;
-        margin-top: 2px;
-      }
-      .ms-body { flex: 1; }
-      .ms-brand { font-size: 9px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: #38BDF8; margin-bottom: 4px; }
-      .ms-heading { font-size: 18px; font-weight: 800; color: #F1F5F9; line-height: 1.1; margin-bottom: 4px; }
-      .ms-desc { font-size: 11px; color: #475569; margin-bottom: 10px; }
-      .ms-meta { display: flex; gap: 20px; }
-      .ms-meta-item { }
-      .ms-meta-label { font-size: 8px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: #5d7a9e; }
-      .ms-meta-value { font-size: 11px; font-weight: 600; color: #475569; font-family: 'Roboto Mono', monospace; margin-top: 1px; }
-    }
+    .rc-dot-blk { background: #6D28D9; color: #fff; }
 
     /* Gatepass block inside the dark scan-result card. Deliberately compact:
        it sits between the scan stats and the dismiss button, so it must not
        push the button off a phone screen. */
     .sc-gp{margin:12px 0 4px;padding:10px;border:1px solid rgba(148,163,184,.25);
       border-radius:8px;background:rgba(15,23,42,.45);text-align:left}
-    .sc-gp-hd{font-size:9px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;
+    .sc-gp-hd{font-size: 11px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;
       color:#94a3b8;margin-bottom:7px}
     .sc-gp-row{display:flex;align-items:center;justify-content:space-between;gap:8px;
       font-size:12px;color:#cbd5e1;padding:3px 0}
-    .sc-gp-st{font-size:10px;color:#64748b;font-weight:700}
+    /* A guard fills this in on a phone while the visitor stands waiting, so
+       every control here is a real touch target rather than a 13-28px one. */
+    .sc-gp-st{font-size: 11px;color:#94A3B8;font-weight:700}
     .sc-gp-ret{background:none;border:1px solid rgba(148,163,184,.4);color:#7dd3fc;
-      font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;cursor:pointer}
+      font-size: 12px;font-weight:700;padding:2px 12px;min-height:44px;border-radius:6px;cursor:pointer}
     .sc-gp-form{margin-top:8px}
     .sc-gp-form input,.sc-gp-form select{background:rgba(2,6,23,.6);border:1px solid rgba(148,163,184,.3);
-      color:#e2e8f0;border-radius:6px;padding:7px 8px;font-size:12px;font-family:inherit}
+      color:#e2e8f0;border-radius:6px;padding:11px 10px;min-height:44px;font-size:13px;font-family:inherit}
     #scGpDesc{width:100%;box-sizing:border-box;margin-bottom:6px}
-    .sc-gp-ctl{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
-    #scGpQty{width:52px}
-    .sc-gp-ctl label{font-size:11px;color:#94a3b8;display:flex;align-items:center;gap:3px}
+    .sc-gp-ctl{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+    #scGpQty{width:64px}
+    .sc-gp-ctl label{font-size:13px;color:#CBD5E1;display:flex;align-items:center;gap:6px;min-height:44px;cursor:pointer}
     .sc-gp-add{margin-left:auto;background:#38BDF8;border:none;color:#04283a;font-weight:800;
-      font-size:12px;padding:7px 14px;border-radius:6px;cursor:pointer}
+      font-size:13px;padding:11px 18px;min-height:44px;border-radius:6px;cursor:pointer}
     .sc-gp-add:disabled{opacity:.5;cursor:default}
     /* Shared item card ships light defaults; this page is dark. */
     #scGpMount .gpc {
@@ -838,8 +835,11 @@
   <div class="main-area">
     <div class="scan-layout">
 
-      <!-- Result card area (desktop inline / mobile overlay) -->
-      <div class="result-overlay" id="resultOverlay">
+      <!-- Result card area (desktop inline / mobile overlay).
+           role=status + aria-live: the card is written by innerHTML, so without
+           a live region a screen-reader user scans someone and hears nothing —
+           the single most important event on this screen. -->
+      <div class="result-overlay" id="resultOverlay" role="status" aria-live="assertive" aria-atomic="true">
         <div id="resultCard"></div>
       </div>
 
@@ -848,8 +848,8 @@
         <div class="scan-topbar">
           <div class="scan-status"><span class="pulse"></span><span data-i18n="scanner_ready_to_scan">Ready to Scan</span></div>
           <div class="gate-row">
-            <label data-i18n="scanner_gate">Gate</label>
-            <select id="gateSelect">
+            <label for="gateSelect" data-i18n="scanner_gate">Gate</label>
+            <select id="gateSelect" onchange="scannerRememberGate()">
               <option value="Main Gate" data-i18n="gate_main">Main Gate</option>
               <option value="Side Gate" data-i18n="gate_side">Side Gate</option>
               <option value="Reception" data-i18n="gate_reception">Reception</option>
@@ -864,13 +864,13 @@
             <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="#38BDF8" stroke-width="1.5"><rect x="3" y="3" width="5" height="5"/><rect x="16" y="3" width="5" height="5"/><rect x="3" y="16" width="5" height="5"/><path d="M21 16h-3v3m0-3v3h-3"/></svg>
             <div style="text-align:center">
               <div style="font-size:14px;font-weight:700;color:#F1F5F9;margin-bottom:6px" data-i18n="scanner_camera_title">QR Camera Scanner</div>
-              <div style="font-size:11px;color:#475569;margin-bottom:18px" data-i18n="scanner_camera_hint">Opens in a popup window · camera stays open · scan → result → continue</div>
+              <div style="font-size:11px;color:#8FA3BC;margin-bottom:18px" data-i18n="scanner_camera_hint">Opens in a popup window · camera stays open · scan → result → continue</div>
             </div>
             <button id="btnOpenScanner" onclick="openScanner()" style="background:#2563EB;color:#fff;border:none;border-radius:10px;padding:14px 32px;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;display:flex;align-items:center;gap:8px;transition:background .15s;">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
               <span data-i18n="scanner_open_scanner">Open Scanner</span>
             </button>
-            <div id="scanWaiting" style="display:none;font-size:11px;color:#475569;text-align:center;line-height:1.7">
+            <div id="scanWaiting" style="display:none;font-size:11px;color:#8FA3BC;text-align:center;line-height:1.7">
               <span style="color:#10B981;font-weight:700" data-i18n="scanner_active">● Scanner active</span> · <span data-i18n="scanner_waiting_for_scan">waiting for scan…</span><br>
               <a href="#" onclick="openScanner();return false;" style="color:#38BDF8;font-weight:600" data-i18n="scanner_reopen_window">Reopen window</a>
             </div>
@@ -878,6 +878,7 @@
         </div>
 
         <div class="manual-row no-print">
+          <label for="manualCode" class="sr-only" data-i18n="scanner_manual_ph">Or type QR code manually…</label>
           <input type="text" id="manualCode" data-i18n-ph="scanner_manual_ph" placeholder="Or type QR code manually…">
           <button class="btn-submit" onclick="submitManual()" data-i18n="scanner_submit">Submit</button>
         </div>
@@ -895,7 +896,7 @@
           <div class="log-chip"><span class="log-chip-dot"></span><span data-i18n="scanner_session_active">Session Active</span></div>
         </div>
         <div class="al-list" id="alList">
-          <div style="color:#1E293B;font-size:11px;padding:10px 0" data-i18n="scanner_loading">Loading…</div>
+          <div style="color:#94A3B8;font-size:11px;padding:10px 0" data-i18n="scanner_loading">Loading…</div>
         </div>
         <div class="throughput">
           <div class="tp-lbl" data-i18n="scanner_hourly_throughput">Hourly Throughput</div>
@@ -905,27 +906,12 @@
       </div>
     </div>
 
-    <!-- Mobile: Sentinel Protocol branding section -->
-    <div class="mobile-sentinel">
-      <div class="ms-icon">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#38BDF8" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-      </div>
-      <div class="ms-body">
-        <div class="ms-brand">Sentinel Protocol</div>
-        <div class="ms-heading">Verify Credentials</div>
-        <div class="ms-desc">Hold QR code steady inside the frame to begin authentication.</div>
-        <div class="ms-meta">
-          <div class="ms-meta-item">
-            <div class="ms-meta-label">Terminal ID</div>
-            <div class="ms-meta-value" id="terminalId">STNL-4492-X</div>
-          </div>
-          <div class="ms-meta-item">
-            <div class="ms-meta-label">Local Time</div>
-            <div class="ms-meta-value" id="localTime">—</div>
-          </div>
-        </div>
-      </div>
-    </div>
+    <!-- A "Sentinel Protocol" panel with a hardcoded Terminal ID of
+         STNL-4492-X used to sit here. None of it was real: no such protocol,
+         no such terminal. On a surface whose records are ISO audit evidence,
+         invented identifiers displayed to gate staff are a liability, and it
+         occupied the only mobile space below the camera — space that belongs
+         to the manual-entry recovery path when a QR will not read. -->
   </div>
 
   <script>
@@ -1008,6 +994,32 @@
       if (btn) { btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg> ' + qrattT('scanner_open_scanner'); }
     }
 
+    /* ── Gate identity ──
+       The selected gate is written into every attendance record this scanner
+       creates, and those records are ISO audit evidence. It used to reset to
+       "Main Gate" on every load, so a shift worked at the Rear Gate could be
+       recorded entirely against the wrong one with nothing on screen to show
+       it. Persisted per device, and echoed on the result card. */
+    function scannerGateName() {
+      var el = document.getElementById('gateSelect');
+      return el ? el.value : '';
+    }
+
+    function scannerRememberGate() {
+      try { localStorage.setItem('qratt_scanner_gate', scannerGateName()); } catch (e) {}
+    }
+
+    (function restoreGate() {
+      var saved;
+      try { saved = localStorage.getItem('qratt_scanner_gate'); } catch (e) { return; }
+      if (!saved) return;
+      var el = document.getElementById('gateSelect');
+      if (!el) return;
+      for (var i = 0; i < el.options.length; i++) {
+        if (el.options[i].value === saved) { el.value = saved; return; }
+      }
+    })();
+
     function onScanCode(qrCode, sourceWindow) {
       var gate = document.getElementById('gateSelect').value;
       post({ action: 'processQRScan', qrCode: qrCode, gate: gate }, function(res) {
@@ -1022,7 +1034,6 @@
       });
     }
 
-    function resumeCamera() { /* popup stays open */ }
 
     function submitManual() {
       var code = document.getElementById('manualCode').value.trim();
@@ -1044,7 +1055,7 @@
       document.getElementById('resultCard').innerHTML =
         '<div class="rc" style="border:1px solid rgba(255,255,255,.08)">' +
         '<div class="rc-spinner"></div>' +
-        '<div style="color:#334155;font-size:12px;margin-bottom:20px">' + esc(qrattT('scanner_processing_scan')) + '</div>' +
+        '<div style="color:#9FB0C4;font-size:12px;margin-bottom:20px">' + esc(qrattT('scanner_processing_scan')) + '</div>' +
         '</div>';
       var overlay = document.getElementById('resultOverlay');
       var scanLeft = document.getElementById('scanLeft');
@@ -1070,12 +1081,14 @@
         showToast('⚠ ' + qrattT('scanner_toast_server_error'), 'unk');
         document.getElementById('resultCard').innerHTML =
           '<div class="rc unknown">' +
-          '<span class="rc-close" onclick="dismissResult()">×</span>' +
+          '<button type="button" class="rc-close" onclick="dismissResult()" aria-label="Close">×</button>' +
           '<div class="rc-badge b-unk">' + esc(qrattT('scanner_badge_error')) + '</div>' +
           '<div class="rc-name">' + esc(qrattT('scanner_server_error_title')) + '</div>' +
           '<div class="rc-dept">' + esc(qrattT('scanner_server_error_subtitle')) + '</div>' +
           '<div class="rc-denied-msg">' + esc(res.error || qrattT('scanner_unexpected_error')) + '</div>' +
-          '<div class="rc-err-code">ERR · GAS_UNREACHABLE</div>' +
+          // A hardcoded "ERR · GAS_UNREACHABLE" used to print here regardless of
+          // what actually failed. The server's own message above is the real
+          // diagnostic; an invented code sends a guard down the wrong path.
           '<button class="btn-dismiss bd-unk" onclick="dismissResult()">' + esc(qrattT('scanner_dismiss')) + '</button>' +
           '<div class="dismiss-bar"><div class="dismiss-fill df-unk"></div></div>' +
           '</div>';
@@ -1118,10 +1131,16 @@
 
       if (type === 'blocked' || type === 'unknown') {
         body =
-          '<div class="rc-denied">⚠ ' + esc(qrattT('scanner_access_denied')) + '</div>' +
+          // BLOCKED, INACTIVE and an unreadable QR need three different
+          // responses from the guard, so they no longer share one heading and
+          // a literal "ERR · QR_UNRESOLVED_VOID" — which was untrue for a barred
+          // employee and for a lapsed one alike.
+          '<div class="rc-denied">' + esc(
+             res.action === 'BLOCKED'  ? '⛔ ' + qrattT('scanner_access_denied') :
+             res.action === 'INACTIVE' ? '⛔ ' + qrattT('scanner_badge_inactive') :
+                                         '⚠ ' + qrattT('scanner_badge_unknown')) + '</div>' +
           '<div class="rc-denied-msg">' + esc(res.message || qrattT('scanner_qr_expired_msg')) + '</div>' +
-          '<div class="rc-err-code">ERR · QR_UNRESOLVED_VOID</div>' +
-          '<div style="margin-top:12px"><a href="#" onclick="dismissResult();setTimeout(function(){var m=document.getElementById(\'manualCode\');if(m)m.focus();},50);return false;" style="font-size:11px;font-weight:600;color:#38BDF8;letter-spacing:.5px">\u21b5 ' + esc(qrattT('scanner_enter_serial_manually')) + '</a></div>';
+          '<div style="margin-top:12px"><button type="button" onclick="dismissResult();setTimeout(function(){var m=document.getElementById(\'manualCode\');if(m)m.focus();},50);" style="min-height:44px;padding:10px 16px;background:transparent;border:1px solid rgba(56,189,248,.4);border-radius:8px;font-size:13px;font-weight:600;color:#38BDF8;letter-spacing:.5px;font-family:inherit;cursor:pointer">\u21b5 ' + esc(qrattT('scanner_enter_serial_manually')) + '</button></div>';
       } else if (type === 'check-in') {
         body =
           '<div class="rc-stats">' +
@@ -1137,14 +1156,14 @@
       }
 
       var avatarHtml = res.photoUrl
-        ? '<img src="' + esc(res.photoUrl) + '" class="rc-av-img" ' +
+        ? '<img src="' + esc(res.photoUrl) + '" alt="" class="rc-av-img" ' +
           'onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'">' +
           '<div class="rc-av" style="display:none;background:' + c + '22;color:' + c + ';border:2px solid ' + c + '44">' + esc(ini) + '</div>'
         : '<div class="rc-av" style="background:' + c + '22;color:' + c + ';border:2px solid ' + c + '44">' + esc(ini) + '</div>';
 
       document.getElementById('resultCard').innerHTML =
         '<div class="rc ' + type + '">' +
-        '<span class="rc-close" onclick="dismissResult()">×</span>' +
+        '<button type="button" class="rc-close" onclick="dismissResult()" aria-label="Close">×</button>' +
         '<div class="rc-photo-wrap">' +
           avatarHtml +
           (type === 'check-in'  ? '<div class="rc-status-dot rc-dot-in">✓</div>'  : '') +
@@ -1152,9 +1171,15 @@
           (type === 'blocked'   ? '<div class="rc-status-dot rc-dot-blk">✕</div>' : '') +
         '</div>' +
         '<div class="rc-badge ' + bCls + '">' + bLbl + '</div>' +
-        '<div class="rc-name">' + esc(res.name || qrattT('scanner_unknown')) + '</div>' +
+        // <h2>: the subject's name is the heading of this card. The page had no
+        // heading of any level, so a screen reader had no outline at all.
+        '<h2 class="rc-name">' + esc(res.name || qrattT('scanner_unknown')) + '</h2>' +
         (res.empId ? '<div style="font-size:11px;font-weight:700;letter-spacing:1.5px;color:#38BDF8;margin-bottom:2px;font-family:monospace">#' + esc(res.empId) + '</div>' : '') +
         '<div class="rc-dept">' + esc(res.department || '') + '</div>' +
+        // Which gate this was recorded against — otherwise a shift spent on the
+        // wrong gate leaves no on-screen trace.
+        '<div style="font-size:11px;color:#8FA3BC;letter-spacing:.5px;text-transform:uppercase;margin-bottom:8px">' +
+          esc(scannerGateName()) + '</div>' +
         body +
         // The gate guard is the person who physically sees material cross the
         // gate, but the card lived only on the Visitors page — a different
@@ -1164,20 +1189,13 @@
         (res.type === 'VIS' && res.empId ? '<div id="scGpMount" class="sc-gp"></div>' : '') +
         '<button class="btn-dismiss ' + btnCls + '" onclick="dismissResult()">' + btnLbl + '</button>' +
         (type !== 'blocked' && type !== 'unknown'
-          ? '<div style="font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#5d7a9e;margin-top:10px;text-align:center">' + esc(qrattT('scanner_auto_dismiss_hint')) + '</div>' +
+          ? '<div style="font-size: 11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#8FA3BC;margin-top:10px;text-align:center">' + esc(qrattT('scanner_auto_dismiss_hint')) + '</div>' +
             '<div class="dismiss-bar" style="margin-top:6px"><div class="dismiss-fill ' + dfCls + '"></div></div>'
           : '<div class="dismiss-bar"><div class="dismiss-fill ' + dfCls + '"></div></div>') +
         '</div>';
 
-      // Toggle red corner frames for denied/unknown
-      var scanFrame = document.querySelector('.scan-frame');
-      if (scanFrame) {
-        if (type === 'blocked' || type === 'unknown') {
-          scanFrame.classList.add('frame-denied');
-        } else {
-          scanFrame.classList.remove('frame-denied');
-        }
-      }
+      // (The .scan-frame corner-frame element was replaced by #scanLauncher;
+      // the toggle that used to live here had nothing to act on.)
 
       // Desktop: show inline (hide camera, show result in its place)
       // Mobile: show as overlay
@@ -1343,7 +1361,6 @@
       if (scanLeft) scanLeft.style.display = '';
       var logHdr = document.querySelector('.log-hdr');
       if (logHdr) logHdr.textContent = qrattT('scanner_activity_log');
-      resumeCamera();
     }
 
     // Click outside card to dismiss
@@ -1360,7 +1377,7 @@
         var items = (d.recentActivity || []).slice(0, 8);
 
         if (!items.length) {
-          document.getElementById('alList').innerHTML = '<div style="color:#1E293B;font-size:11px">' + esc(qrattT('scanner_no_activity_today')) + '</div>';
+          document.getElementById('alList').innerHTML = '<div style="color:#94A3B8;font-size:11px">' + esc(qrattT('scanner_no_activity_today')) + '</div>';
           return;
         }
         // Don't overwrite while a fresh result card is showing (instant prepend is already correct)
@@ -1434,16 +1451,8 @@
       startActivityPolling();
     };
 
-    // Update local time display
-    function updateLocalTime() {
-      var el = document.getElementById('localTime');
-      if (!el) return;
-      var now = new Date();
-      var months = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
-      el.textContent = months[now.getMonth()] + ' ' + now.getDate() + ' · ' + now.toLocaleTimeString('en-US', {hour:'2-digit',minute:'2-digit',hour12:false});
-    }
-    setInterval(updateLocalTime, 1000);
-    updateLocalTime();
+    /* A 1s setInterval used to run here forever to paint a clock inside the
+       removed "Sentinel Protocol" panel. Both are gone. */
   </script>
 
   <!-- Mobile bottom tab bar -->
