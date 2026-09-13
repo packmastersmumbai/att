@@ -80,6 +80,13 @@
     .k-s0{background:#fee2e2;color:#b91c1c;font-weight:800}
     .k-sP{background:#fef3c7;color:#b45309;font-weight:800}
     .k-ref{font-size:10px;font-weight:800;background:#eef2ff;color:#4338ca;padding:1px 5px;border-radius:3px}
+    /* A cell that changes the record on one tap should look like it will.
+       Twelve months across a row is already a wide target on a laptop; the
+       hover state is what tells you which one you are about to score. */
+    .k-tap{cursor:pointer;user-select:none}
+    .k-tap:hover{outline:2px solid var(--color-primary);outline-offset:-2px}
+    .k-act{cursor:pointer}
+    .k-act:hover{text-decoration:underline}
     .empty{padding:16px;color:var(--color-text-muted);text-align:center}
     .sb-nav{padding:12px 10px;flex:1}
     .sb-section{font-size:9px;font-weight:700;color:var(--color-text-muted);letter-spacing:1.2px;
@@ -354,11 +361,16 @@
       <table class="k-t" id="kpiT"><tbody><tr><td class="empty">Loading&hellip;</td></tr></tbody></table>
 
       <h2 class="k-h">KRA &mdash; PM/FRM/MR-27</h2>
+      <!-- Picking a name loads the sheet. The button stayed because a sheet
+           edited elsewhere needs re-reading, but nothing should require two
+           clicks to show something: an empty box under a filled dropdown
+           reads as a broken page, not as a waiting one. -->
       <div class="k-kra">
-        <select id="kraEmp" class="ind-in"></select>
-        <button class="ind-btn ind-alt" onclick="loadKra()">Open sheet</button>
+        <select id="kraEmp" class="ind-in" onchange="loadKra()"></select>
+        <button class="ind-btn ind-alt" onclick="loadKra()">Reload</button>
+        <button class="ind-btn ind-alt" id="kraAddBtn" onclick="addKra()" hidden>Add a KRA</button>
       </div>
-      <div id="kraBox"></div>
+      <div id="kraBox"><p class="empty">Pick a person to see their KRA sheet.</p></div>
     </div>
   </main>
 
@@ -487,17 +499,36 @@
     function renderKra() {
       var d = KRA || {};
       var box = document.getElementById('kraBox');
-      if (!d.success) { box.innerHTML = '<p class="empty">' + esc(d.error || '') + '</p>'; return; }
+      var add = document.getElementById('kraAddBtn');
+      if (!d.success) {
+        box.innerHTML = '<p class="empty">' + esc(d.error || '') + '</p>';
+        if (add) add.hidden = true;
+        return;
+      }
+
+      /* MR-27 holds ten. Offer the next number, and stop offering at ten
+         rather than letting saveKraRow refuse an eleventh after the typing. */
+      if (add) {
+        add.hidden = (d.rows || []).length >= 10;
+        add.textContent = 'Add KRA ' + ((d.rows || []).length + 1);
+      }
 
       var head = '<tr><th>#</th><th>KRA activity</th><th>KPI</th>' +
         MONTHS.map(function (m) { return '<th class="k-m">' + m + '</th>'; }).join('') + '</tr>';
 
+      /* Each month cell cycles 1 -> 0 -> P -> blank on tap, MR-27's own scale.
+         A dropdown per cell is 120 dropdowns on one screen; tapping is how
+         this form is filled in on paper too. */
       var rows = (d.rows || []).map(function (r) {
-        return '<tr><td>' + r.kraNo + '</td><td>' + esc(r.activity) + '</td>' +
+        return '<tr><td>' + r.kraNo + '</td>' +
+          '<td class="k-act" onclick="editKra(' + r.kraNo + ')" title="Tap to edit">' +
+            esc(r.activity || '(no activity — tap to write one)') + '</td>' +
           '<td>' + (r.kpiRef ? '<span class="k-ref">' + esc(r.kpiRef) + '</span>' : '') + '</td>' +
           MONTHS.map(function (m) {
             var v = r.scores[m] || '';
-            return '<td class="k-m k-s' + esc(v) + '">' + esc(v) + '</td>';
+            return '<td class="k-m k-s' + esc(v) + ' k-tap" ' +
+              'onclick="cycleScore(' + r.kraNo + ',\'' + m + '\')" ' +
+              'title="1 done · 0 not done · P partial">' + esc(v) + '</td>';
           }).join('') + '</tr>';
       }).join('');
 
@@ -506,8 +537,85 @@
         (d.scorePct === '' ? '' : ' &middot; score ' + d.scorePct + '%') +
         '<br><small>' + esc(d.docStamp || '') + '</small></p>' +
         (rows
-          ? '<table class="k-t"><thead>' + head + '</thead><tbody>' + rows + '</tbody></table>'
-          : '<p class="empty">No KRAs recorded for this person yet.</p>');
+          ? '<table class="k-t"><thead>' + head + '</thead><tbody>' + rows + '</tbody></table>' +
+            '<p class="hd-s"><small>Tap a month to score it: 1 done on time, ' +
+            '0 not done, P partial. Tap the activity to reword it.</small></p>'
+          : '<p class="empty">No KRAs recorded for this person yet. ' +
+            'Use &ldquo;Add KRA 1&rdquo; above to start their sheet.</p>');
+      if (add) document.getElementById('kraAddBtn').hidden = (d.rows || []).length >= 10;
+    }
+
+    /* -- KRA editing -- */
+
+    /** Ask once, hold for the page. Same shape the KPI entry path already uses. */
+    function withKraToken(then) {
+      if (KRA_TOKEN) return then();
+      var pin = window.prompt('Admin PIN to edit a KRA sheet');
+      if (!pin) return;
+      google.script.run
+        .withSuccessHandler(function (v) {
+          if (!v || !v.success || !v.token) { window.alert('That PIN was not accepted.'); return; }
+          KRA_TOKEN = v.token;
+          then();
+        })
+        .withFailureHandler(function (e) { window.alert('Error: ' + (e && e.message)); })
+        .verifyPIN(pin);
+    }
+    var KRA_TOKEN = '';
+
+    function addKra() {
+      var id = document.getElementById('kraEmp').value;
+      if (!id) { window.alert('Pick a person first.'); return; }
+      var no = ((KRA && KRA.rows) || []).length + 1;
+      if (no > 10) { window.alert('MR-27 has ten KRAs.'); return; }
+
+      var activity = window.prompt('KRA ' + no + ' — what is the activity?');
+      if (!activity) return;
+      var ref = window.prompt('Which KPI does it measure? KPI-01 … KPI-15, or blank.\n' +
+        'It must be an indicator this person owns.') || '';
+      saveKra({ empId: id, kraNo: no, activity: activity.trim(), kpiRef: ref.trim() });
+    }
+
+    function editKra(no) {
+      var id = document.getElementById('kraEmp').value;
+      var row = ((KRA && KRA.rows) || []).filter(function (r) { return r.kraNo === no; })[0];
+      if (!row) return;
+      var activity = window.prompt('KRA ' + no + ' — activity', row.activity || '');
+      if (activity === null) return;
+      saveKra({ empId: id, kraNo: no, activity: activity.trim() });
+    }
+
+    /** 1 → 0 → P → blank. The order MR-27 is filled in: done is the common case. */
+    function cycleScore(no, month) {
+      var id = document.getElementById('kraEmp').value;
+      var row = ((KRA && KRA.rows) || []).filter(function (r) { return r.kraNo === no; })[0];
+      if (!row) return;
+      var order = ['', '1', '0', 'P'];
+      var next = order[(order.indexOf(row.scores[month] || '') + 1) % order.length];
+      var scores = {};
+      scores[month] = next;
+      saveKra({ empId: id, kraNo: no, scores: scores });
+    }
+
+    /* saveKraRow returns the whole refreshed sheet, so the table is redrawn
+       from what the SERVER stored — never from what the page hoped it stored.
+       A score the server refused (anything outside 1/0/P) then visibly does
+       not change, instead of showing until the next reload. */
+    function saveKra(entry) {
+      withKraToken(function () {
+        entry.fy = (KRA && KRA.fy) || '';
+        google.script.run
+          .withSuccessHandler(function (r) {
+            if (!r || !r.success) { window.alert(r && r.error ? r.error : 'Not saved.'); return; }
+            KRA = r;
+            renderKra();
+          })
+          .withFailureHandler(function (e) {
+            if (/unauthori[sz]ed/i.test(String(e && e.message))) KRA_TOKEN = '';
+            window.alert('Not saved: ' + (e && e.message));
+          })
+          .saveKraRow(entry, KRA_TOKEN);
+      });
     }
 
     document.getElementById('period').value = new Date().toISOString().slice(0, 7);
