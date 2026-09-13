@@ -20,6 +20,24 @@
     a { color: inherit; text-decoration: none; }
     button { cursor: pointer; border: none; background: none; font-family: inherit; font-size: inherit; }
 
+    /* Visible keyboard focus on every interactive control. The page previously
+       had a ring only on .gp-seg buttons, so tabbing anywhere else was silent. */
+    a:focus-visible,
+    button:focus-visible,
+    select:focus-visible,
+    input:focus-visible,
+    [tabindex]:focus-visible {
+      outline: 2px solid var(--color-primary);
+      outline-offset: 2px;
+      border-radius: 4px;
+    }
+
+    /* Accessible name for controls that show no visible label text. */
+    .sr-only {
+      position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+      overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+    }
+
     /* ── Left Sidebar ──────────────────────────────────────── */
     .sidebar {
       width: 240px; flex-shrink: 0; background: #fff;
@@ -34,13 +52,14 @@
       justify-content: center; font-weight: 800; font-size: 12px; flex-shrink: 0;
     }
     .sb-logo-name { font-weight: 800; font-size: 16px; color: var(--color-primary); line-height: 1; }
-    .sb-logo-sub { font-size: 9px; color: #6b7280; text-transform: uppercase; letter-spacing: 1.5px; margin-top: 2px; }
+    /* 11px floor. #6b7280 on #fff is 4.83:1 — passes AA body text. */
+    .sb-logo-sub { font-size: 11px; color: #6b7280; text-transform: uppercase; letter-spacing: 1.5px; margin-top: 2px; }
     .sb-nav {
       flex: 1; padding: 12px 8px; display: flex; flex-direction: column;
       gap: 2px; overflow-y: auto;
     }
     .sb-section-label {
-      font-size: 9px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;
+      font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;
       color: #6b7280; padding: 10px 10px 4px;
     }
     .sb-item {
@@ -60,10 +79,10 @@
     .sb-user-av {
       width: 30px; height: 30px; border-radius: 50%; background: var(--color-primary);
       color: #fff; display: flex; align-items: center; justify-content: center;
-      font-size: 10px; font-weight: 700; flex-shrink: 0;
+      font-size: 11px; font-weight: 700; flex-shrink: 0;
     }
     .sb-user-name { font-size: 12px; font-weight: 600; color: var(--color-text); }
-    .sb-user-sub { font-size: 10px; color: #6b7280; margin-top: 1px; }
+    .sb-user-sub { font-size: 11px; color: #6b7280; margin-top: 1px; }
 
     /* ── Main Content Area ─────────────────────────────────── */
     .main-area { flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
@@ -72,14 +91,16 @@
       border-bottom: 1px solid var(--color-border);
       position: sticky; top: 0; z-index: 10;
     }
-    .page-eyebrow {
-      font-size: 10px; font-weight: 700; letter-spacing: 2px;
-      text-transform: uppercase; color: var(--color-success); margin-bottom: 4px;
-    }
+    /* .page-eyebrow / .active-header-left .eyebrow removed: a tracked uppercase
+       kicker above a heading is banned by the craft guidance — the heading
+       carries its own weight. */
     .page-title { font-size: 22px; font-weight: 800; color: var(--color-text); margin-bottom: 16px; }
+    /* .page-title is now a real <h1>; reset UA heading margins so nothing shifts. */
+    h1.page-title { margin-top: 0; }
     .page-tabs { display: flex; gap: 0; }
     .page-tab {
-      padding: 10px 20px; font-size: 13px; font-weight: 600;
+      /* 44px minimum touch target — gate staff hit these on a phone. */
+      padding: 10px 20px; min-height: 44px; font-size: 13px; font-weight: 600;
       color: var(--color-text-muted); cursor: pointer; border: none;
       background: none; font-family: inherit;
       border-bottom: 2px solid transparent;
@@ -99,7 +120,7 @@
     }
     .btn {
       display: inline-flex; align-items: center; justify-content: center;
-      gap: 8px; padding: 10px 20px; border-radius: var(--radius-sm);
+      gap: 8px; padding: 10px 20px; min-height: 44px; border-radius: var(--radius-sm);
       font-weight: 600; font-size: 13px; font-family: inherit;
       transition: background .15s, opacity .15s; cursor: pointer; border: none;
     }
@@ -109,11 +130,12 @@
        used to hide a default nobody read. */
     .gp-seg { display:inline-flex; border:1px solid var(--color-border); border-radius:8px; overflow:hidden }
     .gp-seg button { border:0; background:transparent; color:var(--color-text-muted);
-      font:700 12px var(--font-sans); padding:8px 11px; min-height:36px; cursor:pointer; white-space:nowrap }
+      font:700 12px var(--font-sans); padding:8px 11px; min-height:44px; cursor:pointer; white-space:nowrap }
     .gp-seg button.on { background:var(--color-primary); color:#fff }
     .gp-seg button:focus-visible { outline:2px solid var(--color-primary); outline-offset:-2px }
     .link-btn { border: none; background: none; color: var(--color-primary);
-      font-weight: 700; font-size: 12.5px; cursor: pointer; padding: 4px 6px; border-radius: 6px; font-family: inherit; }
+      font-weight: 700; font-size: 12.5px; cursor: pointer; padding: 4px 6px; border-radius: 6px; font-family: inherit;
+      min-height: 44px; }
     .link-btn:hover { background: var(--color-bg); }
     .btn-success { background: var(--color-success); color: #fff; }
     .btn-success:hover { background: #005a50; }
@@ -125,15 +147,21 @@
     .btn-ghost:hover { background: #f5f0ee; }
     .btn-dark { background: #0f172a; color: #fff; }
     .btn-dark:hover { background: #1e293b; }
-    .btn-wa { background: #128C4A; color: #fff; }
-    .btn-wa:hover { background: #0f7340; }
-    .btn-sms { background: #3B82F6; color: #fff; }
-    .btn-sms:hover { background: #2563EB; }
+    /* Contrast: white on #128C4A was 4.31:1 (AA needs 4.5:1 for 13px text).
+       #0F7340 — already the hover shade, so the brand green is unchanged in
+       character — is 5.92:1. Hover darkened to keep the state distinguishable. */
+    .btn-wa { background: #0F7340; color: #fff; }
+    .btn-wa:hover { background: #0A5C31; }
+    /* White on #3B82F6 was 3.68:1. #2563EB is 5.17:1. */
+    .btn-sms { background: #2563EB; color: #fff; }
+    .btn-sms:hover { background: #1D4ED8; }
     .input {
-      width: 100%; padding: 10px 14px; border: 1px solid var(--color-border);
+      width: 100%; padding: 10px 14px; min-height: 44px;
+      border: 1px solid var(--color-border);
       border-radius: var(--radius-sm); font-size: 14px; font-family: inherit;
-      outline: none; transition: border-color .15s; background: #fff; color: var(--color-text);
+      transition: border-color .15s; background: #fff; color: var(--color-text);
     }
+    /* `outline: none` removed — the :focus-visible ring above is the replacement. */
     .input:focus { border-color: var(--color-primary); }
     label { display: block; font-size: 12px; font-weight: 500; margin-bottom: 6px; color: var(--color-text-muted); }
     .form-group { margin-bottom: 14px; }
@@ -151,17 +179,26 @@
     .badge-amber { background: #FEF3C7; color: #92400E; }
     table { width: 100%; border-collapse: collapse; }
     th, td { padding: 11px 14px; text-align: left; border-bottom: 1px solid var(--color-border); font-size: 13px; }
-    th { font-weight: 700; color: var(--color-text-muted); font-size: 10px; text-transform: uppercase; letter-spacing: .08em; background: var(--color-bg); }
+    th { font-weight: 700; color: var(--color-text-muted); font-size: 11px; text-transform: uppercase; letter-spacing: .08em; background: var(--color-bg); }
     tr:hover td { background: #f9f6f5; }
 
     /* ── Form Section Labels ───────────────────────────────── */
+    /* "Security Documentation & Logistics" (34 chars) is a section heading, not
+       body copy, but at 2px tracking in caps it read as a wall. Kept as caps —
+       these are genuine short form-section labels — and raised to the 11px floor. */
     .form-section-label {
-      font-size: 10px; font-weight: 700; letter-spacing: 2px;
+      font-size: 11px; font-weight: 700; letter-spacing: 1px;
       text-transform: uppercase; color: #6b7280;
       padding: 16px 0 8px; border-bottom: 1px solid var(--color-border);
       margin-bottom: 16px;
     }
     .form-section-label:first-child { padding-top: 0; }
+    /* "Security Documentation & Logistics" is a 34-character phrase, not a
+       short label: set in caps with tracking it reads as a wall. The other
+       three section labels are two words and stay uppercase. */
+    .form-section-label--long {
+      text-transform: none; letter-spacing: .01em; font-size: 12px;
+    }
 
     /* ── Register Tab: Two-column layout ───────────────────── */
     .reg-split {
@@ -176,6 +213,10 @@
       padding: 20px; text-align: center; cursor: pointer;
       transition: border-color .15s; position: relative; overflow: hidden;
       margin-bottom: 16px;
+      /* It is a <button> now (keyboard reachable); reset the UA chrome so it
+         still looks like the dashed drop zone it was as a div. */
+      display: block; width: 100%; background: transparent;
+      font: inherit; color: inherit;
     }
     .photo-capture-wrap:hover { border-color: var(--color-primary); }
     .photo-capture-wrap input[type=file] {
@@ -201,7 +242,7 @@
       background: rgba(0,6,102,.08); display: flex; align-items: center;
       justify-content: center; flex-shrink: 0;
     }
-    .sec-doc-label { font-size: 9px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: #6b7280; }
+    .sec-doc-label { font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: #6b7280; }
     .sec-doc-value { font-size: 13px; font-weight: 600; color: var(--color-text); }
 
     /* Purpose chip */
@@ -237,7 +278,7 @@
     .pass-qr-placeholder-icon { font-size: 48px; margin-bottom: 8px; }
     .pass-qr-placeholder-text { font-size: 12px; }
     .pass-trace {
-      font-family: var(--font-mono); font-size: 10px;
+      font-family: var(--font-mono); font-size: 11px;
       color: var(--color-text-muted); text-align: center;
       margin-bottom: 16px; letter-spacing: .5px;
     }
@@ -248,10 +289,7 @@
       display: flex; align-items: center; justify-content: space-between;
       margin-bottom: 16px;
     }
-    .active-header-left .eyebrow {
-      font-size: 10px; font-weight: 700; letter-spacing: 2px;
-      text-transform: uppercase; color: var(--color-text-muted);
-    }
+    /* .eyebrow rule removed with the kicker markup it styled. */
     .active-header-left h2 { font-size: 20px; font-weight: 800; color: var(--color-text); margin-top: 2px; }
     .active-total-badge {
       font-size: 11px; font-weight: 700; letter-spacing: 1px;
@@ -276,20 +314,23 @@
       background: var(--color-success); color: #fff;
       font-size: 11px; font-weight: 700; text-transform: uppercase;
       letter-spacing: .5px; cursor: pointer; border: none; font-family: inherit;
+      min-height: 44px;
       transition: background .15s;
     }
     .btn-checkout:hover { background: #005a50; }
 
     /* ── Active Tab: Stitch Status Badges & Purpose Pills ──── */
-    .status-overdue  { background: #FEE2E2; color: #991B1B; padding: 3px 9px; border-radius: 3px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; display: inline-block; }
-    .status-inside   { background: #CCFBF1; color: #0D9488; padding: 3px 9px; border-radius: 3px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; display: inline-block; }
-    .status-checked  { background: #F1F5F9; color: #475569; padding: 3px 9px; border-radius: 3px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; display: inline-block; }
+    .status-overdue  { background: #FEE2E2; color: #991B1B; padding: 3px 9px; border-radius: 3px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; display: inline-block; }
+    .status-inside   { background: #CCFBF1; color: #0F766E; padding: 3px 9px; border-radius: 3px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; display: inline-block; }
+    .status-checked  { background: #F1F5F9; color: #475569; padding: 3px 9px; border-radius: 3px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; display: inline-block; }
     .btn-checkout-teal {
-      background: #0D9488;
+      /* white on #0D9488 was 3.74:1; #0F766E is 5.47:1 */
+      background: #0F766E;
       color: #fff;
       border: none;
       border-radius: 3px;
       padding: 5px 12px;
+      min-height: 44px;
       font-size: 11px;
       font-weight: 700;
       cursor: pointer;
@@ -297,7 +338,7 @@
       font-family: inherit;
       transition: background .15s;
     }
-    .btn-checkout-teal:hover { background: #0F766E; }
+    .btn-checkout-teal:hover { background: #115E56; }
     /* Admitting and releasing a visitor are opposite acts, so they must not
        look alike: the same teal on both is a misclick waiting to happen. */
     .btn-checkin-teal {
@@ -306,6 +347,7 @@
       border: none;
       border-radius: 3px;
       padding: 5px 12px;
+      min-height: 44px;
       font-size: 11px;
       font-weight: 700;
       cursor: pointer;
@@ -317,7 +359,7 @@
     .btn-checkin-teal:disabled { background: #86EFAC; cursor: default; }
     .btn-items {
       background: #fff; color: var(--color-primary); border: 1px solid var(--color-primary);
-      border-radius: 3px; padding: 5px 12px; font-size: 11px; font-weight: 700;
+      border-radius: 3px; padding: 5px 12px; min-height: 44px; font-size: 11px; font-weight: 700;
       cursor: pointer; letter-spacing: .5px; font-family: inherit; transition: background .15s;
       margin-right: 6px;
     }
@@ -326,12 +368,12 @@
       display: inline-block;
       padding: 2px 8px;
       border-radius: 3px;
-      font-size: 10px;
+      font-size: 11px;
       font-weight: 600;
       text-transform: uppercase;
       letter-spacing: .5px;
     }
-    .pp-meeting  { background: #CCFBF1; color: #0D9488; }
+    .pp-meeting  { background: #CCFBF1; color: #0F766E; } /* 3.32:1 -> 4.86:1 */
     .pp-delivery { background: #FEF3C7; color: #92400E; }
     .pp-audit    { background: #EDE9FE; color: #5B21B6; }
     .pp-interview{ background: #DBEAFE; color: #1E40AF; }
@@ -348,7 +390,7 @@
       box-shadow: var(--shadow-sm); padding: 18px;
     }
     .hist-card-title {
-      font-size: 10px; font-weight: 700; letter-spacing: 1.5px;
+      font-size: 11px; font-weight: 700; letter-spacing: 1.5px;
       text-transform: uppercase; color: var(--color-text-muted); margin-bottom: 14px;
     }
     .company-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
@@ -414,8 +456,9 @@
       align-items: center;
       justify-content: center;
       gap: 3px;
-      font-size: 9px;
+      font-size: 11px;
       font-weight: 600;
+      min-height: 44px;
       letter-spacing: .5px;
       text-transform: uppercase;
       color: var(--color-text-muted);
@@ -532,8 +575,7 @@
 
     <!-- Page Header + Tabs -->
     <div class="page-header no-print">
-      <div class="page-eyebrow">Lobby Management</div>
-      <div class="page-title">Visitor Management</div>
+      <h1 class="page-title">Visitor Management</h1>
       <div class="page-tabs">
         <button class="page-tab active" onclick="switchTab('register')">Register</button>
         <button class="page-tab" onclick="switchTab('active')">Active</button>
@@ -554,8 +596,8 @@
             <div style="font-size:12px;color:#64748b;margin-top:3px;line-height:1.5">Let visitors scan this QR (or open the link) to register on their own phone and get a self check-in pass.</div>
             <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;align-items:center">
               <a id="selfRegLink" href="#" target="_blank" rel="noopener" style="font-size:12px;color:#006b5f;font-weight:700;word-break:break-all">Open registration form ↗</a>
-              <button onclick="copySelfRegLink(this)" style="font-size:11px;padding:4px 10px;border:1px solid #d7e0de;border-radius:6px;background:#f8fafc;cursor:pointer;color:#334155">Copy link</button>
-              <a href="#" onclick="showStaffForm(event)" style="font-size:11px;color:#64748b;margin-left:auto">Type it in here instead</a>
+              <button type="button" onclick="copySelfRegLink(this)" style="font-size:11px;padding:4px 10px;min-height:44px;border:1px solid #d7e0de;border-radius:6px;background:#f8fafc;cursor:pointer;color:#334155">Copy link</button>
+              <a href="#" onclick="showStaffForm(event)" style="font-size:11px;color:#64748b;margin-left:auto;min-height:44px;display:inline-flex;align-items:center">Type it in here instead</a>
             </div>
           </div>
         </div>
@@ -569,7 +611,9 @@
           <div class="card">
 
             <!-- Photo capture -->
-            <div class="photo-capture-wrap" onclick="triggerPhoto()">
+            <!-- Was a div with onclick, so the keyboard could never reach it.
+                 A real button keeps the same look via the CSS reset below. -->
+            <button type="button" class="photo-capture-wrap" onclick="triggerPhoto()">
               <input type="file" id="vPhotoFile" accept="image/*" capture="user"
                      onchange="previewPhoto(this)" style="display:none">
               <img id="vPhotoPreview" class="photo-preview" alt="Photo preview">
@@ -578,27 +622,27 @@
                 <div class="photo-label-text">Tap to capture visitor photo</div>
                 <div class="photo-sublabel-text">Required · for identification</div>
               </div>
-            </div>
+            </button>
 
             <!-- PRIMARY IDENTITY -->
             <div class="form-section-label">Primary Identity</div>
             <div class="form-group">
-              <label>Visitor Full Name *</label>
+              <label for="vName">Visitor Full Name *</label>
               <input type="text" id="vName" class="input" placeholder="e.g. Rahul Sharma">
             </div>
             <div class="form-group">
-              <label>Mobile Number *</label>
+              <label for="vPhone">Mobile Number *</label>
               <input type="tel" id="vPhone" class="input" placeholder="+91 98765 43210">
             </div>
 
             <!-- ORGANIZATIONAL CONTEXT -->
             <div class="form-section-label">Organizational Context</div>
             <div class="form-group">
-              <label>Representing (Company / Organisation)</label>
+              <label for="vCompany">Representing (Company / Organisation)</label>
               <input type="text" id="vCompany" class="input" placeholder="Company Name">
             </div>
             <div class="form-group">
-              <label>Purpose of Visit</label>
+              <label for="vPurpose">Purpose of Visit</label>
               <select id="vPurpose" class="input">
                 <option value="">Select Purpose…</option>
                 <option value="Meeting">Meeting</option>
@@ -613,7 +657,7 @@
             <!-- HOST INFORMATION -->
             <div class="form-section-label">Host Information</div>
             <div class="form-group">
-              <label>Host Official (type a name or pick)</label>
+              <label for="vHost">Host Official (type a name or pick)</label>
               <!-- Was a bare text box demanding a raw "EMP-000001", which a guard
                    cannot know from memory. A datalist lets them type a name to
                    filter or open the full list; resolveHostId() maps whatever
@@ -622,15 +666,15 @@
               <datalist id="vHostList"></datalist>
             </div>
             <div class="form-group">
-              <label>Scheduled Arrival / Expected Out (time)</label>
+              <label for="vExpOut">Scheduled Arrival / Expected Out (time)</label>
               <input type="time" id="vExpOut" class="input">
             </div>
 
             <!-- SECURITY DOCUMENTATION & LOGISTICS -->
-            <div class="form-section-label">Security Documentation &amp; Logistics</div>
+            <div class="form-section-label form-section-label--long">Security Documentation &amp; Logistics</div>
             <div class="form-row" style="margin-bottom:14px">
               <div class="form-group" style="margin-bottom:0">
-                <label>ID Type</label>
+                <label for="vIDType">ID Type</label>
                 <select id="vIDType" class="input">
                   <option value="">Select…</option>
                   <option value="Aadhaar">Aadhaar</option>
@@ -642,12 +686,12 @@
                 </select>
               </div>
               <div class="form-group" style="margin-bottom:0">
-                <label>ID Number / Reference</label>
+                <label for="vIDNumber">ID Number / Reference</label>
                 <input type="text" id="vIDNumber" class="input" placeholder="XXXX-XXXX-XXXX">
               </div>
             </div>
             <div class="form-group">
-              <label>Vehicle Number / Floor</label>
+              <label for="vVehicle">Vehicle Number / Floor</label>
               <input type="text" id="vVehicle" class="input" placeholder="KA-01-AB-1234">
             </div>
 
@@ -756,7 +800,7 @@
               </div>
 
               <!-- SECURITY DOCUMENTATION section -->
-              <div class="form-section-label">Security Documentation &amp; Logistics</div>
+              <div class="form-section-label form-section-label--long">Security Documentation &amp; Logistics</div>
               <div style="display:flex;flex-direction:column;gap:8px">
                 <div id="secDocID" style="display:none">
                   <div class="sec-doc-item">
@@ -836,8 +880,8 @@
                   </a>
                 </div>
                 <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--color-border)">
-                  <div style="font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#6b7280;margin-bottom:4px">System Trace ID</div>
-                  <div style="font-family:var(--font-mono);font-size:10px;color:var(--color-text-muted)" id="passTraceID"></div>
+                  <div style="font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#6b7280;margin-bottom:4px">System Trace ID</div>
+                  <div style="font-family:var(--font-mono);font-size:11px;color:var(--color-text-muted)" id="passTraceID"></div>
                 </div>
               </div>
             </div>
@@ -851,7 +895,6 @@
         <!-- Header row -->
         <div class="active-header">
           <div class="active-header-left">
-            <div class="eyebrow">Lobby Management</div>
             <h2>Active Visitors</h2>
           </div>
           <div class="active-total-badge" id="activeTotalBadge"></div>
@@ -909,15 +952,15 @@
         <!-- Filters + export -->
         <div class="hist-filters" style="margin-bottom:14px">
           <div class="form-group">
-            <label>Visitor Name</label>
+            <label for="hFilterName">Visitor Name</label>
             <input type="text" id="hFilterName" class="input" placeholder="Search name…">
           </div>
           <div class="form-group">
-            <label>Company</label>
+            <label for="hFilterCompany">Company</label>
             <input type="text" id="hFilterCompany" class="input" placeholder="All companies">
           </div>
           <div class="form-group">
-            <label>Purpose</label>
+            <label for="hFilterPurpose">Purpose</label>
             <select id="hFilterPurpose" class="input">
               <option value="">All</option>
               <option value="Meeting">Meeting</option>
@@ -959,6 +1002,10 @@
     function showToast(msg, type) {
       var el = document.createElement('div');
       el.className = 'vis-toast ' + (type || 'info');
+      /* The toast is the only report of an outcome (registered, checked out,
+         failed). Without a live region a screen reader never hears it. */
+      el.setAttribute('role', 'status');
+      el.setAttribute('aria-live', 'polite');
       el.textContent = msg;
       document.body.appendChild(el);
       setTimeout(function() { el.style.opacity = '0'; }, 2800);
@@ -1247,21 +1294,21 @@
             return '<tr>' +
               '<td>' +
                 '<div style="display:flex;align-items:center;gap:8px">' +
-                  '<div style="width:30px;height:30px;border-radius:50%;background:' + c + '18;color:' + c + ';display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0">' + esc(ini) + '</div>' +
+                  '<div style="width:30px;height:30px;border-radius:50%;background:' + c + '18;color:' + c + ';display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">' + esc(ini) + '</div>' +
                   '<div>' +
                     '<div style="font-size:12px;font-weight:600">' + esc(v.Name || '') + '</div>' +
-                    '<div style="font-size:10px;color:#6b7280">ID: ' + esc(v.VisitorID || v.ID || '') + '</div>' +
+                    '<div style="font-size:11px;color:#6b7280">ID: ' + esc(v.VisitorID || v.ID || '') + '</div>' +
                   '</div>' +
                 '</div>' +
               '</td>' +
               '<td>' +
                 '<div style="font-size:12px;font-weight:500">' + esc(v.Company || '—') + '</div>' +
-                '<div style="font-size:10px;color:#6b7280">&#8627; ' + esc(v.HostEmpID || '—') + '</div>' +
+                '<div style="font-size:11px;color:#6b7280">&#8627; ' + esc(v.HostEmpID || '—') + '</div>' +
               '</td>' +
               '<td><span class="purpose-pill ' + purposeClass(v.Purpose) + '">' + esc(v.Purpose || '—') + '</span></td>' +
               '<td>' +
                 '<div style="font-size:11px;font-family:monospace">IN: ' + esc(v.TimeIN || '—') + '</div>' +
-                (v.ExpectedOut ? '<div style="font-size:10px;color:#6b7280">OUT: ' + esc(v.ExpectedOut) + '</div>' : '') +
+                (v.ExpectedOut ? '<div style="font-size:11px;color:#6b7280">OUT: ' + esc(v.ExpectedOut) + '</div>' : '') +
               '</td>' +
               '<td>' + activeStatusBadge(v) + '</td>' +
               '<td>' +
@@ -1392,7 +1439,7 @@
             var vid = r.PersonID || r.VisitorID || '';
             return '<tr' + (vid ? ' class="vh-row" data-vid="' + esc(vid) + '" style="cursor:pointer"' : '') + '>' +
               '<td><div style="display:flex;align-items:center;gap:8px">' +
-                '<div style="width:28px;height:28px;border-radius:50%;background:' + c + '18;color:' + c + ';display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0">' + esc(ini) + '</div>' +
+                '<div style="width:28px;height:28px;border-radius:50%;background:' + c + '18;color:' + c + ';display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">' + esc(ini) + '</div>' +
                 '<div style="font-weight:500">' + esc(r.Name) + '</div>' +
               '</div></td>' +
               '<td>' + esc(r.Company || '–') + '</td>' +
@@ -1500,6 +1547,14 @@
     }
     function closeVisitorDetail() { document.getElementById('vdBackdrop').style.display = 'none'; }
 
+    /* Escape closes the detail dialog. Without this the only way out is the
+       mouse, which strands a keyboard user inside the modal. */
+    document.addEventListener('keydown', function (e) {
+      if (e.key !== 'Escape') return;
+      var bd = document.getElementById('vdBackdrop');
+      if (bd && bd.style.display !== 'none') closeVisitorDetail();
+    });
+
     /* Check out from inside the detail modal. Reuses checkout(), so the
        unreturned-items warning fires here exactly as it does on the Active
        tab, then closes the modal and refreshes the list behind it. */
@@ -1604,7 +1659,7 @@
         // Age badge on a carried-over item, so a guard can tell at a glance
         // which rows belong to this visit and which are old debt.
         var age = (i.status==='OUT_PENDING' && i.daysOut!=='' && i.daysOut>=1)
-          ? ' <span title="Outstanding from an earlier visit" style="font-size:10px;font-weight:800;padding:1px 6px;border-radius:999px;background:#fee2e2;color:#b42318">'+i.daysOut+'d</span>'
+          ? ' <span title="Outstanding from an earlier visit" style="font-size:11px;font-weight:800;padding:1px 6px;border-radius:999px;background:#fee2e2;color:#b42318">'+i.daysOut+'d</span>'
           : '';
         return '<tr><td style="padding:6px 8px">'+thumb+esc(i.itemDesc)+age+(i.unit?' <span style="color:#94a3b8">'+esc(i.unit)+'</span>':'')+'</td>'+
           '<td style="padding:6px 8px">'+esc(i.direction)+'</td><td style="padding:6px 8px">'+esc(i.qty)+'</td>'+
@@ -1780,7 +1835,8 @@
 <!-- ═══════════ Visitor detail modal (History row click) ═══════════ -->
 <div id="vdBackdrop" onclick="if(event.target===this)closeVisitorDetail()"
      style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(2,6,16,.72);align-items:center;justify-content:center;padding:16px">
-  <div style="background:var(--color-surface);border-radius:12px;max-width:460px;width:100%;max-height:85vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.35)">
+  <div role="dialog" aria-modal="true" aria-labelledby="vdName"
+       style="background:var(--color-surface);border-radius:12px;max-width:460px;width:100%;max-height:85vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.35)">
     <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 18px;border-bottom:1px solid var(--color-border);position:sticky;top:0;background:var(--color-surface)">
       <div style="min-width:0">
         <div id="vdName" style="font-weight:700;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>

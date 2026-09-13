@@ -34,6 +34,25 @@
     button { cursor: pointer; border: none; background: none; font-family: inherit; font-size: inherit; }
     input, select { font-family: inherit; }
 
+    /* Visible keyboard focus. The filter inputs each set `outline: none` with
+       only a border-colour change as a replacement, which is not a focus
+       indicator; this ring is. */
+    a:focus-visible,
+    button:focus-visible,
+    select:focus-visible,
+    input:focus-visible,
+    [tabindex]:focus-visible {
+      outline: 2px solid var(--primary);
+      outline-offset: 2px;
+      border-radius: 4px;
+    }
+
+    /* Accessible name for controls with no visible label text. */
+    .sr-only {
+      position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+      overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+    }
+
     /* ════════════════════════════════════════
        LEFT SIDEBAR  (nav)
     ════════════════════════════════════════ */
@@ -88,10 +107,10 @@
       width: 30px; height: 30px; border-radius: 50%;
       background: var(--primary); color: #fff;
       display: flex; align-items: center; justify-content: center;
-      font-size: 10px; font-weight: 700; flex-shrink: 0;
+      font-size: 11px; font-weight: 700; flex-shrink: 0;
     }
     .sb-user-name { font-size: 12px; font-weight: 600; color: var(--text); }
-    .sb-user-sub  { font-size: 10px; color: #6b7280; margin-top: 1px; }
+    .sb-user-sub  { font-size: 11px; color: #6b7280; margin-top: 1px; }
 
     /* ════════════════════════════════════════
        FILTER SIDEBAR
@@ -124,6 +143,7 @@
     .qd-btn {
       flex: 1;
       padding: 5px 6px;
+      min-height: 44px;
       border-radius: 3px;
       font-size: 11px; font-weight: 600;
       border: 1px solid var(--border);
@@ -142,11 +162,11 @@
     .date-row input {
       flex: 1;
       padding: 6px 8px;
+      min-height: 44px;
       border: 1px solid var(--border);
       border-radius: 3px;
       font-size: 11px;
       color: var(--text);
-      outline: none;
       transition: border-color .15s;
       width: 100%;
     }
@@ -157,11 +177,11 @@
     .fs-input {
       width: 100%;
       padding: 7px 9px;
+      min-height: 44px;
       border: 1px solid var(--border);
       border-radius: 3px;
       font-size: 12px;
       color: var(--text);
-      outline: none;
       margin-bottom: 6px;
       background: var(--surface);
       transition: border-color .15s;
@@ -173,12 +193,12 @@
     .fs-select {
       width: 100%;
       padding: 7px 9px;
+      min-height: 44px;
       border: 1px solid var(--border);
       border-radius: 3px;
       font-size: 12px;
       color: var(--text);
       background: var(--surface);
-      outline: none;
       margin-bottom: 6px;
       cursor: pointer;
       transition: border-color .15s;
@@ -197,7 +217,10 @@
       margin-bottom: 4px;
     }
     .pt-btn {
+      /* <button> reset so the segmented control keeps its flat look. */
+      font: inherit; appearance: none;
       padding: 7px 2px;
+      min-height: 44px;
       border-radius: 0;
       font-size: 11px; font-weight: 600;
       text-align: center;
@@ -218,13 +241,14 @@
     .dept-check {
       display: flex; align-items: center; gap: 7px;
       padding: 4px 0;
+      min-height: 44px;
       font-size: 12px;
       cursor: pointer;
       color: var(--text);
     }
     .dept-check input {
       accent-color: var(--primary);
-      width: 13px; height: 13px;
+      width: 18px; height: 18px;
       cursor: pointer;
     }
 
@@ -233,6 +257,7 @@
       margin-top: 18px;
       width: 100%;
       padding: 9px 12px;
+      min-height: 44px;
       background: var(--primary);
       color: #fff;
       border-radius: 3px;
@@ -247,6 +272,7 @@
 
     .fs-clear {
       margin-top: 6px;
+      min-height: 44px;
       width: 100%;
       padding: 7px 12px;
       background: transparent;
@@ -356,7 +382,11 @@
       color: var(--primary);
       border: 1px solid rgba(0,6,102,.14);
     }
-    .ftag-x { cursor: pointer; font-size: 13px; line-height: 1; color: var(--muted); }
+    /* <button> reset + a 44px hit area that does not enlarge the visual chip. */
+    .ftag-x { cursor: pointer; font-size: 13px; line-height: 1; color: var(--muted);
+      background: transparent; border: none; font-family: inherit; padding: 0;
+      min-width: 44px; min-height: 44px; display: inline-flex;
+      align-items: center; justify-content: center; margin: -14px -14px -14px 0; }
     .ftag-x:hover { color: var(--danger); }
 
     /* Table area */
@@ -379,7 +409,7 @@
       background: var(--bg);
       padding: 9px 14px;
       text-align: left;
-      font-size: 10px; font-weight: 700;
+      font-size: 11px; font-weight: 700;
       color: var(--muted);
       text-transform: uppercase;
       letter-spacing: .08em;
@@ -404,18 +434,18 @@
       width: 28px; height: 28px;
       border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
-      font-size: 10px; font-weight: 700;
+      font-size: 11px; font-weight: 700;
       flex-shrink: 0;
     }
     .p-name { font-size: 13px; font-weight: 500; line-height: 1.2; }
-    .p-id   { font-size: 10px; color: var(--muted); font-family: var(--mono); margin-top: 1px; }
+    .p-id   { font-size: 11px; color: var(--muted); font-family: var(--mono); margin-top: 1px; }
 
     /* Type / status badges */
     .badge {
       display: inline-block;
       padding: 2px 8px;
       border-radius: 99px;
-      font-size: 10px; font-weight: 700;
+      font-size: 11px; font-weight: 700;
       text-transform: uppercase;
       letter-spacing: .03em;
       white-space: nowrap;
@@ -484,6 +514,7 @@
       align-items: center;
       gap: 6px;
       padding: 8px 14px;
+      min-height: 44px;
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: 3px;
@@ -550,6 +581,7 @@
     }
     .rtab {
       padding: 6px 14px;
+      min-height: 44px;
       border-radius: 3px;
       font-size: 12px;
       font-weight: 600;
@@ -565,7 +597,12 @@
     /* ── Analytics view ── */
     .analytics-view { display: none; flex: 1; overflow-y: auto; padding: 20px; }
     .analytics-view.active { display: block; }
-    .reports-view { display: flex; flex-direction: column; flex: 1; overflow: hidden; min-height: 0; }
+    /* `overflow: hidden` here clipped the Export dropdown, which is an
+       absolutely-positioned child of the KPI row and opens downward — the two
+       export options were cut off and unreachable. The inner wrapper (the one
+       holding the stats bar and the scrolling table) still clips, so the
+       layout is unchanged; only the escaping popover survives now. */
+    .reports-view { display: flex; flex-direction: column; flex: 1; overflow: visible; min-height: 0; }
     .reports-view.hidden { display: none; }
 
     .kpi-row {
@@ -589,7 +626,7 @@
       font-family: var(--mono);
     }
     .kpi-tile-lbl {
-      font-size: 10px;
+      font-size: 11px;
       font-weight: 700;
       letter-spacing: 1.5px;
       text-transform: uppercase;
@@ -610,6 +647,9 @@
       border-radius: 4px;
       padding: 16px 18px;
     }
+    /* Real <h3> now (chart titles under the "Institutional Trends" h2).
+       Margins reset so promoting them changes nothing visually. */
+    h3.chart-title { margin: 0 0 14px; }
     .chart-title {
       font-size: 12px;
       font-weight: 700;
@@ -639,14 +679,14 @@
     .vfreq-list { display: flex; flex-direction: column; gap: 8px; }
     .vf-row { display: flex; align-items: center; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--border); }
     .vf-row:last-child { border-bottom: none; }
-    .vf-av { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; flex-shrink: 0; }
+    .vf-av { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; }
     .vf-info { flex: 1; }
     .vf-name { font-size: 12px; font-weight: 600; }
-    .vf-org  { font-size: 10px; color: var(--muted); }
-    .vf-count { font-size: 10px; font-weight: 700; color: var(--primary); white-space: nowrap; font-family: var(--mono); }
+    .vf-org  { font-size: 11px; color: var(--muted); }
+    .vf-count { font-size: 11px; font-weight: 700; color: var(--primary); white-space: nowrap; font-family: var(--mono); }
 
     /* KPI sub-note */
-    .kpi-tile-note { font-size: 10px; margin-top: 5px; font-weight: 600; }
+    .kpi-tile-note { font-size: 11px; margin-top: 5px; font-weight: 600; }
     /* Dept heatmap */
     .heatmap-grid {
       display: grid;
@@ -654,7 +694,7 @@
       gap: 4px;
       font-size: 11px;
     }
-    .hm-dept { font-weight: 600; color: var(--text); font-size: 10px; align-self: center; }
+    .hm-dept { font-weight: 600; color: var(--text); font-size: 11px; align-self: center; }
     .hm-cell {
       height: 22px;
       border-radius: 2px;
@@ -702,6 +742,7 @@
 
     /* Export dropdown */
     .export-dropdown-btn {
+      min-height: 44px;
       display: flex; align-items: center; gap: 6px;
       padding: 8px 14px;
       background: var(--primary); color: #fff;
@@ -722,6 +763,9 @@
       overflow: hidden;
     }
     .export-item {
+      /* <button> reset: full-width, left-aligned, no UA chrome. */
+      width: 100%; background: transparent; border: none;
+      font: inherit; color: inherit; text-align: left;
       display: flex; align-items: center; gap: 8px;
       padding: 10px 14px;
       font-size: 12px; font-weight: 500;
@@ -744,7 +788,7 @@
     .monthly-table thead th {
       background: var(--primary);
       color: #fff;
-      font-size: 10px;
+      font-size: 11px;
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: .5px;
@@ -784,7 +828,7 @@
       background: var(--border);
     }
     .monthly-table .emp-name { font-size: 12px; font-weight: 600; color: var(--text); }
-    .monthly-table .emp-dept { font-size: 10px; color: var(--muted); margin-top: 1px; }
+    .monthly-table .emp-dept { font-size: 11px; color: var(--muted); margin-top: 1px; }
     .monthly-table td.cell-day {
       min-width: 78px;
       vertical-align: top;
@@ -797,11 +841,11 @@
     .monthly-table td.cell-day.day-weekend  { background: #f8fafc; }
     /* Worked a weekend: still clearly "present", flagged with a weekend accent. */
     .monthly-table td.cell-day.day-weekend-worked { box-shadow: inset 3px 0 0 #94a3b8; }
-    .mday-in  { font-size: 10px; font-weight: 600; color: #166534; font-family: var(--mono); }
-    .mday-out { font-size: 10px; color: #0f766e; font-family: var(--mono); }
-    .mday-dur { font-size: 9px; color: var(--muted); margin-top: 1px; font-family: var(--mono); }
-    .mday-abs { font-size: 10px; color: #dc2626; font-weight: 600; }
-    .mday-wkd { font-size: 10px; color: #cbd5e1; }
+    .mday-in  { font-size: 11px; font-weight: 600; color: #166534; font-family: var(--mono); }
+    .mday-out { font-size: 11px; color: #0f766e; font-family: var(--mono); }
+    .mday-dur { font-size: 11px; color: var(--muted); margin-top: 1px; font-family: var(--mono); }
+    .mday-abs { font-size: 11px; color: #dc2626; font-weight: 600; }
+    .mday-wkd { font-size: 11px; color: #cbd5e1; }
     .monthly-table td.cell-total {
       min-width: 70px;
       text-align: center;
@@ -813,10 +857,10 @@
       vertical-align: middle;
     }
     .cell-total .t-days { font-weight: 700; color: var(--primary); font-size: 13px; }
-    .cell-total .t-hrs  { font-size: 10px; color: var(--muted); margin-top: 2px; }
+    .cell-total .t-hrs  { font-size: 11px; color: var(--muted); margin-top: 2px; }
     /* Day header sub-info */
     .dh-num  { font-size: 13px; font-weight: 800; }
-    .dh-wday { font-size: 9px; font-weight: 400; opacity: .75; }
+    .dh-wday { font-size: 11px; font-weight: 400; opacity: .75; }
     .monthly-table thead th.col-day-weekend { background: #0f1a3a; }
 
     /* Security status badge */
@@ -824,7 +868,7 @@
       display: inline-flex; align-items: center; gap: 4px;
       background: #DCFCE7; color: #166534;
       padding: 2px 8px; border-radius: 3px;
-      font-size: 10px; font-weight: 700;
+      font-size: 11px; font-weight: 700;
     }
   </style>
 </head>
@@ -920,7 +964,7 @@
   <!-- ══════════════════════════════════════
        FILTER SIDEBAR
   ══════════════════════════════════════ -->
-  <aside class="filter-sidebar">
+  <aside class="filter-sidebar" aria-label="Report filters">
 
     <div class="fs-label" style="margin-top:0">Timeframe</div>
     <div class="qd-row">
@@ -935,36 +979,38 @@
     </div>
     <div class="date-lbl">Date range</div>
     <div class="date-row">
-      <input type="date" id="dateFrom" title="From">
+      <input type="date" id="dateFrom" title="From" aria-label="Date range from">
     </div>
-    <div style="font-size:9px;color:var(--muted);text-align:center;margin:2px 0">to</div>
+    <div style="font-size:11px;color:var(--muted);text-align:center;margin:2px 0">to</div>
     <div class="date-row">
-      <input type="date" id="dateTo" title="To">
+      <input type="date" id="dateTo" title="To" aria-label="Date range to">
     </div>
 
     <div class="fs-label">Identification</div>
-    <input type="text"  id="searchId"   class="fs-input" placeholder="Search ID / Code">
-    <input type="text"  id="filterName" class="fs-input" placeholder="Personnel Name">
+    <input type="text"  id="searchId"   class="fs-input" placeholder="Search ID / Code" aria-label="Search ID / Code">
+    <input type="text"  id="filterName" class="fs-input" placeholder="Personnel Name" aria-label="Personnel Name">
 
     <div class="fs-label">Categorization</div>
-    <select id="filterType" class="fs-select">
+    <select id="filterType" class="fs-select" aria-label="Entity type">
       <option value="ALL">All Types</option>
       <option value="EMP">Employee</option>
       <option value="VIS">Visitor</option>
       <option value="CON">Contractor</option>
     </select>
-    <select id="filterGender" class="fs-select" onchange="loadLogs()">
+    <select id="filterGender" class="fs-select" onchange="loadLogs()" aria-label="Gender">
       <option value="ALL">All Genders</option>
       <option value="Male">Male</option>
       <option value="Female">Female</option>
       <option value="Other">Other</option>
     </select>
-    <div style="font-size:9px;color:var(--muted);margin-bottom:5px;margin-top:2px">Presence Status</div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:5px;margin-top:2px">Presence Status</div>
     <div class="presence-grid">
-      <div class="pt-btn all active" data-val="ALL"     onclick="setPresence(this)">ALL</div>
-      <div class="pt-btn"            data-val="PRESENT" onclick="setPresence(this)">Present</div>
-      <div class="pt-btn"            data-val="ABSENT"  onclick="setPresence(this)">Absent</div>
-      <div class="pt-btn"            data-val="PARTIAL" onclick="setPresence(this)">Partial</div>
+      <!-- Were divs with onclick: unreachable by keyboard. Real buttons now;
+           .pt-btn resets the UA chrome so the segmented control is unchanged. -->
+      <button type="button" class="pt-btn all active" data-val="ALL"     onclick="setPresence(this)">ALL</button>
+      <button type="button" class="pt-btn"            data-val="PRESENT" onclick="setPresence(this)">Present</button>
+      <button type="button" class="pt-btn"            data-val="ABSENT"  onclick="setPresence(this)">Absent</button>
+      <button type="button" class="pt-btn"            data-val="PARTIAL" onclick="setPresence(this)">Partial</button>
     </div>
 
     <div class="fs-label">Departments</div>
@@ -985,6 +1031,10 @@
        MAIN CONTENT
   ══════════════════════════════════════ -->
   <div class="main-content">
+
+    <!-- The page has no visible title (the tab bar is the top chrome), so the
+         document had no h1 at all. Visually hidden keeps the layout identical. -->
+    <h1 class="sr-only">Reports</h1>
 
     <!-- Report type tab bar -->
     <div class="report-tabs-bar no-print">
@@ -1026,21 +1076,21 @@
             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6,9 12,15 18,9"/></svg>
           </button>
           <div class="export-menu" id="exportMenu" style="display:none">
-            <div class="export-item" onclick="exportCSV()">
+            <button type="button" class="export-item" onclick="exportCSV()">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg>
               CSV Format
-            </div>
-            <div class="export-item" onclick="window.print()">
+            </button>
+            <button type="button" class="export-item" onclick="window.print()">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6,9 6,2 18,2 18,9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
               Print / PDF
-            </div>
+            </button>
           </div>
         </div>
       </div>
 
       <!-- Stats bar -->
       <div style="display:flex;flex-direction:column;flex:1;overflow:hidden;min-width:0;">
-        <div class="stats-bar">
+        <div class="stats-bar" role="status" aria-live="polite">
           <span class="stats-count" id="sumTotal">– records</span>
           <div class="stats-sep"></div>
           <span class="stat-pill green"><span class="dot"></span><span id="sumPresent">–</span> Present</span>
@@ -1108,8 +1158,8 @@
 
         <!-- Daily Attendance Trend — SVG line chart -->
         <div class="chart-card" style="grid-column:1">
-          <div class="chart-title">Daily Attendance Trend <span style="font-size:9px;color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0">— 30-Day Velocity</span></div>
-          <div style="display:flex;gap:14px;margin-bottom:6px;font-size:9px">
+          <h3 class="chart-title">Daily Attendance Trend <span style="font-size:11px;color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0">— 30-Day Velocity</span></h3>
+          <div style="display:flex;gap:14px;margin-bottom:6px;font-size:11px">
             <span style="display:flex;align-items:center;gap:4px"><span style="width:18px;height:2px;background:#000666;display:inline-block;border-radius:1px"></span> Employees</span>
             <span style="display:flex;align-items:center;gap:4px"><span style="width:18px;height:2px;background:#006b5f;display:inline-block;border-radius:1px;border:1px dashed #006b5f"></span> Visitors</span>
           </div>
@@ -1131,7 +1181,7 @@
 
         <!-- Peak Check-In Hours — horizontal bar chart -->
         <div class="chart-card">
-          <div class="chart-title">Peak Check-In Hours <span style="font-size:9px;color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0">06:00 – 22:00</span></div>
+          <h3 class="chart-title">Peak Check-In Hours <span style="font-size:11px;color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0">06:00 – 22:00</span></h3>
           <div class="peak-hours-list" id="peakHoursList">
             <div style="color:var(--muted);font-size:12px">Loading…</div>
           </div>
@@ -1144,7 +1194,7 @@
 
         <!-- Dept Attendance Heatmap -->
         <div class="chart-card">
-          <div class="chart-title">Dept Attendance Heatmap</div>
+          <h3 class="chart-title">Dept Attendance Heatmap</h3>
           <div class="heatmap-grid">
             <div style="grid-column:1/-1;color:var(--muted);font-size:12px;padding:4px 0">Loading…</div>
           </div>
@@ -1152,7 +1202,7 @@
 
         <!-- Visitor Frequency — top repeat guests -->
         <div class="chart-card">
-          <div class="chart-title">Visitor Frequency <span style="font-size:9px;color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0">— Top Repeat Guests</span></div>
+          <h3 class="chart-title">Visitor Frequency <span style="font-size:11px;color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0">— Top Repeat Guests</span></h3>
           <div class="vfreq-list">
             <div style="color:var(--muted);font-size:12px;padding:4px 0">Loading…</div>
           </div>
@@ -1198,7 +1248,7 @@
       </div>
 
       <!-- Scrollable table container -->
-      <div style="flex:1;overflow:auto;min-height:0;" id="monthlyTableWrap">
+      <div style="flex:1;overflow:auto;min-height:0;" id="monthlyTableWrap" role="status" aria-live="polite">
         <div style="padding:40px;text-align:center;color:var(--muted);font-size:13px;">
           Select a month and click <strong>LOAD</strong> to view the attendance matrix.
         </div>
@@ -1248,7 +1298,7 @@
         <button onclick="exportGatepassCSV()" style="padding:7px 14px;background:var(--surface);color:var(--muted);border:1px solid var(--border);border-radius:3px;font-size:12px;font-weight:600;cursor:pointer;">&#8595; Export CSV</button>
         <span id="gpOutKpi" style="margin-left:auto;font-size:12px;color:var(--muted);font-family:var(--mono)"></span>
       </div>
-      <div style="flex:1;overflow:auto;min-height:0;padding:0;" id="gpOutWrap">
+      <div style="flex:1;overflow:auto;min-height:0;padding:0;" id="gpOutWrap" role="status" aria-live="polite">
         <div style="padding:40px;text-align:center;color:var(--muted);font-size:13px;">Loading&#8230;</div>
       </div>
     </div><!-- /reportsViewGatepass -->
@@ -1407,8 +1457,11 @@
 
     function renderFilterTags(tags) {
       document.getElementById('filterTags').innerHTML = tags.map(function(tg) {
+        /* Was a <span> with onclick — no keyboard access and no accessible
+           name, so the only way to drop a filter was the mouse. */
         return '<div class="ftag">' + esc(tg.label) +
-          '<span class="ftag-x" onclick="clearTag(\'' + tg.key + '\')">&#xd7;</span></div>';
+          '<button type="button" class="ftag-x" aria-label="Remove filter: ' + esc(tg.label) + '"' +
+          ' onclick="clearTag(\'' + tg.key + '\')">&#xd7;</button></div>';
       }).join('');
     }
 
@@ -1516,7 +1569,7 @@
             '<td>' + typeBadge(r.Type) + '</td>' +
             '<td style="font-size:12px;color:var(--text)">'   + esc(r.Department||'–')         + '</td>' +
             '<td><span class="mono">' + esc(fmtDate(r.Date))   + '</span></td>' +
-            '<td' + (r.isLate ? ' style="background:#FEF3C7"' : '') + '><span class="mono"' + (r.isLate ? ' style="color:#B45309;font-weight:800"' : '') + '>' + esc(r.TimeIN||'–') + '</span>' + (r.isLate ? ' <span style="font-size:9px;font-weight:800;color:#fff;background:#D97706;padding:1px 5px;border-radius:3px;vertical-align:middle">LATE</span>' : '') + '</td>' +
+            '<td' + (r.isLate ? ' style="background:#FEF3C7"' : '') + '><span class="mono"' + (r.isLate ? ' style="color:#B45309;font-weight:800"' : '') + '>' + esc(r.TimeIN||'–') + '</span>' + (r.isLate ? ' <span style="font-size:11px;font-weight:800;color:#fff;background:#D97706;padding:1px 5px;border-radius:3px;vertical-align:middle">LATE</span>' : '') + '</td>' +
             '<td><span class="mono' + (isAbsent?' mono-muted':'') + '">' + esc(r.TimeOUT||'–')  + '</span></td>' +
             '<td><span class="mono' + (isAbsent?' mono-muted':'') + '">' + esc(fmtDur(r.Duration)) + '</span></td>' +
             '<td>' + statusBadge(r.Status) + '</td>' +
@@ -1736,6 +1789,13 @@
     document.querySelector('.filter-sidebar').classList.remove('open');
     document.getElementById('filterOverlay').classList.remove('open');
   }
+  /* Escape closes the mobile filter drawer. Without it the overlay can only be
+     dismissed by pointer, trapping a keyboard user behind it. */
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Escape') return;
+    var sb = document.querySelector('.filter-sidebar');
+    if (sb && sb.classList.contains('open')) closeFilterDrawer();
+  });
 </script>
 <script>
   /* ── Monthly View ── */
@@ -2357,7 +2417,7 @@
                       : a.openSessions > 0 ? '<span style="color:#b45309">⚠ ' + a.openSessions + ' open</span>'
                       : '—';
             return '<tr style="border-bottom:1px solid #eee">' +
-              '<td style="padding:5px 8px">' + hsEsc(a.name) + (a.status !== 'ACTIVE' ? ' <span style="font-size:9px;color:#999">(' + hsEsc(a.status) + ')</span>' : '') + '</td>' +
+              '<td style="padding:5px 8px">' + hsEsc(a.name) + (a.status !== 'ACTIVE' ? ' <span style="font-size:11px;color:#999">(' + hsEsc(a.status) + ')</span>' : '') + '</td>' +
               '<td style="padding:5px 8px;font-family:var(--mono)">' + hsEsc(a.empId) + '</td>' +
               '<td style="padding:5px 8px;text-align:right">' + a.daysWorked + '</td>' +
               '<td style="padding:5px 8px;text-align:right">' + a.presentDays + '</td>' +
@@ -2370,21 +2430,21 @@
           '</tbody></table>';
 
         return '<div style="margin:4px 0 4px 18px">' +
-          '<div onclick="toggleHours(\'' + mKey + '\')" style="cursor:pointer;display:flex;align-items:center;gap:8px;padding:6px 8px;background:#fafafa;border:1px solid #eee;border-radius:3px;">' +
+          '<button type="button" onclick="toggleHours(\'' + mKey + '\')" aria-expanded="' + (mOpen ? 'true' : 'false') + '" style="cursor:pointer;display:flex;align-items:center;gap:8px;padding:6px 8px;min-height:44px;width:100%;text-align:left;font:inherit;color:inherit;background:#fafafa;border:1px solid #eee;border-radius:3px;">' +
             '<span style="font-size:11px;color:#666">' + (mOpen ? '▼' : '▶') + '</span>' +
             '<strong style="font-size:13px">' + hsEsc(mo.label) + '</strong>' +
             '<span style="margin-left:auto;font-size:12px;color:#444;font-family:var(--mono)">Total: ' + hsNum(mo.totalHours) + 'h · ' + mo.totalManDays + ' days</span>' +
-          '</div>' + tableHtml +
+          '</button>' + tableHtml +
           (mOpen ? '<div style="margin:0 0 8px 8px;font-size:11px;color:#777">Month rollup: Present ' + mo.present + ' · Late ' + mo.late + ' · OT ' + hsNum(mo.overtime) + 'h</div>' : '') +
         '</div>';
       }).join('');
 
       return '<div style="margin-bottom:10px">' +
-        '<div onclick="toggleHours(\'' + yKey + '\')" style="cursor:pointer;display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--surface);border:1px solid var(--border);border-radius:3px;">' +
+        '<button type="button" onclick="toggleHours(\'' + yKey + '\')" aria-expanded="' + (yOpen ? 'true' : 'false') + '" style="cursor:pointer;display:flex;align-items:center;gap:8px;padding:8px 10px;min-height:44px;width:100%;text-align:left;font:inherit;color:inherit;background:var(--surface);border:1px solid var(--border);border-radius:3px;">' +
           '<span style="font-size:12px;color:#666">' + (yOpen ? '▼' : '▶') + '</span>' +
           '<strong style="font-size:15px">' + hsEsc(y.year) + '</strong>' +
           '<span style="margin-left:auto;font-size:12px;color:#333;font-family:var(--mono)">Total: ' + hsNum(y.totalHours) + 'h · ' + y.totalManDays + ' days</span>' +
-        '</div>' + monthsHtml +
+        '</button>' + monthsHtml +
       '</div>';
     }).join('');
 
@@ -2401,7 +2461,7 @@
       if (!k || !k.success) { document.getElementById('hsKpiBlock').innerHTML = ''; return; }
       function tile(label, val, color) {
         return '<div style="flex:1;min-width:120px;background:#fff;border:1px solid var(--border);border-radius:4px;padding:8px 10px;">' +
-          '<div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">' + label + '</div>' +
+          '<div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">' + label + '</div>' +
           '<div style="font-size:18px;font-weight:800;color:' + (color||'var(--text)') + '">' + val + '</div></div>';
       }
       document.getElementById('hsKpiBlock').innerHTML =
