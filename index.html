@@ -127,12 +127,6 @@
                    // code and the room scans it, so these must resolve here.
                    'present','selftest'];
 
-      /* Pages reached from a QR code or a WhatsApp link, always by someone who
-         is not signed in to Google. They carry an id and must land on the
-         record itself, so they forward straight through rather than showing a
-         portal card and asking for another tap. */
-      var AUTO = ['vpass','gatepass_approve','vreg','present','selftest'];
-
       /* Keep the WHOLE query string, not just ?page. publicPassUrl() emits
          ?page=vpass&id=VIS-… and the id is the only thing identifying the
          pass; reading page alone silently dropped it. */
@@ -184,11 +178,6 @@
       var app = document.getElementById('app');
       var loader = document.getElementById('loader');
 
-      // No auto-redirect to the raw GAS URL: in incognito the iframe can take >4s,
-      // and bouncing there exposed the ugly script.google.com URL. We always stay
-      // on the portal; the existing 12s loader timeout stops a spinner hanging.
-      var iframeLoaded = false;
-
       function loadPage(pg) {
         loader.style.display = 'flex';
         loader.style.opacity = '1';
@@ -200,30 +189,50 @@
         history.replaceState(null, '', '?' + qs.toString());
       }
 
-      /* Visitor links forward straight through.
+      /* The app runs INSIDE this page, so the address bar keeps saying
+         packmastersmumbai.github.io/att for the whole session.
 
-         The portal exists because Google's auth interstitial sends
-         X-Frame-Options: SAMEORIGIN — but that interstitial only appears for a
-         signed-in Google account. A visitor opening a pass from a QR or a
-         WhatsApp message is anonymous: measured against this deployment, that
-         request returns 200 with no X-Frame-Options, no CSP frame-ancestors
-         and no redirect at all.
+         An earlier attempt at this was reverted on the grounds that Google
+         refuses to be framed. Re-measured against this deployment: /exec
+         returns 200 with no X-Frame-Options, no CSP frame-ancestors and no
+         redirect, and kiosk, dashboard and admin all render inside a frame on
+         this origin with no refusal logged. The refusal belongs to the auth
+         interstitial, which a web app deployed as ANYONE_ANONYMOUS does not
+         serve.
 
-         So for those three pages we skip the card and the extra tap. Staff
-         pages keep the tap-through portal, because a supervisor on a shared
-         plant phone may well be signed in — if the interstitial ever comes
-         back it degrades to the old behaviour instead of breaking.
-
-         replace(), not assign(): Back should return to whatever the visitor
-         was in before, not to a launcher that immediately forwards again. */
-      if (AUTO.indexOf(page) !== -1) {
-        location.replace(appUrl(page));
-        return;
-      }
-
+         The card is kept as a fallback, not as the default: if the frame has
+         painted nothing after 12s — Google changing its mind, a corporate
+         proxy, a locked-down browser — it appears and offers the direct link,
+         which is the old behaviour. */
       document.getElementById('blockedLink').href = appUrl(page);
       history.replaceState(null, '', '?' + qs.toString());
-      loader.style.display = 'none';
+
+      var blocked = document.getElementById('blocked');
+      blocked.style.display = 'none';
+
+      app.src = appUrl(page);
+
+      var settled = false;
+      function frameReady() {
+        if (settled) return;
+        settled = true;
+        loader.style.opacity = '0';
+        setTimeout(function () { loader.style.display = 'none'; }, 320);
+        app.classList.add('ready');
+      }
+      app.addEventListener('load', function () {
+        // A frame that was refused also fires load, so give the app a moment to
+        // paint and confirm it actually has a document before hiding the card.
+        setTimeout(frameReady, 600);
+      });
+
+      setTimeout(function () {
+        if (settled) return;
+        settled = true;
+        loader.style.display = 'none';
+        blocked.style.display = '';
+        app.style.display = 'none';
+      }, 12000);
 
       // If Google ever allows framing again, the app's nav ping proves it rendered;
       // lift the iframe above the launcher at that point.
