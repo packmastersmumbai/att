@@ -190,6 +190,8 @@
         // query — an in-app hop should not strip an id the link arrived with.
         qs.set('page', pg);
         history.replaceState(null, '', '?' + qs.toString());
+        // This hop has its own readiness; arm the watchers again for it.
+        armLoadWatch();
       }
 
       /* The app runs INSIDE this page, so the address bar keeps saying
@@ -215,11 +217,16 @@
 
       app.src = appUrl(page);
 
+      /* Per-NAVIGATION, not per-session. loadPage() raises the overlay again on
+         every in-app hop, so a latch that never resets left the overlay up for
+         good after the first page: clicking Dashboard changed the URL, loaded
+         the frame, fired qratt_ready — and the user still stared at the
+         spinner. Reset it wherever the overlay goes up. */
       var settled = false;
       function frameReady() {
         if (settled) return;
         settled = true;
-        clearInterval(poll);
+        clearTimeout(fallbackTimer);
         clearInterval(tick);
         loader.style.opacity = '0';
         setTimeout(function () { loader.style.display = 'none'; }, 320);
@@ -235,33 +242,45 @@
 
          The load event stays as a backstop for anything that does not carry
          the shared fragment. */
-      var poll = null;
       window.addEventListener('message', function (ev) {
         if (ev.data && ev.data.qratt_ready) frameReady();
       });
 
       app.addEventListener('load', function () { setTimeout(frameReady, 250); });
 
-      /* Say what is happening. A spinner that never changes reads as hung; the
-         wait is real, so the screen should account for it rather than hide it. */
-      var waited = 0;
       var note = document.getElementById('loaderNote');
-      var tick = setInterval(function () {
-        waited += 1;
-        if (!note) return;
-        if (waited === 4)  note.textContent = 'Still loading — Google Apps Script is slow to start.';
-        if (waited === 9)  note.textContent = 'Taking longer than usual. Hold on…';
-      }, 1000);
+      var tick = null, fallbackTimer = null;
 
-      setTimeout(function () {
-        if (settled) return;
-        settled = true;
-        clearInterval(poll);
+      /* Arm the watchers for ONE page load: the progress notes, and the
+         give-up timer that falls back to the direct link. Called for the first
+         page and again on every in-app hop, because each hop shows the overlay
+         again and has its own readiness. */
+      function armLoadWatch() {
+        settled = false;
         clearInterval(tick);
-        loader.style.display = 'none';
-        blocked.style.display = '';
-        app.style.display = 'none';
-      }, 20000);
+        clearTimeout(fallbackTimer);
+        if (note) note.textContent = '';
+
+        /* A spinner that never changes reads as hung; the wait is real, so say
+           so rather than hide it. */
+        var waited = 0;
+        tick = setInterval(function () {
+          waited += 1;
+          if (!note) return;
+          if (waited === 4) note.textContent = 'Still loading — Google Apps Script is slow to start.';
+          if (waited === 9) note.textContent = 'Taking longer than usual. Hold on…';
+        }, 1000);
+
+        fallbackTimer = setTimeout(function () {
+          if (settled) return;
+          settled = true;
+          clearInterval(tick);
+          loader.style.display = 'none';
+          blocked.style.display = '';
+          app.style.display = 'none';
+        }, 20000);
+      }
+      armLoadWatch();
 
       /* In-app navigation. The pages post here instead of navigating the top
          frame, which would break out of the launcher and put the raw
