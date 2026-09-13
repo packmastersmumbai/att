@@ -226,23 +226,68 @@ function getInduction(empId) {
 
 /** Did this person pass the spoken rules test (TRN-IND)? Latest attempt wins. */
 function _inductionTestResult_(empId) {
-  var out = { taken: false, passed: false, score: '', takenAt: '' };
-  try {
-    var rows = getSheetAsObjects(MODULE_SHEETS.ASSESSMENTS).filter(function (a) {
-      return String(a.EmpID) === String(empId) && String(a.TopicID) === 'TRN-IND';
-    });
-    if (!rows.length) return out;
-    rows.sort(function (a, b) {
-      return String(a.TakenAt) < String(b.TakenAt) ? 1 : -1;
-    });
-    var latest = rows[0];
-    out.taken = true;
-    out.passed = String(latest.Passed).toUpperCase() === 'YES';
-    out.score = latest.Score;
-    out.takenAt = String(latest.TakenAt || '').slice(0, 10);
-  } catch (e) { /* no assessments sheet yet is not an error */ }
-  return out;
+  return _inductionTestMap_()(empId);
 }
+
+/**
+ * Everybody's TRN-IND result, from ONE read of the assessments sheet.
+ *
+ * _inductionTestResult_ used to read the whole sheet per person. Called once
+ * per employee from getInductionRegister, that is thirty-one full reads to
+ * answer one question — measured at 8.3s of work above a 2.08s platform
+ * floor, the single slowest call in the app.
+ *
+ * Memoised for the execution only. One google.script.run call is one
+ * execution in Apps Script, so a module global is naturally request-scoped:
+ * it cannot go stale between requests because it does not survive one. No
+ * CacheService, no TTL, no invalidation to forget — the cheapest correct
+ * cache is the one with no lifetime.
+ *
+ * Returns a LOOKUP FUNCTION rather than the map, so a caller cannot reach in
+ * and mutate the shared object that every other caller is reading.
+ */
+var _INDUCTION_TEST_MEMO_ = null;
+
+function _inductionTestMap_() {
+  if (_INDUCTION_TEST_MEMO_) return _INDUCTION_TEST_MEMO_;
+
+  var best = {};
+  try {
+    getSheetAsObjects(MODULE_SHEETS.ASSESSMENTS).forEach(function (a) {
+      if (String(a.TopicID) !== 'TRN-IND') return;
+      // _normEmpId_, never ===: Sheets stores EmpID "004" as the number 4, and
+      // a strict compare silently credits nobody.
+      var k = _normEmpId_(a.EmpID);
+      var at = String(a.TakenAt || '');
+      if (!best[k] || at > best[k].at) {
+        best[k] = {
+          at: at,
+          taken: true,
+          passed: String(a.Passed).toUpperCase() === 'YES',
+          score: a.Score,
+          takenAt: at.slice(0, 10)
+        };
+      }
+    });
+  } catch (e) { /* no assessments sheet yet is not an error */ }
+
+  _INDUCTION_TEST_MEMO_ = function (empId) {
+    var r = best[_normEmpId_(empId)];
+    return r
+      ? { taken: true, passed: r.passed, score: r.score, takenAt: r.takenAt }
+      : { taken: false, passed: false, score: '', takenAt: '' };
+  };
+  return _INDUCTION_TEST_MEMO_;
+}
+
+/**
+ * Drop the memo after a write that changes a test result.
+ *
+ * Only matters when one execution writes and then re-reads — recordAssessment
+ * returning a fresh register, for instance. Across requests the memo is gone
+ * already.
+ */
+function _inductionTestMemoReset_() { _INDUCTION_TEST_MEMO_ = null; }
 
 /**
  * Sign off one session.

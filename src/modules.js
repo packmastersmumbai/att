@@ -446,6 +446,12 @@ function recordAssessment(entry) {
   };
   sheet.appendRow(headers.map(function (h) { return values[h] !== undefined ? values[h] : ''; }));
 
+  /* The TRN-IND result memo was built from this sheet before this row existed.
+     Invalidated from the write path rather than left to expire, because this
+     execution may go on to read the register back and would otherwise report
+     the induction test as untaken by someone who just passed it. */
+  try { _inductionTestMemoReset_(); } catch (e) {}
+
   // Mark them present with their score. This is what feeds the skill matrix:
   // present + a score at or above the pass mark computes to L2.
   var att = _upsertAttendanceScore_(planId, empId, emp.Name || empId, marked.score);
