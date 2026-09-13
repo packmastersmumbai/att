@@ -396,11 +396,11 @@ function go(page) {
   // appUrl, not publicUrl: in-app navigation goes straight to GAS. publicUrl
   // is the shareable base and may point at the launcher, which would send a
   // logged-in staff member through a tap-through portal on every hop.
-  window.open('<?!= appUrl ?>' + '?page=' + page, '_top');
+  qrattGo(page);
 }
 
 function openInduction(empId) {
-  window.open('<?!= appUrl ?>' + '?page=admin&emp=' + encodeURIComponent(empId), '_top');
+  qrattGo('admin', 'emp=' + encodeURIComponent(empId));
 }
 
 function withToken(then) {

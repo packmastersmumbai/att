@@ -519,6 +519,34 @@ function qrattSafetyRuleKeys(){
     qrattApplyLang();
   });
 
+  /* Navigate within the app without leaving the GitHub Pages launcher.
+     Shared here because doGet injects this file into every page.
+
+     Going straight to _top works, but it exits the launcher and puts the raw
+     script.google.com address back in the bar. We cannot detect the launcher
+     from inside — GAS always nests its own sandbox iframe, so "am I framed" is
+     true either way — so ask it to swap the page AND queue the real
+     navigation. A launcher replies qratt_nav_ok and cancels the fallback;
+     without one, the navigation simply happens as before. */
+  window.qrattGo = function (page, extraQuery) {
+    var url = (window.QRATT_APP_URL || '') + '?page=' + encodeURIComponent(page) +
+              (extraQuery ? '&' + extraQuery : '');
+
+    var fallback = setTimeout(function () {
+      try { window.open(url, '_top'); }
+      catch (e) { window.location.href = url; }
+    }, 250);
+
+    window.addEventListener('message', function ack(ev) {
+      if (ev.data && ev.data.qratt_nav_ok) {
+        clearTimeout(fallback);
+        window.removeEventListener('message', ack);
+      }
+    });
+
+    try { window.top.postMessage({ qratt_nav: page, qratt_nav_q: extraQuery || '' }, '*'); } catch (e) {}
+  };
+
   /* Tell the GitHub Pages launcher this page has painted, so it can drop its
      loading overlay immediately.
 

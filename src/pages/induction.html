@@ -268,7 +268,7 @@ function act(empId, started) {
 
 function open(empId) {
   // Cross-origin sandbox: window.top.location throws, _top on a real URL works.
-  window.open('<?!= appUrl ?>' + '?page=people&emp=' + encodeURIComponent(empId), '_top');
+  qrattGo('people', 'emp=' + encodeURIComponent(empId));
 }
 
 function withToken(then) {

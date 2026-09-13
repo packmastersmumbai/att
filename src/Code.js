@@ -173,6 +173,11 @@ function doGet(e) {
     '<head>' + HtmlService.createHtmlOutputFromFile('tokens').getContent());
 
   var withI18n = withTokens.replace('</head>',
+    // i18n.html is a plain file, not a template, so it cannot interpolate
+    // appUrl itself. qrattGo() needs the /exec address to build a navigation
+    // fallback, so hand it over as a global immediately before.
+    '<script>window.QRATT_APP_URL=' +
+      JSON.stringify(ScriptApp.getService().getUrl()) + ';</script>' +
     HtmlService.createHtmlOutputFromFile('i18n').getContent() +
     // Shared visitor-item card (markup + styles + QRATT_GPC renderer). Injected
     // like i18n so every surface renders items identically instead of each page

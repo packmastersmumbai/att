@@ -61,7 +61,14 @@
   //   vpass, vreg       opened by a visitor from a QR code, no app behind them
   //   gatepass_approve  a host approving from a link in a message
   //   login             going back from a sign-in screen means nothing
-  var SKIP = ['kiosk', 'scanner_popup', 'vpass', 'vreg', 'gatepass_approve', 'login'];
+  //
+  // Also skipped: every page that already carries a Dashboard link in its own
+  // sidebar or top nav. A floating "← Dashboard" on top of a sidebar that says
+  // Dashboard is the same destination offered twice, and on the dashboard
+  // itself it pointed at the page you were already on.
+  var SKIP = ['kiosk', 'scanner_popup', 'vpass', 'vreg', 'gatepass_approve', 'login',
+              'dashboard', 'admin', 'reports', 'scanner', 'visitors',
+              'training', 'skillmatrix', 'kpi', 'mockdrill'];
 
   // From the server, NOT location.search. Inside the Apps Script sandbox this
   // runs in an iframe whose URL is userCodeAppPanel with no ?page= on it, so
@@ -90,10 +97,30 @@
   // parent history is actually readable.
   function go() {
     var url = '<?!= appUrl ?>' + '?page=dashboard';
-    // _top BY NAME: assigning window.top.location throws across the sandbox
-    // boundary, which is why an earlier draft failed silently.
-    try { window.open(url, '_top'); }
-    catch (e) { window.location.href = url; }
+
+    /* Ask the GitHub Pages launcher to swap the page, exactly as the in-app
+       nav does. Going straight to _top would leave the launcher and put the
+       raw script.google.com address back in the bar.
+
+       We cannot test whether a launcher is above us — GAS always nests its own
+       sandbox iframe, so "am I framed" is true either way — so ask and also
+       queue the real navigation. A launcher answers qratt_nav_ok and that
+       cancels the fallback; with no launcher, the navigation just happens. */
+    var fallback = setTimeout(function () {
+      // _top BY NAME: assigning window.top.location throws across the sandbox
+      // boundary, which is why an earlier draft failed silently.
+      try { window.open(url, '_top'); }
+      catch (e) { window.location.href = url; }
+    }, 250);
+
+    window.addEventListener('message', function ack(ev) {
+      if (ev.data && ev.data.qratt_nav_ok) {
+        clearTimeout(fallback);
+        window.removeEventListener('message', ack);
+      }
+    });
+
+    try { window.top.postMessage({ qratt_nav: 'dashboard' }, '*'); } catch (e) {}
   }
 
   btn.addEventListener('click', go);

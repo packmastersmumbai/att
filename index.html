@@ -321,6 +321,16 @@
            and on a page that reads id it would open the wrong record. */
         ['id', 'emp', 'plan', 'topic'].forEach(function(k) { qs.delete(k); });
 
+        /* …then take any the caller sent with the hop. People opens a person on
+           Admin as ?emp=004; dropping it would open the page with no record. */
+        if (e.data.qratt_nav_q) {
+          try {
+            new URLSearchParams(e.data.qratt_nav_q).forEach(function (v, k) {
+              if (k !== 'page') qs.set(k, v);
+            });
+          } catch (ex) {}
+        }
+
         /* Tell the page we are handling it, which cancels the ordinary
            navigation it queued. The app cannot detect the launcher on its own:
            GAS always nests a sandbox iframe, so "am I framed" is true either
