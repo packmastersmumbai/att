@@ -25,6 +25,40 @@
 // reassessment, one person answering for themselves.
 
 /**
+ * Resolve a scanned QR to a person, WITHOUT touching the gate log.
+ *
+ * processQRScan is the wrong call here: it checks people in and out, so
+ * scanning eight workers into a toolbox talk would post eight gate movements
+ * and, for anyone already inside, check them OUT of the plant. The attendance
+ * that matters at a training is the training's own.
+ *
+ * Employees only. A visitor QR resolves in _lookupPerson but cannot be
+ * credited with training — TrainingAttendance is keyed by EmpID and the skill
+ * matrix reads it, so a visitor row would be a person who does not exist on
+ * the roster acquiring a competence level.
+ */
+function scanForTraining(qrCode) {
+  var code = String(qrCode || '').trim();
+  if (!code) return { success: false, error: 'No QR code received' };
+
+  var person = _lookupPerson(code);
+  if (!person) return { success: false, error: 'QR code not recognised', qrCode: code };
+  if (person.type !== 'EMP') {
+    return { success: false, error: (person.name || 'That pass') +
+             ' is a visitor pass — training is recorded against employees' };
+  }
+  if (person.status === 'INACTIVE') {
+    return { success: false, error: person.name + ' is marked INACTIVE' };
+  }
+
+  return {
+    success: true,
+    empId: person.id, name: person.name,
+    department: person.department || '', photoUrl: person.photoUrl || ''
+  };
+}
+
+/**
  * One topic's headings, for the page to title itself with.
  *
  * A page that serves any topic must not hardcode one topic's name. Read-only

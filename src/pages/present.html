@@ -121,7 +121,30 @@
   .who[aria-pressed="true"] .mark{border-color:var(--color-primary);
     background:var(--color-primary);color:#fff}
   .who .rid{font:600 12px var(--font-mono);color:var(--color-text-muted);margin-left:auto}
-  .picked{font-size:14px;color:var(--color-text-muted);margin-bottom:10px}
+  .picked{font-size:14px;color:var(--color-text-muted)}
+
+  /* Scanning is the primary path and looks like it. Adding by name is folded
+     away behind a summary: it is the fallback for a forgotten card, not the
+     way a session normally starts. */
+  .scanhd{display:flex;justify-content:space-between;align-items:center;gap:10px;
+    margin-bottom:12px;flex-wrap:wrap}
+  .btn-scan{width:auto;flex:0 0 auto;margin:0;padding:12px 18px;min-height:48px;font-size:16px}
+  .manual{margin-top:12px;border-top:1px solid var(--color-border);padding-top:10px}
+  .manual summary{font-size:14px;color:var(--color-text-muted);cursor:pointer;
+    padding:8px 0;min-height:40px;display:flex;align-items:center}
+  .manual[open] summary{margin-bottom:8px}
+
+  /* A scanned person, newest first, with a way to undo a mis-scan. */
+  .p{display:flex;align-items:center;gap:10px;padding:10px 0;
+    border-bottom:1px solid var(--color-border);font-size:16px}
+  .p:last-child{border-bottom:0}
+  .p .pn{flex:1;min-width:0;font-weight:700}
+  .p .pd{font:600 12px var(--font-mono);color:var(--color-text-muted)}
+  .p .px{border:0;background:none;color:var(--color-text-muted);font-size:22px;
+    cursor:pointer;padding:0 8px;min-height:40px;min-width:40px;line-height:1}
+  .p.new{animation:landed .5s ease-out}
+  @keyframes landed{from{background:rgba(15,118,110,.16)}to{background:transparent}}
+  @media (prefers-reduced-motion:reduce){.p.new{animation:none}}
 
   /* ---- the group question -------------------------------------------- */
 
@@ -171,9 +194,20 @@
       <h1 id="tTitle">Loading…</h1>
       <p class="sub" id="tSub">&nbsp;</p>
     </div>
+    <!-- Scan them in as they walk up. Tapping thirty-one names on a phone to
+         find eight is slower than scanning eight cards, and it is the step
+         that got skipped — a trainer under time pressure starts the talk and
+         means to do the list afterwards. -->
     <div class="card">
-      <p class="picked" id="picked">Tap everyone who is here.</p>
-      <div id="roster">Loading…</div>
+      <div class="scanhd">
+        <p class="picked" id="picked">Nobody scanned yet.</p>
+        <button class="btn btn-scan" id="bScan" onclick="openScanner()">Scan a card</button>
+      </div>
+      <div id="here"></div>
+      <details class="manual">
+        <summary>No card? Add by name</summary>
+        <div id="roster">Loading…</div>
+      </details>
     </div>
   </div>
 
@@ -466,8 +500,8 @@ function renderRoster() {
   if (!ROSTER.length) { el('roster').textContent = 'No active employees.'; return; }
   el('roster').innerHTML = ROSTER.map(function (p) {
     var id = String(p.EmpID);
-    return '<button class="who" type="button" aria-pressed="false" data-emp="' + esc(id) + '" ' +
-      'onclick="toggleWho(this)"><span class="mark">✓</span>' +
+    return '<button class="who" type="button" aria-pressed="' + (!!HERE[id]) + '" ' +
+      'data-emp="' + esc(id) + '" onclick="toggleWho(this)"><span class="mark">✓</span>' +
       '<span>' + esc(p.Name || id) + '</span>' +
       '<span class="rid">' + esc(id) + '</span></button>';
   }).join('');
@@ -476,18 +510,108 @@ function renderRoster() {
 
 function toggleWho(btn) {
   var id = btn.getAttribute('data-emp');
-  if (HERE[id]) { delete HERE[id]; btn.setAttribute('aria-pressed', 'false'); }
-  else { HERE[id] = true; btn.setAttribute('aria-pressed', 'true'); }
-  renderPicked();
+  if (HERE[id]) { removePerson(id); return; }
+  var p = ROSTER.filter(function (x) { return String(x.EmpID) === id; })[0] || {};
+  addPerson({ empId: id, name: p.Name || id, department: p.Department || '' });
+}
+
+/* ---------- scanning them in ----------
+   The camera lives on GitHub Pages, not here: the Apps Script sandbox cannot
+   get getUserMedia, which is why kiosk.html opens the same popup rather than
+   scanning inline. It posts back { qratt_code }. */
+
+var SCANNER_URL = 'https://packmastersmumbai.github.io/att/scanner_popup.html';
+var SCAN_WIN = null;
+
+function openScanner() {
+  if (SCAN_WIN && !SCAN_WIN.closed) { SCAN_WIN.focus(); return; }
+  var w = 420, h = 720;
+  SCAN_WIN = window.open(SCANNER_URL, 'qrpresent',
+    'width=' + w + ',height=' + h +
+    ',left=' + Math.max(0, (screen.width - w) / 2) +
+    ',top=' + Math.max(0, (screen.height - h) / 2) + ',resizable=yes');
+  if (!SCAN_WIN) window.alert('The scanner window was blocked. Allow pop-ups, or add people by name.');
+}
+
+window.addEventListener('message', function (e) {
+  if (!e.data) return;
+  if (e.data.qratt_closed) { SCAN_WIN = null; return; }
+  if (e.data.qratt_code) onScan(e.data.qratt_code, e.source);
+});
+
+/* Resolved through scanForTraining, NOT processQRScan: the latter checks
+   people in and out of the gate, so scanning eight workers into a toolbox
+   talk would post eight gate movements and check the ones already inside
+   back out of the plant. */
+function onScan(code, sourceWin) {
+  google.script.run
+    .withSuccessHandler(function (r) {
+      var msg = r && r.success
+        ? { qratt_result: { success: true, action: 'ADDED', name: r.name,
+                            message: HERE[String(r.empId)] ? 'already added' : 'added' } }
+        : { qratt_result: { success: false, action: 'ERROR',
+                            message: (r && r.error) || 'Not recognised' } };
+      if (sourceWin) { try { sourceWin.postMessage(msg, '*'); } catch (ex) {} }
+      if (r && r.success) addPerson(r);
+      else flash((r && r.error) || 'Not recognised');
+    })
+    .withFailureHandler(function (err) { flash(err && err.message); })
+    .scanForTraining(code);
+}
+
+function flash(msg) {
+  el('picked').textContent = msg || 'Could not read that card.';
+  setTimeout(renderPicked, 2600);
+}
+
+/* ---------- who is here ---------- */
+
+function addPerson(p) {
+  var id = String(p.empId);
+  var known = !!HERE[id];
+  HERE[id] = { empId: id, name: p.name || id, dept: p.department || '', at: Date.now() };
+  renderHere(known ? '' : id);
+  if (known) flash(HERE[id].name + ' was already added.');
+}
+
+function removePerson(id) {
+  delete HERE[String(id)];
+  renderHere('');
 }
 
 function countHere() { return Object.keys(HERE).length; }
 
+/* Newest at the top: the person just scanned is the one the trainer is
+   looking at, and on a phone the bottom of a list of twelve is off screen. */
+function renderHere(justAdded) {
+  var list = Object.keys(HERE).map(function (k) { return HERE[k]; })
+    .sort(function (a, b) { return b.at - a.at; });
+
+  el('here').innerHTML = list.map(function (p) {
+    return '<div class="p' + (String(p.empId) === String(justAdded) ? ' new' : '') + '">' +
+      '<span class="pn">' + esc(p.name) + '</span>' +
+      '<span class="pd">' + esc(p.empId) + (p.dept ? ' · ' + esc(p.dept) : '') + '</span>' +
+      '<button class="px" type="button" title="Remove" ' +
+      'onclick="removePerson(\'' + esc(p.empId) + '\')">&times;</button></div>';
+  }).join('');
+
+  if (!el('roster').textContent || ROSTER.length) renderRosterMarks();
+  renderPicked();
+}
+
+/** Keep the by-name list in step with what scanning has added. */
+function renderRosterMarks() {
+  var btns = el('roster').getElementsByClassName('who');
+  for (var i = 0; i < btns.length; i++) {
+    btns[i].setAttribute('aria-pressed', !!HERE[btns[i].getAttribute('data-emp')]);
+  }
+}
+
 function renderPicked() {
   var n = countHere();
   el('picked').textContent = n
-    ? n + (n === 1 ? ' person is here.' : ' people are here.')
-    : 'Tap everyone who is here.';
+    ? n + (n === 1 ? ' person scanned in.' : ' people scanned in.')
+    : 'Nobody scanned yet.';
   el('bNext').disabled = !n;
 }
 
@@ -628,7 +752,9 @@ function doSave() {
   el('bNext').textContent = 'Saving…';
 
   var rows = Object.keys(HERE).map(function (id) {
-    var p = ROSTER.filter(function (e) { return String(e.EmpID) === id; })[0] || {};
+    /* The name comes from the scan itself, not from a roster lookup: someone
+       scanned in is present whether or not the page's roster copy has them. */
+    var p = HERE[id];
     /* Present, with NO score.
        The room answered together. Writing the group's percentage onto each
        person would assert eight individual assessments that never happened,
@@ -636,7 +762,7 @@ function doSave() {
        read it as exactly that. saveSessionAttendance already treats a blank
        score as "not assessed", which is the true state after a group session.
        The group's own result goes on the SESSION, below, where it belongs. */
-    return { empId: id, name: p.Name || '', present: true, score: '' };
+    return { empId: id, name: p.name || '', present: true, score: '' };
   });
 
   google.script.run
@@ -680,7 +806,7 @@ function done(r) {
 
 function restart() {
   HERE = {}; ANS = []; IDX = 0; QIDX = 0; VIEW = 'who';
-  renderRoster(); render();
+  renderHere(''); renderRoster(); render();
 }
 
 document.addEventListener('DOMContentLoaded', boot);

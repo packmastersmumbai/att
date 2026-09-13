@@ -374,6 +374,7 @@ function _dispatchPost_(params) {
   if (action === 'getSessionAssessments') return jsonResponse(getSessionAssessments(params.planId));
   if (action === 'getTrainingModule')     return jsonResponse(getTrainingModule(params.topicId));
   if (action === 'getTopicHeading')       return jsonResponse(getTopicHeading(params.topicId));
+  if (action === 'scanForTraining')       return jsonResponse(scanForTraining(params.qrCode));
   if (action === 'getPeopleTable')        return jsonResponse(getPeopleTable(params.includeInactive));
   if (action === 'getPersonDetail')       return jsonResponse(getPersonDetail(params.empId));
   if (action === 'savePresentedSession')  return jsonResponse(savePresentedSession(params.entry, params.token));
