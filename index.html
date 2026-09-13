@@ -282,6 +282,33 @@
       }
       armLoadWatch();
 
+      /* Watchdog — the overlay must never outlive the page beneath it.
+
+         The reveal depends on a qratt_ready message arriving after the frame
+         has swapped. Message ordering across a cross-origin nested iframe is
+         not something to bet a blank screen on: a ready fired for the OUTGOING
+         page can land just after a hop is armed, consuming the reveal, and the
+         incoming page's own message then finds settled already true. The
+         observed symptom is a fully rendered Reports page sitting behind a
+         spinner that never clears.
+
+         So: once a second, if the overlay is up and the iframe has been sitting
+         on the current page for more than three seconds, lower it. Costs
+         nothing when the messages behave, and makes a stuck overlay
+         impossible when they do not. */
+      setInterval(function () {
+        if (settled) return;
+        if (loader.style.display === 'none') return;
+        var want = appUrl(qs.get('page') || 'kiosk');
+        if (app.getAttribute('src') !== want) return;   // still mid-swap
+        if (!app.__since || app.__srcSeen !== want) {
+          app.__srcSeen = want;
+          app.__since = Date.now();
+          return;
+        }
+        if (Date.now() - app.__since > 3000) frameReady();
+      }, 1000);
+
       /* In-app navigation. The pages post here instead of navigating the top
          frame, which would break out of the launcher and put the raw
          script.google.com URL back in the address bar. */
