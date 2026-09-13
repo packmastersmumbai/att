@@ -1,0 +1,289 @@
+<!--
+  pictograms.html — the visual vocabulary for presented training.
+
+  A rule read aloud to eight people standing at a machine is remembered by
+  what they SAW. Text alone, in a language half the room reads slowly, is the
+  thing this page exists to stop being the only channel.
+
+  ONE picture per rule, keyed by the rule's own words — not by index, so
+  reordering the rules in the sheet cannot silently repaint the screens.
+
+  Licensing, recorded here because a training record is audit evidence and an
+  auditor may ask where the artwork came from:
+    - Shapes drawn here from scratch against the ISO 7010 / OSHA visual
+      conventions (a figure on a stair, a crossed circle, a bin). The
+      CONVENTIONS are not copyrightable; no ISO artwork is copied, and the
+      ISO 7010 standard itself is not redistributed.
+    - Stroke style follows Lucide (ISC, no attribution required):
+      24x24 viewBox, 2px stroke, round cap and join.
+  Nothing is fetched. The CSP on this app blocks external images anyway, and
+  a pictogram that fails to load at a toolbox talk is worse than none.
+
+  Each is a <symbol>, referenced as <svg><use href="#pg-stairs"/></svg>, so
+  thirty screens cost one copy of each shape.
+-->
+<style>
+  .pg { width: 100%; height: 100%; display: block;
+        stroke: currentColor; fill: none;
+        stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .pg .fill { fill: currentColor; stroke: none; }
+  /* The prohibition ring. Drawn ON TOP of the subject, never instead of it:
+     the worker must recognise the thing before they read the ban on it. */
+  .pg .ban { stroke: var(--pg-ban, #b91c1c); stroke-width: 2.25; }
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs>
+
+  <!-- Safety gear: a hard hat over shoulders. -->
+  <symbol id="pg-ppe" viewBox="0 0 24 24"><g class="pg">
+    <path d="M4 12a8 8 0 0 1 16 0"/><path d="M3 12h18"/>
+    <path d="M12 4v.5"/><path d="M8.5 5.2 9 6.5"/><path d="M15.5 5.2 15 6.5"/>
+    <path d="M5 20a7 7 0 0 1 14 0"/>
+  </g></symbol>
+
+  <!-- Production area only: a figure inside a marked boundary. -->
+  <symbol id="pg-area" viewBox="0 0 24 24"><g class="pg">
+    <path d="M3 5h18v14H3z" stroke-dasharray="3 2"/>
+    <circle cx="12" cy="10" r="2"/><path d="M9 18v-2a3 3 0 0 1 6 0v2"/>
+  </g></symbol>
+
+  <!-- Restricted room: a closed door with a lock. -->
+  <symbol id="pg-door" viewBox="0 0 24 24"><g class="pg">
+    <path d="M5 3h9v18H5z"/><circle cx="11.5" cy="12" r="1" class="fill"/>
+    <rect x="16" y="12" width="6" height="5" rx="1"/>
+    <path d="M17.5 12V10a1.5 1.5 0 0 1 3 0v2"/>
+  </g></symbol>
+
+  <!-- Toilet on your own floor: a door with a floor marker. -->
+  <symbol id="pg-floor" viewBox="0 0 24 24"><g class="pg">
+    <path d="M6 3h12v18H6z"/><path d="M9 8h6"/><path d="M9 12h6"/>
+    <path d="M10 16h4"/>
+  </g></symbol>
+
+  <!-- No tobacco, alcohol, pan masala: a banned cigarette. -->
+  <symbol id="pg-no-smoke" viewBox="0 0 24 24"><g class="pg">
+    <rect x="3" y="13" width="13" height="4" rx="1"/>
+    <path d="M18 13v4"/><path d="M21 13v4"/>
+    <path d="M16 9c1.5-1 1.5-3 0-4"/>
+    <circle cx="12" cy="12" r="10" class="ban"/>
+    <path d="M5 19 19 5" class="ban"/>
+  </g></symbol>
+
+  <!-- No phone in production. -->
+  <symbol id="pg-no-phone" viewBox="0 0 24 24"><g class="pg">
+    <rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/>
+    <circle cx="12" cy="12" r="10" class="ban"/>
+    <path d="M5 19 19 5" class="ban"/>
+  </g></symbol>
+
+  <!-- Do not run on the stairs: a running figure, banned. -->
+  <symbol id="pg-no-run" viewBox="0 0 24 24"><g class="pg">
+    <path d="M2 21h4v-3h4v-3h4v-3h4V9h4"/>
+    <circle cx="9" cy="4" r="1.6"/>
+    <path d="M10 7 7 9l2 2-1 3"/><path d="M9 11l3 1"/>
+    <circle cx="12" cy="12" r="10" class="ban"/>
+    <path d="M5 19 19 5" class="ban"/>
+  </g></symbol>
+
+  <!-- Hold the railing: a hand on a rail beside steps. -->
+  <symbol id="pg-rail" viewBox="0 0 24 24"><g class="pg">
+    <path d="M2 21h4v-3h4v-3h4v-3h4V9h4"/>
+    <path d="M4 14 18 4"/>
+    <path d="M9 11c0-1 1-1.5 2-1v2.5"/>
+    <path d="M11 12.5V10a1 1 0 0 1 2 0v3"/>
+  </g></symbol>
+
+  <!-- Emergency exit: figure through a door, arrow out. -->
+  <symbol id="pg-exit" viewBox="0 0 24 24"><g class="pg">
+    <path d="M14 3h6v18h-6"/>
+    <circle cx="7" cy="5.5" r="1.6"/>
+    <path d="M7 8v5l-2 4"/><path d="M7 13l3 4"/><path d="M7 9l3 2"/>
+    <path d="M2 12h5"/><path d="M4 10l-2 2 2 2"/>
+  </g></symbol>
+
+  <!-- Assembly point: figures gathered on a marked line. -->
+  <symbol id="pg-assembly" viewBox="0 0 24 24"><g class="pg">
+    <path d="M2 20h20" stroke-dasharray="3 2"/>
+    <circle cx="7" cy="8" r="1.8"/><path d="M4.5 17v-3a2.5 2.5 0 0 1 5 0v3"/>
+    <circle cx="14" cy="7" r="1.8"/><path d="M11.5 17v-4a2.5 2.5 0 0 1 5 0v4"/>
+    <path d="M19 17v-3"/><circle cx="19" cy="9.5" r="1.5"/>
+  </g></symbol>
+
+  <!-- Segregate waste: three bins. -->
+  <symbol id="pg-bins" viewBox="0 0 24 24"><g class="pg">
+    <path d="M2 8h6l-.7 12H2.7z"/><path d="M3.4 5h3.2"/>
+    <path d="M9 8h6l-.7 12H9.7z"/><path d="M10.4 5h3.2"/>
+    <path d="M16 8h6l-.7 12h-4.6z"/><path d="M17.4 5h3.2"/>
+  </g></symbol>
+
+  <!-- Nothing down the drain. -->
+  <symbol id="pg-no-drain" viewBox="0 0 24 24"><g class="pg">
+    <circle cx="12" cy="15" r="6"/><path d="M8 15h8"/><path d="M12 11v8"/>
+    <path d="M12 2v5"/><path d="M10 5l2 2 2-2"/>
+    <circle cx="12" cy="12" r="10" class="ban"/>
+    <path d="M5 19 19 5" class="ban"/>
+  </g></symbol>
+
+  <!-- Wet waste only: food into a bin. -->
+  <symbol id="pg-wet-bin" viewBox="0 0 24 24"><g class="pg">
+    <path d="M5 10h14l-1 11H6z"/><path d="M8 7h8"/>
+    <path d="M9.5 14a2.5 2.5 0 0 1 5 0c0 1.5-2.5 4-2.5 4S9.5 15.5 9.5 14z"/>
+  </g></symbol>
+
+  <!-- Close the tap. -->
+  <symbol id="pg-tap" viewBox="0 0 24 24"><g class="pg">
+    <path d="M4 8h6v4H4z"/><path d="M10 10h4a3 3 0 0 1 3 3v2"/>
+    <path d="M7 8V5h4"/><path d="M17 18v.01"/><path d="M17 21v.01"/>
+  </g></symbol>
+
+  <!-- Use less water. -->
+  <symbol id="pg-water" viewBox="0 0 24 24"><g class="pg">
+    <path d="M12 3c3.5 4.5 6 7.5 6 10.5a6 6 0 0 1-12 0C6 10.5 8.5 7.5 12 3z"/>
+    <path d="M9 14a3 3 0 0 0 3 3"/>
+  </g></symbol>
+
+  <!-- Switch off light and fan. -->
+  <symbol id="pg-switch" viewBox="0 0 24 24"><g class="pg">
+    <rect x="6" y="3" width="12" height="18" rx="2"/>
+    <path d="M10 9h4"/><path d="M12 9v6"/>
+  </g></symbol>
+
+  <!-- Clean your own area: a broom. -->
+  <symbol id="pg-clean" viewBox="0 0 24 24"><g class="pg">
+    <path d="M17 3 9 11"/><path d="M6 14l4 4"/>
+    <path d="M9.5 10.5 13.5 14.5 9 19a3 3 0 0 1-4.2 0l-.3-.3a3 3 0 0 1 0-4.2z"/>
+    <path d="M3 21h6"/>
+  </g></symbol>
+
+  <!-- Wash your hands. -->
+  <symbol id="pg-wash" viewBox="0 0 24 24"><g class="pg">
+    <path d="M7 13v-3a1.5 1.5 0 0 1 3 0v2"/>
+    <path d="M10 12v-4a1.5 1.5 0 0 1 3 0v4"/>
+    <path d="M13 12V9a1.5 1.5 0 0 1 3 0v6a5 5 0 0 1-5 5H9a4 4 0 0 1-4-4v-3"/>
+    <path d="M5 4v.01"/><path d="M8 3v.01"/><path d="M17 5v.01"/>
+  </g></symbol>
+
+  <!-- Put it back in its place. -->
+  <symbol id="pg-return" viewBox="0 0 24 24"><g class="pg">
+    <rect x="3" y="13" width="7" height="7" rx="1"/>
+    <rect x="14" y="13" width="7" height="7" rx="1" stroke-dasharray="3 2"/>
+    <path d="M10 7h6"/><path d="M14 5l2 2-2 2"/>
+  </g></symbol>
+
+  <!-- Written application for leave. -->
+  <symbol id="pg-form" viewBox="0 0 24 24"><g class="pg">
+    <path d="M5 3h10l4 4v14H5z"/><path d="M15 3v4h4"/>
+    <path d="M8 12h8"/><path d="M8 16h5"/>
+  </g></symbol>
+
+  <!-- Tell someone before taking leave. -->
+  <symbol id="pg-tell" viewBox="0 0 24 24"><g class="pg">
+    <circle cx="8" cy="8" r="2"/><path d="M4 17v-2a4 4 0 0 1 8 0v2"/>
+    <path d="M14 6h7v6h-3l-2.5 2.5V12H14z"/>
+  </g></symbol>
+
+  <!-- Your details: an ID record. -->
+  <symbol id="pg-details" viewBox="0 0 24 24"><g class="pg">
+    <rect x="2" y="5" width="20" height="14" rx="2"/>
+    <circle cx="8" cy="11" r="2"/><path d="M5 16a3 3 0 0 1 6 0"/>
+    <path d="M14 10h5"/><path d="M14 14h5"/>
+  </g></symbol>
+
+  <!-- On time. -->
+  <symbol id="pg-time" viewBox="0 0 24 24"><g class="pg">
+    <circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/>
+  </g></symbol>
+
+  <!-- Talk nicely, do not shout. -->
+  <symbol id="pg-talk" viewBox="0 0 24 24"><g class="pg">
+    <path d="M3 5h12v9H8l-5 4z"/><path d="M6 8.5h6"/><path d="M6 11h4"/>
+    <path d="M18 8v.01"/><path d="M20.5 6.5v.01"/>
+  </g></symbol>
+
+  <!-- Report when finished. -->
+  <symbol id="pg-done" viewBox="0 0 24 24"><g class="pg">
+    <path d="M4 7h10"/><path d="M4 12h7"/><path d="M4 17h5"/>
+    <circle cx="17" cy="15" r="5"/><path d="M15 15l1.5 1.5L19.5 13"/>
+  </g></symbol>
+
+  <!-- Look after your own things. -->
+  <symbol id="pg-belongings" viewBox="0 0 24 24"><g class="pg">
+    <path d="M4 8h16l-1 12H5z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/>
+  </g></symbol>
+
+  <!-- 18 years or older. -->
+  <symbol id="pg-age" viewBox="0 0 24 24"><g class="pg">
+    <circle cx="12" cy="12" r="9"/>
+    <path d="M9.5 9h1.2v6"/><circle cx="14.5" cy="10.4" r="1.6"/>
+    <circle cx="14.5" cy="13.6" r="1.6"/>
+  </g></symbol>
+
+  <!-- Tests and training. -->
+  <symbol id="pg-test" viewBox="0 0 24 24"><g class="pg">
+    <path d="M5 3h10l4 4v14H5z"/><path d="M15 3v4h4"/>
+    <path d="M8 12l2 2 4-4"/><path d="M8 17h6"/>
+  </g></symbol>
+
+  <!-- Fallback: a rule with no picture yet. Deliberately plain, so a missing
+       pictogram looks unfinished rather than looking like a decision. -->
+  <symbol id="pg-rule" viewBox="0 0 24 24"><g class="pg">
+    <path d="M5 3h14v18H5z"/><path d="M8 8h8"/><path d="M8 12h8"/><path d="M8 16h5"/>
+  </g></symbol>
+
+</defs></svg>
+
+<script>
+/**
+ * Which picture goes with a rule, matched on the rule's own words.
+ *
+ * Keyed by text, not by row number: a trainer reordering the thirty rules in
+ * the sheet must not silently repaint every screen with the wrong picture.
+ * First match wins, so the specific patterns are listed before the general —
+ * "toilet" must be tested before "water", or rule 15 gets a tap.
+ *
+ * A rule that matches nothing gets pg-rule and still presents correctly. The
+ * picture is an aid to the words, never a replacement, so a gap costs
+ * recognition and nothing else.
+ */
+var QRATT_PICTOGRAMS = [
+  [/safety gear|सेफ्टी का सामान|ppe/i,                       'pg-ppe'],
+  [/lift room|meter room|without permission|बिना इजाज़त/i,   'pg-door'],
+  [/toilet on your own|टॉयलेट अपने ही/i,                     'pg-floor'],
+  [/production area only|प्रोडक्शन एरिया में जाना/i,          'pg-area'],
+  [/tobacco|alcohol|pan masala|तम्बाकू|पान मसाला/i,          'pg-no-smoke'],
+  [/phone or earphones|मोबाइल और इयरफ़ोन/i,                  'pg-no-phone'],
+  [/run on the stairs|सीढ़ी पर मत दौड़ो/i,                    'pg-no-run'],
+  [/railing|रेलिंग/i,                                        'pg-rail'],
+  [/emergency exit|इमरजेंसी गेट/i,                           'pg-exit'],
+  [/assembly point|असेंबली पॉइंट/i,                          'pg-assembly'],
+  [/own bins|अलग-अलग डिब्बे/i,                               'pg-bins'],
+  [/drain|नाली/i,                                            'pg-no-drain'],
+  [/food waste|खाने का कचरा/i,                               'pg-wet-bin'],
+  [/less water in the toilet|टॉयलेट में पानी/i,              'pg-water'],
+  [/tap/i,                                                   'pg-tap'],
+  [/नल/,                                                     'pg-tap'],
+  [/light and fan|लाइट और पंखा/i,                            'pg-switch'],
+  [/clean/i,                                                 'pg-clean'],
+  [/सफ़ाई|साफ़ करो/,                                          'pg-clean'],
+  [/wash your hands|हाथ धोओ/i,                               'pg-wash'],
+  [/back in its place|अपनी जगह पर रखो/i,                     'pg-return'],
+  [/written application|लिखकर देना/i,                        'pg-form'],
+  [/without telling|बिना बताए/i,                             'pg-tell'],
+  [/bank details|बैंक की जानकारी/i,                          'pg-details'],
+  [/come on time|टाइम पर आओ/i,                               'pg-time'],
+  [/talk nicely|do not shout|अच्छे से बात|चिल्लाओ/i,          'pg-talk'],
+  [/tell your supervisor|सुपरवाइज़र को बताओ/i,                'pg-done'],
+  [/own things|अपना सामान/i,                                 'pg-belongings'],
+  [/18 years|अठारह साल/i,                                    'pg-age'],
+  [/tests and training|टेस्ट और ट्रेनिंग/i,                   'pg-test']
+];
+
+/** The symbol id for a rule, by its English and Hindi text. Never fails. */
+window.qrattPictogram = function (en, hi) {
+  var hay = String(en || '') + ' ' + String(hi || '');
+  for (var i = 0; i < QRATT_PICTOGRAMS.length; i++) {
+    if (QRATT_PICTOGRAMS[i][0].test(hay)) return QRATT_PICTOGRAMS[i][1];
+  }
+  return 'pg-rule';
+};
+</script>

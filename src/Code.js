@@ -47,7 +47,7 @@ function doGet(e) {
   }
 
   var page = (e && e.parameter && e.parameter.page) ? e.parameter.page : 'scanner';
-  var validPages = ['scanner', 'scanner_popup', 'dashboard', 'reports', 'visitors', 'kiosk', 'admin', 'idcards', 'e2e', 'vreg', 'vpass', 'gatepass_approve', 'training', 'skillmatrix', 'mockdrill', 'selftest', 'kpi', 'assess'];
+  var validPages = ['scanner', 'scanner_popup', 'dashboard', 'reports', 'visitors', 'kiosk', 'admin', 'idcards', 'e2e', 'vreg', 'vpass', 'gatepass_approve', 'training', 'skillmatrix', 'mockdrill', 'selftest', 'kpi', 'assess', 'present'];
   if (validPages.indexOf(page) === -1) page = 'scanner';
 
   var template = HtmlService.createTemplateFromFile('pages/' + page);
@@ -79,6 +79,7 @@ function doGet(e) {
   template.isoMatrix   = _pageStamp_('matrix');
   template.isoPlan     = _pageStamp_('plan');
   template.isoAttend   = _pageStamp_('attendance');
+  template.isoInduction = _pageStamp_('induction');
 
   // For ID cards page inject employee data server-side (no extra round-trip)
   if (page === 'idcards') {
@@ -101,6 +102,18 @@ function doGet(e) {
     template.topicId = String((e && e.parameter && e.parameter.topic) || '');
   } else {
     template.planId = ''; template.topicId = '';
+  }
+
+  // Presented training: a trainer opens this on a phone and walks a group
+  // through a module. The session may already exist (opened from the calendar)
+  // or not (called on the morning it happens), so plan is optional and the
+  // page creates one when it saves. The admin token rides in the URL because
+  // the trainer signed in on the page that launched this one.
+  if (page === 'present') {
+    template.presentPlanId = String((e && e.parameter && e.parameter.plan) || '');
+    template.presentToken  = String((e && e.parameter && e.parameter.t) || '');
+  } else {
+    template.presentPlanId = ''; template.presentToken = '';
   }
 
   // Public visitor self-service pages: inject org name + (for vpass) the pass record
@@ -156,6 +169,14 @@ function doGet(e) {
     // like i18n so every surface renders items identically instead of each page
     // hand-rolling its own copy.
     HtmlService.createHtmlOutputFromFile('gatepassCard').getContent() + '</head>');
+
+  // Pictogram <symbol> defs + the rule-to-picture matcher, for the presented
+  // training page only. Not injected everywhere like i18n: twenty-nine SVG
+  // symbols are dead weight on the scanner, and only this page renders them.
+  if (page === 'present') {
+    withI18n = withI18n.replace('</body>',
+      HtmlService.createHtmlOutputFromFile('pictograms').getContent() + '</body>');
+  }
   // Shared floating "Report an issue" widget on every page, before </body>.
   // The back control rides along with it: sixteen of nineteen pages had no way
   // back, and idcards — opened from admin in a NEW TAB — had no exit at all

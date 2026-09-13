@@ -303,23 +303,73 @@
       var q = (TEST && TEST.questions[idx]) || null;
       if (!q) return '';
       var key = TOPIC + '/Q' + (q.n || (idx + 1)) + '/' + (LANG === 'hi' ? 'qhi' : 'qen');
-      return (CLIPS[key] && CLIPS[key].url) || '';
+      /* The manifest carries a Drive FILE ID, not a URL. Reading .url here
+         returned undefined for every clip, so the button was hidden on every
+         question of every module and the voice this page was built around
+         never played once — silently, because "no audio is not an error".
+         A worker who cannot read was left with nothing. */
+      return (CLIPS[key] && CLIPS[key].id) || '';
     }
 
     function renderListen() {
       var btn = el('bListen');
       if (!btn) return;
-      var url = clipFor(IDX);
-      btn.hidden = !url;
+      btn.hidden = !clipFor(IDX);
       btn.textContent = t('listen');
     }
 
+    /* Drive ids become playable bytes through THIS app, never a Drive link:
+       drive.google.com/uc redirects to drive.usercontent.google.com, and from
+       inside the sandboxed iframe that hop is unreliable — the browser reports
+       a media error while the file is perfectly fine. Same route vreg.html
+       already uses at the gate.
+
+       Cached per clip so a replay, or the same question in both languages,
+       does not pay for the download twice. */
+    var CLIP_BLOBS = {};
+
+    function withClipUrl(id, ok, fail) {
+      if (CLIP_BLOBS[id]) return ok(CLIP_BLOBS[id]);
+      if (typeof google === 'undefined' || !google.script) return fail();
+      google.script.run
+        .withSuccessHandler(function (r) {
+          if (!r || !r.success || !r.base64) return fail();
+          try {
+            var bin = atob(r.base64), buf = new Uint8Array(bin.length);
+            for (var i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
+            CLIP_BLOBS[id] = URL.createObjectURL(
+              new Blob([buf], { type: r.mime || 'audio/mp4' }));
+            ok(CLIP_BLOBS[id]);
+          } catch (e) { fail(); }
+        })
+        .withFailureHandler(function () { fail(); })
+        .getInductionClipData(id);
+    }
+
     function listen() {
-      var url = clipFor(IDX);
-      if (!url) return;
-      if (AU) { AU.pause(); AU = null; }
-      AU = new Audio(url);
-      AU.play().catch(function () { /* autoplay refused: the tap will retry */ });
+      var id = clipFor(IDX), btn = el('bListen');
+      if (!id) return;
+      if (AU) { try { AU.pause(); } catch (e) {} AU = null; }
+
+      var asked = IDX;                       // the question this tap was for
+      if (btn) { btn.disabled = true; btn.textContent = t('listen') + '…'; }
+
+      function restore() {
+        if (!btn) return;
+        btn.disabled = false;
+        btn.textContent = t('listen');
+      }
+
+      withClipUrl(id, function (url) {
+        restore();
+        if (asked !== IDX) return;           // moved on while it loaded
+        AU = new Audio(url);
+        AU.play().catch(function () { /* autoplay refused: the tap retries */ });
+      }, function () {
+        /* Say nothing beyond restoring the button. The test is readable on
+           screen; a failed clip must not read as a failed test. */
+        restore();
+      });
     }
 
     // ── The test ──────────────────────────────────────────────────────────
