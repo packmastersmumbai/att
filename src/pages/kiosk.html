@@ -1520,11 +1520,16 @@
                res.action === 'BLOCKED'   ? 'k-blocked'   : 'k-unknown';
     var c   = pickColor(res.name || '?');
     var ini = initials(res.name || '?');
+    // An unrecognised scan returns success:false WITH action:'UNKNOWN', so a
+    // "!res.action" test fell through and badged it EMPLOYEE — the card told a
+    // guard an unknown QR belonged to a known worker. Treat any failure, and
+    // UNKNOWN specifically, as not-a-person.
+    var isUnknown = res.action === 'UNKNOWN' || res.success === false;
     var bCls = res.action === 'BLOCKED' ? 'b-blk' :
-               (res.success === false && !res.action) ? 'b-unk' :
+               isUnknown ? 'b-unk' :
                (res.type === 'VIS' ? 'b-vis' : 'b-emp');
     var bLbl = res.action === 'BLOCKED' ? qrattT('kiosk_badge_blocked') :
-               (res.success === false && !res.action) ? qrattT('kiosk_badge_error') :
+               isUnknown ? qrattT('kiosk_badge_error') :
                (res.type === 'VIS' ? qrattT('kiosk_badge_visitor') : qrattT('kiosk_badge_employee'));
 
     var metaHtml = '';

@@ -5,6 +5,10 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>QR Scanner</title>
 <style>
+/* This surface is dark; the shared focus ring in tokens.html defaults to
+   brand navy, which would be invisible here. Only the accent changes. */
+:root { --qr-focus-ring: #38BDF8; }
+
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;overflow:hidden;background:#07111F;font-family:system-ui,sans-serif;color:#F1F5F9;}
 
@@ -25,7 +29,7 @@ video{width:100%;height:100%;object-fit:cover;display:block;}
 .fc-bl{bottom:0;left:0;border-bottom:3px solid #38BDF8;border-left:3px solid #38BDF8;border-radius:0 0 0 3px;}
 .fc-br{bottom:0;right:0;border-bottom:3px solid #38BDF8;border-right:3px solid #38BDF8;border-radius:0 0 3px 0;}
 .hint{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);font-size:11px;color:rgba(255,255,255,.4);white-space:nowrap;}
-#scanSt{flex-shrink:0;text-align:center;font-size:12px;font-weight:600;color:#475569;min-height:18px;letter-spacing:.3px;}
+#scanSt{flex-shrink:0;text-align:center;font-size:12px;font-weight:600;color:#93A4BC;min-height:18px;letter-spacing:.3px;}
 
 /* ── Result screen ── */
 #resultScreen{display:none;flex-direction:column;align-items:center;justify-content:center;height:100%;padding:24px 20px env(safe-area-inset-bottom,24px);gap:0;text-align:center;}
@@ -34,15 +38,15 @@ video{width:100%;height:100%;object-fit:cover;display:block;}
 .rs-icon.ic-out{background:rgba(56,189,248,.15);border:2px solid rgba(56,189,248,.4);}
 .rs-icon.ic-blk{background:rgba(239,68,68,.15);border:2px solid rgba(239,68,68,.4);}
 .rs-icon.ic-unk{background:rgba(245,158,11,.15);border:2px solid rgba(245,158,11,.4);}
-.rs-badge{display:inline-block;padding:3px 14px;border-radius:999px;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px;}
+.rs-badge{display:inline-block;padding:3px 14px;border-radius:999px;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px;}
 .bd-in{background:rgba(16,185,129,.12);color:#10B981;border:1px solid rgba(16,185,129,.25);}
 .bd-out{background:rgba(56,189,248,.12);color:#38BDF8;border:1px solid rgba(56,189,248,.25);}
 .bd-blk{background:rgba(239,68,68,.12);color:#F87171;border:1px solid rgba(239,68,68,.25);}
 .bd-unk{background:rgba(245,158,11,.12);color:#F59E0B;border:1px solid rgba(245,158,11,.25);}
 .rs-name{font-size:22px;font-weight:800;color:#F1F5F9;margin-bottom:4px;}
-.rs-dept{font-size:13px;color:#475569;margin-bottom:20px;}
+.rs-dept{font-size:13px;color:#93A4BC;margin-bottom:20px;}
 .rs-stat-box{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:14px 24px;margin-bottom:24px;width:100%;max-width:280px;}
-.rs-stat-lbl{font-size:9px;text-transform:uppercase;letter-spacing:1.5px;color:#334155;margin-bottom:4px;}
+.rs-stat-lbl{font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:#334155;margin-bottom:4px;}
 .rs-stat-val{font-size:18px;font-weight:800;}
 .sv-in{color:#10B981;}.sv-out{color:#38BDF8;}.sv-blk{color:#F87171;}.sv-unk{color:#F59E0B;}
 .progress-wrap{width:100%;max-width:280px;height:3px;background:rgba(255,255,255,.07);border-radius:2px;margin-bottom:20px;overflow:hidden;}
@@ -57,6 +61,7 @@ video{width:100%;height:100%;object-fit:cover;display:block;}
 .spinner{width:20px;height:20px;border:2px solid rgba(56,189,248,.15);border-top-color:#38BDF8;border-radius:50%;animation:spin .6s linear infinite;flex-shrink:0;}
 @keyframes spin{to{transform:rotate(360deg)}}
 canvas{display:none}
+
 </style>
 </head>
 <body>
@@ -164,7 +169,7 @@ canvas{display:none}
     document.getElementById('rsBadge').textContent = 'PROCESSING';
     document.getElementById('rsName').textContent = '';
     document.getElementById('rsDept').textContent = '';
-    document.getElementById('rsStatBox').innerHTML = '<div style="display:flex;align-items:center;gap:8px;justify-content:center"><div class="spinner"></div><span style="font-size:13px;color:#475569">Checking attendance record…</span></div>';
+    document.getElementById('rsStatBox').innerHTML = '<div style="display:flex;align-items:center;gap:8px;justify-content:center"><div class="spinner"></div><span style="font-size:13px;color:#93A4BC">Checking attendance record…</span></div>';
     document.getElementById('rsBar').style.animation = 'none';
     document.getElementById('btnContinue').style.display = 'none';
   }
