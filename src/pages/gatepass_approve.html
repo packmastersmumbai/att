@@ -18,7 +18,19 @@
       background:#000666;color:#fff;font-weight:700;font-size:15px;cursor:pointer}
     .btn:disabled{opacity:.55;cursor:default}
     #gpMsg{margin-top:12px;font-size:13px}
-  </style>
+  
+    /* Visible keyboard focus indicator (WCAG 2.4.7). */
+    a:focus-visible,
+    button:focus-visible,
+    select:focus-visible,
+    input:focus-visible,
+    textarea:focus-visible,
+    [tabindex]:focus-visible {
+      outline: 2px solid #000666;
+      outline-offset: 2px;
+      border-radius: 4px;
+    }
+</style>
 </head>
 <body>
   <div class="card">

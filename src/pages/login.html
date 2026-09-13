@@ -60,7 +60,11 @@
       gap: 12px;
       justify-content: center;
     }
+    /* A <button> now — resets keep the tile appearance. */
     .user-tile {
+      font-family: inherit;
+      color: inherit;
+      text-align: center;
       flex: 1;
       max-width: 130px;
       border: 2px solid var(--color-border);
@@ -87,7 +91,7 @@
     }
     .user-tile.selected .user-av { transform: scale(1.08); }
     .user-name  { font-size: 13px; font-weight: 700; color: var(--color-text); }
-    .user-role  { font-size: 10px; font-weight: 600; color: var(--color-muted); text-transform: uppercase; letter-spacing: .06em; margin-top: 3px; }
+    .user-role  { font-size:11px; font-weight: 600; color: var(--color-muted); text-transform: uppercase; letter-spacing: .06em; margin-top: 3px; }
 
     /* ── PIN CARD ── */
     .pin-card {
@@ -192,7 +196,19 @@
       font-size: 11px; font-weight: 700; font-family: inherit; cursor: pointer;
     }
     .login-lang-btn.active { background: var(--color-primary); color: #fff; border-color: var(--color-primary); }
-  </style>
+  
+    /* Visible keyboard focus indicator (WCAG 2.4.7). */
+    a:focus-visible,
+    button:focus-visible,
+    select:focus-visible,
+    input:focus-visible,
+    textarea:focus-visible,
+    [tabindex]:focus-visible {
+      outline: 2px solid #000666;
+      outline-offset: 2px;
+      border-radius: 4px;
+    }
+</style>
 </head>
 <body>
 
@@ -278,11 +294,11 @@
       var grid = document.getElementById('userGrid');
       grid.innerHTML = LOGIN_USERS.map(function(u) {
         var c = u.color;
-        return '<div class="user-tile" id="tile_'+u.id+'" onclick="selectUser('+JSON.stringify(u)+')">'
+        return '<button type="button" class="user-tile" id="tile_'+u.id+'" onclick="selectUser('+JSON.stringify(u)+')">'
           + '<div class="user-av" style="background:'+c+'22;color:'+c+'">'+esc(u.avatar)+'</div>'
           + '<div class="user-name">'+esc(u.name)+'</div>'
           + '<div class="user-role">'+esc(u.role)+'</div>'
-          + '</div>';
+          + '</button>';
       }).join('');
     }
 

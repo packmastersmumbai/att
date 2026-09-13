@@ -70,8 +70,10 @@
     /* Safety rules — always readable, expanded by default */
     .rules-card{margin-top:12px;background:rgba(255,255,255,.03);border:1px solid var(--border);
       border-radius:12px;padding:12px}
+    /* A <button> now — these resets keep the header looking unchanged. */
     .rules-hd{display:flex;align-items:center;justify-content:space-between;cursor:pointer;
-      font-size:12px;font-weight:800;color:#fcd34d;letter-spacing:.3px}
+      font-size:12px;font-weight:800;color:#fcd34d;letter-spacing:.3px;
+      width:100%;background:none;border:0;font-family:inherit;padding:10px 0;min-height:44px}
     /* Numbering is rendered explicitly (.rules-num) rather than by list
        markers, so the SQCDP headings can sit in the same list without being
        numbered themselves. */
@@ -337,10 +339,10 @@
           }).join('');
       }).join('');
       return '<div class="rules-card">'+
-        '<div class="rules-hd" onclick="toggleRules()">'+
+        '<button type="button" class="rules-hd" onclick="toggleRules()" aria-expanded="false" aria-controls="rulesBody">'+
           '<span data-i18n="vpass_safety_rules_title">🦺 '+qrattT('vpass_safety_rules_title')+'</span>'+
           '<span id="rulesArrow">▾</span>'+
-        '</div>'+
+        '</button>'+
         '<ul id="rulesBody" class="rules-body">'+body+'</ul>'+
       '</div>';
     }
@@ -349,6 +351,8 @@
       var open=b.style.display!=='none';
       b.style.display=open?'none':'block';
       a.textContent=open?'▸':'▾';
+      var hd=a.parentNode;
+      if(hd&&hd.setAttribute) hd.setAttribute('aria-expanded', open?'false':'true');
     }
 
     /* No toggle() any more — the gate scanner is the only thing that records

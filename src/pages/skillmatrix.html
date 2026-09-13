@@ -25,7 +25,7 @@
     .sb-logo-icon{width:32px;height:32px;border-radius:var(--radius-md);background:var(--color-primary);
       color:#fff;display:grid;place-items:center;font-weight:800;font-size:12px}
     .sb-logo-name{font-weight:800;font-size:16px;color:var(--color-primary);line-height:1}
-    .sb-logo-sub{font-size:9px;color:var(--color-text-muted);letter-spacing:1.4px;text-transform:uppercase}
+    .sb-logo-sub{font-size:11px;color:var(--color-text-muted);letter-spacing:1.4px;text-transform:uppercase}
     /* ── Induction badge + panel (PM/FRM/HR-08) ── */
     .ind{border:0;background:none;cursor:pointer;font-size:12px;line-height:1;padding:0 0 0 4px;vertical-align:baseline}
     .ind-ok{color:var(--lv-met)} .ind-part{color:var(--lv-pend)} .ind-no{color:var(--lv-na)}
@@ -38,7 +38,7 @@
     .ind-t{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:12px}
     .ind-t td{border-top:1px solid var(--color-border);padding:7px 6px;vertical-align:top}
     .ind-s{width:100%}
-    .ind-o{display:block;font-size:10px;color:var(--color-text-muted)}
+    .ind-o{display:block;font-size:11px;color:var(--color-text-muted)}
     .ind-sg{color:var(--lv-met);font-weight:700;font-size:11px}
     .ind-btn{font:inherit;font-size:12px;font-weight:700;cursor:pointer;padding:7px 13px;min-height:32px;
       border:1px solid var(--color-primary);border-radius:var(--radius-md);background:var(--color-primary);color:#fff}
@@ -50,7 +50,7 @@
       border-radius:var(--radius-md);min-height:32px}
     .ind-ok-line{font-size:12px;color:var(--lv-met);font-weight:700;margin-bottom:12px}
     .sb-nav{padding:12px 10px;flex:1}
-    .sb-section{font-size:9px;font-weight:700;color:var(--color-text-muted);letter-spacing:1.2px;
+    .sb-section{font-size:11px;font-weight:700;color:var(--color-text-muted);letter-spacing:1.2px;
       text-transform:uppercase;padding:8px 8px 4px}
     .sb-item{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:var(--radius-md);
       color:var(--color-text);text-decoration:none;font-size:13px;font-weight:500}
@@ -80,7 +80,7 @@
       border-bottom:1px solid var(--color-border)}
     .kpi{padding:10px 16px;border-right:1px solid var(--color-border)}
     .kpi:last-child{border-right:0}
-    .kpi-l{font-size:10px;font-weight:700;color:var(--color-text-muted);
+    .kpi-l{font-size:11px;font-weight:700;color:var(--color-text-muted);
       text-transform:uppercase;letter-spacing:.6px}
     .kpi-v{font:800 20px/1.1 var(--font-mono);margin-top:3px;font-variant-numeric:tabular-nums}
     .kpi-v.warn{color:var(--color-warning)} .kpi-v.bad{color:var(--color-danger)}
@@ -88,7 +88,7 @@
     .scroll{overflow-x:auto}
     table{border-collapse:collapse;width:100%;font-size:12px}
     th,td{border:1px solid var(--color-border);padding:6px 8px;text-align:left}
-    thead th{background:var(--color-bg);font-size:10px;font-weight:700;color:var(--color-text-muted);
+    thead th{background:var(--color-bg);font-size:11px;font-weight:700;color:var(--color-text-muted);
       text-transform:uppercase;letter-spacing:.5px;vertical-align:bottom}
     /* Skill names are long and their columns are narrow, so the header text
        is rotated rather than wrapped. Capped well below the earlier 150px:
@@ -116,7 +116,7 @@
       border:1px solid var(--color-border);display:grid;place-items:center;
       font:700 10px var(--font-mono);color:var(--color-muted)}
     .who-n{font-weight:600;min-width:0}
-    .who-r{font-size:10px;color:var(--color-muted)}
+    .who-r{font-size:11px;color:var(--color-muted)}
 
     /* A level carries its own mark as well as a colour: "!" below minimum,
        "•" awaiting a supervisor. The matrix is printed in black and white
@@ -183,7 +183,7 @@
     .ims{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));
       gap:1px;background:var(--color-border);border-top:1px solid var(--color-border)}
     .ims-c{background:var(--color-surface);padding:12px 14px}
-    .ims-h{font-size:10px;font-weight:700;color:var(--color-text-muted);
+    .ims-h{font-size:11px;font-weight:700;color:var(--color-text-muted);
       text-transform:uppercase;letter-spacing:.6px}
     .ims-v{font:800 22px/1.1 var(--font-mono);margin:4px 0 2px;font-variant-numeric:tabular-nums}
     .ims-v.bad{color:var(--color-danger)} .ims-v.warn{color:var(--color-warning)}
@@ -196,7 +196,7 @@
        Shown on screen too, so what prints is never a surprise. */
     .sign{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:24px;
       padding:22px 16px 14px;border-top:1px solid var(--color-border)}
-    .sign div{border-top:1px solid var(--color-text);padding-top:5px;font-size:10px;
+    .sign div{border-top:1px solid var(--color-text);padding-top:5px;font-size:11px;
       font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--color-text-muted)}
 
     /* ── Cell panel ── */
@@ -224,7 +224,7 @@
     .fld{display:flex;flex-direction:column;gap:5px}
     /* Direct child only — the same trap the session panel hit, where a
        descendant selector uppercased every worker's name. */
-    .fld > label{font-size:10px;font-weight:700;color:var(--color-text-muted);
+    .fld > label{font-size:11px;font-weight:700;color:var(--color-text-muted);
       text-transform:uppercase;letter-spacing:.5px}
     .inp{border:1px solid var(--color-border);border-radius:var(--radius-md);padding:8px 10px;
       font:400 13px var(--font-sans);background:var(--color-surface);color:var(--color-text);
@@ -232,7 +232,7 @@
     .inp:focus{outline:none;border-color:var(--color-primary);box-shadow:0 0 0 3px rgba(0,6,102,.10)}
     .now{background:var(--color-bg);border:1px solid var(--color-border);
       border-radius:var(--radius-md);padding:10px 12px;font-size:12px}
-    .now b{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.5px;
+    .now b{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.5px;
       color:var(--color-text-muted);margin-bottom:5px}
     .hist{border:1px solid var(--color-border);border-radius:var(--radius-md);
       max-height:230px;overflow-y:auto}
