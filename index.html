@@ -122,13 +122,16 @@
          the visitor on the gate kiosk instead of their own pass. */
       var valid = ['scanner','dashboard','reports','visitors','kiosk','admin','idcards',
                    'vpass','vreg','gatepass_approve','people','training','kpi',
-                   'induction','skillmatrix','mockdrill','assess','login'];
+                   'induction','skillmatrix','mockdrill','assess','login',
+                   // Reached by QR from the training page: a trainer shows the
+                   // code and the room scans it, so these must resolve here.
+                   'present','selftest'];
 
       /* Pages reached from a QR code or a WhatsApp link, always by someone who
          is not signed in to Google. They carry an id and must land on the
          record itself, so they forward straight through rather than showing a
          portal card and asking for another tap. */
-      var AUTO = ['vpass','gatepass_approve','vreg'];
+      var AUTO = ['vpass','gatepass_approve','vreg','present','selftest'];
 
       /* Keep the WHOLE query string, not just ?page. publicPassUrl() emits
          ?page=vpass&id=VIS-… and the id is the only thing identifying the

@@ -210,7 +210,11 @@ function doGet(e) {
 
   var backTpl = HtmlService.createTemplateFromFile('backNav');
   backTpl.page = page;
-  backTpl.appUrl = publicBaseUrl();   // the /exec address, not the sandbox iframe
+  // The raw /exec address, not the sandbox iframe and not the public base.
+  // Back is in-app navigation: publicBaseUrl() may point at the GitHub Pages
+  // launcher, which would bounce a signed-in staff member out to a portal and
+  // back on every press of "← Dashboard".
+  backTpl.appUrl = ScriptApp.getService().getUrl();
   var feedback = HtmlService.createHtmlOutputFromFile('feedbackWidget').getContent() +
                  backTpl.evaluate().getContent();
   withI18n = withI18n.indexOf('</body>') !== -1

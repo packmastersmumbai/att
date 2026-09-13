@@ -1900,9 +1900,11 @@
 </script>
 <script>
   function openIdCards() {
-    // Open the idcards page directly on the GAS app (no launcher landing hop).
-    var base = (typeof PUBLIC_URL !== 'undefined' && /^https?:\/\//.test(PUBLIC_URL)) ? PUBLIC_URL
-             : (typeof APP_URL !== 'undefined' ? APP_URL : '');
+    // Straight to GAS, as the original intent said: this opens a staff page in
+    // a new tab, so it is navigation, not a shared link. PUBLIC_URL may be the
+    // Pages launcher, which would land the admin on a portal card instead.
+    var base = (typeof APP_URL !== 'undefined' && /^https?:\/\//.test(APP_URL)) ? APP_URL
+             : (typeof PUBLIC_URL !== 'undefined' ? PUBLIC_URL : '');
     window.open(base + '?page=idcards', '_blank');
   }
 </script>
