@@ -53,6 +53,9 @@
 }
 .gpc-owed { background: var(--gpc-owed-bg); color: var(--gpc-owed-fg); }
 .gpc-back { background: var(--gpc-back-bg); color: var(--gpc-back-fg); }
+/* One-way: settled by its nature, not by anyone's action. Deliberately grey
+   rather than green — green says "we got it back", which nobody did. */
+.gpc-oneway { background: rgba(128,128,128,.14); color: var(--gpc-muted); }
 
 /* Age of a carried-over item, so old debt is distinguishable at a glance. */
 .gpc-age {
@@ -95,6 +98,16 @@
   border-radius: 7px; padding: 7px 9px; cursor: pointer; font-size: 15px; line-height: 1;
 }
 .gpc-chk { display: flex; align-items: center; gap: 5px; color: var(--gpc-muted); font-size: 11px; cursor: pointer; }
+/* "Comes back / Stays here" — a visible two-way choice where a checkbox used
+   to hide a default. Both tap targets are full height: a guard with gloves on
+   should not have to hit a 13px tickbox. */
+.gpc-seg { display: inline-flex; border: 1px solid var(--gpc-line); border-radius: 6px; overflow: hidden; }
+.gpc-seg button {
+  border: 0; background: transparent; color: var(--gpc-muted);
+  font: 700 11px inherit; padding: 8px 10px; min-height: 34px; cursor: pointer; white-space: nowrap;
+}
+.gpc-seg button.on { background: var(--gpc-accent, #000666); color: #fff; }
+.gpc-seg button:focus-visible { outline: 2px solid var(--gpc-accent, #000666); outline-offset: -2px; }
 .gpc-add {
   flex-shrink: 0; margin-left: auto; background: var(--gpc-accent); border: none;
   border-radius: 7px; padding: 9px 16px; color: #fff;
@@ -145,12 +158,15 @@ var QRATT_GPC = (function() {
     var out   = opts.outstanding || 0;
     var html  = '';
 
+    /* The banner uses the same words as the rows beneath it. It read
+       "1 not returned" above a row saying "still out" — the same fact twice,
+       in two vocabularies, one above the other. */
     if (out) {
       html += '<div class="gpc-warn">⚠ ' + out + ' ' +
-              esc(t('kiosk_gp_still_out', 'not returned')) + '</div>';
+              esc(t('gp_n_still_out', 'still with the visitor')) + '</div>';
     } else if (items.length) {
       html += '<div class="gpc-allback">✓ ' +
-              esc(t('kiosk_gp_all_back', 'All items returned')) + '</div>';
+              esc(t('gp_nothing_owed', 'Nothing owed back')) + '</div>';
     }
 
     items.forEach(function(i) {
@@ -174,17 +190,25 @@ var QRATT_GPC = (function() {
                 esc(t('gp_host_approved', 'Host approved')) + '">✓</span>';
       }
 
+      /* Three distinct states, never two words a letter apart:
+           still out  — declared coming back, not yet back
+           back       — it came back
+           one-way    — never coming back, so nothing is owed
+         A one-way item used to show the same neutral "back" tick as a settled
+         one, which read as "we got it" for something nobody was ever owed. */
       html += owed
-        ? '<span class="gpc-state gpc-owed">' + esc(t('kiosk_gp_with_visitor', 'with visitor')) + '</span>'
-        : '<span class="gpc-state gpc-back">✓ ' + esc(t('kiosk_gp_back', 'back')) + '</span>';
+        ? '<span class="gpc-state gpc-owed">' + esc(t('gp_st_still_out', 'still out')) + '</span>'
+        : (i.returnable === false
+            ? '<span class="gpc-state gpc-oneway">' + esc(t('gp_st_one_way', 'one-way')) + '</span>'
+            : '<span class="gpc-state gpc-back">✓ ' + esc(t('gp_st_came_back', 'came back')) + '</span>');
 
       if (owed && opts.onReturn) {
+        // The ACTION, phrased as the thing the guard is doing — not as the
+        // status it produces. "Returned" next to a "Returnable" field was the
+        // whole confusion.
         html += '<button class="gpc-act" onclick="' +
                 esc(opts.onReturn.replace('{id}', i.gatepassId)) + '">' +
-                // One word for one action. The check-out settlement calls this
-                // "Returned"; saying "Got it back" here made two vocabularies
-                // for the same thing, minutes apart on the same screen.
-                esc(t('kiosk_gp_returned', 'Returned')) + '</button>';
+                esc(t('gp_mark_back', 'Got it back')) + '</button>';
       } else if (!owed && opts.onVoid) {
         html += '<button class="gpc-act gpc-act-void" onclick="' +
                 esc(opts.onVoid.replace('{id}', i.gatepassId)) + '">' +
@@ -221,8 +245,21 @@ var QRATT_GPC = (function() {
                 'capture="environment" hidden onchange="' + esc(opts.onPhoto || '') + '">' +
                 '<span id="' + p + 'CamLbl">📷</span></label>';
       }
-      html += '<label class="gpc-chk"><input type="checkbox" id="' + p + 'Ret" checked> ' +
-              esc(t('kiosk_gp_returnable', 'Returnable')) + '</label>';
+      /* Two named choices, not a checkbox called "Returnable".
+         "Returnable" (will it come back?) and "Returned" (it has come back)
+         are different facts one letter apart, and the checkbox made the first
+         one an unlabelled default — every item was declared coming-back
+         unless somebody noticed the tick. Now the guard picks one out loud,
+         and neither word is "return". */
+      html += '<span class="gpc-seg" role="radiogroup" aria-label="' +
+              esc(t('gp_comes_back_q', 'Does it come back?')) + '">' +
+        '<button type="button" class="on" id="' + p + 'RetY" aria-pressed="true" ' +
+          'onclick="QRATT_GPC.pickBack(\'' + p + '\',true)">' +
+          esc(t('gp_comes_back', 'Comes back')) + '</button>' +
+        '<button type="button" id="' + p + 'RetN" aria-pressed="false" ' +
+          'onclick="QRATT_GPC.pickBack(\'' + p + '\',false)">' +
+          esc(t('gp_stays_here', 'Stays here')) + '</button>' +
+        '</span>';
       html += '<button class="gpc-add" onclick="' + esc(opts.onAdd) + '">' +
               esc(t('kiosk_gp_add', 'Add')) + '</button>';
       html += '</div></div>';
@@ -240,15 +277,31 @@ var QRATT_GPC = (function() {
       var el = document.getElementById(p + suffix);
       return el ? el.value : '';
     }
-    var retEl = document.getElementById(p + 'Ret');
+    /* Read from the segment's own pressed state. Defaults to true only when
+       the control is absent entirely — a form that rendered has an answer. */
+    var yes = document.getElementById(p + 'RetY');
     return {
       itemDesc:   String(val('Desc') || '').trim(),
       qty:        Number(val('Qty')) || 1,
       direction:  val('Dir') || 'IN',
-      returnable: retEl ? !!retEl.checked : true
+      returnable: yes ? yes.getAttribute('aria-pressed') === 'true' : true
     };
   }
 
-  return { render: render, readForm: readForm };
+  /** Pick one side of "does it come back?". */
+  function pickBack(prefix, comesBack) {
+    var y = document.getElementById(prefix + 'RetY');
+    var n = document.getElementById(prefix + 'RetN');
+    if (!y || !n) return;
+    y.setAttribute('aria-pressed', comesBack ? 'true' : 'false');
+    n.setAttribute('aria-pressed', comesBack ? 'false' : 'true');
+    y.className = comesBack ? 'on' : '';
+    n.className = comesBack ? '' : 'on';
+  }
+
+  /** Reset the segment to its default after an item is added. */
+  function resetBack(prefix) { pickBack(prefix || 'gpc', true); }
+
+  return { render: render, readForm: readForm, pickBack: pickBack, resetBack: resetBack };
 })();
 </script>

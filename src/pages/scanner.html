@@ -1301,9 +1301,9 @@
         });
 
       // Any interaction cancels the result card's auto-dismiss.
-      ['Desc', 'Qty', 'Ret', 'Dir'].forEach(function(f) {
+      ['Desc', 'Qty', 'RetY', 'RetN', 'Dir'].forEach(function(f) {
         var el = document.getElementById('scGp' + f);
-        if (el) { el.onfocus = holdResult; el.oninput = holdResult; el.onchange = holdResult; }
+        if (el) { el.onfocus = holdResult; el.oninput = holdResult; el.onclick = holdResult; }
       });
     }
 

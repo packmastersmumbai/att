@@ -1243,7 +1243,7 @@
          is the one that needs chasing. ── -->
     <div class="analytics-view" id="reportsViewGatepass" style="padding:0;display:none;flex-direction:column;overflow:hidden;">
       <div style="display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0;flex-wrap:wrap;">
-        <span style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Returnable items still out</span>
+        <span style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Items still out</span>
         <button onclick="loadOutstandingGatepass()" style="padding:7px 16px;background:var(--primary);color:#fff;border:none;border-radius:3px;font-size:12px;font-weight:700;cursor:pointer;letter-spacing:.5px;">RELOAD</button>
         <button onclick="exportGatepassCSV()" style="padding:7px 14px;background:var(--surface);color:var(--muted);border:1px solid var(--border);border-radius:3px;font-size:12px;font-weight:600;cursor:pointer;">&#8595; Export CSV</button>
         <span id="gpOutKpi" style="margin-left:auto;font-size:12px;color:var(--muted);font-family:var(--mono)"></span>
@@ -1965,7 +1965,7 @@
         '</td>' +
         '<td style="padding:9px 12px;text-align:center;font-family:var(--mono);' + (od ? 'color:#b45309;font-weight:800' : 'color:var(--muted)') + '">' + esc(ageTxt) + '</td>' +
         '<td style="padding:9px 12px;text-align:right;white-space:nowrap">' +
-          '<button onclick="gpOutReturn(\'' + esc(i.gatepassId) + '\')" style="padding:5px 10px;background:var(--primary);color:#fff;border:none;border-radius:3px;font-size:11px;font-weight:700;cursor:pointer">Returned</button>' +
+          '<button onclick="gpOutReturn(\'' + esc(i.gatepassId) + '\')" style="padding:5px 10px;background:var(--primary);color:#fff;border:none;border-radius:3px;font-size:11px;font-weight:700;cursor:pointer">Got it back</button>' +
           (i.hostApproved ? '' : ' <button onclick="gpOutNudge(\'' + esc(i.visitorId) + '\',this)" title="Re-send the host approval link" style="padding:5px 10px;background:var(--surface);color:var(--muted);border:1px solid var(--border);border-radius:3px;font-size:11px;font-weight:700;cursor:pointer">Nudge host</button>') +
         '</td></tr>';
     }).join('');

@@ -185,11 +185,11 @@ var QRATT_I18N = {
 
   // Stale carry-over items (guard-facing)
   gp_stale_note:        { en: '{n} of these are from an earlier visit.', hi: 'इनमें से {n} पिछली विज़िट के हैं।' },
-  gp_settle_returned:   { en: 'Mark all returned', hi: 'सभी वापस मिले' },
+  gp_settle_returned:   { en: 'Got all of them back', hi: 'सब मिल गए' },
   gp_settle_void:       { en: 'Void all', hi: 'सभी रद्द करें' },
   gp_settled:           { en: '{n} item(s) settled', hi: '{n} सामान निपटाए गए' },
-  gp_confirm_returned_all: { en: 'Mark every outstanding item for this visitor as returned?',
-                             hi: 'इस विज़िटर के सभी बकाया सामान वापस मिले के रूप में चिह्नित करें?' },
+  gp_confirm_returned_all: { en: 'Record every item still out for this visitor as back with you?',
+                             hi: 'इस विज़िटर का अभी बाहर वाला सारा सामान मिल गया, दर्ज करें?' },
   gp_confirm_void_all:  { en: 'Void every outstanding item for this visitor? Use this only for rows raised in error.',
                           hi: 'इस विज़िटर के सभी बकाया सामान रद्द करें? केवल गलत दर्ज पंक्तियों के लिए।' },
 
@@ -254,11 +254,27 @@ var QRATT_I18N = {
   kiosk_gp_back:             { en: 'back',                  hi: 'वापस मिला' },
   kiosk_gp_all_back:         { en: 'All items returned',    hi: 'सारा सामान वापस मिल गया' },
   kiosk_gp_add_label:        { en: 'Add an item',           hi: 'सामान जोड़ें' },
+
+  /* The gatepass vocabulary, deliberately kept apart.
+     "Returnable" and "Returned" are different facts one letter apart — one is
+     a declaration made on the way in, the other a fact recorded on the way
+     out — and the Hindi was worse: kiosk_gp_returned and kiosk_gp_back were
+     BOTH "वापस मिला", so the button and the status it produced read
+     identically. None of these five share a word with another. */
+  gp_comes_back_q:  { en: 'Does it come back?', hi: 'क्या यह वापस आएगा?' },
+  gp_comes_back:    { en: 'Comes back',         hi: 'वापस आएगा' },
+  gp_stays_here:    { en: 'Stays here',         hi: 'यहीं रहेगा' },
+  gp_st_still_out:  { en: 'still out',          hi: 'अभी बाहर है' },
+  gp_st_came_back:  { en: 'came back',          hi: 'आ गया' },
+  gp_st_one_way:    { en: 'one-way',            hi: 'वापसी नहीं' },
+  gp_mark_back:     { en: 'Got it back',        hi: 'मिल गया' },
+  gp_n_still_out:   { en: 'still with the visitor', hi: 'अभी विज़िटर के पास है' },
+  gp_nothing_owed:  { en: 'Nothing owed back',  hi: 'कुछ भी बाकी नहीं' },
   kiosk_cancel:              { en: 'Cancel',                hi: 'रद्द करें' },
   kiosk_gp_no_action:        { en: 'no action',             hi: 'कुछ नहीं' },
   kiosk_gp_tap_change:       { en: 'Tap to change',         hi: 'बदलने के लिए दबाएँ' },
-  kiosk_gp_settle_before_exit: { en: 'returnable item(s) — settle before exit',
-                               hi: 'वापसी योग्य सामान — जाने से पहले निपटाएँ' },
+  kiosk_gp_settle_before_exit: { en: 'item(s) still out — settle before they leave',
+                               hi: 'सामान अभी बाहर है — जाने से पहले निपटाएँ' },
   kiosk_gp_answer_remaining: { en: 'Answer {n} more item(s)', hi: '{n} और सामान का जवाब दें' },
   kiosk_gp_complete_checkout:{ en: 'Complete check-out',    hi: 'चेक-आउट पूरा करें' },
   kiosk_gp_reason_title:     { en: 'Item leaving — why?',   hi: 'सामान जा रहा है — क्यों?' },
@@ -434,18 +450,21 @@ var QRATT_I18N = {
   gp_add_item:        { en: 'Add item',             hi: 'सामान जोड़ें' },
   gp_add_photo:       { en: 'Add item photo',       hi: 'सामान की फ़ोटो लें' },
   gp_no_items:        { en: 'No items recorded.',    hi: 'कोई सामान दर्ज नहीं।' },
-  gp_st_awaiting:     { en: 'Awaiting return',       hi: 'वापसी बाकी' },
-  gp_st_returned:     { en: 'Returned',             hi: 'वापस आ गया' },
+  /* Same three states as the card: still out / came back / one-way. These
+     keys keep their names because eleven call sites use them; only the WORDS
+     change, so every surface says the same thing. */
+  gp_st_awaiting:     { en: 'Still out',             hi: 'अभी बाहर है' },
+  gp_st_returned:     { en: 'Came back',             hi: 'आ गया' },
   gp_st_left:         { en: 'Left premises',         hi: 'परिसर से बाहर' },
   gp_st_void:         { en: 'Void',                  hi: 'रद्द' },
-  gp_mark_returned:   { en: 'Mark returned',         hi: 'वापस आया चिह्नित करें' },
+  gp_mark_returned:   { en: 'Got it back',           hi: 'मिल गया' },
   gp_void:            { en: 'Void',                  hi: 'रद्द करें' },
-  gp_outstanding:     { en: '{n} returnable still out', hi: '{n} वापसी योग्य सामान अभी बाहर' },
+  gp_outstanding:     { en: '{n} still with the visitor', hi: '{n} सामान अभी विज़िटर के पास' },
   gp_notify_host:     { en: 'Re-send to host',       hi: 'होस्ट को फिर भेजें' },
   gp_host_approved:   { en: 'Host approved',         hi: 'होस्ट द्वारा स्वीकृत' },
   gp_host_pending:    { en: 'Host approval pending', hi: 'होस्ट स्वीकृति बाकी' },
-  gp_checkout_warn:   { en: 'This visitor still has returnable items out. Continue check-out?',
-                        hi: 'इस विज़िटर के वापसी योग्य सामान अभी बाहर हैं। चेक-आउट जारी रखें?' },
+  gp_checkout_warn:   { en: 'This visitor is still holding items that should come back. Continue check-out?',
+                        hi: 'इस विज़िटर के पास अभी भी वापस आने वाला सामान है। चेक-आउट जारी रखें?' },
   gp_checkout_reason: { en: 'Reason for override',   hi: 'ओवरराइड का कारण' }
 };
 

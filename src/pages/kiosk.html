@@ -1859,9 +1859,9 @@
     });
 
     // Any interaction with the form holds the card open past auto-dismiss.
-    ['Desc', 'Qty', 'Ret'].forEach(function(f) {
+    ['Desc', 'Qty', 'RetY', 'RetN'].forEach(function(f) {
       var el = document.getElementById('kGp' + f);
-      if (el) { el.onfocus = kioskHold; el.oninput = kioskHold; el.onchange = kioskHold; }
+      if (el) { el.onfocus = kioskHold; el.oninput = kioskHold; el.onclick = kioskHold; }
     });
   }
 
@@ -1887,12 +1887,17 @@
       return '<div class="kgp-row' + (answered ? ' kgp-answered' : '') + '">' +
         '<span class="kgp-desc">' + esc(i.itemDesc) + '</span>' +
         '<span class="kgp-qty">×' + esc(i.qty) + '</span>' +
+        /* "Got it back" / "Took it with them" — the two things that actually
+           happened, said as events. This screen used "Returned" against a
+           form that elsewhere asks about "Returnable", and in Hindi the two
+           were the identical string. A guard settling a visitor at the gate
+           is the last person who should have to work out which is which. */
         (answered
           ? '<span class="kgp-verdict ' + (d.decision === 'KEPT' ? 'kgp-v-kept' : 'kgp-v-ret') + '" ' +
               'onclick="kGpUndo(\'' + esc(i.gatepassId) + '\')" title="' + esc(qrattT('kiosk_gp_tap_change')) + '">' +
-              (d.decision === 'KEPT' ? esc(qrattT('kiosk_gp_kept')) : esc(qrattT('kiosk_gp_returned'))) + ' ✎</span>'
+              (d.decision === 'KEPT' ? esc(qrattT('kiosk_gp_kept')) : esc(qrattT('gp_mark_back'))) + ' ✎</span>'
           : '<span class="kgp-choose">' +
-              '<button class="kgp-ret" onclick="kGpDecide(\'' + esc(i.gatepassId) + '\',\'RETURNED\')">' + esc(qrattT('kiosk_gp_returned')) + '</button>' +
+              '<button class="kgp-ret" onclick="kGpDecide(\'' + esc(i.gatepassId) + '\',\'RETURNED\')">' + esc(qrattT('gp_mark_back')) + '</button>' +
               '<button class="kgp-keep" onclick="kGpDecide(\'' + esc(i.gatepassId) + '\',\'KEPT\')">' + esc(qrattT('kiosk_gp_kept')) + '</button>' +
             '</span>') +
         '</div>';
@@ -1902,7 +1907,8 @@
       return '<div class="kgp-row kgp-muted">' +
         '<span class="kgp-desc">' + esc(i.itemDesc) + '</span>' +
         '<span class="kgp-qty">' + esc(i.direction) + ' ×' + esc(i.qty) + '</span>' +
-        '<span class="kgp-done">' + esc(i.status === 'RETURNED' ? qrattT('kiosk_gp_returned') : qrattT('kiosk_gp_no_action')) + '</span>' +
+        '<span class="kgp-done">' + esc(i.status === 'RETURNED' ? qrattT('gp_st_came_back')
+          : (i.returnable === false ? qrattT('gp_st_one_way') : qrattT('kiosk_gp_no_action'))) + '</span>' +
         '</div>';
     }).join('');
 
@@ -2015,7 +2021,10 @@
     post({ action: 'addGatepassItem', visitorId: kGpVid, item: {
       direction: kGpDir, materialCode: '', itemDesc: desc, unit: '',
       qty: Number((document.getElementById('kGpQty') || {}).value) || 1,
-      returnable: !!(document.getElementById('kGpRet') || {}).checked,
+      // Read through the card's own reader. Reaching for a DOM id the card
+      // owns is how this silently became "always false" when the returnable
+      // checkbox became a two-button choice.
+      returnable: QRATT_GPC.readForm('kGp').returnable,
       photoData: kGpPhotoData
     }}, function(res) {
       if (btn) { btn.disabled = false; btn.textContent = qrattT('kiosk_gp_add'); }
