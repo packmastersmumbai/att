@@ -393,11 +393,14 @@ function secMonth(d) {
 function go(page) {
   // The sandbox is cross-origin from /exec: window.top.location throws and
   // history.back() does nothing. _top on a real URL is what works.
-  window.open('<?!= publicUrl ?>' + '?page=' + page, '_top');
+  // appUrl, not publicUrl: in-app navigation goes straight to GAS. publicUrl
+  // is the shareable base and may point at the launcher, which would send a
+  // logged-in staff member through a tap-through portal on every hop.
+  window.open('<?!= appUrl ?>' + '?page=' + page, '_top');
 }
 
 function openInduction(empId) {
-  window.open('<?!= publicUrl ?>' + '?page=admin&emp=' + encodeURIComponent(empId), '_top');
+  window.open('<?!= appUrl ?>' + '?page=admin&emp=' + encodeURIComponent(empId), '_top');
 }
 
 function withToken(then) {
