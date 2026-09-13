@@ -393,6 +393,25 @@
         <input type="date" class="inp" id="pActual"></div>
       <div class="fld"><label for="pTrainer">Trainer</label>
         <input type="text" class="inp" id="pTrainer" placeholder="Who delivered it"></div>
+      <!-- Deliver it, as opposed to testing it. The two boxes are the two ways
+           a session actually runs: one phone in the trainer's hand for the
+           room, or every worker on their own. A trainer picks one. -->
+      <div class="fld" id="pPresentBox">
+        <label>Present it to the group</label>
+        <div class="selftest">
+          <img id="pPresentQR" alt="QR code to open the presentation" width="132" height="132">
+          <div class="selftest-b">
+            <div id="pPresentMeta" class="doc-meta">—</div>
+            <a id="pPresentLink" class="btn btn-pri" target="_blank" rel="noopener">Present</a>
+          </div>
+        </div>
+        <div class="hint" id="pPresentHint">Open this on a phone or tablet and hold it
+          up. Each rule is shown with a picture and read aloud in Hindi, then the
+          group answers the questions together. Everyone present is recorded as
+          attending; the group&rsquo;s result goes on the session, not on anyone
+          individually.</div>
+      </div>
+
       <div class="fld" id="pTestBox">
         <label>Self-check on their own phone</label>
         <div class="selftest">
@@ -745,6 +764,7 @@
           .map(function (a) { return '<li>' + esc(a) + '</li>'; }).join('') +
         '</ul>' + (t.Method ? 'Method: ' + esc(t.Method) : '');
       loadModule(p.topicId);
+      setupPresent(p.planId, p.topicId);
       setupSelfTest(p.planId, p.topicId);
       document.getElementById('pActual').value = p.actualDate || '';
       document.getElementById('pTrainer').value = p.trainer || '';
@@ -897,6 +917,55 @@
        own phones, which is the difference between testing 15 people in five
        minutes and not testing them at all. */
     var PUBLIC_URL = '<?= publicUrl ?>';
+
+    /**
+     * The link that opens this session in presented mode.
+     *
+     * NO TOKEN IN THE URL. The obvious move is to append ADMIN_TOKEN so the
+     * trainer does not type the PIN twice, and it would be a real hole: that
+     * token is a six-hour bearer credential for every admin write in the app
+     * — attendance, authorisations, safety records. In a URL it lands in the
+     * history of a shared plant phone, in anything the link is pasted into,
+     * and in the QR code beside it. The present page asks for the PIN itself,
+     * the same way this page does.
+     *
+     * Shown only when the topic HAS a module: presented mode renders sections
+     * and questions from TrainingModules, so a topic without one would open a
+     * page with nothing on it. A hidden button beats a broken one.
+     */
+    function setupPresent(planId, topicId) {
+      var box = document.getElementById('pPresentBox');
+      if (!planId || !topicId) { box.style.display = 'none'; return; }
+
+      var url = PUBLIC_URL + (PUBLIC_URL.indexOf('?') === -1 ? '?' : '&') +
+                'page=present&plan=' + encodeURIComponent(planId) +
+                '&topic=' + encodeURIComponent(topicId);
+
+      document.getElementById('pPresentLink').href = url;
+      document.getElementById('pPresentQR').src =
+        'https://api.qrserver.com/v1/create-qr-code/?size=264x264&data=' +
+        encodeURIComponent(url);
+
+      var meta = document.getElementById('pPresentMeta');
+      meta.textContent = 'Checking…';
+      box.style.display = '';
+
+      google.script.run
+        .withSuccessHandler(function (r) {
+          if (!r || !r.success) {
+            /* No module: say which topic, because the fix is to write one for
+               that topic, not to retry. */
+            box.style.display = 'none';
+            return;
+          }
+          var m = r.module;
+          meta.textContent = m.sections.length + ' points · ' + m.questions.length +
+            ' questions' + (m.hasHindi ? ' · हिंदी' : ' · English only') +
+            (m.reviewed ? '' : ' · draft');
+        })
+        .withFailureHandler(function () { box.style.display = 'none'; })
+        .getTrainingModule(topicId);
+    }
 
     function setupSelfTest(planId, topicId) {
       var box = document.getElementById('pTestBox');

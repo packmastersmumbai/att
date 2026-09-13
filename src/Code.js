@@ -107,13 +107,17 @@ function doGet(e) {
   // Presented training: a trainer opens this on a phone and walks a group
   // through a module. The session may already exist (opened from the calendar)
   // or not (called on the morning it happens), so plan is optional and the
-  // page creates one when it saves. The admin token rides in the URL because
-  // the trainer signed in on the page that launched this one.
+  // page creates one when it saves.
+  //
+  // No token parameter, deliberately. An admin token is a six-hour bearer
+  // credential for every privileged write in this app, and a link carrying one
+  // would leave it in the history of a shared plant phone and in any QR code
+  // printed beside it. The page asks for the PIN when it saves.
   if (page === 'present') {
-    template.presentPlanId = String((e && e.parameter && e.parameter.plan) || '');
-    template.presentToken  = String((e && e.parameter && e.parameter.t) || '');
+    template.presentPlanId  = String((e && e.parameter && e.parameter.plan) || '');
+    template.presentTopicId = String((e && e.parameter && e.parameter.topic) || '');
   } else {
-    template.presentPlanId = ''; template.presentToken = '';
+    template.presentPlanId = ''; template.presentTopicId = '';
   }
 
   // Public visitor self-service pages: inject org name + (for vpass) the pass record
@@ -369,6 +373,8 @@ function _dispatchPost_(params) {
   if (action === 'recordAssessment')      return jsonResponse(recordAssessment(params.entry));
   if (action === 'getSessionAssessments') return jsonResponse(getSessionAssessments(params.planId));
   if (action === 'getTrainingModule')     return jsonResponse(getTrainingModule(params.topicId));
+  if (action === 'getTopicHeading')       return jsonResponse(getTopicHeading(params.topicId));
+  if (action === 'savePresentedSession')  return jsonResponse(savePresentedSession(params.entry, params.token));
   if (action === 'getTrainingModules')    return jsonResponse(getTrainingModules());
   if (action === 'saveTrainingModule')    return jsonResponse(saveTrainingModule(params.module, params.token));
   if (action === 'reviewTrainingModule')  return jsonResponse(reviewTrainingModule(params.topicId, params.by, params.token));

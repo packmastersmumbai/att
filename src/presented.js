@@ -25,6 +25,33 @@
 // reassessment, one person answering for themselves.
 
 /**
+ * One topic's headings, for the page to title itself with.
+ *
+ * A page that serves any topic must not hardcode one topic's name. Read-only
+ * and ungated: the title of a training topic is not a secret, and the page
+ * that shows it has already fetched the module it describes.
+ */
+function getTopicHeading(topicId) {
+  _ensureTrainingSheets_();
+  var id = String(topicId || '').trim();
+  if (!id) return { success: false, error: 'Missing topic id' };
+
+  var t = getSheetAsObjects(TRAINING_SHEETS.TOPICS)
+            .filter(function (r) { return String(r.TopicID) === id; })[0];
+  if (!t) return { success: false, error: 'No topic ' + id };
+
+  return {
+    success: true,
+    topicId: id,
+    title:   String(t.Title || id),
+    titleHi: String(t.TitleHi || ''),
+    type:    String(t.Type || 'TRAIN'),
+    method:  String(t.Method || ''),
+    agenda:  _splitList_(t.Agenda)
+  };
+}
+
+/**
  * Record a presented session: who was in the room, and how the room answered.
  *
  * Admin-gated for the same reason saveSessionAttendance is — attendance is

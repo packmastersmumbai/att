@@ -165,9 +165,11 @@
 
   <!-- ============ 1. who is in the room ============ -->
   <div id="vWho">
+    <!-- Filled from the topic once the module loads: this page serves any
+         topic with a module, not only the induction. -->
     <div class="card">
-      <h1>Worker Induction</h1>
-      <p class="sub">कर्मचारी प्रवेश प्रशिक्षण · 30 rules, then 10 questions together</p>
+      <h1 id="tTitle">Loading…</h1>
+      <p class="sub" id="tSub">&nbsp;</p>
     </div>
     <div class="card">
       <p class="picked" id="picked">Tap everyone who is here.</p>
@@ -232,9 +234,15 @@
    and file in that message point at doGet's template.evaluate() call, not at
    this page, so it reads like a fault in Code.js and every other page keeps
    working. It cost three deploys to find. */
-var TOPIC   = 'TRN-IND';
+var TOPIC   = '<?!= presentTopicId ?>' || 'TRN-IND';
 var PLAN_ID = '<?!= presentPlanId ?>';
-var TOKEN   = '<?!= presentToken ?>';
+
+/* Asked for at the END, once, when there is something to save — never taken
+   from the URL. The admin token is a six-hour bearer credential for every
+   privileged write in this app; in a link it would sit in the history of a
+   shared plant phone and in any QR code printed beside it. Held in memory
+   only, so closing the page drops it. */
+var TOKEN = '';
 
 var el = function (id) { return document.getElementById(id); };
 
@@ -247,6 +255,25 @@ var IDX = 0;           // rule on screen
 var QIDX = 0;          // question on screen
 var ANS = [];          // the group's answer per question
 var VIEW = 'who';
+var HEADING = null;    // the topic's own name, from getTopicHeading
+
+/* The heading and the module arrive in whichever order the two calls return,
+   and the subtitle needs both — the name from one, the counts from the other.
+   Called by each as it lands; renders only what it has. */
+function renderHeading() {
+  if (!HEADING) return;
+  el('tTitle').textContent = HEADING.title;
+  document.title = HEADING.title;
+
+  var bits = [];
+  if (HEADING.titleHi) bits.push(HEADING.titleHi);
+  if (MOD) {
+    bits.push(RULES.length + (RULES.length === 1 ? ' point' : ' points'));
+    bits.push(QS.length + ' questions together');
+    if (!MOD.reviewed) bits.push('draft');
+  }
+  el('tSub').textContent = bits.join(' · ');
+}
 
 /* ---------- loading ---------- */
 
@@ -263,10 +290,23 @@ function boot() {
       QS = MOD.questions.map(function (q, i) {
         return { n: q.n, text: q.text, options: q.options, hi: MOD.questionsHi[i] || null };
       });
+      renderHeading();
       render();
     })
     .withFailureHandler(function (e) { fail(e.message); })
     .getTrainingModule(TOPIC);
+
+  /* The topic's own name. Separate call because the module carries content,
+     not headings — and the page must not hardcode one topic's title when it
+     serves any of them. */
+  google.script.run
+    .withSuccessHandler(function (r) {
+      if (!r || !r.success) { el('tTitle').textContent = TOPIC; return; }
+      HEADING = r;
+      renderHeading();
+    })
+    .withFailureHandler(function () { el('tTitle').textContent = TOPIC; })
+    .getTopicHeading(TOPIC);
 
   google.script.run
     .withSuccessHandler(function (r) {
@@ -545,7 +585,44 @@ function back() {
 
 /* ---------- the record ---------- */
 
+/**
+ * Save, asking for the PIN first if we do not already hold a token.
+ *
+ * Asked HERE and not at the start: the rules are worth showing to a group
+ * whether or not anyone can record it, and a PIN prompt in front of the very
+ * first screen is how a trainer gives up and briefs them off paper instead.
+ * By this point there is something real to save.
+ */
 function submit() {
+  if (TOKEN) return doSave();
+
+  var pin = window.prompt('Admin PIN to record this session');
+  if (pin === null) return;                       // cancelled: nothing is lost
+  if (!pin) return submit();
+
+  el('bNext').disabled = true;
+  el('bNext').textContent = 'Checking…';
+
+  google.script.run
+    .withSuccessHandler(function (v) {
+      if (!v || !v.success || !v.token) {
+        el('bNext').disabled = false;
+        el('bNext').textContent = 'Finish';
+        window.alert('That PIN was not accepted.');
+        return;
+      }
+      TOKEN = v.token;
+      doSave();
+    })
+    .withFailureHandler(function (e) {
+      el('bNext').disabled = false;
+      el('bNext').textContent = 'Finish';
+      window.alert('Could not check the PIN: ' + (e && e.message));
+    })
+    .verifyPIN(pin);
+}
+
+function doSave() {
   stopAudio();
   el('bNext').disabled = true;
   el('bNext').textContent = 'Saving…';
@@ -574,12 +651,18 @@ function submit() {
     }, TOKEN);
 }
 
+/* A failed save must NOT end the session. The room is still standing there
+   and the answers are still in memory — dropping them would mean walking the
+   whole group through thirty rules again. Stay on the last question with the
+   button live, so Finish is simply tapped again. */
 function saveFailed(msg) {
-  VIEW = 'done'; render();
-  el('doneMsg').innerHTML = '<div class="err">Not saved: ' + esc(msg || 'unknown error') + '</div>';
-  el('doneScore').textContent = '';
-  el('doneLine').textContent = 'Nobody was recorded. Check the admin sign-in and run it again.';
-  el('doneNote').textContent = '';
+  var unauthorized = /unauthori[sz]ed/i.test(String(msg || ''));
+  if (unauthorized) TOKEN = '';          // ask for the PIN again on retry
+
+  el('bNext').disabled = false;
+  el('bNext').textContent = 'Finish';
+  window.alert('Not saved: ' + (msg || 'unknown error') +
+    '\n\nNothing is lost — tap Finish to try again.');
 }
 
 function done(r) {
