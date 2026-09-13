@@ -518,5 +518,26 @@ function qrattSafetyRuleKeys(){
     if (u === 'hi' || u === 'en') sessionStorage.setItem('qratt_lang', u);
     qrattApplyLang();
   });
+
+  /* Tell the GitHub Pages launcher this page has painted, so it can drop its
+     loading overlay immediately.
+
+     The launcher cannot detect this itself: it tried polling
+     iframe.contentDocument, which always throws here because GAS is
+     cross-origin, so it silently fell back to the iframe load event and left
+     its dark overlay up for ~5s over a dashboard that was already rendered.
+
+     This lives in i18n.html because doGet injects it into every page — one
+     signal, every surface, nothing to remember when a page is added. */
+  function qrattAnnounceReady_() {
+    try { window.top.postMessage({ qratt_ready: true }, '*'); } catch (e) {}
+  }
+  if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    setTimeout(qrattAnnounceReady_, 0);
+  } else {
+    document.addEventListener('DOMContentLoaded', qrattAnnounceReady_);
+  }
+  // Belt and braces: a page whose body arrives late still gets announced.
+  window.addEventListener('load', qrattAnnounceReady_);
 })();
 </script>

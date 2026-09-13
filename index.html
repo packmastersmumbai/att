@@ -226,24 +226,19 @@
         app.classList.add('ready');
       }
 
-      /* Reveal as soon as the app has actually painted, not on the iframe's
-         load event. GAS loads an outer shell first and only then does its
-         nested sandbox fetch the real page, so 'load' fires at a moment that
-         has nothing to do with the app being visible — and the old 600ms pause
-         after it was dead time added to an already slow start.
+      /* The app tells us when it has painted (qratt_ready, posted from
+         i18n.html, which doGet injects into every page). That is the only
+         reliable signal: an earlier attempt polled iframe.contentDocument,
+         which ALWAYS throws because GAS is cross-origin, so it silently fell
+         back to the load event and held this overlay over an already-rendered
+         dashboard for about five seconds.
 
-         The app measures ~3s of server render plus ~2.5s of GAS bootstrap, so
-         this screen is on show for about five seconds. Polling hands those
-         seconds back as soon as they are earned. */
-      var poll = setInterval(function () {
-        try {
-          var d = app.contentDocument;            // same-origin only; GAS is not
-          if (d && d.body && d.body.innerHTML.length > 200) frameReady();
-        } catch (e) {
-          /* Cross-origin, which is the normal case here — we cannot read the
-             frame, so fall back to the load event below. */
-        }
-      }, 200);
+         The load event stays as a backstop for anything that does not carry
+         the shared fragment. */
+      var poll = null;
+      window.addEventListener('message', function (ev) {
+        if (ev.data && ev.data.qratt_ready) frameReady();
+      });
 
       app.addEventListener('load', function () { setTimeout(frameReady, 250); });
 
