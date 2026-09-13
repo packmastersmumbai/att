@@ -47,7 +47,7 @@ function doGet(e) {
   }
 
   var page = (e && e.parameter && e.parameter.page) ? e.parameter.page : 'scanner';
-  var validPages = ['scanner', 'scanner_popup', 'dashboard', 'reports', 'visitors', 'kiosk', 'admin', 'idcards', 'e2e', 'vreg', 'vpass', 'gatepass_approve', 'training', 'skillmatrix', 'mockdrill', 'selftest', 'kpi', 'assess', 'present'];
+  var validPages = ['scanner', 'scanner_popup', 'dashboard', 'reports', 'visitors', 'kiosk', 'admin', 'idcards', 'e2e', 'vreg', 'vpass', 'gatepass_approve', 'training', 'skillmatrix', 'mockdrill', 'selftest', 'kpi', 'assess', 'present', 'people'];
   if (validPages.indexOf(page) === -1) page = 'scanner';
 
   var template = HtmlService.createTemplateFromFile('pages/' + page);
@@ -374,6 +374,8 @@ function _dispatchPost_(params) {
   if (action === 'getSessionAssessments') return jsonResponse(getSessionAssessments(params.planId));
   if (action === 'getTrainingModule')     return jsonResponse(getTrainingModule(params.topicId));
   if (action === 'getTopicHeading')       return jsonResponse(getTopicHeading(params.topicId));
+  if (action === 'getPeopleTable')        return jsonResponse(getPeopleTable(params.includeInactive));
+  if (action === 'getPersonDetail')       return jsonResponse(getPersonDetail(params.empId));
   if (action === 'savePresentedSession')  return jsonResponse(savePresentedSession(params.entry, params.token));
   if (action === 'getTrainingModules')    return jsonResponse(getTrainingModules());
   if (action === 'saveTrainingModule')    return jsonResponse(saveTrainingModule(params.module, params.token));

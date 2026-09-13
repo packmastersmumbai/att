@@ -926,26 +926,88 @@ function addSessionPhoto(planId, dataUrl) {
   if (!id) return { success: false, error: 'Missing plan id' };
 
   try {
-    var blob = _dataUrlToBlob_(dataUrl, id + '-' + Date.now());
+    var sheet = getSheet(TRAINING_SHEETS.PLAN);
+    var row = findRowByValue(sheet, 'PlanID', id);
+    if (row === -1) return { success: false, error: 'Session not found' };
+
+    var blob = _dataUrlToBlob_(dataUrl, _sessionPhotoName_(sheet, row, id));
     if (!blob) return { success: false, error: 'No image supplied' };
 
-    var folders = DriveApp.getFoldersByName('TrainingPhotos');
-    var folder = folders.hasNext() ? folders.next() : DriveApp.createFolder('TrainingPhotos');
+    var folder = _sessionPhotoFolder_(sheet, row);
     var file = folder.createFile(blob);
     file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
     var url = _drivePhotoUrl_(file.getId());
 
-    var sheet = getSheet(TRAINING_SHEETS.PLAN);
-    var row = findRowByValue(sheet, 'PlanID', id);
-    if (row === -1) return { success: false, error: 'Session not found' };
     var existing = String(getCell(sheet, row, 'PhotoURLs') || '').split(',').filter(Boolean);
     existing.push(url);
     setCell(sheet, row, 'PhotoURLs', existing.join(','));
 
-    return { success: true, url: url, count: existing.length };
+    return { success: true, url: url, count: existing.length, name: file.getName() };
   } catch (e) {
     return { success: false, error: e.message };
   }
+}
+
+/**
+ * What a training photo is called on Drive.
+ *
+ * Was "PLN-123-1757800000000.jpg" — a plan id nobody recognises and a raw
+ * epoch nobody can read. An auditor asking "show me the photos from the
+ * March fire drill" had to open files one at a time.
+ *
+ * Now: "2026-03-14_DRL-01_Fire-drill_0915_PLN-123.jpg" — sorts by date on its
+ * own, says which training it evidences, and carries the time so several
+ * photos from one session keep their order. The plan id stays at the end
+ * because it is the key back into the sheet, just no longer the headline.
+ */
+function _sessionPhotoName_(sheet, row, planId) {
+  var tz = Session.getScriptTimeZone();
+  var now = new Date();
+
+  var topicId = String(getCell(sheet, row, 'TopicID') || '').trim();
+  var when = getCell(sheet, row, 'ActualDate') || getCell(sheet, row, 'PlannedDate') || now;
+  var day = Utilities.formatDate(new Date(when), tz, 'yyyy-MM-dd');
+
+  // The topic's own title, trimmed to something a filename can hold.
+  var title = '';
+  var t = getSheetAsObjects(TRAINING_SHEETS.TOPICS).filter(function (r) {
+    return String(r.TopicID) === topicId;
+  })[0];
+  if (t) title = String(t.Title || '').replace(/[^A-Za-z0-9]+/g, '-')
+                                      .replace(/^-|-$/g, '').slice(0, 40);
+
+  return [day, topicId, title, Utilities.formatDate(now, tz, 'HHmm'), planId]
+    .filter(Boolean).join('_');
+}
+
+/**
+ * TrainingPhotos/2026/TRN-05 — a folder per year and topic.
+ *
+ * One flat folder is fine at fifty photos and unusable at five hundred, and
+ * evidence is asked for by year ("the 2026 training records") or by subject
+ * ("everything on electrical safety"). Falls back to the parent folder if a
+ * subfolder cannot be made, because losing the photo would be far worse than
+ * filing it in the wrong place.
+ */
+function _sessionPhotoFolder_(sheet, row) {
+  var folders = DriveApp.getFoldersByName('TrainingPhotos');
+  var root = folders.hasNext() ? folders.next() : DriveApp.createFolder('TrainingPhotos');
+
+  try {
+    var when = getCell(sheet, row, 'ActualDate') || getCell(sheet, row, 'PlannedDate') || new Date();
+    var year = Utilities.formatDate(new Date(when), Session.getScriptTimeZone(), 'yyyy');
+    var topicId = String(getCell(sheet, row, 'TopicID') || '').trim();
+    return _childFolder_(_childFolder_(root, year), topicId || 'misc');
+  } catch (e) {
+    return root;
+  }
+}
+
+/** One subfolder by name, created once. */
+function _childFolder_(parent, name) {
+  if (!name) return parent;
+  var it = parent.getFoldersByName(name);
+  return it.hasNext() ? it.next() : parent.createFolder(name);
 }
 
 // ── Effectiveness — PM/FRM/HR-06 ───────────────────────────────────────────

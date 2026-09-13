@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>People — <?= orgName ?></title>
+<style>
+  /* One row per person, opened in place. A supervisor asking "is this person
+     ready for the line" should not have to open five pages and hold the
+     answer in their head. */
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--font-sans);background:var(--color-bg);color:var(--color-text);
+    font-size:14px;line-height:1.5;-webkit-text-size-adjust:100%}
+
+  .wrap{max-width:1180px;margin:0 auto;padding:16px 16px 60px}
+  .hd{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;
+    flex-wrap:wrap;margin-bottom:14px}
+  h1{font-size:20px;font-weight:800}
+  .stamp{font:600 11px var(--font-mono);color:var(--color-text-muted);text-align:right}
+
+  .bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+  .inp{border:1px solid var(--color-border);border-radius:var(--radius-md);
+    padding:10px 12px;font:400 14px var(--font-sans);background:var(--color-surface);
+    color:var(--color-text);min-height:42px}
+  .inp:focus{outline:none;border-color:var(--color-primary);box-shadow:0 0 0 3px rgba(0,6,102,.12)}
+  #q{flex:1 1 240px}
+
+  .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));
+    gap:8px;margin-bottom:16px}
+  .tile{background:var(--color-surface);border:1px solid var(--color-border);
+    border-radius:var(--radius-md);padding:12px 14px}
+  .tile b{display:block;font:800 24px/1.1 var(--font-mono)}
+  .tile span{font-size:10px;letter-spacing:.7px;text-transform:uppercase;
+    color:var(--color-text-muted)}
+
+  table{width:100%;border-collapse:collapse;background:var(--color-surface);
+    border:1px solid var(--color-border);border-radius:var(--radius-md);overflow:hidden}
+  th{font-size:10px;letter-spacing:.7px;text-transform:uppercase;text-align:left;
+    color:var(--color-text-muted);padding:10px;border-bottom:1px solid var(--color-border);
+    font-weight:700;white-space:nowrap}
+  td{padding:10px;border-bottom:1px solid var(--color-border);vertical-align:middle}
+  tr.r{cursor:pointer}
+  tr.r:hover{background:rgba(0,6,102,.03)}
+  tr.r.open{background:rgba(0,6,102,.05)}
+
+  .who{display:flex;align-items:center;gap:10px;min-width:0}
+  .av{width:34px;height:34px;border-radius:50%;object-fit:cover;flex-shrink:0;
+    background:var(--color-border)}
+  .av-x{width:34px;height:34px;border-radius:50%;flex-shrink:0;display:grid;
+    place-items:center;background:var(--color-border);font:800 12px var(--font-mono);
+    color:var(--color-text-muted)}
+  .nm{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .sub{font:600 11px var(--font-mono);color:var(--color-text-muted)}
+
+  /* The gap bar reads at a glance across thirty rows; the number is for when
+     it matters exactly. */
+  .bars{display:flex;gap:2px;align-items:center}
+  .bars i{width:9px;height:16px;border-radius:2px;background:var(--color-border)}
+  .bars i.on{background:#0f766e}
+  .bars i.gap{background:#fca5a5}
+
+  .pill{display:inline-block;font:700 10px var(--font-sans);padding:3px 8px;
+    border-radius:20px;white-space:nowrap}
+  .p-ok{background:#ccfbf1;color:#0f766e}
+  .p-part{background:#fef3c7;color:#92400e}
+  .p-no{background:#fee2e2;color:#b91c1c}
+  .p-mute{background:var(--color-border);color:var(--color-text-muted)}
+
+  .exp{background:var(--color-bg)}
+  .exp td{padding:0}
+  .panel{padding:16px;display:grid;gap:14px;
+    grid-template-columns:repeat(auto-fit,minmax(290px,1fr))}
+  .sec{background:var(--color-surface);border:1px solid var(--color-border);
+    border-radius:var(--radius-md);padding:14px}
+  .sec h3{font-size:10px;letter-spacing:.8px;text-transform:uppercase;
+    color:var(--color-text-muted);margin-bottom:10px;font-weight:800}
+  .kv{display:flex;justify-content:space-between;gap:10px;padding:4px 0;font-size:13px}
+  .kv span{color:var(--color-text-muted)}
+  .ses{display:flex;gap:8px;align-items:baseline;padding:3px 0;font-size:12.5px}
+  .ses .t{width:14px;flex-shrink:0;font-weight:800}
+  .ses .t.y{color:#0f766e} .ses .t.n{color:var(--color-text-muted)}
+  .ses .w{flex:1;min-width:0}
+  .ses .d{font:600 11px var(--font-mono);color:var(--color-text-muted)}
+
+  .sk{display:flex;justify-content:space-between;gap:8px;padding:3px 0;font-size:12.5px}
+  .sk b{font:700 11px var(--font-mono)}
+  .sk.gap b{color:#b91c1c}
+
+  .btn{border:1px solid var(--color-border);background:var(--color-surface);
+    color:var(--color-text);border-radius:var(--radius-md);font:700 13px var(--font-sans);
+    padding:9px 14px;min-height:40px;cursor:pointer}
+  .btn-pri{background:var(--color-primary);border-color:var(--color-primary);color:#fff}
+  .btn:disabled{opacity:.5;cursor:default}
+  .btn:focus-visible,.inp:focus-visible{outline:3px solid var(--color-primary);outline-offset:2px}
+  .acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+
+  .empty{text-align:center;color:var(--color-text-muted);padding:26px;font-size:13px}
+  .muted{color:var(--color-text-muted);font-size:12.5px}
+  @media (max-width:720px){
+    .c-hide{display:none}
+    .wrap{padding:12px 12px 60px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hd">
+    <div>
+      <h1>People</h1>
+      <p class="muted">Everything recorded about a person, in one row. Tap to open.</p>
+    </div>
+    <div class="stamp" id="stamp"></div>
+  </div>
+
+  <div class="bar">
+    <input id="q" class="inp" placeholder="Search name, ID or department…" oninput="draw()">
+    <select id="fDept" class="inp" onchange="draw()"><option value="">All departments</option></select>
+    <select id="fState" class="inp" onchange="draw()">
+      <option value="">Anyone</option>
+      <option value="notind">Not inducted</option>
+      <option value="part">Induction part-done</option>
+      <option value="gaps">Has skill gaps</option>
+      <option value="auth">Holds an authorisation</option>
+    </select>
+    <select id="fWho" class="inp" onchange="load()">
+      <option value="false">Active only</option>
+      <option value="true">Everyone on the master</option>
+    </select>
+  </div>
+
+  <div class="tiles" id="tiles"></div>
+
+  <table>
+    <thead><tr>
+      <th>Person</th>
+      <th class="c-hide">Department</th>
+      <th>Skills</th>
+      <th>Induction</th>
+      <th class="c-hide">Authorised</th>
+    </tr></thead>
+    <tbody id="rows"><tr><td colspan="5" class="empty">Loading…</td></tr></tbody>
+  </table>
+</div>
+
+<script>
+var DATA = null, OPEN = '', DETAIL = {}, TOKEN = '';
+var el = function (id) { return document.getElementById(id); };
+function esc(s) {
+  return String(s == null ? '' : s).replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+/* ---------- load ---------- */
+
+function load() {
+  el('rows').innerHTML = '<tr><td colspan="5" class="empty">Loading…</td></tr>';
+  google.script.run
+    .withSuccessHandler(function (r) {
+      if (!r || !r.success) {
+        el('rows').innerHTML = '<tr><td colspan="5" class="empty">' +
+          esc((r && r.error) || 'Could not load') + '</td></tr>';
+        return;
+      }
+      DATA = r;
+      el('stamp').textContent = r.stamp || '';
+      fillDepts();
+      draw();
+    })
+    .withFailureHandler(function (e) {
+      el('rows').innerHTML = '<tr><td colspan="5" class="empty">' + esc(e && e.message) + '</td></tr>';
+    })
+    .getPeopleTable(el('fWho').value);
+}
+
+function fillDepts() {
+  var seen = {}, out = [];
+  (DATA.rows || []).forEach(function (r) {
+    if (r.dept && !seen[r.dept]) { seen[r.dept] = 1; out.push(r.dept); }
+  });
+  out.sort();
+  var sel = el('fDept'), keep = sel.value;
+  sel.innerHTML = '<option value="">All departments</option>' +
+    out.map(function (d) { return '<option>' + esc(d) + '</option>'; }).join('');
+  sel.value = keep;
+}
+
+/* ---------- table ---------- */
+
+function visible() {
+  var q = el('q').value.trim().toLowerCase();
+  var dept = el('fDept').value, state = el('fState').value;
+  return (DATA.rows || []).filter(function (r) {
+    if (dept && r.dept !== dept) return false;
+    if (state === 'notind' && !(r.induction && r.induction.status === 'NONE')) return false;
+    if (state === 'part' && !(r.induction && r.induction.status === 'PARTIAL')) return false;
+    if (state === 'gaps' && !r.gaps) return false;
+    if (state === 'auth' && !r.authorised) return false;
+    if (!q) return true;
+    return (r.name + ' ' + r.empId + ' ' + r.dept + ' ' + r.jobRole).toLowerCase().indexOf(q) !== -1;
+  });
+}
+
+function draw() {
+  if (!DATA) return;
+  var rows = visible();
+  var c = DATA.counts || {};
+  el('tiles').innerHTML =
+    tile(rows.length, 'shown') +
+    tile(c.inducted, 'inducted') +
+    tile(c.avgGaps, 'avg skill gaps') +
+    tile(c.authorised, 'hold an authorisation') +
+    tile(c.people, 'on the master');
+
+  if (!rows.length) {
+    el('rows').innerHTML = '<tr><td colspan="5" class="empty">Nobody matches.</td></tr>';
+    return;
+  }
+
+  el('rows').innerHTML = rows.map(function (r) {
+    var open = String(r.empId) === String(OPEN);
+    return '<tr class="r' + (open ? ' open' : '') + '" onclick="toggle(\'' +
+        esc(r.empId) + '\')">' +
+      '<td><div class="who">' + avatar(r) + '<div style="min-width:0">' +
+        '<div class="nm">' + esc(r.name) + '</div>' +
+        '<div class="sub">' + esc(r.empId) +
+          (r.gender ? ' · ' + esc(r.gender) : '') +
+          (r.jobRole ? ' · ' + esc(r.jobRole) : '') + '</div>' +
+        '</div></div></td>' +
+      '<td class="c-hide">' + esc(r.dept || '—') +
+        (r.status === 'INACTIVE' ? ' <span class="pill p-mute">inactive</span>' : '') + '</td>' +
+      '<td>' + skillBar(r) + '</td>' +
+      '<td>' + indPill(r.induction) + '</td>' +
+      '<td class="c-hide">' + (r.authTotal
+        ? r.authorised + ' of ' + r.authTotal
+        : '<span class="muted">—</span>') + '</td>' +
+      '</tr>' +
+      (open ? '<tr class="exp"><td colspan="5">' + panel(r) + '</td></tr>' : '');
+  }).join('');
+}
+
+function tile(n, label) {
+  return '<div class="tile"><b>' + (n === undefined ? '—' : n) + '</b><span>' + label + '</span></div>';
+}
+
+function avatar(r) {
+  if (r.photoUrl) return '<img class="av" src="' + esc(r.photoUrl) + '" alt="" ' +
+    'onerror="this.outerHTML=\'<div class=&quot;av-x&quot;>' + esc(initials(r.name)) + '</div>\'">';
+  return '<div class="av-x">' + esc(initials(r.name)) + '</div>';
+}
+function initials(n) {
+  return String(n || '?').split(/\s+/).slice(0, 2)
+    .map(function (w) { return w.charAt(0); }).join('').toUpperCase();
+}
+
+/* Five blocks, not fourteen: at this row height fourteen slivers are noise.
+   Each block is a fifth of the skills, red once any of them is a gap. */
+function skillBar(r) {
+  if (r.offMatrix) return '<span class="muted">not on the matrix</span>';
+  if (!r.skills) return '<span class="muted">—</span>';
+  var met = r.skills - r.gaps, blocks = 5, on = Math.round(met / r.skills * blocks);
+  var b = '';
+  for (var i = 0; i < blocks; i++) b += '<i class="' + (i < on ? 'on' : 'gap') + '"></i>';
+  return '<div class="bars" title="' + met + ' of ' + r.skills + ' met">' + b +
+    '<span class="sub" style="margin-left:8px">' +
+    (r.gaps ? r.gaps + ' gap' + (r.gaps === 1 ? '' : 's') : 'all met') + '</span></div>';
+}
+
+function indPill(ind) {
+  if (!ind) return '<span class="pill p-mute">—</span>';
+  if (ind.status === 'CLEARED') return '<span class="pill p-ok">Inducted</span>';
+  if (ind.status === 'PARTIAL') return '<span class="pill p-part">' + esc(ind.label) + '</span>';
+  return '<span class="pill p-no">Not inducted</span>';
+}
+
+/* ---------- the opened row ---------- */
+
+function toggle(empId) {
+  OPEN = (String(OPEN) === String(empId)) ? '' : String(empId);
+  draw();
+  if (OPEN && !DETAIL[OPEN]) {
+    google.script.run
+      .withSuccessHandler(function (d) { DETAIL[OPEN] = d || { success: false }; draw(); })
+      .withFailureHandler(function (e) { DETAIL[OPEN] = { success: false, error: e && e.message }; draw(); })
+      .getPersonDetail(OPEN);
+  }
+}
+
+function panel(r) {
+  var d = DETAIL[String(r.empId)];
+  if (!d) return '<div class="empty">Loading their record…</div>';
+  if (!d.success) return '<div class="empty">' + esc(d.error || 'Could not load') + '</div>';
+  return '<div class="panel">' + secInduction(r, d) + secSkills(r) +
+         secKra(d) + secMonth(d) + '</div>';
+}
+
+function secInduction(r, d) {
+  var i = d.induction || {};
+  var h = '<div class="sec"><h3>Induction — PM/FRM/HR-08</h3>';
+
+  if (!i.success || !i.started) {
+    h += '<p class="muted">No induction has been started for this person.</p>' +
+      '<div class="acts"><button class="btn btn-pri" ' +
+      'onclick="event.stopPropagation();startInd(\'' + esc(r.empId) + '\')">Start induction</button></div>';
+    return h + '</div>';
+  }
+
+  h += '<div class="kv"><span>Sessions signed</span><b>' + i.signedCount + ' of ' +
+       i.totalSessions + '</b></div>';
+  h += '<div class="kv"><span>Rules test</span><b>' +
+       (i.rulesTest && i.rulesTest.taken
+         ? (i.rulesTest.passed ? 'passed ' + i.rulesTest.score + '%' : 'failed ' + i.rulesTest.score + '%')
+         : 'not taken') + '</b></div>';
+  if (i.clearedAt) h += '<div class="kv"><span>Cleared</span><b>' + esc(i.clearedAt) + '</b></div>';
+
+  h += (i.sessions || []).slice(0, 4).map(function (s) {
+    return '<div class="ses"><span class="t ' + (s.signed ? 'y' : 'n') + '">' +
+      (s.signed ? '✓' : '○') + '</span><span class="w">' + esc(s.session) + '</span>' +
+      '<span class="d">' + esc(s.deliveredOn || '') + '</span></div>';
+  }).join('');
+  if ((i.sessions || []).length > 4) {
+    h += '<p class="muted">… ' + (i.sessions.length - 4) + ' more</p>';
+  }
+
+  h += '<div class="acts"><button class="btn" onclick="event.stopPropagation();openInduction(\'' +
+       esc(r.empId) + '\')">' + (i.readyToClear ? 'Clear to work' : 'Continue induction') +
+       '</button></div>';
+  return h + '</div>';
+}
+
+function secSkills(r) {
+  var skills = (DATA.skills || []);
+  var person = (DATA.rows || []).filter(function (x) { return String(x.empId) === String(r.empId); })[0];
+  var h = '<div class="sec"><h3>Skills — ' + (r.gaps ? r.gaps + ' gap' + (r.gaps === 1 ? '' : 's') : 'all met') + '</h3>';
+  if (r.offMatrix || !r.skills) {
+    h += '<p class="muted">Not on the skill matrix.</p>';
+  } else {
+    h += '<p class="muted">' + (r.skills - r.gaps) + ' of ' + r.skills +
+         ' at the required level.</p>';
+  }
+  h += '<div class="acts"><button class="btn" onclick="event.stopPropagation();' +
+       'go(\'skillmatrix\')">Open the matrix</button></div>';
+  return h + '</div>';
+}
+
+function secKra(d) {
+  var k = d.kra || {};
+  var h = '<div class="sec"><h3>KRA &amp; KPI</h3>';
+  if (!k.success) {
+    h += '<p class="muted">No KRA sheet.</p>';
+  } else {
+    h += '<div class="kv"><span>' + esc(k.fy) + '</span><b>' + (k.rows || []).length +
+         ' of 10 KRAs</b></div>';
+    if (k.scorePct !== '') h += '<div class="kv"><span>Score</span><b>' + k.scorePct + '%</b></div>';
+  }
+  var owned = d.kpisOwned || [];
+  if (owned.length) {
+    h += '<p class="muted" style="margin-top:8px">Owns ' + owned.length + ' indicator' +
+      (owned.length === 1 ? '' : 's') + ':</p>' +
+      owned.slice(0, 3).map(function (k2) {
+        return '<div class="sk"><span>' + esc(k2.indicator) + '</span><b>' + esc(k2.kpiId) + '</b></div>';
+      }).join('');
+  }
+  h += '<div class="acts"><button class="btn" onclick="event.stopPropagation();go(\'kpi\')">' +
+       'Open KPI &amp; KRA</button></div>';
+  return h + '</div>';
+}
+
+function secMonth(d) {
+  var m = d.month || {}, a = d.authorisations || {};
+  var h = '<div class="sec"><h3>This month &amp; authorisations</h3>';
+  if (m.success) {
+    h += '<div class="kv"><span>' + esc(m.month || '') + '</span><b>' +
+         m.presentDays + ' days present</b></div>' +
+         '<div class="kv"><span>Late</span><b>' + m.lateDays + '</b></div>' +
+         '<div class="kv"><span>Today</span><b>' +
+         (m.inToday ? 'in ' + esc(m.inToday) : 'not in') +
+         (m.outToday ? ' · out ' + esc(m.outToday) : '') + '</b></div>';
+  } else {
+    h += '<p class="muted">No attendance this month.</p>';
+  }
+  var rows = (a.rows || []);
+  h += '<h3 style="margin-top:12px">Authorisations</h3>';
+  h += rows.length
+    ? rows.map(function (x) {
+        return '<div class="sk"><span>' + esc(x.authorisation) + '</span><b>' + esc(x.state) + '</b></div>';
+      }).join('')
+    : '<p class="muted">None recorded.</p>';
+  return h + '</div>';
+}
+
+/* ---------- actions ---------- */
+
+function go(page) {
+  // The sandbox is cross-origin from /exec: window.top.location throws and
+  // history.back() does nothing. _top on a real URL is what works.
+  window.open('<?!= publicUrl ?>' + '?page=' + page, '_top');
+}
+
+function openInduction(empId) {
+  window.open('<?!= publicUrl ?>' + '?page=admin&emp=' + encodeURIComponent(empId), '_top');
+}
+
+function withToken(then) {
+  if (TOKEN) return then();
+  var pin = window.prompt('Admin PIN');
+  if (!pin) return;
+  google.script.run
+    .withSuccessHandler(function (v) {
+      if (!v || !v.success || !v.token) { window.alert('That PIN was not accepted.'); return; }
+      TOKEN = v.token; then();
+    })
+    .withFailureHandler(function (e) { window.alert('Error: ' + (e && e.message)); })
+    .verifyPIN(pin);
+}
+
+/* Starting an induction from the row is the whole point of the row being
+   openable: the person who notices nobody inducted this worker is the person
+   looking at their record, not someone on another page. */
+function startInd(empId) {
+  withToken(function () {
+    google.script.run
+      .withSuccessHandler(function (r) {
+        if (!r || !r.success) { window.alert((r && r.error) || 'Could not start it.'); return; }
+        delete DETAIL[String(empId)];
+        toggle(empId); toggle(empId);      // reopen against fresh data
+        load();
+      })
+      .withFailureHandler(function (e) {
+        if (/unauthori[sz]ed/i.test(String(e && e.message))) TOKEN = '';
+        window.alert('Error: ' + (e && e.message));
+      })
+      .startInduction(empId, TOKEN);
+  });
+}
+
+document.addEventListener('DOMContentLoaded', load);
+</script>
+</body>
+</html>
